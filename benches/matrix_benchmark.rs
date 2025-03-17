@@ -1,14 +1,18 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use neural_net::calc_utils::blas;
-use neural_net::calc_utils::simd;
+use StellarMath::structure::ndarray::NdArray;
+use StellarMath::algebra::simd::simd_tensor_mult;
+use StellarMath::algebra::ndmethods:: {
+    parallel_tensor_mult,
+    tensor_mult,
+};
 use rand::Rng;
 
-fn generate_matrix(rows: usize, cols: usize) -> blas::NdArray {
+fn generate_matrix(rows: usize, cols: usize) -> NdArray {
     let mut rng = rand::thread_rng();
     let data: Vec<f32> = (0..rows * cols)
         .map(|_| rng.gen_range(-10.0..10.0))
         .collect();
-    blas::NdArray::new(vec![rows, cols], data)
+    NdArray::new(vec![rows, cols], data)
 }
 
 fn benchmark(c: &mut Criterion) {
@@ -30,35 +34,35 @@ fn benchmark(c: &mut Criterion) {
 
     // Small matrix tests
     c.bench_function("small_parallel_tensor_mult", |b| {
-        b.iter(|| blas::parallel_tensor_mult(blocksize, black_box(&small_x), black_box(&small_y)))
+        b.iter(|| parallel_tensor_mult(blocksize, black_box(&small_x), black_box(&small_y)))
     });
     c.bench_function("small_tensor_mult", |b| {
-        b.iter(|| blas::tensor_mult(blocksize, black_box(&small_x), black_box(&small_y)))
+        b.iter(|| tensor_mult(blocksize, black_box(&small_x), black_box(&small_y)))
     });
     c.bench_function("small_simd_tensor_mult", |b| {
-        b.iter(|| simd::simd_tensor_mult(8, black_box(&small_x), black_box(&small_y)))
+        b.iter(|| simd_tensor_mult(8, black_box(&small_x), black_box(&small_y)))
     });
 
     // Medium matrix tests
     c.bench_function("medium_parallel_tensor_mult", |b| {
-        b.iter(|| blas::parallel_tensor_mult(blocksize, black_box(&medium_x), black_box(&medium_y)))
+        b.iter(|| parallel_tensor_mult(blocksize, black_box(&medium_x), black_box(&medium_y)))
     });
     c.bench_function("medium_tensor_mult", |b| {
-        b.iter(|| blas::tensor_mult(blocksize, black_box(&medium_x), black_box(&medium_y)))
+        b.iter(|| tensor_mult(blocksize, black_box(&medium_x), black_box(&medium_y)))
     });
     c.bench_function("medium_simd_tensor_mult", |b| {
-        b.iter(|| simd::simd_tensor_mult(8, black_box(&medium_x), black_box(&medium_y)))
+        b.iter(|| simd_tensor_mult(8, black_box(&medium_x), black_box(&medium_y)))
     });
 
     // Large matrix tests
     c.bench_function("large_parallel_tensor_mult", |b| {
-        b.iter(|| blas::parallel_tensor_mult(blocksize, black_box(&large_x), black_box(&large_y)))
+        b.iter(|| parallel_tensor_mult(blocksize, black_box(&large_x), black_box(&large_y)))
     });
     c.bench_function("large_tensor_mult", |b| {
-        b.iter(|| blas::tensor_mult(blocksize, black_box(&large_x), black_box(&large_y)))
+        b.iter(|| tensor_mult(blocksize, black_box(&large_x), black_box(&large_y)))
     });
     c.bench_function("large_simd_tensor_mult", |b| {
-        b.iter(|| simd::simd_tensor_mult(8, black_box(&large_x), black_box(&large_y)))
+        b.iter(|| simd_tensor_mult(8, black_box(&large_x), black_box(&large_y)))
     });
     // Specify the number of iterations for the benchmarks
 
