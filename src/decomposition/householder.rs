@@ -9,7 +9,7 @@ pub struct HouseholderReflection {
 }
 
 impl HouseholderReflection {
-    fn new(beta:f32, vector:Vec<f32>) -> Self {
+    pub fn new(beta:f32, vector:Vec<f32>) -> Self {
         Self { beta, vector }
     }
 }

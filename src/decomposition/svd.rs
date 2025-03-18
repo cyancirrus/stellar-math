@@ -6,7 +6,7 @@ use crate::algebra::vector::{
 };
 
 #[allow(non_snake_case)]
-pub fn golub_kahan(a:NdArray) -> (NdArray, NdArray, NdArray) {
+pub fn golub_kahan_lanczos(a:NdArray) -> (NdArray, NdArray, NdArray) {
     let n = a.dims[0];
     let mut U = NdArray::new(a.dims.clone(), vec![0_f32; n * n]);
     let mut V = NdArray::new(a.dims.clone(), vec![0_f32; n * n]);

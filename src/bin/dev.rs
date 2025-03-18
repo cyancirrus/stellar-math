@@ -1,7 +1,8 @@
 #![allow(warnings)]
 use StellarMath::algebra::{math, simd};
-use StellarMath::decomposition::{qr, schur};
-use StellarMath::decomposition::svd::golub_kahan;
+use StellarMath::decomposition::{qr, schur, householder};
+use StellarMath::decomposition::householder::{householder_params, HouseholderReflection};
+use StellarMath::decomposition::svd::golub_kahan_lanczos;
 use StellarMath::decomposition::bidiagonal::{bidiagonal_qr, fast_bidiagonal_qr};
 use StellarMath::structure::ndarray::NdArray;
 use StellarMath::algebra::ndmethods::{
@@ -13,6 +14,39 @@ use rayon::prelude::ParallelIterator;
 use rayon::prelude::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
+
+fn golub_kahan(a:NdArray) -> NdArray{
+    let rows = a.dims[0];
+    let cols = a.dims[1];
+    let mut householder: HouseholderReflection = HouseholderReflection::new(0_f32, vec![0_f32;0]);
+
+    let mut new = NdArray::new(a.dims.clone(), vec![0_f32; rows * cols]); 
+    for i in 0..rows {
+        new.data[i*cols + i] = 1_f32;
+    }
+    println!("Should be identity {:?}", new);
+
+    // for o in 0..cols.min(rows) {
+    for o in 0..1 {
+        let column_vector = (o..rows).into_par_iter().map(|r| a.data[r*cols + o]).collect::<Vec<f32>>();
+        householder = householder_params(&column_vector);
+        print!("hello world!");
+    }
+    for i in 0..rows {
+        for j in 0.. cols {
+            new.data[i*cols + j] -= householder.beta * householder.vector[i] * householder.vector[j]
+        }
+    }
+    
+    let test = tensor_mult(4, &new, &a);
+    println!("Here's what the mult looks like check 0's {:?}", test);
+
+    todo!()
+}
+
+
+
+
 
 
 fn main() {
@@ -35,42 +69,44 @@ fn main() {
         data = vec![0_f32; 9];
         dims = vec![3; 2];
         data[0] = 1_f32;
-        data[1] = -2_f32;
+        data[1] = 2_f32;
         data[2] = 3_f32;
-        data[3] = 4_f32;
-        data[4] = 5_f32;
-        data[5] = 6_f32;
-        data[6] = 7_f32;
-        data[7] = 8_f32;
-        data[8] = 9_f32;
+        data[3] = 3_f32;
+        data[4] = 4_f32;
+        data[5] = 5_f32;
+        data[6] = 6_f32;
+        data[7] = 7_f32;
+        data[8] = 8_f32;
     }
     let x = NdArray::new(dims, data.clone());
     // println!("x: {:?}", x);
+    //
+    let dev = golub_kahan(x.clone());
 
     // let sym = symmetricize(x);
     // println!("Did it make symmetric? {:?}", sym);
-    let test = golub_kahan(x.clone());
-    // println!("Test:\nU {:?}\nS {:?}\nV {:?}", test.0, test.1, test.2);
-    println!("Bidiagonal \nS {:?}", test.1);
+    // let test = golub_kahan_lanczos(x.clone());
+    // // println!("Test:\nU {:?}\nS {:?}\nV {:?}", test.0, test.1, test.2);
+    // println!("Bidiagonal \nS {:?}", test.1);
 
 
-    let mut check = tensor_mult(2, &transpose(test.0), &test.1.clone());
-    check = tensor_mult(2, &check, &test.2.clone());
-    println!("Checking reconstruction {:?}", check);
+    // let mut check = tensor_mult(2, &transpose(test.0), &test.1.clone());
+    // check = tensor_mult(2, &check, &test.2.clone());
+    // println!("Checking reconstruction {:?}", check);
 
     
     // let real_schur = real_schur_decomp(x.clone());
     // println!("real schur kernel {:?}", real_schur.kernel);
     
-    let sigma = bidiagonal_qr(test.1.clone());
-    println!("Bidiagonal QR {:?}", sigma);
-    println!("Expected eigen: 2, 1");
+    // let sigma = bidiagonal_qr(test.1.clone());
+    // println!("Bidiagonal QR {:?}", sigma);
+    // println!("Expected eigen: 2, 1");
     
-    // From lapack white paper
-    let sigma = fast_bidiagonal_qr(fast_bidiagonal_qr(test.1.clone()));
-    println!("Fast Bidiagonal QR {:?}", sigma);
-    println!("Expected eigen: 2, 1");
-    // // println!("real schur rotation {:?}", real_schur.rotation);
+    // // From lapack white paper
+    // let sigma = fast_bidiagonal_qr(fast_bidiagonal_qr(test.1.clone()));
+    // println!("Fast Bidiagonal QR {:?}", sigma);
+    // println!("Expected eigen: 2, 1");
+    // // // println!("real schur rotation {:?}", real_schur.rotation);
     // //
     // let y = qr_decompose(x.clone());
     // println!("triangle {:?}", y.triangle);

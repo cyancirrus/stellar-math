@@ -30,3 +30,15 @@ pub fn magnitude(x: &[f32]) -> f32 {
         .sum::<f32>()
         .sqrt()
 }
+
+pub fn matrix_transpose(matrix: Vec<Vec<f32>>) -> Vec<Vec<f32>> {
+    let rows = matrix.len();
+    let cols = matrix[0].len();
+    let mut transpose = vec![vec![0_f32; rows]; cols];
+    for row in 0..rows {
+        for col in 0..cols {
+            transpose[col][row] = matrix[row][col];
+        }
+    }
+    transpose
+}
