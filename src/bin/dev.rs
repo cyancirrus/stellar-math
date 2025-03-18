@@ -15,7 +15,7 @@ use rayon::prelude::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
-fn golub_kahan(a:NdArray) -> NdArray{
+fn golub_kahan(mut a:NdArray) -> NdArray{
     let rows = a.dims[0];
     let cols = a.dims[1];
     let mut householder: HouseholderReflection = HouseholderReflection::new(0_f32, vec![0_f32;0]);
@@ -38,8 +38,17 @@ fn golub_kahan(a:NdArray) -> NdArray{
         }
     }
     
-    let test = tensor_mult(4, &new, &a);
-    println!("Here's what the mult looks like check 0's {:?}", test);
+    let a = tensor_mult(4, &new, &a);
+    println!("Here's what the mult looks like check 0's {:?}", a);
+    for o in 0..1 {
+        let row_vector = (0..rows).step_by(cols + o).take(cols - o);
+        println!("Row vector should be dim 3 and the top row {:?}", row_vector);
+        
+
+    }
+
+
+
 
     todo!()
 }
