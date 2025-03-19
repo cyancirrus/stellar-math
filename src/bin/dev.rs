@@ -24,7 +24,6 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
     let mut new:NdArray = create_identity_matrix(rows);
     println!("Should be identity {:?}", new);
 
-    // for o in 0..cols.min(rows) {
     for o in 0..cols.min(rows) - 1 {
         new = create_identity_matrix(rows);
         println!("------------------------------------------------------");
@@ -55,8 +54,7 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
             println!("This is what a looks like {:?}", a);
         }
     }
-
-    todo!()
+    a
 }
 
 

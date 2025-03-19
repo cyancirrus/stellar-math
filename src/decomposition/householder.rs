@@ -24,7 +24,10 @@ pub fn householder_params(x: &[f32]) -> HouseholderReflection {
     let mut u = x.par_iter().copied()
         .map(|val| val / max_element)
         .collect::<Vec<f32>>();
-    u[0] += magnitude(&u) * x[0].signum();
+    let sign = u[0].signum();
+    u[0] += sign *magnitude(&u);
+
+    // u[0] += magnitude(&u) * x[0].signum();
     let magnitude_squared = dot_product(&u, &u);
     for i in 0..length {
         householder.data[i * length + i] = 1_f32;
