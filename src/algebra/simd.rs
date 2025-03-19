@@ -90,7 +90,7 @@ pub fn simd_vector_product(x: &[f32], y: &[f32]) -> Vec<f32> {
 pub fn simd_dot_product(x: &[f32], y: &[f32]) -> f32 {
     assert_eq!(x.len(), y.len());
     let length = x.len();
-    let mut result: f32 = 0_f32;
+    let mut result: f32;
     let blocks = length / 8;
     let remainder = length % 8;
 
