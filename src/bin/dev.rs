@@ -16,19 +16,17 @@ use rayon::prelude::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
-fn golub_kahan(mut a:NdArray) -> NdArray{
+fn explicit_golub_kahan(mut a:NdArray) -> NdArray{
     let rows = a.dims[0];
     let cols = a.dims[1];
     let mut householder: HouseholderReflection = HouseholderReflection::new(0_f32, vec![0_f32;0]);
 
     let mut new:NdArray = create_identity_matrix(rows);
-    println!("Should be identity {:?}", new);
+    // println!("Should be identity {:?}", new);
 
     for o in 0..cols.min(rows) - 1 {
         new = create_identity_matrix(rows);
-        println!("------------------------------------------------------");
         let mut column_vector = (o..rows).into_par_iter().map(|r| a.data[r*cols + o]).collect::<Vec<f32>>();
-        println!("Column vector {:?}", column_vector);
         householder = householder_params(&column_vector);
         for i in 0..rows - o {
             for j in 0.. cols - o {
@@ -41,7 +39,7 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
         if  o < cols.min(rows) - 2 {
             new = create_identity_matrix(rows);
             let row_vector:Vec<f32> = a.data[(o*cols) + 1.. (o + 1) *cols ].to_vec();
-            println!("Row vector should be dim 3 and the top row {:?}", row_vector);
+            // println!("Row vector should be dim 3 and the top row {:?}", row_vector);
             householder = householder_params(&row_vector);
 
             for i in 0..rows - o - 1{
@@ -49,9 +47,76 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
                     new.data[(o + i + 1)*cols + (j + o + 1) ] -= householder.beta * householder.vector[i] * householder.vector[j];
                 }
             }
-            println!("This should be the matrix {:?}", new);
+            // println!("This should be the matrix {:?}", new);
             a = tensor_mult(4, &a, &new);
-            println!("This is what a looks like {:?}", a);
+            // println!("This is what a looks like {:?}", a);
+        }
+    }
+    a
+}
+
+fn golub_kahan(mut a:NdArray) -> NdArray{
+    let rows = a.dims[0];
+    let cols = a.dims[1];
+    let mut householder: HouseholderReflection = HouseholderReflection::new(0_f32, vec![0_f32;0]);
+
+    let mut new:NdArray = create_identity_matrix(rows);
+    let mut queue = vec![0_f32; rows  * cols ];
+
+    for o in 0..cols.min(rows) - 1 {
+        new = create_identity_matrix(rows);
+        let mut column_vector = (o..rows).into_par_iter().map(|r| a.data[r*cols + o]).collect::<Vec<f32>>();
+        householder = householder_params(&column_vector);
+        for i in o..rows {
+            for j in o..cols {
+                for k in o..rows {
+                    queue[i * cols + j] += householder.beta * householder.vector[i - o] * householder.vector[k - o] * a.data[ k*cols + j];
+                }
+            }
+        }
+        for i in o..cols {
+            for j in o..rows {
+                a.data[i*cols + j] -= queue[i*cols + j];
+                queue[i*cols + j] = 0_f32;
+            }
+        }
+        println!("matrix A {:?}", a);
+        if  o < cols.min(rows) - 2 {
+            // new = create_identity_matrix(rows);
+            let row_vector:Vec<f32> = a.data[(o*cols) + 1.. (o + 1) *cols ].to_vec();
+            // println!("Row vector should be dim 3 and the top row {:?}", row_vector);
+            householder = householder_params(&row_vector);
+            println!("Householder vector {:?}", householder.vector);
+            for i in 0..rows{
+                for j in o+1..cols{
+                    // for k in o+1..rows{
+                    for k in 0..rows{
+                        // a[i, j] = Sum a[i, k] * h[k, j]
+                        //
+                        if (i==0) & (j==2) {
+                            println!("a'[i:{}, j:{}] := a[i:{}, k:{}] * h[k:{}, j:{}]", i, j, i, k, k-o, j-o);
+                            // println!("aik = {}, hkj = {}", a.data[i*cols + k], householder.vector[k - o - 1] * householder.vector[j - o - 1]);
+                        }
+                        // if j <= k {
+                        if o < k {
+                            if (i==0) & (j==2) {
+                            println!("EXECUTING a'[i:{}, j:{}] := a[i:{}, k:{}] * h[k:{}, j:{}]", i, j, i, k, k-o, j-o);
+                            }
+                            queue[i*cols + j] += householder.beta * a.data[i *cols + k] * householder.vector[k - o - 1] * householder.vector[j - o - 1];
+                        }
+                    }
+                }
+            }
+            println!("Check queue {:?}", queue);
+            for i in 0..rows{
+                // for j in o+1..cols{
+                for j in 0..cols{
+                    a.data[i * cols + j] -= queue[i *cols + j];
+                    queue[i *cols + j] = 0_f32;
+                }
+            }
+            println!("ensure queue is clear {:?}", queue);
+            println!("Here's what the mult looks like check 0's {:?}", a);
         }
     }
     a
@@ -90,9 +155,14 @@ fn main() {
         data[8] = 8_f32;
     }
     let x = NdArray::new(dims, data.clone());
-    // println!("x: {:?}", x);
+    println!("x: {:?}", x);
     //
+    let reference = explicit_golub_kahan(x.clone());
+    println!("Reference {:?}", reference);
+
     let dev = golub_kahan(x.clone());
+    println!("Implicit {:?}", dev);
+
 
     // let sym = symmetricize(x);
     // println!("Did it make symmetric? {:?}", sym);
