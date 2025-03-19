@@ -69,19 +69,25 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
     let cols = a.dims[1];
     let mut householder: HouseholderReflection = HouseholderReflection::new(0_f32, vec![0_f32;0]);
 
-    let mut new = create_identity_matrix(rows);
+    let mut new:NdArray = create_identity_matrix(rows);
     println!("Should be identity {:?}", new);
 
     // for o in 0..cols.min(rows) {
     for o in 0..2 {
+        new = create_identity_matrix(rows);
         println!("------------------------------------------------------");
-        let column_vector = (o..rows).into_par_iter().map(|r| a.data[r*cols + o]).collect::<Vec<f32>>();
+        let mut column_vector = (o..rows).into_par_iter().map(|r| a.data[r*cols + o]).collect::<Vec<f32>>();
+        println!("Column vector {:?}", column_vector);
         householder = householder_params(&column_vector);
+        if o == 1 {
+            column_vector.iter_mut().for_each(|val| *val *= -1_f32);
+        }
         for i in 0..rows - o {
             for j in 0.. cols - o {
-                new.data[i*cols + j] -= householder.beta * householder.vector[i] * householder.vector[j]
+                new.data[(o + i)*cols + j+ o] -= householder.beta * householder.vector[i] * householder.vector[j]
             }
         }
+        println!("Left multiplication {:?}", new);
         a = tensor_mult(4, &new, &a);
         println!("Here's what the mult looks like check 0's {:?}", a);
         new = create_identity_matrix(rows);
