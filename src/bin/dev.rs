@@ -80,34 +80,18 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
                 queue[i*cols + j] = 0_f32;
             }
         }
-        println!("matrix A {:?}", a);
         if  o < cols.min(rows) - 2 {
-            // new = create_identity_matrix(rows);
             let row_vector:Vec<f32> = a.data[(o*cols) + 1.. (o + 1) *cols ].to_vec();
-            // println!("Row vector should be dim 3 and the top row {:?}", row_vector);
             householder = householder_params(&row_vector);
-            println!("Householder vector {:?}", householder.vector);
             for i in 0..rows{
                 for j in o+1..cols{
-                    // for k in o+1..rows{
                     for k in 0..rows{
-                        // a[i, j] = Sum a[i, k] * h[k, j]
-                        //
-                        if (i==0) & (j==2) {
-                            println!("a'[i:{}, j:{}] := a[i:{}, k:{}] * h[k:{}, j:{}]", i, j, i, k, k-o, j-o);
-                            // println!("aik = {}, hkj = {}", a.data[i*cols + k], householder.vector[k - o - 1] * householder.vector[j - o - 1]);
-                        }
-                        // if j <= k {
                         if o < k {
-                            if (i==0) & (j==2) {
-                            println!("EXECUTING a'[i:{}, j:{}] := a[i:{}, k:{}] * h[k:{}, j:{}]", i, j, i, k, k-o, j-o);
-                            }
                             queue[i*cols + j] += householder.beta * a.data[i *cols + k] * householder.vector[k - o - 1] * householder.vector[j - o - 1];
                         }
                     }
                 }
             }
-            println!("Check queue {:?}", queue);
             for i in 0..rows{
                 // for j in o+1..cols{
                 for j in 0..cols{
@@ -115,8 +99,6 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
                     queue[i *cols + j] = 0_f32;
                 }
             }
-            println!("ensure queue is clear {:?}", queue);
-            println!("Here's what the mult looks like check 0's {:?}", a);
         }
     }
     a
