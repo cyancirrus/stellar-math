@@ -16,54 +16,6 @@ use rayon::prelude::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
-// fn golub_kahan(mut a:NdArray) -> NdArray{
-//     let rows = a.dims[0];
-//     let cols = a.dims[1];
-//     let mut householder: HouseholderReflection = HouseholderReflection::new(0_f32, vec![0_f32;0]);
-
-//     let mut new = NdArray::new(a.dims.clone(), vec![0_f32; rows * cols]); 
-//     for i in 0..rows {
-//         new.data[i*cols + i] = 1_f32;
-//     }
-//     println!("Should be identity {:?}", new);
-
-//     // for o in 0..cols.min(rows) {
-//     for o in 0..1 {
-//         let column_vector = (o..rows).into_par_iter().map(|r| a.data[r*cols + o]).collect::<Vec<f32>>();
-//         householder = householder_params(&column_vector);
-//         print!("hello world!");
-//     }
-//     for i in 0..rows {
-//         for j in 0.. cols {
-//             new.data[i*cols + j] -= householder.beta * householder.vector[i] * householder.vector[j]
-//         }
-//     }
-    
-//     a = tensor_mult(4, &new, &a);
-//     println!("Here's what the mult looks like check 0's {:?}", a);
-//     let mut new = NdArray::new(a.dims.clone(), vec![0_f32; rows * cols]); 
-//     for i in 0..rows {
-//         new.data[i*cols + i] = 1_f32;
-//     }
-//     for o in 0..1 {
-//         let row_vector:Vec<f32> = a.data[(o*cols) + 1.. (o + 1) *cols ].to_vec();
-//         println!("Row vector should be dim 3 and the top row {:?}", row_vector);
-//         householder = householder_params(&row_vector);
-
-//         for i in 0..rows - o - 1{
-//             for j in 0..cols - o - 1{
-//                 new.data[(o + i + 1)*cols + (j + o + 1) ] -= householder.beta * householder.vector[i] * householder.vector[j];
-//             }
-//         }
-//     }
-//     println!("This should be the matrix {:?}", new);
-//     a = tensor_mult(4, &a, &new);
-//     println!("This is what a looks like {:?}", a);
-
-//     todo!()
-// }
-
-
 fn golub_kahan(mut a:NdArray) -> NdArray{
     let rows = a.dims[0];
     let cols = a.dims[1];
@@ -73,15 +25,12 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
     println!("Should be identity {:?}", new);
 
     // for o in 0..cols.min(rows) {
-    for o in 0..2 {
+    for o in 0..cols.min(rows) - 1 {
         new = create_identity_matrix(rows);
         println!("------------------------------------------------------");
         let mut column_vector = (o..rows).into_par_iter().map(|r| a.data[r*cols + o]).collect::<Vec<f32>>();
         println!("Column vector {:?}", column_vector);
         householder = householder_params(&column_vector);
-        if o == 1 {
-            column_vector.iter_mut().for_each(|val| *val *= -1_f32);
-        }
         for i in 0..rows - o {
             for j in 0.. cols - o {
                 new.data[(o + i)*cols + j+ o] -= householder.beta * householder.vector[i] * householder.vector[j]
@@ -90,19 +39,21 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
         println!("Left multiplication {:?}", new);
         a = tensor_mult(4, &new, &a);
         println!("Here's what the mult looks like check 0's {:?}", a);
-        new = create_identity_matrix(rows);
-        let row_vector:Vec<f32> = a.data[(o*cols) + 1.. (o + 1) *cols ].to_vec();
-        println!("Row vector should be dim 3 and the top row {:?}", row_vector);
-        householder = householder_params(&row_vector);
+        if  o < cols.min(rows) - 2 {
+            new = create_identity_matrix(rows);
+            let row_vector:Vec<f32> = a.data[(o*cols) + 1.. (o + 1) *cols ].to_vec();
+            println!("Row vector should be dim 3 and the top row {:?}", row_vector);
+            householder = householder_params(&row_vector);
 
-        for i in 0..rows - o - 1{
-            for j in 0..cols - o - 1{
-                new.data[(o + i + 1)*cols + (j + o + 1) ] -= householder.beta * householder.vector[i] * householder.vector[j];
+            for i in 0..rows - o - 1{
+                for j in 0..cols - o - 1{
+                    new.data[(o + i + 1)*cols + (j + o + 1) ] -= householder.beta * householder.vector[i] * householder.vector[j];
+                }
             }
+            println!("This should be the matrix {:?}", new);
+            a = tensor_mult(4, &a, &new);
+            println!("This is what a looks like {:?}", a);
         }
-        println!("This should be the matrix {:?}", new);
-        a = tensor_mult(4, &a, &new);
-        println!("This is what a looks like {:?}", a);
     }
 
     todo!()
