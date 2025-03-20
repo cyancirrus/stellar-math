@@ -59,14 +59,13 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
     let rows = a.dims[0];
     let cols = a.dims[1];
     let mut householder: HouseholderReflection = HouseholderReflection::new(0_f32, vec![0_f32;0]);
-
-    let mut new:NdArray = create_identity_matrix(rows);
     let mut queue = vec![0_f32; rows  * cols ];
 
     for o in 0..cols.min(rows) - 1 {
-        new = create_identity_matrix(rows);
-        let mut column_vector = (o..rows).into_par_iter().map(|r| a.data[r*cols + o]).collect::<Vec<f32>>();
-        householder = householder_params(&column_vector);
+        householder = householder_params(
+            // column vector
+            &(o..rows).into_par_iter().map(|r| a.data[r*cols + o]).collect::<Vec<f32>>()
+        );
         for i in o..rows {
             for j in o..cols {
                 for k in o..rows {
@@ -77,12 +76,14 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
         for i in o..cols {
             for j in o..rows {
                 a.data[i*cols + j] -= queue[i*cols + j];
-                queue[i*cols + j] = 0_f32;
             }
         }
+        queue.fill(0_f32);
         if  o < cols.min(rows) - 2 {
-            let row_vector:Vec<f32> = a.data[(o*cols) + 1.. (o + 1) *cols ].to_vec();
-            householder = householder_params(&row_vector);
+            householder = householder_params(
+                // row vector
+                &a.data[(o*cols) + 1.. (o + 1) *cols ]
+            );
             for i in 0..rows{
                 for j in o+1..cols{
                     for k in 0..rows{
@@ -93,12 +94,11 @@ fn golub_kahan(mut a:NdArray) -> NdArray{
                 }
             }
             for i in 0..rows{
-                // for j in o+1..cols{
-                for j in 0..cols{
+                for j in o..cols{
                     a.data[i * cols + j] -= queue[i *cols + j];
-                    queue[i *cols + j] = 0_f32;
                 }
             }
+            queue.fill(0_f32);
         }
     }
     a
