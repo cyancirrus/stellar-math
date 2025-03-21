@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 itertools = "0.14.0"
-rand = "0.8.5"
+# rand = "0.8.5"
 rayon = "1.10.0"
 
 [dev-dependencies]
@@ -15,3 +15,7 @@ criterion = "0.5"
 name = "matrix_benchmark"
 sample_size = 10
 harness = false
+
+[profile.release]
+strip = true
+lto = true
