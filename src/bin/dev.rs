@@ -58,13 +58,47 @@ fn generate_dummy_series(n:usize) -> Vec<Complex> {
 
 
 
+// fn butterfly(x:Complex, y:Complex) -> (Complex, Complex) {
+//     let mut data = vec![Complex::new(0_f32, 0_f32);2];
+//     data[0] = x + y;
+//     data[1] = x - y;
+//     data
+// }
+
 
 fn butterfly(x:Complex, y:Complex) -> (Complex, Complex) {
     (x + y, x - y)
 }
 
+#[allow(Non_Snake_Case)]
+fn twiddle(k:f32,n:f32) -> Complex {
+    // exp( (-2 * pi * i * k / n)
+    // = cos(*) - isin(*)
+    let phase= 2_f32 * PI * k / n;
 
+    Complex::new(phase.cos(), -phase.sin())
+}
 
+fn fft_algorithm(mut x:Vec<Complex>) -> Vec<Complex> {
+    let N = x.len();
+    assert!(N >= 2, "Minimum length for radix two algorithm not satisfied");
+    let mut p:Complex;
+    let mut q:Complex;
+    let mut left:Vec<Complex>;
+    let mut right:Vec<Complex>;
+    if N > 1 {
+        left = fft_algorithm(x[0..N/2].to_vec());
+        right = fft_algorithm(x[N/2..N].to_vec());
+        for k in 0..N/2 {
+            p = left[k];
+            q = twiddle(k as f32, N as f32) * right[k];
+            x[k] = p + q;
+            x[k + N/2] = p - q;
+        }
+
+    }
+    x
+}
 
 
 
@@ -92,7 +126,7 @@ fn main() {
     // println!("Fourier transform:\n{:?}", dct_frequency);
     let k = 2;
     let data = generate_dummy_series(k);
-    let butter = butterfly(data[0], data[1]);
+    let butter = fft_algorithm(data);
     println!("Result of base case {:?}", butter);
 
 }
