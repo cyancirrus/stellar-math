@@ -103,7 +103,7 @@ fn cooley_tukey(x:&mut [Complex], n:usize, s:usize) {
 
 fn fft_algorithm(mut x:Vec<Complex>) -> Vec<Complex> {
     let n = x.len();
-    cooley_tukey(&mut x, n, 1);
+    cooley_tukey(&mut x, n, 2);
     x
 }
 
