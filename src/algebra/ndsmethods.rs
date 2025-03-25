@@ -10,10 +10,7 @@ pub fn complex_tensor_mult(a:NdSignal, b:NdSignal) -> NdSignal {
     for i in 0..dims[0] {
         for j in 0..dims[1] {
             for k in 0..a.dims[1] {
-                data[i*dims[1] + j] += Complex::multiply(
-                    a.data[i * a.dims[1] + k],
-                    b.data[k * b.dims[1] + j]
-                );
+                data[i*dims[1] + j] += a.data[i * a.dims[1] + k] * b.data[k * b.dims[1] + j]
             }
         }
     }
@@ -27,7 +24,9 @@ pub fn create_dct_array(n:usize) -> NdSignal {
     let mut col:usize;
     let mut val:Complex;
     let mut phase:f32;
-    let scalar = 1_f32 / (n as f32).sqrt();
+    // disableling for fft debugging
+    // let scalar = 1_f32 / (n as f32).sqrt();
+    let scalar = 1_f32 ;
     for i in 0..n {
         for j in 0..n {
             phase = -2.0 * PI * (i as f32) * (j as f32) / (n as f32);

@@ -19,6 +19,7 @@ pub struct Complex {
     i:f32,
 }
 
+#[derive(Clone)]
 pub struct NdSignal {
     pub dims: Vec<usize>,
     pub data: Vec<Complex>,

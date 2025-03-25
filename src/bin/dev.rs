@@ -79,55 +79,51 @@ fn twiddle(k:f32,n:f32) -> Complex {
     Complex::new(phase.cos(), -phase.sin())
 }
 
-fn fft_algorithm(mut x:Vec<Complex>) -> Vec<Complex> {
-    let N = x.len();
-    assert!(N >= 2, "Minimum length for radix two algorithm not satisfied");
+fn cooley_tukey(x:&mut [Complex], n:usize, s:usize) {
     let mut p:Complex;
     let mut q:Complex;
-    let mut left:Vec<Complex>;
-    let mut right:Vec<Complex>;
-    if N > 1 {
-        left = fft_algorithm(x[0..N/2].to_vec());
-        right = fft_algorithm(x[N/2..N].to_vec());
-        for k in 0..N/2 {
-            p = left[k];
-            q = twiddle(k as f32, N as f32) * right[k];
+    println!("This is the value of n: {}", n);
+    if n > 1 {
+        cooley_tukey(&mut x[0..], n / 2, 2 * s);
+        println!("left inner n: {}", n);
+        cooley_tukey(&mut x[s..], n / 2, 2 * s);
+        println!("right inner n: {}", n);
+        println!("this is what x looks like {:?}", x);
+        for k in 0..n/2 {
+            p = x[k];
+            q = twiddle(k as f32, n as f32) * x[k + n /2];
+            println!("mutating!");
             x[k] = p + q;
-            x[k + N/2] = p - q;
+            x[k + n/2] = p - q;
+            println!("k: {}, k-o: {}, p:{}, q:{}", k, k + n/2, p, q);
         }
 
     }
+}
+
+fn fft_algorithm(mut x:Vec<Complex>) -> Vec<Complex> {
+    let n = x.len();
+    cooley_tukey(&mut x, n, 1);
     x
 }
 
-
-
+fn pretty_format(data:Vec<Complex>) -> NdSignal {
+    let mut dims = vec![1;2];
+    dims[0] = data.len();
+    NdSignal { dims, data }
+}
 
 fn main() {
-    // let mut dims:Vec<usize>;
-    // let mut data:Vec<Complex>;
-    // {
-    //     dims = vec![2; 2];
-    //     data = vec![Complex::new(0_f32, 0_f32); 4];
-    //     data[0] = Complex::new(1_f32, 0.5_f32);
-    //     data[1] = Complex::new(1_f32, 0_f32);
-    //     data[2] = Complex::new(0.3_f32, 0.25_f32);
-    //     data[3] = Complex::new(0.7_f32, 0.3_f32);
-    // }
+    let k = 4;
+    let data = generate_dummy_signal(k);
+    println!("Data {:?}", data);
+    let dct_matrix = create_dct_array(k);
 
-    // println!("Complex {}", data[0]);
-    // let dev = NdSignal::new(dims, data);
-    // println!("Check debug is working {:?}", dev);
-    // let k = 8;
-    // let data = generate_dummy_signal(k);
-    // let dct_matrix = create_dct_array(k);
-
-    // let dct_frequency = complex_tensor_mult(dct_matrix, data);
-    // println!("Fourier transform:\n{:?}", dct_frequency);
-    let k = 2;
+    let dct_frequency = complex_tensor_mult(dct_matrix, data);
+    println!("Fourier transform:\n{:?}", dct_frequency);
     let data = generate_dummy_series(k);
     let butter = fft_algorithm(data);
-    println!("Result of base case {:?}", butter);
+    println!("Development Version {:?}", pretty_format(butter));
 
 }
 
