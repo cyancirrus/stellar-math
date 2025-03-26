@@ -87,7 +87,7 @@ impl fmt::Display for Complex {
 
 
 impl Complex {
-    pub fn new(r:f32, i:f32) -> Complex {
+    pub fn new(r:f32, i:f32) -> Self {
         Complex { r, i }
     }
     pub fn add(x:Complex, y:Complex) -> Complex {
@@ -108,6 +108,9 @@ impl Complex {
         //e((a + bi)) = exp(a)(cos(x) - i sin(x))
         //isin(x) = (exp(x) - exp(-x)) / 2
         x.r.exp() * (x.i.exp() - (-x.i).exp()) / 2_f32
+    }
+    pub fn zero() -> Complex {
+        Complex::new(0_f32, 0_f32)
     }
 }
 
