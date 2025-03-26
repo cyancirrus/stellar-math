@@ -120,7 +120,7 @@ fn cooley_tukey(x:&mut [Complex], n:usize, s:usize) {
         // for k in 0..n/2 {
         // for k in  0..x.len() - n {
         // for k in  0..n/2 {
-        for k in  0..n/2 {
+        for k in  0..n/2 -1 {
             // t = twiddle(k as f32 /2_f32, n as f32);
             // t = twiddle((s * 2) as f32 , n as f32);
             t = twiddle(s  as f32 , n as f32);
