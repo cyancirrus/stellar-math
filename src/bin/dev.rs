@@ -70,15 +70,6 @@ fn butterfly(x:Complex, y:Complex) -> (Complex, Complex) {
     (x + y, x - y)
 }
 
-#[allow(Non_Snake_Case)]
-fn twiddle(k:f32,n:f32) -> Complex {
-    // exp( (-2 * pi * i * k / n)
-    // = cos(*) - isin(*)
-    // let phase= 2_f32 * PI * k / n;
-    let phase= 2_f32 * PI * k / n;
-    Complex::new(phase.cos(), -phase.sin())
-}
-
 // fn cooley_tukey(x:&mut [Complex], n:usize, s:usize) {
 //     let mut p:Complex;
 //     let mut q:Complex;
@@ -105,52 +96,78 @@ fn twiddle(k:f32,n:f32) -> Complex {
 //     }
 // }
 
-fn cooley_tukey(x:&mut [Complex], n:usize, s:usize) {
-    let mut p_e:Complex;
-    let mut q_e:Complex;
-    let mut p_o:Complex;
-    let mut q_o:Complex;
-    let mut t:Complex;
-    println!("HEAD");
-    println!("n:{}, s:{}", n, s);
-    println!("Static X {:?}", x);
-    println!("------------------------------------");
-    if n > 1 {
-        cooley_tukey(&mut x[..], n / 2, 2*s);
-        // for k in 0..n/2 {
-        // for k in  0..x.len() - n {
-        // for k in  0..n/2 {
-        for k in  0..n/2 -1 {
-            // t = twiddle(k as f32 /2_f32, n as f32);
-            // t = twiddle((s * 2) as f32 , n as f32);
-            t = twiddle(s  as f32 , n as f32);
-            println!(" k:{}, s:{}, n:{}, t:{}\n", k, s, n, t);
-            p_e = x[k];
-            q_e = t * x[k + s];
-            println!("inputs! x[{}] and x[{}]", k, k + s);
-            println!("targets! x[{}] and x[{}]", k, k +  4 /2);
-            println!("X {:?}", x);
-            p_o = x[k + n / 2];
-            q_o = t * x[k + n/2 + s];
-            println!("inputs! x[{}] and x[{}]", k + n / 2, n / 2 + s);
-            // println!("targets! x[{}] and x[{}]", k + 1, k +  1  + n / 2);
-            println!("targets! x[{}] and x[{}]", k + 1, k +  1  + 4/2);
-            x[k] = p_e + q_e;
-            x[k + 4 / 2] = p_e - q_e;
-            x[k + 1] = p_o + q_o;
-            x[k + 4/2 + 1] = p_o - q_o;
-            println!("p:{}, q:{}", p_e, q_e);
-            println!("p:{}, q:{}", p_o, q_o);
-            println!("X {:?}", x);
-            println!("------------------------------------");
-        }
+// fn g(mut x: Vec<Complex>, indices:impl Iterator<Item = usize> + Clone, n:usize, s:usize) {
+//     let length = x.len();
+//     let mut p:Complex;
+//     let mut q:Complex;
+//     if x.len() > 1 {
+//         for k in 0..n/2 {
+//             p = x[k];
+//             q = twiddle(k, n) * x[k + n/2];
+//         }
+        
+//         g(x, (0..length).step_by(n/2), n/2, s * 2);
+//         g(x, (1..length+1).step_by(n/2), n/2, s * 2);
+//     }
+// }
 
+fn twiddle(k:usize,n:usize) -> Complex {
+    // exp( (-2 * pi * i * k / n)
+    // = cos(*) - isin(*)
+    // let phase= 2_f32 * PI * k / n;
+    let phase= 2_f32 * PI * k as f32 / n as f32;
+    let a = Complex::new(phase.cos(), -phase.sin());
+    println!("Phase pi normalized {}, {:?}", phase/PI, a);
+    a
+}
+
+
+
+// fn cooley_tukey(x: &mut Vec<Complex>, indices:Vec<usize>, n:usize, s:usize) {
+fn cooley_tukey(x: &mut Vec<Complex>, n:usize, s:usize, odd:bool) {
+    let length = x.len();
+    let mut p:Complex;
+    let mut q:Complex;
+    let mut odds:Vec<usize>;
+    let mut evens:Vec<usize>;
+    println!("----------------------------------");
+    if n > 1 {
+        // for k in 0..n/2 {
+        for k in 0..n/2 {
+            if odd { 
+                println!("N:{}, S:{}", n, s);
+                p = x[k];
+                q = twiddle(k, s) * x[k + n/2];
+                x[k] = p + q;
+                // x[s + k] = p - q;
+                x[k + length/2] = p - q;
+                println!("input! x[{}] and x[{}], k {}", k, k + n/2, k);
+                println!("target! x[{}] and x[{}], k {}", k, k + length/2, k);
+                println!("x: {:?}", x);
+                println!("----------------------------------");
+            } else { 
+                println!("N:{}, S:{}", n, s);
+                p = x[k+ 1];
+                q = twiddle(k, s) * x[k + 1+ n/2];
+                x[k] = p + q;
+                // x[s + k] = p - q;
+                x[k + length/2] = p - q;
+                println!("input! x[{}] and x[{}], k {}", k + 1, k + 1 + n/2, k);
+                println!("target! x[{}] and x[{}], k {}", k + 1, k + 1 + length/2, k);
+                println!("x: {:?}", x);
+                println!("----------------------------------");
+        }
+        }
+        cooley_tukey(x,  n/2, s * 2, true);
+        cooley_tukey(x,  n/2, s * 2, false);
     }
 }
 
 fn fft_algorithm(mut x:Vec<Complex>) -> Vec<Complex> {
     let n = x.len();
-    cooley_tukey(&mut x, n, 1);
+    let indices = (0..n).collect::<Vec<usize>>();
+    // cooley_tukey(&mut x, indices, n, 1);
+    cooley_tukey(&mut x, n, 1, true);
     x
 }
 
