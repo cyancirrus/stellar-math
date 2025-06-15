@@ -30,4 +30,3 @@ fn lu_factorization(x: &NdArray) -> (NdArray, NdArray) {
         NdArray::new(x.dims.clone(), upper),
     )
 }
-

@@ -1,25 +1,24 @@
-use crate::structure::ndarray::NdArray;
 use crate::algebra::vector::vector_add;
+use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
-pub fn create_identity_matrix(n:usize) -> NdArray {
-    let mut data = vec![0_f32;n * n];
-    let dims = vec![n;2];
+pub fn create_identity_matrix(n: usize) -> NdArray {
+    let mut data = vec![0_f32; n * n];
+    let dims = vec![n; 2];
     for i in 0..n {
         data[i * n + i] = 1_f32;
     }
     NdArray { dims, data }
 }
 
-
 pub fn transpose(mut ndarray: NdArray) -> NdArray {
     let rows = ndarray.dims[0];
     let cols = ndarray.dims[1];
     for i in 0..rows {
-        for j in i+1..cols {
-            let temp: f32 = ndarray.data[i*rows + j];
-            ndarray.data[i*rows + j] = ndarray.data[j*rows + i];
-            ndarray.data[j*rows + i] = temp;
+        for j in i + 1..cols {
+            let temp: f32 = ndarray.data[i * rows + j];
+            ndarray.data[i * rows + j] = ndarray.data[j * rows + i];
+            ndarray.data[j * rows + i] = temp;
         }
     }
     ndarray.dims[0] = cols;
@@ -64,10 +63,7 @@ pub fn parallel_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArr
                 .collect::<Vec<Vec<f32>>>()
         })
         .flatten()
-        .reduce(
-            || vec![0_f32; x_rows * y_cols],
-            |a, b| vector_add(&a, &b),
-        );
+        .reduce(|| vec![0_f32; x_rows * y_cols], |a, b| vector_add(&a, &b));
 
     NdArray::new(dims, new)
 }
@@ -100,4 +96,3 @@ pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     dims[1] = y.dims[1];
     NdArray::new(dims, new)
 }
-

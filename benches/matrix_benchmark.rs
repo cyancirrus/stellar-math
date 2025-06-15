@@ -1,11 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use StellarMath::structure::ndarray::NdArray;
-use StellarMath::algebra::simd::simd_tensor_mult;
-use StellarMath::algebra::ndmethods:: {
-    parallel_tensor_mult,
-    tensor_mult,
-};
 use rand::Rng;
+use StellarMath::algebra::ndmethods::{parallel_tensor_mult, tensor_mult};
+use StellarMath::algebra::simd::simd_tensor_mult;
+use StellarMath::structure::ndarray::NdArray;
 
 fn generate_matrix(rows: usize, cols: usize) -> NdArray {
     let mut rng = rand::thread_rng();

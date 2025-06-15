@@ -20,7 +20,11 @@ pub fn loss_squared(prediction: Vec<f32>, result: Vec<f32>) -> f32 {
     loss
 }
 
-pub fn cross_apply(x: &[f32], y: &[f32], f_enum: fn(usize, f32, usize, f32) -> f32) -> Vec<Vec<f32>> {
+pub fn cross_apply(
+    x: &[f32],
+    y: &[f32],
+    f_enum: fn(usize, f32, usize, f32) -> f32,
+) -> Vec<Vec<f32>> {
     let rows = x.len();
     let cols = y.len();
     let mut matrix = vec![vec![0_f32; cols]; rows];

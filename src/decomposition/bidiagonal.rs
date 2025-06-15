@@ -1,9 +1,9 @@
-use crate::structure::ndarray::NdArray;
 use crate::decomposition::givens::implicit_givens_rotation;
+use crate::structure::ndarray::NdArray;
 
 // https://www.netlib.org/lapack/lawnspdf/lawn03.pdf
 // https://www.cs.utexas.edu/~flame/pubs/RestructuredQRTOMS.pdf
-pub fn bidiagonal_qr(mut b:NdArray) -> NdArray {
+pub fn bidiagonal_qr(mut b: NdArray) -> NdArray {
     // b :: Bidiagonalized Matrix
     let rows = b.dims[0];
     let cols = b.dims[1];
@@ -15,18 +15,18 @@ pub fn bidiagonal_qr(mut b:NdArray) -> NdArray {
     // let sine= 0_f32;
     let mut sigma = b.data[0];
     let mut supra;
-    let mut cosine:f32 = 1_f32;
-    let mut sine:f32 = 0_f32;
-    let mut h:f32 = b.data[1];
+    let mut cosine: f32 = 1_f32;
+    let mut sine: f32 = 0_f32;
+    let mut h: f32 = b.data[1];
     for i in 0..rows - 1 {
         supra = b.data[i * cols + i + 1];
         let (r, s, c) = implicit_givens_rotation(sigma, supra);
         if i != 0 {
-            b.data[(i - 1)*cols + i] = sine * r;
+            b.data[(i - 1) * cols + i] = sine * r;
         }
         sigma = cosine * r;
-        supra = b.data[(i + 1)* cols + (i + 1)] * s;
-        h = b.data[(i + 1)*cols + (i+1)] * c;
+        supra = b.data[(i + 1) * cols + (i + 1)] * s;
+        h = b.data[(i + 1) * cols + (i + 1)] * c;
         println!("sigma {}, supra{}", sigma, supra);
         let (r, s, c) = implicit_givens_rotation(sigma, supra);
         println!("hello i am did implicit print?");
@@ -42,7 +42,7 @@ pub fn bidiagonal_qr(mut b:NdArray) -> NdArray {
     b
 }
 
-pub fn fast_bidiagonal_qr(mut b:NdArray) -> NdArray {
+pub fn fast_bidiagonal_qr(mut b: NdArray) -> NdArray {
     // b :: Bidiagonalized Matrix
     let rows = b.dims[0];
     let cols = b.dims[1];
@@ -50,12 +50,12 @@ pub fn fast_bidiagonal_qr(mut b:NdArray) -> NdArray {
     assert!(cols > 1, "Have not handled trivial cases");
     assert_eq!(rows, cols, "Sigma should be a square matrix in all cases");
 
-    let mut cosine:f32 = 1_f32;
-    let mut sigma:f32 = b.data[0];
-    let mut sine:f32;
-    let mut supra:f32;
-    let mut old_cosine:f32 = 1_f32;
-    let mut old_sine:f32 = 1_f32;
+    let mut cosine: f32 = 1_f32;
+    let mut sigma: f32 = b.data[0];
+    let mut sine: f32;
+    let mut supra: f32;
+    let mut old_cosine: f32 = 1_f32;
+    let mut old_sine: f32 = 1_f32;
     for i in 0..rows - 1 {
         // sigma = b.data[i * cols + i];
         supra = b.data[i * cols + i + 1];
@@ -63,15 +63,14 @@ pub fn fast_bidiagonal_qr(mut b:NdArray) -> NdArray {
         cosine = c;
         sine = s;
         if i != 0 {
-            b.data[(i - 1)*cols + i] = sine * r;
+            b.data[(i - 1) * cols + i] = sine * r;
         }
-        sigma = b.data[(i + 1)*cols + (i+1)];
+        sigma = b.data[(i + 1) * cols + (i + 1)];
         let (r, s, c) = implicit_givens_rotation(old_cosine * r, sigma * sine);
         sigma = r;
         old_cosine = c;
         old_sine = s;
         b.data[i * cols + i] = r;
-
     }
     let scale = b.data[cols * rows - 1] * cosine;
     b.data[(rows - 1) * cols - 1] = scale * old_sine;

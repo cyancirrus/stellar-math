@@ -1,22 +1,15 @@
-use std::f32::consts::PI;
 use rayon::prelude::ParallelIterator;
 use rayon::prelude::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
+use std::f32::consts::PI;
 use std::fmt;
-use std::ops::{
-    Add,
-    AddAssign,
-    Mul,
-    MulAssign,
-    Sub,
-    SubAssign,
-};
+use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Complex {
-    r:f32,
-    i:f32,
+    r: f32,
+    i: f32,
 }
 
 #[derive(Clone)]
@@ -26,13 +19,13 @@ pub struct NdSignal {
 }
 
 impl NdSignal {
-    pub fn new(dims:Vec<usize>, data:Vec<Complex>) -> Self {
+    pub fn new(dims: Vec<usize>, data: Vec<Complex>) -> Self {
         Self { dims, data }
     }
 }
 
 impl AddAssign for Complex {
-    fn add_assign(&mut self, other:Complex) {
+    fn add_assign(&mut self, other: Complex) {
         self.r += other.r;
         self.i += other.i
     }
@@ -40,15 +33,15 @@ impl AddAssign for Complex {
 
 impl Add for Complex {
     type Output = Self;
-    fn add(self, other:Complex) -> Complex {
+    fn add(self, other: Complex) -> Complex {
         Complex::new(self.r + other.r, self.i + other.i)
     }
 }
 
 impl MulAssign for Complex {
-    fn mul_assign(&mut self, other:Complex) {
+    fn mul_assign(&mut self, other: Complex) {
         let r = self.r * other.r - self.i * other.i;
-        let i = self.r * other. i + other.r * self.i;
+        let i = self.r * other.i + other.r * self.i;
         self.r = r;
         self.i = i;
     }
@@ -56,27 +49,26 @@ impl MulAssign for Complex {
 
 impl Mul for Complex {
     type Output = Self;
-    fn mul(self, other:Complex) -> Complex {
+    fn mul(self, other: Complex) -> Complex {
         let r = self.r * other.r - self.i * other.i;
-        let i = self.r * other. i + other.r * self.i;
-        Complex::new( r, i )
+        let i = self.r * other.i + other.r * self.i;
+        Complex::new(r, i)
     }
 }
 
 impl Sub for Complex {
     type Output = Self;
-    fn sub(self, other:Complex) -> Complex {
+    fn sub(self, other: Complex) -> Complex {
         Complex::new(self.r - other.r, self.i - other.i)
     }
 }
 
 impl SubAssign for Complex {
-    fn sub_assign(&mut self, other:Complex) {
-       self.r =  self.r - other.r;
-        self.i =  self.i - other.i;
+    fn sub_assign(&mut self, other: Complex) {
+        self.r = self.r - other.r;
+        self.i = self.i - other.i;
     }
 }
-
 
 impl fmt::Display for Complex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -85,25 +77,20 @@ impl fmt::Display for Complex {
     }
 }
 
-
 impl Complex {
-    pub fn new(r:f32, i:f32) -> Self {
+    pub fn new(r: f32, i: f32) -> Self {
         Complex { r, i }
     }
-    pub fn add(x:Complex, y:Complex) -> Complex {
+    pub fn add(x: Complex, y: Complex) -> Complex {
         Complex::new(x.r + y.r, x.i + y.i)
-        
     }
-    pub fn product(x:Complex, y:Complex) -> Complex {
+    pub fn product(x: Complex, y: Complex) -> Complex {
         Complex::new(x.r * y.r, -x.i * y.i)
     }
-    pub fn multiply(x:Complex, y:Complex) -> Complex {
-        Complex::new(
-            x.r * y.r - x.i * y.i,
-            x.r * y.i + x.i * y.r,
-        )
+    pub fn multiply(x: Complex, y: Complex) -> Complex {
+        Complex::new(x.r * y.r - x.i * y.i, x.r * y.i + x.i * y.r)
     }
-    pub fn exponent(x:Complex) -> f32 {
+    pub fn exponent(x: Complex) -> f32 {
         //e(-ix) = cos(x) - isin(x)
         //e((a + bi)) = exp(a)(cos(x) - i sin(x))
         //isin(x) = (exp(x) - exp(-x)) / 2
@@ -177,4 +164,3 @@ impl fmt::Debug for NdSignal {
         write!(f, "{}", output)
     }
 }
-
