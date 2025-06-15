@@ -79,53 +79,53 @@ fn twiddle(k:usize,n:usize) -> Complex {
 }
 
 
-// fn cooley_tukey(o:usize, n:usize, s:usize, x:&mut [Complex]) {
-//     if n == 1 {
-//         return;
-//     }
-//     let mut p:Complex;
-//     let mut q:Complex;
-//     let half= n>>1;
-//     let doub= s<<1;
-//     cooley_tukey(o, half, doub, x);
-//     cooley_tukey(o + s,  half, doub, x);
-//     println!("this is what x looks like {:?}", x);
-
-//     for k in o..half {
-//         // println!("mutating! x[{}] and x[{}]", ei, oi);
-//         let ei = o + k * 2 * s;
-//         let oi = ei + s;
-//         p = x[ei];
-//         q = twiddle(k, n) * x[oi];
-        
-//         x[ei] = p + q;
-//         x[oi] = p - q;
-//     }
-// }
-
-fn cooley_tukey(start: usize, n: usize, stride: usize, x: &mut [Complex]) {
+fn cooley_tukey(o:usize, n:usize, s:usize, x:&mut [Complex]) {
     if n == 1 {
-        // Base case: one element is already transformed
         return;
     }
     let mut p:Complex;
     let mut q:Complex;
     let half= n>>1;
-    let doub= stride<<1;
+    let doub= s<<1;
+    cooley_tukey(o, half, doub, x);
+    cooley_tukey(o + s,  half, doub, x);
+    println!("this is what x looks like {:?}", x);
 
-    cooley_tukey(start, half, doub, x);
-    cooley_tukey(start + stride,  half, doub, x);
-
-    for k in 0..half {
-        let ei= start + k * doub;
-        let oi = ei + stride;
-
-        let q = twiddle(k, n) * x[oi];
-        let p = x[ei];
+    for k in o..half {
+        // println!("mutating! x[{}] and x[{}]", ei, oi);
+        let ei = o + k * 2 * s;
+        let oi = ei + s;
+        p = x[ei];
+        q = twiddle(k, n) * x[oi];
+        
         x[ei] = p + q;
         x[oi] = p - q;
     }
 }
+
+// fn cooley_tukey(start: usize, n: usize, stride: usize, x: &mut [Complex]) {
+//     if n == 1 {
+//         // Base case: one element is already transformed
+//         return;
+//     }
+//     let mut p:Complex;
+//     let mut q:Complex;
+//     let half= n>>1;
+//     let doub= stride<<1;
+
+//     cooley_tukey(start, half, doub, x);
+//     cooley_tukey(start + stride,  half, doub, x);
+
+//     for k in 0..half {
+//         let ei= start + k * doub;
+//         let oi = ei + stride;
+
+//         let q = twiddle(k, n) * x[oi];
+//         let p = x[ei];
+//         x[ei] = p + q;
+//         x[oi] = p - q;
+//     }
+// }
 
 
 
