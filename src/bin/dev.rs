@@ -29,7 +29,6 @@ fn generate_dummy_signal(n: usize) -> NdSignal {
 
         signal.push(Complex::new(measurement, 0_f32));
     }
-    println!("Signal {:?}", signal);
     NdSignal::new(dims, signal)
 }
 
@@ -74,14 +73,14 @@ fn fft_recursive(x: &mut [Complex]) {
     }
 }
 
-fn twiddle_first(n: usize) -> Complex {
+fn twiddle_first(n: f32) -> Complex {
     // exp(-i pi / m) = cos(1/m) - isin(1/m)
-    let phase = -2_f32 * PI / n as f32;
+    let phase = 2_f32 * PI / n as f32;
     let a = Complex::new(phase.cos(), -phase.sin());
     a
 }
 
-fn fft_iterative(x: &mut [Complex]) {
+fn fft_iterative(x: &mut [Complex]) -> &mut [Complex] {
     let n = x.len();
     let bits = n.trailing_zeros();
     // bit reversal
@@ -95,7 +94,7 @@ fn fft_iterative(x: &mut [Complex]) {
     for s in 1..=bits {
         let m = 1 << s;
         let half = m >> 1;
-        let wm = twiddle_first(m);
+        let wm = twiddle_first(-( m as f32));
         for k in (0..n).step_by(m) {
             let mut w = Complex::new(1.0, 0.0);
             for j in 0..half {
@@ -107,7 +106,42 @@ fn fft_iterative(x: &mut [Complex]) {
             }
         }
     }
+    x
 }
+
+fn ifft_iterative(x: &mut [Complex]) -> &mut [Complex]{
+    let n = x.len();
+    let bits = n.trailing_zeros();
+    // bit reversal
+    for i in 0..n {
+        let j = i.reverse_bits() >> (usize::BITS - bits);
+        if i < j {
+            x.swap(i, j);
+        }
+    }
+    // cooley-tuckey
+    for s in 1..=bits {
+        let m = 1 << s;
+        let half = m >> 1;
+        let wm = twiddle_first(m as f32);
+        for k in (0..n).step_by(m) {
+            let mut w = Complex::new(1.0, 0.0);
+            for j in 0..half {
+                let p = x[k + j];
+                let q = w * x[k + j + half];
+                x[k + j] = p + q;
+                x[k + j + half] = p - q;
+                w *= wm;
+            }
+        }
+    }
+    for i in 0..n {
+        let alpha = 1_f32 / n as f32;
+        x[i].scale(alpha); 
+    }
+    x
+}
+
 
 fn fft_algorithm(mut x: Vec<Complex>) -> Vec<Complex> {
     let n = x.len();
@@ -124,10 +158,10 @@ fn shuffle(x: &mut [Complex]) {
     }
 }
 
-fn pretty_format(data: Vec<Complex>) -> NdSignal {
+fn pretty_format(data: &[Complex]) -> NdSignal {
     let mut dims = vec![1; 2];
     dims[0] = data.len();
-    NdSignal { dims, data }
+    NdSignal { dims, data:data.to_vec() }
 }
 
 fn main() {
@@ -137,8 +171,11 @@ fn main() {
     let dct_matrix = create_dct_array(k);
 
     let dct_frequency = complex_tensor_mult(dct_matrix, data);
-    println!("Fourier transform:\n{:?}", dct_frequency);
-    let data = generate_dummy_series(k);
-    let butter = fft_algorithm(data);
+    // println!("Fourier transform:\n{:?}", dct_frequency);
+    let mut data = generate_dummy_series(k);
+    let mut butter = fft_iterative(&mut data);
     println!("Development Version {:?}", pretty_format(butter));
+    let inv = ifft_iterative(butter);
+    println!("Inverse Version {:?}", pretty_format(inv));
+
 }
