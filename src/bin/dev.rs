@@ -64,7 +64,7 @@ fn twiddle(k:usize,n:usize) -> Complex {
 }
 
 
-fn fft(x: &mut [Complex]) {
+fn fft_recursive(x: &mut [Complex]) {
     let n = x.len();
     if n <= 1 {
         return;
@@ -73,8 +73,8 @@ fn fft(x: &mut [Complex]) {
     let mut even: Vec<Complex> = x.iter().step_by(2).cloned().collect();
     let mut odd: Vec<Complex> = x.iter().skip(1).step_by(2).cloned().collect();
 
-    fft(&mut even);
-    fft(&mut odd);
+    fft_recursive(&mut even);
+    fft_recursive(&mut odd);
 
     for k in 0..n / 2 {
         let p = twiddle(k, n) * odd[k];
@@ -84,28 +84,33 @@ fn fft(x: &mut [Complex]) {
     }
 }
 
+fn twiddle_first(n:usize) -> Complex {
+    // exp(-i pi / m) = cos(1/m) - isin(1/m)
+    let phase= -2_f32 * PI / n as f32;
+    let a = Complex::new(phase.cos(), -phase.sin());
+    a
+}
+
 fn fft_iterative(x:&mut [Complex]) {
-    // cooley tuckey
     let n = x.len();
     let bits = n.trailing_zeros();
+    // bit reversal
     for i in 0..n {
         let j = i.reverse_bits() >> (usize::BITS - bits);
         if i < j {
             x.swap(i, j);
         }
     }
-    let mut p:Complex;
-    let mut q:Complex;
-    
+    // cooley-tuckey
     for s in  1..=bits {
         let m = 1<<s;
         let half = m>>1;
-        let mut wm = twiddle(1, m);
+        let wm = twiddle_first(m);
         for k in  (0..n).step_by(m) {
             let mut w = Complex::new(1.0, 0.0);
-            for j in 0..m/2 {
-                p = x[k + j];
-                q = w * x[k + j + half];
+            for j in 0..half {
+                let p = x[k + j];
+                let q = w * x[k + j + half];
                 x[k + j] = p + q;
                 x[k + j + half] = p - q;
                 w *= wm;
