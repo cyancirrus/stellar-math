@@ -138,41 +138,66 @@ fn twiddle(k:usize,n:usize) -> Complex {
 //     }
 // }
 
-
-fn cooley_tukey(o:usize, n:usize, s:usize, x:&mut [Complex]) {
-    if n == 1 {
-        return;
-    }
+fn cooley_tukey(x:&mut [Complex]) {
     let mut p:Complex;
     let mut q:Complex;
-    let half= n>>1;
-    let doub= s<<1;
-    cooley_tukey(o, half, doub, x);
-    cooley_tukey(o + s,  half, doub, x);
-    println!("this is what x looks like {:?}", x);
-
-    for k in 0..half {
-        let ei = o + k * 2 * s;
-        let oi = ei + s;
-        println!("mutating! x[{}] and x[{}]", ei, oi);
-        // println!("state {{s:{s}, o:{o}, n:{n}, ei:{ei}, oi:{oi}, k:{k}}}");
-        p = x[ei];
-        q = twiddle(k, n) * x[oi];
-        
-        // x[ei] = p + q;
-        // x[oi] = p - q;
-        x[ei] = p + q;
-        x[oi] = p - q;
+    let n = x.len();
+    
+    for s in  1..(usize::BITS - n.leading_zeros()) {
+        let m = 1<<s;
+        let half = m>>1;
+        let mut wm = twiddle(1, m);
+        for k in  (0..n).step_by(m) {
+            let mut w = Complex::new(1.0, 0.0);
+            for j in 0..m/2 {
+                p = x[k + j];
+                q = w * x[k + j + half];
+                x[k + j] = p + q;
+                x[k + j + half] = p - q;
+                w *= wm;
+            }
+        }
     }
 }
+
+
+
+// fn cooley_tukey(o:usize, n:usize, s:usize, x:&mut [Complex]) {
+//     if n == 1 {
+//         return;
+//     }
+//     let mut p:Complex;
+//     let mut q:Complex;
+//     let half= n>>1;
+//     let doub= s<<1;
+//     cooley_tukey(o, half, doub, x);
+//     cooley_tukey(o + s,  half, doub, x);
+//     println!("this is what x looks like {:?}", x);
+
+//     for k in 0..half {
+//         let ei = o + k * 2 * s;
+//         let oi = ei + s;
+//         println!("mutating! x[{}] and x[{}]", ei, oi);
+//         // println!("state {{s:{s}, o:{o}, n:{n}, ei:{ei}, oi:{oi}, k:{k}}}");
+//         p = x[ei];
+//         q = twiddle(k, n) * x[oi];
+        
+//         // x[ei] = p + q;
+//         // x[oi] = p - q;
+//         x[ei] = p + q;
+//         x[oi] = p - q;
+//     }
+// }
 
 
 fn fft_algorithm(mut x:Vec<Complex>) -> Vec<Complex> {
     let n = x.len();
     // shuffle(&mut x);
     // fft(&mut x);
-    cooley_tukey(0, n, 1, &mut x);
     shuffle(&mut x);
+    println!("Data {:?}", x);
+    // cooley_tukey(0, n, 1, &mut x);
+    cooley_tukey(&mut x);
     x
 }
 
