@@ -75,8 +75,68 @@ fn twiddle(k:usize,n:usize) -> Complex {
     // = cos(*) - isin(*)
     let phase= 2_f32 * PI * k as f32 / n as f32;
     let a = Complex::new(phase.cos(), -phase.sin());
-    println!("Phase pi normalized {}, {:?}", phase/PI, a); a
+    // println!("Phase pi normalized {}, {:?}", phase/PI, a);
+    a
 }
+
+// ```
+// modified (0, 2) target (0,1) state {s:2, o:0, n:2, ei:0, oi:2, k:0}
+// modified (1, 3) target (2,3) state {s:2, o:1, n:2, ei:1, oi:3, k:0}
+
+// modified (0, 1) target (0, 2) state {s:1, o:0, n:4, ei:0, oi:1, k:0}
+// modified (2, 3) target (1, 3) state {s:1, o:0, n:4, ei:2, oi:3, k:1}
+// ```
+//
+//
+// e ~ o*2 + n*2 - s
+// o ~ o*2 + k*2 + n/2
+
+// fn cooley_tukey(o:usize, n:usize, s:usize, x:&mut [Complex]) {
+//     if n == 1 {
+//         return;
+//     }
+//     let mut p:Complex;
+//     let mut q:Complex;
+//     let half= n>>1;
+//     let doub= s<<1;
+//     cooley_tukey(o, half, doub, x);
+//     cooley_tukey(o + s,  half, doub, x);
+//     println!("this is what x looks like {:?}", x);
+
+//     for k in 0..half {
+//         let ei = o + k * 2 * s;
+//         let oi = ei + s;
+//         println!("mutating! x[{}] and x[{}]", ei, oi);
+//         // println!("state {{s:{s}, o:{o}, n:{n}, ei:{ei}, oi:{oi}, k:{k}}}");
+//         p = x[ei];
+//         q = twiddle(k, n) * x[oi];
+        
+//         // x[ei] = p + q;
+//         // x[oi] = p - q;
+//         x[ei] = p + q;
+//         x[oi] = p - q;
+//     }
+// }
+
+// fn fft(x: &mut [Complex]) {
+//     let n = x.len();
+//     if n <= 1 {
+//         return;
+//     }
+
+//     let mut even: Vec<Complex> = x.iter().step_by(2).cloned().collect();
+//     let mut odd: Vec<Complex> = x.iter().skip(1).step_by(2).cloned().collect();
+
+//     fft(&mut even);
+//     fft(&mut odd);
+
+//     for k in 0..n / 2 {
+//         let p = twiddle(k, n) * odd[k];
+//         let q = even[k];
+//         x[k] =  p + q;
+//         x[k + n / 2] = p - q;
+//     }
+// }
 
 
 fn cooley_tukey(o:usize, n:usize, s:usize, x:&mut [Complex]) {
@@ -91,49 +151,40 @@ fn cooley_tukey(o:usize, n:usize, s:usize, x:&mut [Complex]) {
     cooley_tukey(o + s,  half, doub, x);
     println!("this is what x looks like {:?}", x);
 
-    for k in o..half {
-        // println!("mutating! x[{}] and x[{}]", ei, oi);
+    for k in 0..half {
         let ei = o + k * 2 * s;
         let oi = ei + s;
+        println!("mutating! x[{}] and x[{}]", ei, oi);
+        // println!("state {{s:{s}, o:{o}, n:{n}, ei:{ei}, oi:{oi}, k:{k}}}");
         p = x[ei];
         q = twiddle(k, n) * x[oi];
         
+        // x[ei] = p + q;
+        // x[oi] = p - q;
         x[ei] = p + q;
         x[oi] = p - q;
     }
 }
 
-// fn cooley_tukey(start: usize, n: usize, stride: usize, x: &mut [Complex]) {
-//     if n == 1 {
-//         // Base case: one element is already transformed
-//         return;
-//     }
-//     let mut p:Complex;
-//     let mut q:Complex;
-//     let half= n>>1;
-//     let doub= stride<<1;
-
-//     cooley_tukey(start, half, doub, x);
-//     cooley_tukey(start + stride,  half, doub, x);
-
-//     for k in 0..half {
-//         let ei= start + k * doub;
-//         let oi = ei + stride;
-
-//         let q = twiddle(k, n) * x[oi];
-//         let p = x[ei];
-//         x[ei] = p + q;
-//         x[oi] = p - q;
-//     }
-// }
-
-
 
 fn fft_algorithm(mut x:Vec<Complex>) -> Vec<Complex> {
     let n = x.len();
+    // shuffle(&mut x);
+    // fft(&mut x);
     cooley_tukey(0, n, 1, &mut x);
+    shuffle(&mut x);
     x
 }
+
+fn shuffle(x:&mut [Complex]) {
+    let n = x.len();
+    let bits = n.trailing_zeros();
+    for i in 0..n/2 {
+        let j = i.reverse_bits() >> (usize::BITS - bits);
+        x.swap(i, j);
+    }
+}
+
 
 fn pretty_format(data:Vec<Complex>) -> NdSignal {
     let mut dims = vec![1;2];
