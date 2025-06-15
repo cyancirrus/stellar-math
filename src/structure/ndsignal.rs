@@ -102,7 +102,7 @@ impl Complex {
 }
 
 impl Complex {
-    pub fn scale(&mut self, alpha:f32) {
+    pub fn scale(&mut self, alpha: f32) {
         self.r *= alpha;
         self.i *= alpha;
     }

@@ -1,3 +1,4 @@
+pub mod fourier;
 pub mod math;
 pub mod mxmethods;
 pub mod ndmethods;
