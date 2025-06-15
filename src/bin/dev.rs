@@ -80,7 +80,7 @@ fn twiddle_first(n: f32) -> Complex {
     a
 }
 
-fn fft_iterative(x: &mut [Complex]) -> &mut [Complex] {
+fn fft_iterative(x: &mut [Complex]) {
     let n = x.len();
     let bits = n.trailing_zeros();
     // bit reversal
@@ -106,10 +106,9 @@ fn fft_iterative(x: &mut [Complex]) -> &mut [Complex] {
             }
         }
     }
-    x
 }
 
-fn ifft_iterative(x: &mut [Complex]) -> &mut [Complex]{
+fn ifft_iterative(x: &mut [Complex]){
     let n = x.len();
     let bits = n.trailing_zeros();
     // bit reversal
@@ -139,7 +138,6 @@ fn ifft_iterative(x: &mut [Complex]) -> &mut [Complex]{
         let alpha = 1_f32 / n as f32;
         x[i].scale(alpha); 
     }
-    x
 }
 
 
@@ -173,9 +171,9 @@ fn main() {
     let dct_frequency = complex_tensor_mult(dct_matrix, data);
     // println!("Fourier transform:\n{:?}", dct_frequency);
     let mut data = generate_dummy_series(k);
-    let mut butter = fft_iterative(&mut data);
-    println!("Development Version {:?}", pretty_format(butter));
-    let inv = ifft_iterative(butter);
-    println!("Inverse Version {:?}", pretty_format(inv));
+    fft_iterative(&mut data);
+    println!("Development Version {:?}", pretty_format(&data));
+    ifft_iterative(&mut data);
+    println!("Inverse Version {:?}", pretty_format(&data));
 
 }
