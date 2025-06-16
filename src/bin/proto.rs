@@ -8,33 +8,109 @@ fn nd_offsets(dims:&[usize]) -> Vec<usize> {
     factors
 }
 
+fn offset(dims:&[usize]) -> Vec<usize> {
+    let mut init = 1;
+    let n = dims.len();
+    let mut idxs = vec![1;n];
+    //[1,2,3,4]
+    for id in (0..n-1).rev() {
+        init *= dims[id];
+        idxs[id] = init;
+    }
+    idxs
+}
+
+
+fn transpose_clean<T>(data:&mut[T]) {
+    let dims = vec![2,2,2];
+    let card = dims.len();
+    let offset = [4,2,1];
+    let mut cycle = vec![0;card];
+    let mut mem = vec![false; dims.iter().product()];
+    let mut state = vec![0;card];
+    let mut cursor = 0;
+    let mut s;
+
+    while cursor < card {
+        if state[cursor] != 0 {
+            for p in 0..card {
+                state[p] += offset[(cursor + p) % card];
+            }
+        }
+        if !mem[cycle[0]] {
+            mem[cycle[0]] = true;
+            for p in 1..card {
+                data.swap(cycle[p-1], cycle[p]);
+            }
+        }
+        loop {
+            if cursor == card {
+                break;
+            }
+            if state[cursor] + 1 < dims[cursor] {
+                state[cursor] += 1;
+                for idx in 0..cursor {
+                    state[idx] = 0;
+                    for l in 0..card {
+                        s = dims[cursor] - 1;
+                        cycle[idx] -= s * offset[(l +idx) % card];
+                    }
+                }
+                cursor=0;
+                break;
+            } else {
+                cursor += 1;
+            }
+        }
+    }
+    // for i in 0..dims[0] {
+    //     if i > 0 {
+    //         incrementer[0] += offset[0];
+    //         incrementer[1] += offset[1];
+    //         incrementer[2] += offset[2];
+    //     }
+    //     for j in 0..dims[1] {
+    //         if j > 0 {
+    //             incrementer[0] += offset[1];
+    //             incrementer[1] += offset[2];
+    //             incrementer[2] += offset[0];
+    //         }
+    //         for k in 0..dims[2] {
+    //             if k > 0 {
+    //                 incrementer[0] += offset[2];
+    //                 incrementer[1] += offset[0];
+    //                 incrementer[2] += offset[1];
+    //             }
+    //             if !mem[incrementer[0]] {
+    //                 mem[incrementer[0]]=true;
+    //                 for i in 1..card {
+    //                     data.swap(incrementer[i-1], incrementer[i]);
+    //                     mem[incrementer[i]]=true;
+    //                 }
+    //             }
+    //         }
+    //         s = dims[2] - 1;
+    //         incrementer[0] -= s * offset[2];
+    //         incrementer[1] -= s * offset[0];
+    //         incrementer[2] -= s * offset[1];
+    //     }
+    //     s = dims[1] - 1;
+    //     incrementer[0] -= s * offset[1];
+    //     incrementer[1] -= s * offset[2];
+    //     incrementer[2] -= s * offset[0];
+    // }
+}
+
 fn transpose_ideation<T>(data:&mut[T]) {
-    // perhaps use a like
     let dims = vec![2,2,2];
     let offset = [4,2,1];
     let card = dims.len();
-    // let mut incrementer = [0,0,0];
     let mut incrementer = [0,0,0];
     let mut mem = vec![false; dims.iter().product()];
     let mut s;
-    for i in 0..dims[0] {
-        if i > 0 {
-            incrementer[0] += offset[0];
-            incrementer[1] += offset[1];
-            incrementer[2] += offset[2];
-        }
-        for j in 0..dims[1] {
-            if j > 0 {
-                incrementer[0] += offset[1];
-                incrementer[1] += offset[2];
-                incrementer[2] += offset[0];
-            }
-            for k in 0..dims[2] {
-                if k > 0 {
-                    incrementer[0] += offset[2];
-                    incrementer[1] += offset[0];
-                    incrementer[2] += offset[1];
-                }
+    for _ in 0..dims[0] {
+        for _ in 0..dims[1] {
+            for _ in 0..dims[2] {
                 if !mem[incrementer[0]] {
                     mem[incrementer[0]]=true;
                     for i in 1..card {
@@ -42,18 +118,73 @@ fn transpose_ideation<T>(data:&mut[T]) {
                         mem[incrementer[i]]=true;
                     }
                 }
+                incrementer[0] += offset[2];
+                incrementer[1] += offset[0];
+                incrementer[2] += offset[1];
             }
-            s = dims[2] - 1;
+            s = dims[2];
             incrementer[0] -= s * offset[2];
             incrementer[1] -= s * offset[0];
             incrementer[2] -= s * offset[1];
+            incrementer[0] += offset[1];
+            incrementer[1] += offset[2];
+            incrementer[2] += offset[0];
         }
-        s = dims[1] - 1;
+        s = dims[1];
         incrementer[0] -= s * offset[1];
         incrementer[1] -= s * offset[2];
         incrementer[2] -= s * offset[0];
+        incrementer[0] += offset[0];
+        incrementer[1] += offset[1];
+        incrementer[2] += offset[2];
     }
 }
+
+
+// fn transpose_ideation<T>(data:&mut[T]) {
+//     let dims = vec![2,2,2];
+//     let offset = [4,2,1];
+//     let card = dims.len();
+//     let mut incrementer = [0,0,0];
+//     let mut mem = vec![false; dims.iter().product()];
+//     let mut s;
+//     for i in 0..dims[0] {
+//         if i > 0 {
+//             incrementer[0] += offset[0];
+//             incrementer[1] += offset[1];
+//             incrementer[2] += offset[2];
+//         }
+//         for j in 0..dims[1] {
+//             if j > 0 {
+//                 incrementer[0] += offset[1];
+//                 incrementer[1] += offset[2];
+//                 incrementer[2] += offset[0];
+//             }
+//             for k in 0..dims[2] {
+//                 if k > 0 {
+//                     incrementer[0] += offset[2];
+//                     incrementer[1] += offset[0];
+//                     incrementer[2] += offset[1];
+//                 }
+//                 if !mem[incrementer[0]] {
+//                     mem[incrementer[0]]=true;
+//                     for i in 1..card {
+//                         data.swap(incrementer[i-1], incrementer[i]);
+//                         mem[incrementer[i]]=true;
+//                     }
+//                 }
+//             }
+//             s = dims[2] - 1;
+//             incrementer[0] -= s * offset[2];
+//             incrementer[1] -= s * offset[0];
+//             incrementer[2] -= s * offset[1];
+//         }
+//         s = dims[1] - 1;
+//         incrementer[0] -= s * offset[1];
+//         incrementer[1] -= s * offset[2];
+//         incrementer[2] -= s * offset[0];
+//     }
+// }
 
 
 // fn transpose<T>(data:&mut [T]) {
