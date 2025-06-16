@@ -105,38 +105,38 @@ fn transpose_ideation<T>(data:&mut[T]) {
     let dims = vec![2,2,2];
     let offset = [4,2,1];
     let card = dims.len();
-    let mut incrementer = [0,0,0];
+    let mut cycle = [0,0,0];
     let mut mem = vec![false; dims.iter().product()];
     let mut s;
     for _ in 0..dims[0] {
         for _ in 0..dims[1] {
             for _ in 0..dims[2] {
-                if !mem[incrementer[0]] {
-                    mem[incrementer[0]]=true;
+                if !mem[cycle[0]] {
+                    mem[cycle[0]]=true;
                     for i in 1..card {
-                        data.swap(incrementer[i-1], incrementer[i]);
-                        mem[incrementer[i]]=true;
+                        data.swap(cycle[i-1], cycle[i]);
+                        mem[cycle[i]]=true;
                     }
                 }
-                incrementer[0] += offset[2];
-                incrementer[1] += offset[0];
-                incrementer[2] += offset[1];
+                cycle[0] += offset[2];
+                cycle[1] += offset[0];
+                cycle[2] += offset[1];
             }
             s = dims[2];
-            incrementer[0] -= s * offset[2];
-            incrementer[1] -= s * offset[0];
-            incrementer[2] -= s * offset[1];
-            incrementer[0] += offset[1];
-            incrementer[1] += offset[2];
-            incrementer[2] += offset[0];
+            cycle[0] -= s * offset[2];
+            cycle[1] -= s * offset[0];
+            cycle[2] -= s * offset[1];
+            cycle[0] += offset[1];
+            cycle[1] += offset[2];
+            cycle[2] += offset[0];
         }
         s = dims[1];
-        incrementer[0] -= s * offset[1];
-        incrementer[1] -= s * offset[2];
-        incrementer[2] -= s * offset[0];
-        incrementer[0] += offset[0];
-        incrementer[1] += offset[1];
-        incrementer[2] += offset[2];
+        cycle[0] -= s * offset[1];
+        cycle[1] -= s * offset[2];
+        cycle[2] -= s * offset[0];
+        cycle[0] += offset[0];
+        cycle[1] += offset[1];
+        cycle[2] += offset[2];
     }
 }
 
