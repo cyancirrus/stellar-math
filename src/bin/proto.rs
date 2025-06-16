@@ -16,18 +16,19 @@ fn transpose_ideation<T>(data:&mut[T]) {
     let mut incrementer = [0,0,0];
     let mut mem = vec![false; dims.iter().product()];
     let mut s;
-    for _ in 0..2 {
+    for i in 0..2 {
         incrementer[0] += offset[0];
         incrementer[1] += offset[1];
         incrementer[2] += offset[2];
-        for _ in 0..2 {
+        for j in 0..2 {
             incrementer[0] += offset[1];
             incrementer[1] += offset[2];
             incrementer[2] += offset[0];
-            for _ in 0..2 {
+            for k in 0..2 {
                 incrementer[0] += offset[2];
                 incrementer[1] += offset[0];
                 incrementer[2] += offset[1];
+                println!("i,j,k ({i}, {j}, {k})");
 
                 if !mem[incrementer[0]] {
                     mem[incrementer[0]]=true;
