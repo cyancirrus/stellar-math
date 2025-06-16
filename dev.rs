@@ -39,10 +39,10 @@ fn debug_data() -> Vec<usize> {
 }
 
 fn transpose(data:&mut [usize]) {
+    // fastest to slowest
     let mut dims = vec![2,2,2];
     // static for prototyping
     let (x,y,z) = (2,2,2);
-    let mut t = 0;
     for i in 0..x {
         for j in i..y {
             for k in j..z {
@@ -53,16 +53,17 @@ fn transpose(data:&mut [usize]) {
                 // c, b, a :: swap(a, c)
                 // b, c, a :: swap(b, c)
                 println!(" a: {a:03b}, b: {b:03b}, c: {c:03b}");
-                data.swap(
-                    a,
-                    c,
-                );
-                data.swap(
-                    b,
-                    c,
-                );
+                data.swap( a, b,);
+                data.swap( b, c ,);
+                // data.swap( a, c,);
             }
         }
+    }
+}
+
+fn transpose_test(data:&mut[usize]) {
+    for i in 1..data.len() {
+        data.swap(i-1, i)
     }
 }
 
@@ -94,20 +95,3 @@ fn main() {
     assert_eq!(test, data);
 }
 
-
-// fn main() {
-//     // let k = 16;
-//     // let mut data = generate_dummy_series(k);
-//     // fft(&mut data);
-//     // println!("Development Version {:?}", pretty_format(&data));
-//     // ifft(&mut data);
-//     // println!("Inverse Version {:?}", pretty_format(&data));
-// }
-
-
-
-// x,y,z -> y,z,x -> z,x,y
-//
-//
-// y11 y12, ...
-// a[y * (rows  * cols) + z * cols + x] = a[x * (rows * cols) y * cols + z]

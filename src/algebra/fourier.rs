@@ -96,3 +96,20 @@ pub fn ifft(x: &mut [Complex]) {
 //         x[k + n / 2] = p - q;
 //     }
 // }
+
+// fn main() {
+//     // let k = 16;
+//     // let mut data = generate_dummy_series(k);
+//     // fft(&mut data);
+//     // println!("Development Version {:?}", pretty_format(&data));
+//     // ifft(&mut data);
+//     // println!("Inverse Version {:?}", pretty_format(&data));
+// }
+
+
+
+// x,y,z -> y,z,x -> z,x,y
+//
+//
+// y11 y12, ...
+// a[y * (rows  * cols) + z * cols + x] = a[x * (rows * cols) y * cols + z]
