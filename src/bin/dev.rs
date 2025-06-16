@@ -46,8 +46,8 @@ fn transpose(data:&mut [usize]) {
     for i in 0..x {
         for j in i..y {
             for k in j..z {
-                let a = k*(x*y) + i*y + j;
-                let b = i*(x*y) + j*y + k;
+                let a = i*(x*y) + j*y + k;
+                let b = k*(x*y) + i*y + j;
                 let c = j*(x*y) + k*y + i;
                 // a, b, c :: 
                 // c, b, a :: swap(a, c)
