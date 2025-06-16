@@ -8,50 +8,93 @@ fn nd_offsets(dims:&[usize]) -> Vec<usize> {
     factors
 }
 
-fn transpose<T>(data:&mut [T]) {
+fn transpose_ideation<T>(data:&mut[T]) {
+    // perhaps use a like
     let dims = vec![2,2,2];
+    let offset = [4,2,1];
     let card = dims.len();
-    let offsets = nd_offsets(&dims);
-    // running product of dimensions
-    let mut mem = vec![false;dims.iter().product()];
-    let mut state = vec![0;card];
-    let mut cursor = 0;
-    
-    // iterates over the dimensions
-    while cursor < card {
-        let mut targets = vec![0;card];
-        for idx in 0..card {
-            for (cdx, s) in state.iter().enumerate() {
-                // let a = k*(x*y) + i*y + j;
-                // let b = j*(x*y) + k*y + i;
-                // let c = i*(x*y) + j*y + k;
-                targets[idx]+=s*offsets[(idx + cdx) % card];
-            }
-        }
-        if !mem[targets[0]] {
-            mem[targets[0]] = true;
-            for idx in 1..card {
-                mem[targets[idx]] = true;
-                data.swap(targets[idx-1], targets[idx]);
-            }
-        }
-        loop {
-            if cursor == card {
-                break;
-            }
-            if state[cursor] + 1 < dims[cursor] {
-                state[cursor] += 1;
-                for idx in 0..cursor {
-                    state[idx] = 0;
+    let mut incrementer = [0,0,0];
+    let mut mem = vec![false; dims.iter().product()];
+    let mut s;
+    for _ in 0..2 {
+        incrementer[0] += offset[0];
+        incrementer[1] += offset[1];
+        incrementer[2] += offset[2];
+        for _ in 0..2 {
+            incrementer[0] += offset[1];
+            incrementer[1] += offset[2];
+            incrementer[2] += offset[0];
+            for _ in 0..2 {
+                incrementer[0] += offset[2];
+                incrementer[1] += offset[0];
+                incrementer[2] += offset[1];
+
+                if !mem[incrementer[0]] {
+                    mem[incrementer[0]]=true;
+                    for i in 0..card {
+                        data.swap(incrementer[i-1], incrementer[i]);
+                        mem[incrementer[i]]=true;
+                    }
                 }
-                cursor=0;
-                break;
-            } else {
-                cursor += 1;
             }
+            s = dims[2];
+            incrementer[0] -= s * offset[2];
+            incrementer[1] -= s * offset[0];
+            incrementer[2] -= s * offset[1];
         }
+        s = dims[1];
+        incrementer[0] -= s * offset[1];
+        incrementer[1] -= s * offset[2];
+        incrementer[2] -= s * offset[0];
     }
 }
+
+
+// fn transpose<T>(data:&mut [T]) {
+//     let dims = vec![2,2,2];
+//     let card = dims.len();
+//     let offsets = nd_offsets(&dims);
+//     // running product of dimensions
+//     let mut mem = vec![false; dims.iter().product()];
+//     let mut state = vec![0;card];
+//     let mut cursor = 0;
+//     let mut targets = vec![0;card];
+    
+//     // iterates over the dimensions
+//     while cursor < card {
+//         targets.fill(0);
+//         for idx in 0..card {
+//             for (cdx, s) in state.iter().enumerate() {
+//                 // let a = k*(x*y) + i*y + j;
+//                 // let b = j*(x*y) + k*y + i;
+//                 // let c = i*(x*y) + j*y + k;
+//                 targets[idx]+=s*offsets[(idx + cdx) % card];
+//             }
+//         }
+//         if !mem[targets[0]] {
+//             mem[targets[0]] = true;
+//             for idx in 1..card {
+//                 mem[targets[idx]] = true;
+//                 data.swap(targets[idx-1], targets[idx]);
+//             }
+//         }
+//         loop {
+//             if cursor == card {
+//                 break;
+//             }
+//             if state[cursor] + 1 < dims[cursor] {
+//                 state[cursor] += 1;
+//                 for idx in 0..cursor {
+//                     state[idx] = 0;
+//                 }
+//                 cursor=0;
+//                 break;
+//             } else {
+//                 cursor += 1;
+//             }
+//         }
+//     }
+// }
 
 fn pretty_print(data:&[usize]) {
     println!("----------");
@@ -65,7 +108,7 @@ fn pretty_print(data:&[usize]) {
 }
 
 fn debug_transpose(data:&mut [usize]) {
-    transpose(data);
+    transpose_ideation(data);
     pretty_print(data);
 }
 
