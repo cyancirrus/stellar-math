@@ -8,35 +8,26 @@ fn nd_offsets(dims:&[usize]) -> Vec<usize> {
     factors
 }
 
-fn transpose(data:&mut [usize]) {
+fn transpose<T>(data:&mut [T]) {
     let dims = vec![2,2,2];
     let card = dims.len();
     let offsets = nd_offsets(&dims);
     // running product of dimensions
-    println!("Offset {:?}", offsets);
     let mut mem = vec![false;dims.iter().product()];
     let mut state = vec![0;card];
     let mut cursor = 0;
     
     // iterates over the dimensions
     while cursor < card {
-        println!("state {:?}", state);
         let mut targets = vec![0;card];
-        // println!("targets {:?}", targets);
-        // println!("{card} card");
         for idx in 0..card {
-            // println!("targets {:?}", targets);
             for (cdx, s) in state.iter().enumerate() {
-                // println!("idx {idx}, cdx {cdx}, off{}", (idx + cdx) % card);
                 // let a = k*(x*y) + i*y + j;
                 // let b = j*(x*y) + k*y + i;
                 // let c = i*(x*y) + j*y + k;
-                // targets[idx]+=s*offsets[(idx + cdx) % card];
                 targets[idx]+=s*offsets[(idx + cdx) % card];
-                // println!("after");
             }
         }
-        println!("targets {:?}", targets);
         if !mem[targets[0]] {
             mem[targets[0]] = true;
             for idx in 1..card {
