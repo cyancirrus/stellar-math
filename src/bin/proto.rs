@@ -27,15 +27,12 @@ fn transpose_clean<T>(data:&mut[T]) {
     let n = dims.iter().product();
     let card = dims.len();
     let offset = vec![4,2,1];
-    let mut cursor = 0;
     let mut cycle = vec![0; card];
     let mut mem = vec![false; n];
-    let mut state = vec![0;card];
-    let mut s;
+    let mut state = vec![1;card];
+    let mut cursor = 0;
 
     for _ in 0..n {
-        println!("State {:?}", state);
-        println!("Cycle {:?}", cycle);
         if !mem[cycle[0]] {
             mem[cycle[0]] = true;
             for p in 1..card {
@@ -43,24 +40,19 @@ fn transpose_clean<T>(data:&mut[T]) {
                 data.swap(cycle[p-1], cycle[p]);
             }
         }
-        // we're not to the capacity for the dimension increment the index
-        // this is like k+=1 in 3dimensions
-        if state[cursor] + 1 < dims[cursor] {
+        if state[cursor] < dims[cursor] {
             state[cursor] += 1;
-            // incrementing like in the 3d case
             for g in 0..card {
                 cycle[g] += offset[(cursor + g) % card];
             }
             continue;
         }
-        // oh no! we're out of capacity we need to handle
         loop {
-            // increment the position to see if we can add another dimension if it has capacity
             cursor += 1;
             if cursor == card {
                 return;
             }
-            if state[cursor] + 1 < dims[cursor] {
+            if state[cursor] < dims[cursor] {
                 // found an open slot
                 state[cursor] += 1;
                 // decrementing like in the 3d case
@@ -70,13 +62,10 @@ fn transpose_clean<T>(data:&mut[T]) {
                 break;
             }
         };
-        // clearing out the lower bits
         for idx in 0..cursor {
-            state[idx]=0;
-            // decrementing for all of those bits which were cleared
+            state[idx]=1;
             for g in 0..card {
-                s = dims[idx]-1;
-                cycle[g] -= s * offset[(idx + g) % card];
+                cycle[g] -= (dims[idx]-1) * offset[(idx + g) % card];
             }
         }
         cursor=0;
