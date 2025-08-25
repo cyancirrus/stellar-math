@@ -1,278 +1,90 @@
-fn nd_offsets(dims:&[usize]) -> Vec<usize> {
-    let mut init = 1;
-    let mut factors = Vec::with_capacity(dims.len());
-    for &num in dims[0..].iter().rev() {
-        factors.push(init);
-        init *= num;
-    }
-    factors
-}
+use stellar::decomposition::svd::{golub_kahan_explicit, golub_kahan};
+use stellar::structure::ndarray::NdArray;
 
-fn offset(dims:&[usize]) -> Vec<usize> {
-    let mut init = 1;
-    let n = dims.len();
-    let mut idxs = vec![1;n];
-    //[1,2,3,4]
-    for id in (0..n-1).rev() {
-        init *= dims[id];
-        idxs[id] = init;
-    }
-    idxs
-}
-
-
-fn transpose_clean<T>(data:&mut[T]) {
-    let dims = vec![2,2,2];
-    //  coming in to the function
-    let n = dims.iter().product();
-    let card = dims.len();
-    let offset = vec![4,2,1];
-    let mut cycle = vec![0; card];
-    let mut mem = vec![false; n];
-    let mut state = vec![1;card];
-    let mut cursor = 0;
-
-    for _ in 0..n {
-        if !mem[cycle[0]] {
-            mem[cycle[0]] = true;
-            for p in 1..card {
-                mem[cycle[p]] = true;
-                data.swap(cycle[p-1], cycle[p]);
-            }
-        }
-        if state[cursor] < dims[cursor] {
-            state[cursor] += 1;
-            for g in 0..card {
-                cycle[g] += offset[(cursor + g) % card];
-            }
-            continue;
-        }
-        loop {
-            cursor += 1;
-            if cursor == card {
-                return;
-            }
-            if state[cursor] < dims[cursor] {
-                // found an open slot
-                state[cursor] += 1;
-                // decrementing like in the 3d case
-                for g in 0..card {
-                    cycle[g] += offset[(cursor + g) % card];
-                }
-                break;
-            }
-        };
-        for idx in 0..cursor {
-            state[idx]=1;
-            for g in 0..card {
-                cycle[g] -= (dims[idx]-1) * offset[(idx + g) % card];
-            }
-        }
-        cursor=0;
-    }
-}
-
-fn transpose_ideation<T>(data:&mut[T]) {
-    let dims = vec![2,2,2];
-    let offset = [4,2,1];
-    let card = dims.len();
-    let mut cycle = [0,0,0];
-    let mut mem = vec![false; dims.iter().product()];
-    let mut s;
-    for _ in 0..dims[0] {
-        for _ in 0..dims[1] {
-            for _ in 0..dims[2] {
-                if !mem[cycle[0]] {
-                    mem[cycle[0]]=true;
-                    for i in 1..card {
-                        data.swap(cycle[i-1], cycle[i]);
-                        mem[cycle[i]]=true;
-                    }
-                }
-                // variable 2 + offset 2
-                cycle[0] += offset[2];
-                cycle[1] += offset[0];
-                cycle[2] += offset[1];
-            }
-            // variable 2 for - offset 2
-            s = dims[2];
-            cycle[0] -= s * offset[2];
-            cycle[1] -= s * offset[0];
-            cycle[2] -= s * offset[1];
-            // variable 1 for + offset 1
-            cycle[0] += offset[1];
-            cycle[1] += offset[2];
-            cycle[2] += offset[0];
-        }
-        // variable 1 for - offset 1
-        s = dims[1];
-        cycle[0] -= s * offset[1];
-        cycle[1] -= s * offset[2];
-        cycle[2] -= s * offset[0];
-        // variable 0 for + offset 0
-        cycle[0] += offset[0];
-        cycle[1] += offset[1];
-        cycle[2] += offset[2];
-    }
-}
-
-
-
-fn pretty_print(data:&[usize]) {
-    println!("----------");
-    for i in (0..8).step_by(2) {
-        if i == 4 {
-            println!(" - - - - - -");
-        }
-        println!("[ {:03b}, {:03b} ]", data[i], data[i+1]);
-    }
-    println!("----------");
-}
-
-fn debug_transpose(data:&mut [usize]) {
-    transpose_clean(data);
-    pretty_print(data);
-}
-
-fn debug_data() -> Vec<usize> {
-    // dimensions indexed by (x,y,z)
-    vec![
-        0, 2,
-        4, 6,
-        //---
-        1, 3,
-        5, 7 
-    ]
-}
-
-// fn debug_data4d() -> Vec<usize> {
-//     // t, z, x, y
-//     vec![
-//         0b0000, 0b0001,
-//         0b0010, 0b0011,
-//         //
-//         0b0100, 0b0101,
-//         0b0110, 0b0111,
-//         //
-//         0b1010, 
-
-//     ]
-
-// }
 
 fn main() {
-    let data = debug_data();
-    let mut test = debug_data();
-    pretty_print(&test);
-    debug_transpose(&mut test);
-    debug_transpose(&mut test);
-    debug_transpose(&mut test);
-    assert_eq!(data, test);
+    let mut data:Vec<f32>;
+    let mut dims:Vec<usize>;
+    // data[0] = 1_f32;
+    // data[1] = -1_f32;
+    // data[2] = 4_f32;
+    // data[3] = 1_f32;
+    // {
+    //     // Eigen values 2, -1
+    //     let mut data = vec![0_f32; 4];
+    //     let mut dims = vec![2; 2];
+    //     data[0] = -1_f32;
+    //     data[1] = 0_f32;
+    //     data[2] = 5_f32;
+    //     data[3] = 2_f32;
+    // }
+    {
+        data = vec![0_f32; 9];
+        dims = vec![3; 2];
+        data[0] = 1_f32;
+        data[1] = 2_f32;
+        data[2] = 3_f32;
+        data[3] = 3_f32;
+        data[4] = 4_f32;
+        data[5] = 5_f32;
+        data[6] = 6_f32;
+        data[7] = 7_f32;
+        data[8] = 8_f32;
+    }
+    let x = NdArray::new(dims, data.clone());
+    println!("x: {:?}", x);
+    //
+    let reference = golub_kahan_explicit(x.clone());
+    println!("Reference {:?}", reference);
 
-    // thingy();
+    let dev = golub_kahan(x.clone());
+    println!("Implicit {:?}", dev);
 
-    // // println!("dims {:?}", get_inner(&[5,4,3,2,1]));
-    // assert_eq!(vec![1, 2, 6, 24], get_inner(&[5,4,3,2,1]));
-    // let mut data = [1,2,3,4];
-    // transpose_test(&mut data);
-    // assert_eq!(data, [2,3,4,1]);
-    // transpose_test(&mut data);
-    // assert_eq!(data, [3,4,1,2]);
-    // transpose_test(&mut data);
-    // assert_eq!(data, [4,1,2,3]);
-    // transpose_test(&mut data);
-    // assert_eq!(data, [1,2,3,4]);
-    // println!("new prototype function?");
+    // let sym = symmetricize(x);
+    // println!("Did it make symmetric? {:?}", sym);
+    // let test = golub_kahan_lanczos(x.clone());
+    // // println!("Test:\nU {:?}\nS {:?}\nV {:?}", test.0, test.1, test.2);
+    // println!("Bidiagonal \nS {:?}", test.1);
+
+    // let mut check = tensor_mult(2, &transpose(test.0), &test.1.clone());
+    // check = tensor_mult(2, &check, &test.2.clone());
+    // println!("Checking reconstruction {:?}", check);
+
+    // let real_schur = real_schur_decomp(x.clone());
+    // println!("real schur kernel {:?}", real_schur.kernel);
+
+    // let sigma = bidiagonal_qr(test.1.clone());
+    // println!("Bidiagonal QR {:?}", sigma);
+    // println!("Expected eigen: 2, 1");
+
+    // // From lapack white paper
+    // let sigma = fast_bidiagonal_qr(fast_bidiagonal_qr(test.1.clone()));
+    // println!("Fast Bidiagonal QR {:?}", sigma);
+    // println!("Expected eigen: 2, 1");
+    // // // println!("real schur rotation {:?}", real_schur.rotation);
+    // //
+    // let y = qr_decompose(x.clone());
+    // println!("triangle {:?}", y.triangle);
+
+    // let q = real_schur.rotation;
+    // let q_star = transpose(q.clone());
+    // println!("Schur rotation {:?}", q);
+    // let q_orthogonality_check = tensor_mult(2, &q, &q_star);
+    // println!("U orthogonality check {:?}", q_orthogonality_check);
+
+    // let symmetric = make_symmetric(&real_schur.kernel);
+    // println!("Symmetric values {:?}", symmetric);
+
+    // // let eigen = givens_decomp(symmetric);
+    // let eigen = eigen_square(y.triangle);
+    // let eigen = jacobi_decomp(symmetric);
+    // let eigen = givens_decomp(y.triangle);
+    // let eigen = givens_decomp(x.clone());
+    // println!("eigen values {:?}", eigen);
+
+    // let eigen = givens_decomp(real_schur.kernel);
+    // let eigen = jacobi_decomp(symmetric);
+    // println!("eigen values {:?}", eigen.kernel);
+
 }
 
-// fn transpose_ideation<T>(data:&mut[T]) {
-//     let dims = vec![2,2,2];
-//     let offset = [4,2,1];
-//     let card = dims.len();
-//     let mut incrementer = [0,0,0];
-//     let mut mem = vec![false; dims.iter().product()];
-//     let mut s;
-//     for i in 0..dims[0] {
-//         if i > 0 {
-//             incrementer[0] += offset[0];
-//             incrementer[1] += offset[1];
-//             incrementer[2] += offset[2];
-//         }
-//         for j in 0..dims[1] {
-//             if j > 0 {
-//                 incrementer[0] += offset[1];
-//                 incrementer[1] += offset[2];
-//                 incrementer[2] += offset[0];
-//             }
-//             for k in 0..dims[2] {
-//                 if k > 0 {
-//                     incrementer[0] += offset[2];
-//                     incrementer[1] += offset[0];
-//                     incrementer[2] += offset[1];
-//                 }
-//                 if !mem[incrementer[0]] {
-//                     mem[incrementer[0]]=true;
-//                     for i in 1..card {
-//                         data.swap(incrementer[i-1], incrementer[i]);
-//                         mem[incrementer[i]]=true;
-//                     }
-//                 }
-//             }
-//             s = dims[2] - 1;
-//             incrementer[0] -= s * offset[2];
-//             incrementer[1] -= s * offset[0];
-//             incrementer[2] -= s * offset[1];
-//         }
-//         s = dims[1] - 1;
-//         incrementer[0] -= s * offset[1];
-//         incrementer[1] -= s * offset[2];
-//         incrementer[2] -= s * offset[0];
-//     }
-// }
-
-
-// fn transpose<T>(data:&mut [T]) {
-//     let dims = vec![2,2,2];
-//     let card = dims.len();
-//     let offsets = nd_offsets(&dims);
-//     // running product of dimensions
-//     let mut mem = vec![false; dims.iter().product()];
-//     let mut state = vec![0;card];
-//     let mut cursor = 0;
-//     let mut targets = vec![0;card];
-    
-//     // iterates over the dimensions
-//     while cursor < card {
-//         targets.fill(0);
-//         for idx in 0..card {
-//             for (cdx, s) in state.iter().enumerate() {
-//                 // let a = k*(x*y) + i*y + j;
-//                 // let b = j*(x*y) + k*y + i;
-//                 // let c = i*(x*y) + j*y + k;
-//                 targets[idx]+=s*offsets[(idx + cdx) % card];
-//             }
-//         }
-//         if !mem[targets[0]] {
-//             mem[targets[0]] = true;
-//             for idx in 1..card {
-//                 mem[targets[idx]] = true;
-//                 data.swap(targets[idx-1], targets[idx]);
-//             }
-//         }
-//         loop {
-//             if cursor == card {
-//                 break;
-//             }
-//             if state[cursor] + 1 < dims[cursor] {
-//                 state[cursor] += 1;
-//                 for idx in 0..cursor {
-//                     state[idx] = 0;
-//                 }
-//                 cursor=0;
-//                 break;
-//             } else {
-//                 cursor += 1;
-//             }
-//         }
-//     }
-// }
