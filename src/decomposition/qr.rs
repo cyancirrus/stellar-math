@@ -3,8 +3,8 @@ use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
 pub struct QrDecomposition {
-    projections: Vec<HouseholderReflection>,
-    triangle: NdArray,
+    pub projections: Vec<HouseholderReflection>,
+    pub triangle: NdArray,
 }
 
 pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {

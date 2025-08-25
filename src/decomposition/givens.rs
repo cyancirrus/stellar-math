@@ -4,76 +4,76 @@ use crate::decomposition::qr;
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
-struct GivensDecomposition {
-    kernel: NdArray,
-    rotation: NdArray,
+const CONVERGENCE_CONDITION: f32 = 1e-6;
+
+struct SingularValueDecomp {
+    u: NdArray,
+    s: NdArray,
+    v: NdArray,
 }
 
-impl GivensDecomposition {
-    pub fn new(kernel: NdArray, rotation: NdArray) -> Self {
-        Self { kernel, rotation }
+impl SingularValueDecomp {
+    pub fn new(u: NdArray, s: NdArray,  v: NdArray) -> Self {
+        Self { s, u, v }
     }
 }
 
-fn givens_rotation(a: f32, b: f32) -> NdArray {
-    // TODO: Ensure that we actually provide r instead of explicit calculation
-    let mut givens = vec![0_f32; 4];
+fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
+    println!("Kernel {:?}", s);
+    let m = s.dims[0];
+    let n = s.dims[1];
+    let k = m.min(n);
+    // row-space, column-space
+    let mut u = create_identity_matrix(m);
+    let mut v = create_identity_matrix(n);
+    let mut max_iteration = 1<<8;
+    // left work
+    while 
+        offdiag_norm(&s) > CONVERGENCE_CONDITION
+        && max_iteration > 0
+        {
+        for i in 0..k-1 {
+            let (_, cosine, sine) = implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) *n + i]);
+            // below diagonal element
+            let g = embed_givens(m, i,i + 1, cosine, sine);
+            s = tensor_mult(2, &transpose(g.clone()), &s);
+            u = tensor_mult(2, &u, &g);
+            
+            let (_, cosine, sine) = implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
+            let g = embed_givens(n, i, i + 1, cosine, sine);
+            s = tensor_mult(2, &s, &g);
+            v = tensor_mult(2, &v, &g);
 
-    let t: f32;
-    let s: f32;
-    let c: f32;
-
-    if b.abs() > a.abs() {
-        // t = 2_f32 *a/b;
-        t = 1_f32 * a / b;
-        s = 1_f32 / (1_f32 + t.powi(2)).sqrt();
-        c = s * t;
-    } else {
-        // t = 2_f32 * b/a;
-        t = 1_f32 * b / a;
-        c = 1_f32 / (1_f32 + t.powi(2)).sqrt();
-        s = c * t;
+            let uuT = tensor_mult(2, &u, &transpose(u.clone()));
+            let vvT = tensor_mult(2, &v, &transpose(v.clone()));
+            println!("U orthogonality {:?}", uuT);
+            println!("V orthogonality {:?}", vvT);
+        }
+        max_iteration -=1
     }
-    givens[0] = c;
-    givens[1] = s;
-    givens[2] = -s;
-    givens[3] = c;
-    NdArray::new(vec![2; 2], givens)
+    SingularValueDecomp { u, s, v }
 }
 
-fn givens_iteration(first: bool, mut givens: GivensDecomposition) -> GivensDecomposition {
-    let rows = givens.kernel.dims[0];
-    let cols = givens.kernel.dims[1];
-    let rotation: NdArray;
-    let left_rotation = givens_rotation(givens.kernel.data[0], givens.kernel.data[1]);
-    // // if !first {
-    givens.kernel = tensor_mult(2, &left_rotation, &givens.kernel);
-    //     println!("upper cancel {:?}", givens.kernel);
-    // // }
-    let right_rotation = transpose(left_rotation.clone());
-    // let right_rotation  = givens_rotation(givens.kernel.data[1], -givens.kernel.data[3]);
-    givens.kernel = tensor_mult(2, &givens.kernel, &right_rotation);
-    println!("re-pivot {:?}", givens.kernel);
-    let ortho_check = tensor_mult(2, &left_rotation, &right_rotation);
-    println!("Ortho check in givens {:?}", ortho_check);
-    givens
+fn embed_givens(n:usize, i:usize, j:usize, c:f32, s:f32) -> NdArray {
+    let mut array = create_identity_matrix(n);
+    array.data[i * n + i] = c;
+    array.data[i * n + j] = s;
+    array.data[j * n + i] = -s;
+    array.data[j * n + j] = c;
+    array
 }
 
-fn givens_decomp(mut kernel: NdArray) -> GivensDecomposition {
-    println!("Kernel {:?}", kernel);
-    let mut upper = true;
-    let rotation = create_identity_matrix(kernel.dims[0]);
-    let mut givens = GivensDecomposition { rotation, kernel };
-    let mut iteration = 8;
-    let mut first = true;
-    while iteration > 0 {
-        iteration -= 1;
-        upper = !upper;
-        givens = givens_iteration(first, givens);
-        println!("Givens iteration {:?}", givens.kernel);
-        first = false;
+// m x n, m x m x n 
+
+fn offdiag_norm(s: &NdArray) -> f32 {
+    let m = s.dims[0];
+    let n = s.dims[1];
+    let mut norm = 0.0;
+    for i in 0..m.min(n)-1 {
+        // upper diagonal
+        norm += s.data[i * n + i + 1].abs();
     }
-    givens
+    norm
 }
 
 pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
@@ -101,5 +101,5 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
         r = a * tt;
     }
     let r: f32 = (a.powi(2) + b.powi(2)).sqrt();
-    (r, s, c)
+    (r, c, s)
 }

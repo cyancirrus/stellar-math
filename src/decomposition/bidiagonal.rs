@@ -20,7 +20,7 @@ pub fn bidiagonal_qr(mut b: NdArray) -> NdArray {
     let mut h: f32 = b.data[1];
     for i in 0..rows - 1 {
         supra = b.data[i * cols + i + 1];
-        let (r, s, c) = implicit_givens_rotation(sigma, supra);
+        let (r, c, s) = implicit_givens_rotation(sigma, supra);
         if i != 0 {
             b.data[(i - 1) * cols + i] = sine * r;
         }
@@ -28,7 +28,7 @@ pub fn bidiagonal_qr(mut b: NdArray) -> NdArray {
         supra = b.data[(i + 1) * cols + (i + 1)] * s;
         h = b.data[(i + 1) * cols + (i + 1)] * c;
         println!("sigma {}, supra{}", sigma, supra);
-        let (r, s, c) = implicit_givens_rotation(sigma, supra);
+        let (r, c, s) = implicit_givens_rotation(sigma, supra);
         println!("hello i am did implicit print?");
         b.data[i * cols + i] = r;
         sigma = h;
@@ -59,14 +59,14 @@ pub fn fast_bidiagonal_qr(mut b: NdArray) -> NdArray {
     for i in 0..rows - 1 {
         // sigma = b.data[i * cols + i];
         supra = b.data[i * cols + i + 1];
-        let (r, s, c) = implicit_givens_rotation(sigma * cosine, supra);
+        let (r, c, s) = implicit_givens_rotation(sigma * cosine, supra);
         cosine = c;
         sine = s;
         if i != 0 {
             b.data[(i - 1) * cols + i] = sine * r;
         }
         sigma = b.data[(i + 1) * cols + (i + 1)];
-        let (r, s, c) = implicit_givens_rotation(old_cosine * r, sigma * sine);
+        let (r, c, s) = implicit_givens_rotation(old_cosine * r, sigma * sine);
         sigma = r;
         old_cosine = c;
         old_sine = s;

@@ -4,9 +4,9 @@ use crate::structure::ndarray::NdArray;
 
 const STOP_CONDITION: f32 = 1e-6;
 
-struct SchurDecomp {
-    rotation: NdArray, // The accumulated orthogonal transformations (U for SVD)
-    kernel: NdArray,   // The upper quasi-triangular matrix (Schur form)
+pub struct SchurDecomp {
+    pub rotation: NdArray, // The accumulated orthogonal transformations (U for SVD)
+    pub kernel: NdArray,   // The upper quasi-triangular matrix (Schur form)
 }
 
 impl SchurDecomp {
@@ -34,7 +34,7 @@ fn real_schur_threshold(kernel: &NdArray) -> f32 {
     off_diagonal
 }
 
-fn real_schur_decomp(kernel: NdArray) -> SchurDecomp {
+pub fn real_schur(kernel: NdArray) -> SchurDecomp {
     let rows = kernel.dims[0];
     let identity = create_identity_matrix(rows);
     let mut schur = SchurDecomp::new(identity, kernel);
