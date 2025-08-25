@@ -145,6 +145,21 @@ fn debug_data() -> Vec<usize> {
     ]
 }
 
+// fn debug_data4d() -> Vec<usize> {
+//     // t, z, x, y
+//     vec![
+//         0b0000, 0b0001,
+//         0b0010, 0b0011,
+//         //
+//         0b0100, 0b0101,
+//         0b0110, 0b0111,
+//         //
+//         0b1010, 
+
+//     ]
+
+// }
+
 fn main() {
     let data = debug_data();
     let mut test = debug_data();
