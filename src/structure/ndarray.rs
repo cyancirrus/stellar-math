@@ -13,7 +13,27 @@ impl NdArray {
     pub fn new(dims: Vec<usize>, data: Vec<f32>) -> NdArray {
         NdArray { dims, data }
     }
+    pub fn dims(&self) -> &Vec<usize> {
+        &self.dims
+    }
+    pub fn card(&self) -> usize {
+        self.data.len()
+    }
+    pub fn diff(&mut self, other:Self) {
+        debug_assert!(other.dims() == self.dims());
+        for idx in 0..self.card() {
+            self.data[idx] -= other.data[idx];
+        }
+    }
+    pub fn sum(&mut self, other:Self) {
+        debug_assert!(other.dims() == self.dims());
+        for idx in 0..self.dims.len() {
+            self.data[idx] += other.data[idx];
+        }
+    }
+}
 
+impl NdArray {
     pub fn print(&self) {
         let (rows, cols) = (self.dims[0], self.dims[1]);
 

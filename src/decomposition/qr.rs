@@ -1,7 +1,9 @@
 use crate::decomposition::householder::{householder_params, HouseholderReflection};
 use crate::structure::ndarray::NdArray;
+use crate::algebra::vector::dot_product;
 use rayon::prelude::*;
 
+#[derive(Debug)]
 pub struct QrDecomposition {
     pub projections: Vec<HouseholderReflection>,
     pub triangle: NdArray,
@@ -49,6 +51,16 @@ impl QrDecomposition {
         Self {
             projections,
             triangle,
+        }
+    }
+    pub fn deothrogonalize(&self, v: &mut Vec<f32>) {
+        let vlen = v.len();
+        for h in self.projections.iter().rev() {
+            if h.beta == 0_f32 {continue;}
+            let dot = dot_product(&h.vector, &v);
+            for i in 0..h.vector.len() {
+                v[vlen -1 - i] -= h.beta * h.vector[i] * dot;
+            }
         }
     }
     pub fn left_multiply(&self, other: NdArray) -> NdArray {

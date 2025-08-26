@@ -3,6 +3,7 @@ use crate::decomposition::qr::QrDecomposition;
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
+#[derive(Debug)]
 pub struct HouseholderReflection {
     pub beta: f32,        // store 2 / u'u
     pub vector: Vec<f32>, // stores reflection u
@@ -21,6 +22,9 @@ pub fn householder_params(x: &[f32]) -> HouseholderReflection {
     let data = vec![0_f32; length * length];
     let mut householder = NdArray::new(dims, data);
     let max_element: f32 = x.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+    if max_element == 0_f32 {
+        return HouseholderReflection::new(0_f32, vec![0_f32]);
+    }
     let mut u = x
         .par_iter()
         .copied()
