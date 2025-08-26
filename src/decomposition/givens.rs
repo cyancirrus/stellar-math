@@ -6,10 +6,10 @@ use rayon::prelude::*;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
 
-struct SingularValueDecomp {
-    u: NdArray,
-    s: NdArray,
-    v: NdArray,
+pub struct SingularValueDecomp {
+    pub u: NdArray,
+    pub s: NdArray,
+    pub v: NdArray,
 }
 
 impl SingularValueDecomp {
@@ -18,7 +18,7 @@ impl SingularValueDecomp {
     }
 }
 
-fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
+pub fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
     println!("Kernel {:?}", s);
     let m = s.dims[0];
     let n = s.dims[1];
@@ -26,7 +26,8 @@ fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
     // row-space, column-space
     let mut u = create_identity_matrix(m);
     let mut v = create_identity_matrix(n);
-    let mut max_iteration = 1<<8;
+    // let mut max_iteration = 1<<12;
+    let mut max_iteration = 1<<4;
     // left work
     while 
         offdiag_norm(&s) > CONVERGENCE_CONDITION
@@ -36,18 +37,13 @@ fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
             let (_, cosine, sine) = implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) *n + i]);
             // below diagonal element
             let g = embed_givens(m, i,i + 1, cosine, sine);
-            s = tensor_mult(2, &transpose(g.clone()), &s);
+            s = tensor_mult(2, &g, &s);
             u = tensor_mult(2, &u, &g);
             
             let (_, cosine, sine) = implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
             let g = embed_givens(n, i, i + 1, cosine, sine);
-            s = tensor_mult(2, &s, &g);
+            s = tensor_mult(2, &s, &transpose(g.clone()));
             v = tensor_mult(2, &v, &g);
-
-            let uuT = tensor_mult(2, &u, &transpose(u.clone()));
-            let vvT = tensor_mult(2, &v, &transpose(v.clone()));
-            println!("U orthogonality {:?}", uuT);
-            println!("V orthogonality {:?}", vvT);
         }
         max_iteration -=1
     }
@@ -71,7 +67,8 @@ fn offdiag_norm(s: &NdArray) -> f32 {
     let mut norm = 0.0;
     for i in 0..m.min(n)-1 {
         // upper diagonal
-        norm += s.data[i * n + i + 1].abs();
+        // norm += s.data[i * n + i + 1].abs();
+        norm += s.data[i * n + i + 1].abs() + s.data[ (i + 1) * n + 1 ].abs();
     }
     norm
 }

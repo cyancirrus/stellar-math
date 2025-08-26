@@ -1,7 +1,7 @@
 use stellar::decomposition::svd::golub_kahan_explicit;
 use stellar::decomposition::schur::real_schur;
 use stellar::decomposition::qr::qr_decompose;
-use stellar::decomposition::jacobi;
+use stellar::decomposition::givens::givens_iteration;
 use stellar::structure::ndarray::NdArray;
 
 
@@ -39,6 +39,9 @@ fn main() {
     
     let real_schur = real_schur(x.clone());
     println!("real schur kernel {:?}", real_schur.kernel);
+
+    let svd = givens_iteration(reference);
+    println!("svd u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd.u, svd.s, svd.v);
 
 }
 

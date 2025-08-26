@@ -2,7 +2,7 @@ use crate::algebra::ndmethods::create_identity_matrix;
 use crate::decomposition::qr::qr_decompose;
 use crate::structure::ndarray::NdArray;
 
-const STOP_CONDITION: f32 = 1e-6;
+const CONVERGENCE_CONDITION: f32 = 1e-6;
 
 pub struct SchurDecomp {
     pub rotation: NdArray, // The accumulated orthogonal transformations (U for SVD)
@@ -39,7 +39,7 @@ pub fn real_schur(kernel: NdArray) -> SchurDecomp {
     let identity = create_identity_matrix(rows);
     let mut schur = SchurDecomp::new(identity, kernel);
 
-    while real_schur_threshold(&schur.kernel) > STOP_CONDITION {
+    while real_schur_threshold(&schur.kernel) > CONVERGENCE_CONDITION {
         schur = real_schur_iteration(schur);
     }
     schur
