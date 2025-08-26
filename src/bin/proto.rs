@@ -5,9 +5,9 @@ use stellar::decomposition::givens::givens_iteration;
 use stellar::structure::ndarray::NdArray;
 use stellar::decomposition::householder::householder_factor;
 
-// Av = lambda v
-// (A - lambda I)v = 0
-// use householder in order to reduce A to upper triangle
+
+// Learn runge kutta soon
+// https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
 
 const EPSILON:f32 = 1e-6;
 
@@ -68,15 +68,11 @@ fn retrieve_eigen(eig:f32, mut matrix:NdArray) -> Vec<f32> {
     // // B is a rotation matrix
     // // B L v = 0;
     let (i, j) = target_rotation_indices(&matrix);
-    println!("i:{i:}, j:{j:} \n{matrix:?}");
     row_swap(i, j, &mut matrix);
-    println!("matrix {matrix:?}");
     // // QR = (B L )
     // // QRv = 0
     // // Q'Qrv = 0
     let qr = householder_factor(matrix);
-    println!("Q {:?}", qr.projections);
-    println!("Triangle {:?}", qr.triangle);
     // // Rv' = 0 <-> O'v :: QRv = 0
     for i in (0..m).rev() {
         let diag = qr.triangle.data[i * m + i];
@@ -90,7 +86,6 @@ fn retrieve_eigen(eig:f32, mut matrix:NdArray) -> Vec<f32> {
             evector[i] = -sum / diag;
         }
     }
-    println!("evector {evector:?}");
     evector.swap(i, j);
     normalize(&mut evector);
     evector
@@ -138,7 +133,5 @@ fn main() {
 
     let evector = retrieve_eigen(real_schur.kernel.data[3], x.clone());
     println!("eigen vec {evector:?}");
-
-
 }
 
