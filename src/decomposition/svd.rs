@@ -12,7 +12,6 @@ pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
     let mut householder: HouseholderReflection;
 
     let mut new: NdArray;
-    // println!("Should be identity {:?}", new);
 
     for o in 0..cols.min(rows) - 1 {
         new = create_identity_matrix(rows);
@@ -31,7 +30,7 @@ pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
         a = tensor_mult(4, &new, &a);
         println!("Here's what the mult looks like check 0's {:?}", a);
         if o < cols.min(rows) - 2 {
-            new = create_identity_matrix(rows);
+            new = create_identity_matrix(cols);
             let row_vector: Vec<f32> = a.data[(o * cols) + 1..(o + 1) * cols].to_vec();
             // println!("Row vector should be dim 3 and the top row {:?}", row_vector);
             householder = householder_params(&row_vector);

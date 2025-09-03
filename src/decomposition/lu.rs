@@ -1,5 +1,6 @@
 use crate::structure::ndarray::NdArray;
 
+// double review this
 fn lu_factorization(x: &NdArray) -> (NdArray, NdArray) {
     let rows = x.dims[0];
     let cols = x.dims[1];

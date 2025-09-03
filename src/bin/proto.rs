@@ -6,6 +6,9 @@ use stellar::structure::ndarray::NdArray;
 use stellar::decomposition::householder::householder_factor;
 
 
+// Tihnov
+// https://en.wikipedia.org/wiki/Ridge_regression
+
 // Learn runge kutta soon
 // https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
 
