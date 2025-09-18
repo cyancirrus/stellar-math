@@ -3,7 +3,7 @@ use stellar::decomposition::schur::real_schur;
 use stellar::decomposition::qr::qr_decompose;
 use stellar::decomposition::givens::givens_iteration;
 use stellar::structure::ndarray::NdArray;
-use crate::algebra::ndmethods::create_identity_matrix;
+use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::decomposition::householder::householder_factor;
 
 
@@ -19,19 +19,18 @@ struct LU {
     upper: NdArray,
 }
 
-fn lower_upper(mut a:NdArray) -> LU {
+fn lower_upper(mut upper:NdArray) -> LU {
     // A[j, *] = c *A[i, *]
     // => c = A[i,j] / A[j,j]
-    let rows = a.dims[0];
-    let cols = a.dims[1];
+    let rows = upper.dims[0];
+    let cols = upper.dims[1];
     debug_assert_eq!(rows, cols);
     let mut lower = create_identity_matrix(rows);
-    let mut upper = a;
 
     for i in 0..cols {
     for j in i..rows {
-            if a.data[j*cols + i].abs() < TOLERANCE_CONDITION { continue; }
-            let c = a.data[j* cols + i] / a.data[ i * cols + i];
+            if upper.data[j*cols + i].abs() < TOLERANCE_CONDITION { continue; }
+            let c = upper.data[j* cols + i] / upper.data[ i * cols + i];
             lower.data[j * cols + i] = c ;
             for k in i..cols {
                 upper.data[j * cols + k] -= c * upper.data[i*cols + k];
