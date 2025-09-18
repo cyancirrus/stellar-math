@@ -43,7 +43,6 @@ fn lower_upper(mut upper:NdArray) -> LU {
     }
 }
 
-
 fn cholesky(a:NdArray) -> Cholesky {
     // update lij
     // aii = lik * lik + lii^2

@@ -1,33 +1,37 @@
+use crate::decomposition::svd::golub_kahan_explicit;
+use crate::decomposition::schur::real_schur;
+use crate::decomposition::qr::qr_decompose;
+use crate::decomposition::givens::givens_iteration;
 use crate::structure::ndarray::NdArray;
+use crate::algebra::ndmethods::create_identity_matrix;
 
-// double review this
-fn lu_factorization(x: &NdArray) -> (NdArray, NdArray) {
-    let rows = x.dims[0];
-    let cols = x.dims[1];
-    assert_eq!(rows, cols, "currently LU is available only for square");
-    let mut lower = vec![0_f32; x.data.len()];
-    let mut upper = x.data.clone();
+const TOLERANCE_CONDITION: f32 = 1e-6;
 
-    for j in 0..rows {
-        for i in 0..rows {
-            for k in 0..rows {
-                if j > i && k == 0 {
-                    upper[j * cols + i] = 0_f32;
-                } else if i == j && k == 0 {
-                    lower[i * cols + j] = 1_f32;
-                } else if i > j {
-                    if k == 0 {
-                        lower[i * cols + j] = -upper[i * cols + j] / upper[j * cols + j];
-                        upper[i * cols + j] = 0_f32;
-                    } else {
-                        upper[i * cols + k] += lower[i * cols + j] * upper[j * cols + k];
-                    }
-                }
+struct LU {
+    lower: NdArray,
+    upper: NdArray,
+}
+
+fn lower_upper(mut upper:NdArray) -> LU {
+    // A[j, *] = c *A[i, *]
+    // => c = A[i,j] / A[j,j]
+    let rows = upper.dims[0];
+    let cols = upper.dims[1];
+    debug_assert_eq!(rows, cols);
+    let mut lower = create_identity_matrix(rows);
+
+    for i in 0..cols {
+    for j in i..rows {
+            if upper.data[j*cols + i].abs() < TOLERANCE_CONDITION { continue; }
+            let c = upper.data[j* cols + i] / upper.data[ i * cols + i];
+            lower.data[j * cols + i] = c ;
+            for k in i..cols {
+                upper.data[j * cols + k] -= c * upper.data[i*cols + k];
             }
         }
     }
-    (
-        NdArray::new(x.dims.clone(), lower),
-        NdArray::new(x.dims.clone(), upper),
-    )
+    LU {
+        lower,
+        upper
+    }
 }
