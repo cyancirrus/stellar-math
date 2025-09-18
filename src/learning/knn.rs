@@ -1,19 +1,9 @@
-use stellar::decomposition::svd::golub_kahan_explicit;
-use stellar::decomposition::schur::real_schur;
-use stellar::decomposition::qr::qr_decompose;
-use stellar::decomposition::givens::givens_iteration;
-use stellar::structure::ndarray::NdArray;
-use stellar::algebra::ndmethods::create_identity_matrix;
-use stellar::decomposition::householder::householder_factor;
-use stellar::learning::knn;
-use std::collections::HashMap;
-
-use stellar::algebra::vector::{dot_product, distance_squared,};
-// #[cfg(target_arch = "x86_64")]
+use crate::algebra::vector::{dot_product, distance_squared,};
 use rand::Rng;
 use rand_distr::StandardNormal;
 use rand::distr::StandardUniform;
 use rand::prelude::*;
+use std::collections::HashMap;
 
 struct RandomProjection {
     // normally distributed
@@ -82,10 +72,3 @@ impl LshKNearestNeighbors {
         similar
     }
 }
-
-fn main() {
-    let mut rng = rand::rng();
-    let x:f32 = rng.sample(StandardNormal);
-    println!("result {x:?}");
-}
-
