@@ -1,9 +1,9 @@
-use stellar::decomposition::svd::golub_kahan_explicit;
-use stellar::decomposition::schur::real_schur;
-use stellar::decomposition::qr::qr_decompose;
-use stellar::decomposition::givens::givens_iteration;
-use stellar::structure::ndarray::NdArray;
-use stellar::decomposition::householder::householder_factor;
+use crate::decomposition::svd::golub_kahan_explicit;
+use crate::decomposition::schur::real_schur;
+use crate::decomposition::qr::qr_decompose;
+use crate::decomposition::givens::givens_iteration;
+use crate::structure::ndarray::NdArray;
+use crate::decomposition::householder::householder_factor;
 
 
 // Tihnov

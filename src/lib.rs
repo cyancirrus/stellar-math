@@ -5,4 +5,5 @@
 
 pub mod algebra;
 pub mod decomposition;
+pub mod solver;
 pub mod structure;

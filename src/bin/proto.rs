@@ -6,6 +6,7 @@ use stellar::structure::ndarray::NdArray;
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::decomposition::householder::householder_factor;
 
+// #[cfg(target_arch = "x86_64")]
 
 
 const TOLERANCE_CONDITION: f32 = 1e-6;
