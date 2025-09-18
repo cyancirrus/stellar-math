@@ -29,7 +29,7 @@ impl RandomProjection {
 }
 type ProjHash = HashMap<i32, Vec<Vec<f32>>>;
 
-struct LshKNearestNeighbors {
+pub struct LshKNearestNeighbors {
     w:usize, n:usize, h:usize,
     // local sensitivity hashing
     proj:Vec<RandomProjection>,
@@ -38,7 +38,7 @@ struct LshKNearestNeighbors {
 }
 
 impl LshKNearestNeighbors {
-    fn new(w:usize, n:usize, h:usize) -> Self {
+    pub fn new(w:usize, n:usize, h:usize) -> Self {
         debug_assert!(w > 0 && n > 0 && h > 0);
         Self {
             w, n, h,
@@ -46,19 +46,19 @@ impl LshKNearestNeighbors {
             pmaps: vec![HashMap::new();h],
         }
     }
-    fn insert(&mut self, x:Vec<f32>) {
+    pub fn insert(&mut self, x:Vec<f32>) {
         debug_assert!(x.len() == self.proj[0].a.len());
         for h in 0..self.h {
             let hash = self.proj[h].project(&x);
             (self.pmaps[h].entry(hash).or_default()).push(x.clone())
         }
     }
-    fn parse(&mut self, data:Vec<Vec<f32>>) {
+    pub fn parse(&mut self, data:Vec<Vec<f32>>) {
         for d in data {
             self.insert(d);
         }
     }
-    fn knn(&self, k:usize, x:Vec<f32>) -> Vec<Vec<f32>> {
+    pub fn knn(&self, k:usize, x:Vec<f32>) -> Vec<Vec<f32>> {
         let mut similar = Vec::new();
         for i in 0..self.h {
             similar.extend(self.pmaps[i][&self.proj[i].project(&x)].clone());
@@ -68,6 +68,7 @@ impl LshKNearestNeighbors {
             let dist_b = distance_squared(b, &x);
             dist_a.partial_cmp(&dist_b).unwrap()
         });
+        similar.dedup();
         similar.truncate(k);
         similar
     }
