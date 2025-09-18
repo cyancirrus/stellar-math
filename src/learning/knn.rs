@@ -1,4 +1,5 @@
 use crate::algebra::vector::{dot_product, distance_squared,};
+use std::sync::Arc;
 use rand::Rng;
 use rand_distr::StandardNormal;
 use rand::distr::StandardUniform;
@@ -27,7 +28,7 @@ impl RandomProjection {
         (( dot_product(&self.a, x) +  self.b ) / self.w ).floor() as i32
     }
 }
-type ProjHash = HashMap<i32, Vec<Vec<f32>>>;
+type ProjHash = HashMap<i32, Vec<Arc<Vec<f32>>>>;
 
 pub struct LshKNearestNeighbors {
     w:usize, n:usize, h:usize,
@@ -48,9 +49,10 @@ impl LshKNearestNeighbors {
     }
     pub fn insert(&mut self, x:Vec<f32>) {
         debug_assert!(x.len() == self.proj[0].a.len());
+        let x_arc = Arc::new(x);
         for h in 0..self.h {
-            let hash = self.proj[h].project(&x);
-            (self.pmaps[h].entry(hash).or_default()).push(x.clone())
+            let hash = self.proj[h].project(&x_arc);
+            (self.pmaps[h].entry(hash).or_default()).push(x_arc.clone())
         }
     }
     pub fn parse(&mut self, data:Vec<Vec<f32>>) {
@@ -58,7 +60,7 @@ impl LshKNearestNeighbors {
             self.insert(d);
         }
     }
-    pub fn knn(&self, k:usize, x:Vec<f32>) -> Vec<Vec<f32>> {
+    pub fn knn(&self, k:usize, x:Vec<f32>) -> Vec<Arc<Vec<f32>>> {
         let mut similar = Vec::new();
         for i in 0..self.h {
             similar.extend(self.pmaps[i][&self.proj[i].project(&x)].clone());
