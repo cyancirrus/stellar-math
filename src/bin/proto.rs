@@ -8,6 +8,9 @@ use rand::prelude::*;
 use rand::prelude::*;
 use rand_distr::Normal;
 
+// move code into examples directory
+// cargo run --example demo
+
 fn generate_clusters(num_points: usize, dim: usize, num_clusters: usize) -> Vec<Vec<f32>> {
     let mut rng = rand::rng();
     let mut data = Vec::new();
