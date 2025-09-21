@@ -33,6 +33,41 @@ impl NdArray {
     }
 }
 
+struct NdIterator <'a> {
+    drow:usize,
+    dcol:usize,
+    row:usize,
+    col:usize,
+    ndarray:&'a NdArray,
+}
+
+impl <'a> Iterator for NdIterator <'a> {
+    type Item = f32;
+    
+    fn next(&mut self) -> Option<Self::Item> {
+        let (rows, cols) = (self.ndarray.dims[0], self.ndarray.dims[1]);
+        (self.row, self.col) = (self.row + self.drow, self.col + self.dcol);
+
+        if self.row < rows && self.col < cols {
+            Some(self.ndarray.data[self.row * cols + self.col])
+        } else {
+            None
+        }
+    }
+}
+
+impl NdArray {
+    fn iterate(&self, drow:usize, dcol:usize, row:usize, col:usize) -> NdIterator {
+        NdIterator {
+            drow,
+            dcol,
+            row,
+            col,
+            ndarray: self,
+        }
+    }
+}
+
 impl NdArray {
     pub fn print(&self) {
         let (rows, cols) = (self.dims[0], self.dims[1]);

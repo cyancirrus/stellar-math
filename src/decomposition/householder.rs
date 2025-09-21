@@ -15,29 +15,24 @@ impl HouseholderReflection {
     }
 }
 
-pub fn householder_params(x: &[f32]) -> HouseholderReflection {
-    let length = x.len();
-    assert!(length > 0, "needs to have non-zero length");
-    let dims = vec![length; 2];
-    let data = vec![0_f32; length * length];
-    let mut householder = NdArray::new(dims, data);
-    let max_element: f32 = x.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-    if max_element == 0_f32 {
-        return HouseholderReflection::new(0_f32, vec![0_f32]);
-    }
-    let mut u = x
-        .par_iter()
-        .copied()
-        .map(|val| val / max_element)
-        .collect::<Vec<f32>>();
-    let sign = u[0].signum();
-    u[0] += sign * magnitude(&u);
+const EPSILON:f32 = 1e-6;
 
-    // u[0] += magnitude(&u) * x[0].signum();
-    let magnitude_squared = dot_product(&u, &u);
+pub fn householder_params(x:&[f32]) -> HouseholderReflection {
+    let length = x.len();
+    let mut max_element = f32::NEG_INFINITY;
+    let mut magnitude_squared = 0_f32;
+    for i in 0..length { max_element = max_element.max(x[ i ]); }
+    if max_element.abs() < EPSILON { return HouseholderReflection::new(0_f32, vec![0_f32]); }
+    let mut u = vec![0_f32;length];
     for i in 0..length {
-        householder.data[i * length + i] = 1_f32;
+        let result = x[i] / max_element;
+        u[i] = result;
+        magnitude_squared += result.powi(2);
     }
+    let sign = u[0].signum();
+    let tmp = u[0];
+    u[0] += sign * magnitude_squared.sqrt();
+    magnitude_squared += 2_f32 * tmp * magnitude_squared.sqrt() + magnitude_squared;
     HouseholderReflection::new(2_f32 / magnitude_squared, u)
 }
 

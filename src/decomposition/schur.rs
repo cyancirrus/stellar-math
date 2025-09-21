@@ -14,11 +14,17 @@ impl SchurDecomp {
         Self { rotation, kernel }
     }
 }
-fn real_schur_iteration(schur: SchurDecomp) -> SchurDecomp {
+// fn real_schur_iteration(schur: SchurDecomp) -> SchurDecomp {
+//     let qr = qr_decompose(schur.kernel);
+//     let rotation = qr.left_multiply(schur.rotation); // RQ = Q'AQ
+//     let kernel = qr.triangle_rotation();
+//     SchurDecomp { rotation, kernel }
+// }
+fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
     let qr = qr_decompose(schur.kernel);
-    let rotation = qr.left_multiply(schur.rotation); // RQ = Q'AQ
-    let kernel = qr.triangle_rotation();
-    SchurDecomp { rotation, kernel }
+    // Apply Q to a matrix X ie (QR) -> Qx
+    qr.left_multiply(&mut schur.rotation); // RQ = Q'AQ
+    SchurDecomp { rotation:schur.rotation, kernel:qr.triangle }
 }
 
 fn real_schur_threshold(kernel: &NdArray) -> f32 {
@@ -39,7 +45,7 @@ pub fn real_schur(kernel: NdArray) -> SchurDecomp {
     let identity = create_identity_matrix(rows);
     let mut schur = SchurDecomp::new(identity, kernel);
 
-    while real_schur_threshold(&schur.kernel) > CONVERGENCE_CONDITION {
+    while CONVERGENCE_CONDITION < real_schur_threshold(&schur.kernel) {
         schur = real_schur_iteration(schur);
     }
     schur
