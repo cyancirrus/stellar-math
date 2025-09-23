@@ -52,6 +52,7 @@ mod tests {
             5.099,  1.961,
             0.000, -0.392,
         ];
+        println!("qr triangle data {:?}", qr.triangle);
 
         assert!(approx_eq(&qr.triangle.data, &expected_triangle, 1e-3));
     }
