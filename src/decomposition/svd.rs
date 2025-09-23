@@ -26,9 +26,9 @@ pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
                     householder.beta * householder.vector[i] * householder.vector[j]
             }
         }
-        println!("Left multiplication {:?}", new);
+        // println!("Left multiplication {:?}", new);
         a = tensor_mult(4, &new, &a);
-        println!("Here's what the mult looks like check 0's {:?}", a);
+        // println!("Here's what the mult looks like check 0's {:?}", a);
         if o < cols.min(rows) - 2 {
             new = create_identity_matrix(cols);
             let row_vector: Vec<f32> = a.data[(o * cols) + 1..(o + 1) * cols].to_vec();
