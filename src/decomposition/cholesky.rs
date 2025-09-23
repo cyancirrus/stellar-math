@@ -1,12 +1,4 @@
-use crate::decomposition::svd::golub_kahan_explicit;
-use crate::decomposition::schur::real_schur;
-use crate::decomposition::qr::qr_decompose;
-use crate::decomposition::givens::givens_iteration;
 use crate::structure::ndarray::NdArray;
-use crate::algebra::ndmethods::create_identity_matrix;
-use crate::decomposition::householder::householder_factor;
-
-const TOLERANCE_CONDITION: f32 = 1e-6;
 
 struct Cholesky {
     l: NdArray,
@@ -19,8 +11,7 @@ fn cholesky(a:NdArray) -> Cholesky {
     // aij = Sum 0..j lik * ljk + lij * ljj
     // => ljj = 1/ ljj * (aij - Sum 0..j lik * ljk )
     // a32 = l31 * l21 + l32 * l22
-    let rows = a.dims[0];
-    let cols = a.dims[1];
+    let (rows, cols)  = (a.dims[0], a.dims[1]);
     debug_assert_eq!(rows, cols);
     let mut l = vec![0_f32; rows * cols];
 

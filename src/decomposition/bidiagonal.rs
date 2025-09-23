@@ -43,7 +43,7 @@ pub fn bidiagonal_qr(mut b: NdArray) -> NdArray {
 }
 
 pub fn fast_bidiagonal_qr(mut b: NdArray) -> NdArray {
-    // b :: Bidiagonalized Matrix
+    // b :: Bidiagonalized Matrix returns the sigma matrix
     let rows = b.dims[0];
     let cols = b.dims[1];
     assert!(rows > 1, "Have not handled trivial cases");

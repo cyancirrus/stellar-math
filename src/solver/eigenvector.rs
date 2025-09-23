@@ -17,9 +17,9 @@ const EPSILON:f32 = 1e-6;
 fn scale_identity(n:usize, c:f32) -> NdArray {
     let mut mat = vec![0_f32;n*n];
     for i in 0..n {
-        mat[i * n + i] = c;
+        mat[ i * n + i ] = c;
     }
-    NdArray::new(vec![2;2], mat)
+    NdArray::new(vec![n,n], mat)
 }
 
 fn target_rotation_indices(matrix:&NdArray) -> (usize, usize) {
@@ -28,7 +28,7 @@ fn target_rotation_indices(matrix:&NdArray) -> (usize, usize) {
     let m = matrix.dims[0];
     let mut rswap = m-1;
     for i in 0..m {
-        if matrix.data[i * m + i].abs() < EPSILON {
+        if matrix.data[ i * m + i ].abs() < EPSILON {
             rswap = i;
             break;
         }
@@ -58,7 +58,8 @@ fn normalize(v:&mut Vec<f32>) {
     }
 }
 
-fn retrieve_eigen(eig:f32, mut matrix:NdArray) -> Vec<f32> {
+// TODO: Need to have row_swap be within the loop
+pub fn retrieve_eigen(eig:f32, mut matrix:NdArray) -> Vec<f32> {
     // debug_assert!(matrix.dims.len() == 2);
     // debug_assert!(matrix.dims[0] == matrix.dims[1]);
     let m = matrix.dims[0];

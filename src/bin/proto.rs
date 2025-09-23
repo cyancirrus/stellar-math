@@ -2,6 +2,12 @@ use stellar::learning::knn::LshKNearestNeighbors;
 use stellar::structure::ndarray::NdArray;
 use stellar::decomposition::qr::qr_decompose;
 use stellar::algebra::ndmethods::tensor_mult;
+use stellar::decomposition::svd::golub_kahan_explicit;
+use stellar::decomposition::schur::real_schur;
+use stellar::decomposition::givens::givens_iteration;
+use stellar::decomposition::householder::householder_factor;
+use stellar::solver::eigenvector::retrieve_eigen;
+
 
 // #[cfg(target_arch = "x86_64")]
 use rand::Rng;
@@ -93,18 +99,62 @@ fn generate_clusters(num_points: usize, dim: usize, num_clusters: usize) -> Vec<
 }
 
 fn main() {
-    let data = generate_clusters(100, 2, 3); // 100 points, 2D, 3 clusters
-    // for p in &data {
-    //     println!("{:?}", p);
+    // {
+        // Eigen values 2, -1
+        let mut data = vec![0_f32; 4];
+        let dims = vec![2; 2];
+        data[0] = -1_f32;
+        data[1] = 0_f32;
+        data[2] = 5_f32;
+        data[3] = 2_f32;
     // }
-    let mut knn = LshKNearestNeighbors::new(7, 2, 6); 
-    knn.parse(data.clone());
-    // for p in &data {
-    //     println!("{:?}", p);
+    // {
+    //     data = vec![0_f32; 9];
+    //     dims = vec![3; 2];
+    //     data[0] = 1_f32;
+    //     data[1] = 2_f32;
+    //     data[2] = 3_f32;
+    //     data[3] = 3_f32;
+    //     data[4] = 4_f32;
+    //     data[5] = 5_f32;
+    //     data[6] = 6_f32;
+    //     data[7] = 7_f32;
+    //     data[8] = 8_f32;
     // }
-    let result = knn.knn(5, data[0].clone());
-    println!("--------------");
-    for p in &result {
-        println!("{:?}", p);
-    }
+    let x = NdArray::new(dims, data.clone());
+    println!("x: {:?}", x);
+    //
+    let reference = golub_kahan_explicit(x.clone());
+    println!("Reference {:?}", reference);
+    
+    let y = qr_decompose(x.clone());
+    println!("triangle {:?}", y.triangle);
+    
+    let real_schur = real_schur(x.clone());
+    // eigenvalues
+    println!("real schur kernel {:?}", real_schur.kernel);
+
+    let svd = givens_iteration(reference);
+    println!("svd u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd.u, svd.s, svd.v);
+
+    let evector = retrieve_eigen(real_schur.kernel.data[3], x.clone());
+    println!("eigen vec {evector:?}");
 }
+
+
+// fn main() {
+//     let data = generate_clusters(100, 2, 3); // 100 points, 2D, 3 clusters
+//     // for p in &data {
+//     //     println!("{:?}", p);
+//     // }
+//     let mut knn = LshKNearestNeighbors::new(7, 2, 6); 
+//     knn.parse(data.clone());
+//     // for p in &data {
+//     //     println!("{:?}", p);
+//     // }
+//     let result = knn.knn(5, data[0].clone());
+//     println!("--------------");
+//     for p in &result {
+//         println!("{:?}", p);
+//     }
+// }

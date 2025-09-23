@@ -19,6 +19,7 @@ impl SingularValueDecomp {
 }
 
 pub fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
+    // takes in bidiagonal and returns full SVD
     println!("Kernel {:?}", s);
     let m = s.dims[0];
     let n = s.dims[1];
