@@ -31,13 +31,15 @@ mod tests {
         let ortho = qr.projection_matrix();
         let mut ortho_transpose = ortho.clone();
         ortho_transpose.transpose_square();
-        let result = tensor_mult(4, &ortho, &ortho_transpose);
+        let left_result = tensor_mult(4, &ortho, &ortho_transpose);
+        let right_result = tensor_mult(4, &ortho_transpose, &ortho);
         let expected = vec![
             1.0, 0.0,
             0.0, 1.0,
         ];
 
-        assert!(approx_eq(&result.data, &expected, 1e-3));
+        assert!(approx_eq(&left_result.data, &expected, 1e-3));
+        assert!(approx_eq(&right_result.data, &expected, 1e-3));
     }
 
     #[test]
