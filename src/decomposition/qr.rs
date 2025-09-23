@@ -12,7 +12,7 @@ pub struct QrDecomposition {
 
 pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
     // TODO : currently this runs for 0..cols.min(rows) should run to 0..cols.min(rows) - 1
-    // Needs to link with changes to projection_matrix, affects a bit of items so not changing yet
+    // direct depends: left_multiply, projection_matrix, schur
     let rows = x.dims[0];
     let cols = x.dims[1];
     let mut projections = Vec::with_capacity(cols.min(rows));
@@ -106,7 +106,8 @@ impl QrDecomposition {
         debug_assert!(target.dims[0] == self.size());
         let (rows, cols) = (target.dims[0], target.dims[1]);
         let mut w = vec![0_f32; rows];
-        for p in 0..self.size() {
+        // TODO: Only iterate up to that version
+        for p in 0..self.size() - 1 {
             let proj = &self.projections[p];
             for j in 0..cols {
                 for i in p..rows {

@@ -40,29 +40,29 @@ mod tests {
         assert!(approx_eq(&result.data, &expected, 1e-3));
     }
 
-    // #[test]
-    // fn test_left_multiply() {
-    //     let dims = vec![2, 2];
-    //     let data = vec![
-    //         -1.0, 0.0,
-    //          5.0, 2.0,
-    //     ];
-    //     let x = NdArray::new(dims, data);
-    //     let qr = qr_decompose(x);
-    //     println!("here");
+    #[test]
+    fn test_left_multiply() {
+        let dims = vec![2, 2];
+        let data = vec![
+            -1.0, 0.0,
+             5.0, 2.0,
+        ];
+        let x = NdArray::new(dims, data);
+        let qr = qr_decompose(x);
+        println!("here");
 
-    //     let mut ortho = qr.projection_matrix();
-    //     println!("pre transpose {ortho:?}");
-    //     ortho.transpose_square();
-    //     println!("post transpose {ortho:?}");
-    //     qr.left_multiply(&mut ortho);
-    //     println!("qr ortho data {:?}", ortho);
-    //     let expected = vec![
-    //         1.0, 0.0,
-    //         0.0, 1.0,
-    //     ];
-    //     assert!(approx_eq(&ortho.data, &expected, 1e-3));
-    // }
+        let mut ortho = qr.projection_matrix();
+        println!("pre transpose {ortho:?}");
+        ortho.transpose_square();
+        println!("post transpose {ortho:?}");
+        qr.left_multiply(&mut ortho);
+        println!("qr ortho data {:?}", ortho);
+        let expected = vec![
+            1.0, 0.0,
+            0.0, 1.0,
+        ];
+        assert!(approx_eq(&ortho.data, &expected, 1e-3));
+    }
 
     // #[test]
     // fn test_qr_decompose_triangle() {
