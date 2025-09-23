@@ -56,4 +56,7 @@ pre transpose (
         ( 1.459,  0.196),
 )
 
+// from main
+[HouseholderReflection { beta: 0.8038838, vector: [-1.2198039, 1.0] }, Householde
+rReflection { beta: 0.5, vector: [2.0] }]
 
