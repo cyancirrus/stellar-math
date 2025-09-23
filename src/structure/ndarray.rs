@@ -66,6 +66,21 @@ impl NdArray {
             ndarray: self,
         }
     }
+    pub fn transpose_square(&mut self) {
+        println!("hello world");
+        let rows = self.dims[0];
+        let cols = self.dims[1];
+        for i in 0..rows {
+            for j in i + 1..cols {
+                // self.data.swap( i * rows + j, j * rows + i );
+            let temp: f32 = self.data[i * rows + j];
+            self.data[i * rows + j] = self.data[j * rows + i];
+            self.data[j * rows + i] = temp;
+            }
+        }
+        self.dims[0] = cols;
+        self.dims[1] = rows;
+    }
 }
 
 impl NdArray {

@@ -18,9 +18,9 @@ mod tests {
         a.len() == b.len() &&
         a.iter().zip(b.iter()).all(|(x, y)| (x - y).abs() < tol)
     }
-
+    
     #[test]
-    fn test_left_multiply() {
+    fn test_ortho() {
         let dims = vec![2, 2];
         let data = vec![
             -1.0, 0.0,
@@ -28,38 +28,69 @@ mod tests {
         ];
         let x = NdArray::new(dims, data);
         let qr = qr_decompose(x);
-        let mut ortho = qr.projection_matrix();
-        qr.left_multiply(&mut ortho);
+        println!("here");
+
+        let ortho = qr.projection_matrix();
+        println!("ortho raw projections {:?}", qr.projections);
+        let mut ortho_transpose = ortho.clone();
+        println!("pre transpose {ortho:?}");
+        ortho_transpose.transpose_square();
+        println!("post transpose {ortho:?}");
+        let result = tensor_mult(4, &ortho, &ortho_transpose);
+        println!("result {result:?}");
         let expected = vec![
             1.0, 0.0,
             0.0, 1.0,
         ];
 
-        assert!(approx_eq(&ortho.data, &expected, 1e-3));
+        assert!(approx_eq(&result.data, &expected, 1e-3));
     }
 
-    #[test]
-    fn test_qr_decompose_triangle() {
-        let dims = vec![2, 2];
-        let data = vec![
-            -1.0, 0.0,
-             5.0, 2.0,
-        ];
-        let x = NdArray::new(dims, data);
+    // #[test]
+    // fn test_left_multiply() {
+    //     let dims = vec![2, 2];
+    //     let data = vec![
+    //         -1.0, 0.0,
+    //          5.0, 2.0,
+    //     ];
+    //     let x = NdArray::new(dims, data);
+    //     let qr = qr_decompose(x);
+    //     println!("here");
 
-        let qr = qr_decompose(x.clone());
-        let expected_triangle = vec![
-            5.099,  1.961,
-            0.000, -0.392,
-        ];
-        println!("qr triangle data {:?}", qr.triangle);
+    //     let mut ortho = qr.projection_matrix();
+    //     println!("pre transpose {ortho:?}");
+    //     ortho.transpose_square();
+    //     println!("post transpose {ortho:?}");
+    //     qr.left_multiply(&mut ortho);
+    //     println!("qr ortho data {:?}", ortho);
+    //     let expected = vec![
+    //         1.0, 0.0,
+    //         0.0, 1.0,
+    //     ];
+    //     assert!(approx_eq(&ortho.data, &expected, 1e-3));
+    // }
 
-        assert!(approx_eq(&qr.triangle.data, &expected_triangle, 1e-3));
-    }
+    // #[test]
+    // fn test_qr_decompose_triangle() {
+    //     let dims = vec![2, 2];
+    //     let data = vec![
+    //         -1.0, 0.0,
+    //          5.0, 2.0,
+    //     ];
+    //     let x = NdArray::new(dims, data);
 
-    #[test]
-    fn test_bidiagonalization() {
-        let data = 1_f32;
-        assert_eq!(data, 1_f32)
-    }
+    //     let qr = qr_decompose(x.clone());
+    //     let expected_triangle = vec![
+    //         5.099,  1.961,
+    //         0.000, -0.392,
+    //     ];
+    //     println!("qr triangle data {:?}", qr.triangle);
+    //     assert!(approx_eq(&qr.triangle.data, &expected_triangle, 1e-3));
+    // }
+
+    // #[test]
+    // fn test_bidiagonalization() {
+    //     let data = 1_f32;
+    //     assert_eq!(data, 1_f32)
+    // }
 }

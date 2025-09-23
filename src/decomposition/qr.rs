@@ -65,16 +65,17 @@ impl QrDecomposition {
         // H[i+1] * H[i] = Q[i+1] - B[i](Q[i+1]u[i])u'[i]
         // Qu := w
         for p in 0..size {
+            println!("hello {p:?}");
             let proj = &self.projections[p];
             for i in p..size {
                 for j in p..size {
-                    w[i] += matrix.data[i * size + j] * proj.vector[j];
+                    w[i] += matrix.data[i * size + j] * proj.vector[j - p];
                 }
                 w[i] *= proj.beta;
             }
             for i in p..size {
                 for j in p..size {
-                    matrix.data[i * size + j] -= w[i] * proj.vector[j];
+                    matrix.data[i * size + j] -= w[i] * proj.vector[j - p];
                 }
                 w[i] = 0_f32;
             }

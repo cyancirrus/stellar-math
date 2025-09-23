@@ -41,3 +41,19 @@ V: (
 )
 eigen vec [-0.51449555, 0.857493]
 
+
+// from tensor mult
+qr ortho data (
+        ( 2.737, -0.852),
+        ( 1.424, -2.090),
+)
+
+// ortho raw projections 
+[HouseholderReflection { beta: 1.1961162, vector: [-1.2198039, 1.0] },
+HouseholderReflection { beta: 0.5, vector: [2.0] }]
+pre transpose (
+        (-0.780,  1.459),
+        ( 1.459,  0.196),
+)
+
+
