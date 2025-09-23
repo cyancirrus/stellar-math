@@ -67,19 +67,23 @@ impl NdArray {
         }
     }
     pub fn transpose_square(&mut self) {
-        println!("hello world");
-        let rows = self.dims[0];
-        let cols = self.dims[1];
-        for i in 0..rows {
-            for j in i + 1..cols {
-                // self.data.swap( i * rows + j, j * rows + i );
-            let temp: f32 = self.data[i * rows + j];
-            self.data[i * rows + j] = self.data[j * rows + i];
-            self.data[j * rows + i] = temp;
+        self.dims.swap(0, 1);
+        for i in 0..self.dims[0] {
+            for j in i + 1..self.dims[1] {
+                self.data.swap( i * self.dims[1] + j, j * self.dims[1] + i );
             }
         }
-        self.dims[0] = cols;
-        self.dims[1] = rows;
+    }
+    pub fn transpose(&self) -> NdArray {
+        let mut dims = self.dims.clone();
+        let mut data = vec![0_f32; self.card()];
+        dims.swap(0, 1);
+        for i in 0..dims[0] {
+            for j in 0..dims[1] {
+                data[ i * dims[1] + j ] = self.data[ j * dims[0] + i ] 
+            }
+        }
+        NdArray { dims, data }
     }
 }
 

@@ -28,16 +28,10 @@ mod tests {
         ];
         let x = NdArray::new(dims, data);
         let qr = qr_decompose(x);
-        println!("here");
-
         let ortho = qr.projection_matrix();
-        println!("ortho raw projections {:?}", qr.projections);
         let mut ortho_transpose = ortho.clone();
-        println!("pre transpose {ortho:?}");
         ortho_transpose.transpose_square();
-        println!("post transpose {ortho:?}");
         let result = tensor_mult(4, &ortho, &ortho_transpose);
-        println!("result {result:?}");
         let expected = vec![
             1.0, 0.0,
             0.0, 1.0,

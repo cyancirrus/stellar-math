@@ -11,6 +11,8 @@ pub struct QrDecomposition {
 }
 
 pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
+    // TODO : currently this runs for 0..cols.min(rows) should run to 0..cols.min(rows) - 1
+    // Needs to link with changes to projection_matrix, affects a bit of items so not changing yet
     let rows = x.dims[0];
     let cols = x.dims[1];
     let mut projections = Vec::with_capacity(cols.min(rows));
@@ -60,25 +62,30 @@ impl QrDecomposition {
     pub fn projection_matrix(&self) -> NdArray {
         let size = self.size();
         let mut matrix = create_identity_matrix(size);
-        let mut w: Vec<f32> = vec![0_f32; size * size ];
+        let mut w: Vec<f32> = vec![0_f32; size ];
         // I - Buu'
-        // H[i+1] * H[i] = Q[i+1] - B[i](Q[i+1]u[i])u'[i]
-        // Qu := w
-        for p in 0..size {
-            println!("hello {p:?}");
+        // H[i+1] * H[i] = H[i+1] - B[i](H[i+1]u[i])u'[i]
+        // Hu := w
+        // H[i+1] -= B[i] *w[i+1]u'[i]
+        // TODO: This should coincide with the change in the for 0..cols.min(rows)-1 change
+        for p in 0..size - 1 {
             let proj = &self.projections[p];
+            println!("w[i] {:?}", w);
             for i in p..size {
                 for j in p..size {
                     w[i] += matrix.data[i * size + j] * proj.vector[j - p];
                 }
+                println!("beta {:?}", proj.beta);
                 w[i] *= proj.beta;
             }
+            println!("w[i] {:?}", w);
             for i in p..size {
                 for j in p..size {
                     matrix.data[i * size + j] -= w[i] * proj.vector[j - p];
                 }
                 w[i] = 0_f32;
             }
+            println!("projection {matrix:?}");
         }
         matrix
     }

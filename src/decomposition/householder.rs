@@ -32,9 +32,7 @@ pub fn householder_params(x:&[f32]) -> HouseholderReflection {
     let sign = u[0].signum();
     let tmp = u[0];
     u[0] += sign * magnitude_squared.sqrt();
-    // magnitude_squared = dot_product(&u, &u);
     magnitude_squared += 2_f32 * sign * tmp * magnitude_squared.sqrt() + magnitude_squared;
-    // magnitude_squared += 2_f32 * tmp * magnitude_squared.sqrt() + magnitude_squared;
     HouseholderReflection::new(2_f32 / magnitude_squared, u)
 }
 
