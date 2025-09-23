@@ -20,7 +20,7 @@ mod tests {
     }
     
     #[test]
-    fn test_ortho() {
+    fn test_qr_q_orthogonality() {
         let dims = vec![2, 2];
         let data = vec![
             -1.0, 0.0,
@@ -40,6 +40,42 @@ mod tests {
 
         assert!(approx_eq(&left_result.data, &expected, 1e-3));
         assert!(approx_eq(&right_result.data, &expected, 1e-3));
+    }
+    #[test]
+    fn test_qr_triangle() {
+        let dims = vec![2, 2];
+        let data = vec![
+            -1.0, 0.0,
+             5.0, 2.0,
+        ];
+        let x = NdArray::new(dims, data);
+        let qr = qr_decompose(x);
+        let expected = vec![
+            5.099,  1.961,
+            0.000, -0.392,
+        ];
+
+        assert!(approx_eq(&qr.triangle.data, &expected, 1e-3));
+    }
+    
+    #[test]
+    fn test_qr_decomp_equals_matrix() {
+        let dims = vec![2, 2];
+        let data = vec![
+            -1.0, 0.0,
+             5.0, 2.0,
+        ];
+        let x = NdArray::new(dims, data);
+        let qr = qr_decompose(x);
+        let result = tensor_mult(4, &qr.projection_matrix(), &qr.triangle); 
+        // let mut result = qr.triangle.clone();
+        // qr.left_multiply(&mut result);
+        let expected = vec![
+            -1.0, 0.0,
+             5.0, 2.0,
+        ];
+        println!("result {:?}", result);
+        assert!(approx_eq(&result.data, &expected, 1e-3));
     }
 
     #[test]
@@ -66,22 +102,39 @@ mod tests {
         assert!(approx_eq(&ortho.data, &expected, 1e-3));
     }
 
+    #[test]
+    fn test_qr_decompose_triangle() {
+        let dims = vec![2, 2];
+        let data = vec![
+            -1.0, 0.0,
+             5.0, 2.0,
+        ];
+        let x = NdArray::new(dims, data);
+
+        let qr = qr_decompose(x.clone());
+        let expected_triangle = vec![
+            5.099,  1.961,
+            0.000, -0.392,
+        ];
+        assert!(approx_eq(&qr.triangle.data, &expected_triangle, 1e-3));
+    }
+
     // #[test]
-    // fn test_qr_decompose_triangle() {
+    // fn test_schur_kernel() {
     //     let dims = vec![2, 2];
     //     let data = vec![
     //         -1.0, 0.0,
     //          5.0, 2.0,
     //     ];
     //     let x = NdArray::new(dims, data);
-
-    //     let qr = qr_decompose(x.clone());
-    //     let expected_triangle = vec![
-    //         5.099,  1.961,
-    //         0.000, -0.392,
+    //     let schur = real_schur(x);
+    //     let expected_kernel= vec![
+    //         2.000, -5.000,
+    //         0.000, -1.000,
     //     ];
-    //     println!("qr triangle data {:?}", qr.triangle);
-    //     assert!(approx_eq(&qr.triangle.data, &expected_triangle, 1e-3));
+    //     println!("Schur kernel {:?}", &schur.kernel);
+    //     assert!(approx_eq(&schur.kernel.data, &expected_kernel, 1e-3));
+
     // }
 
     // #[test]

@@ -68,26 +68,43 @@ impl QrDecomposition {
         // Hu := w
         // H[i+1] -= B[i] *w[i+1]u'[i]
         // TODO: This should coincide with the change in the for 0..cols.min(rows)-1 change
-        for p in 0..size - 1 {
+        for p in 0..size-1 {
             let proj = &self.projections[p];
-            println!("w[i] {:?}", w);
             for i in p..size {
                 for j in p..size {
-                    w[i] += matrix.data[i * size + j] * proj.vector[j - p];
+                    w[ i ] += matrix.data[ i * size + j ] * proj.vector[ j - p ];
                 }
-                println!("beta {:?}", proj.beta);
-                w[i] *= proj.beta;
+                w[ i ] *= proj.beta;
             }
-            println!("w[i] {:?}", w);
             for i in p..size {
                 for j in p..size {
-                    matrix.data[i * size + j] -= w[i] * proj.vector[j - p];
+                    matrix.data[ i * size + j ] -= w[ i ] * proj.vector[ j - p ];
                 }
-                w[i] = 0_f32;
+                w[ i ] = 0_f32;
             }
-            println!("projection {matrix:?}");
         }
         matrix
+    }
+    pub fn triangle_rotation_b(&mut self) {
+        // Specifically for the Schur algorithm
+        // A' = Q'AQ = Q'(QR)Q = RQ
+        let size = self.size();
+        let mut w: Vec<f32> = vec![0_f32; size]; 
+        for p in 0..size-1 {
+            let proj = &self.projections[p];
+            for i in p..size {
+                for j in p..size {
+                    w[ i ] += self.triangle.data[ i * size + j ] * proj.vector[ j - p ];
+                }
+                w[ i ] *= proj.beta;
+            }
+            for i in p..size {
+                for j in p..size {
+                    self.triangle.data[ i * size + j ] -= w[ i ] * proj.vector[ j - p ]; 
+                }
+                w[ i ] = 0_f32;
+            }
+        }
     }
     // pub fn deothrogonalize(&self, v: &mut Vec<f32>) {
     //     let vlen = v.len();
@@ -100,6 +117,7 @@ impl QrDecomposition {
     //     }
     // }
     pub fn left_multiply(&self, target: &mut NdArray) {
+        // AX -> QX
         // H[i]*X = X - Buu'X
         // w = u'X
         debug_assert!(target.dims[0] == target.dims[1]);
@@ -140,24 +158,24 @@ impl QrDecomposition {
     //     });
     //     NdArray::new(dims, data)
     // }
-    // pub fn triangle_rotation(&self) -> NdArray {
-    //     self.triangle.clone()
-    //     // // skeptical
-    //     // let dims = self.triangle.dims.clone();
-    //     // let mut data = self.triangle.data.clone();
-    //     // let rows = self.triangle.dims[0];
+    pub fn triangle_rotation(&mut self)  {
+        // // skeptical
+        let dims = self.triangle.dims.clone();
+        let mut data = self.triangle.data.clone();
+        let rows = self.triangle.dims[0];
 
-    //     // (0..self.triangle.dims[0]).rev().for_each(|i| {
-    //     //     let start = i * rows;
-    //     //     let end = (i + 1) * rows;
-    //     //     let row = &data[start..end];
-    //     //     let cordinate = self.multiply_vector(row.to_vec());
-    //     //     for k in 0..cordinate.len() {
-    //     //         data[i * dims[0] + k] = cordinate[k];
-    //     //     }
-    //     // });
-    //     // NdArray::new(dims, data)
-    // }
+        (0..self.triangle.dims[0]).rev().for_each(|i| {
+            let start = i * rows;
+            let end = (i + 1) * rows;
+            let row = &data[start..end];
+            let cordinate = self.multiply_vector(row.to_vec());
+            for k in 0..cordinate.len() {
+                data[i * dims[0] + k] = cordinate[k];
+            }
+        });
+        self.triangle = NdArray::new(dims, data);
+        // NdArray::new(dims, data)
+    }
     fn multiply_vector(&self, mut data: Vec<f32>) -> Vec<f32> {
         let size = self.size(); 
         debug_assert!(data.len() == size);

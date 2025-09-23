@@ -41,26 +41,10 @@ V: (
 )
 eigen vec [-0.51449555, 0.857493]
 
-
-// from tensor mult
-qr ortho data (
-        ( 2.737, -0.852),
-        ( 1.424, -2.090),
+// checking if QR = A
+result from the thing
+result (
+        (-1.000, -0.769),
+        ( 5.000,  1.846),
 )
-
-// ortho raw projections 
-pre transpose (
-        (-0.196,  0.981),
-        ( 0.981, -0.196),
-)
-
-// this should be the first one
-outer product for result (
-        (-0.196,  0.981),
-        ( 0.981,  0.196),
-)
-
-
-[HouseholderReflection { beta: 0.8038838, vector: [-1.2198039, 1.0] }, Householde
-rReflection { beta: 0.5, vector: [2.0] }]
 

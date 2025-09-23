@@ -1,7 +1,9 @@
 use crate::algebra::ndmethods::create_identity_matrix;
-use crate::decomposition::qr::qr_decompose;
+use crate::decomposition::qr::{qr_decompose, QrDecomposition};
+use crate::algebra::ndmethods::tensor_mult;
 use crate::structure::ndarray::NdArray;
 
+// const CONVERGENCE_CONDITION: f32 = 1e-6;
 const CONVERGENCE_CONDITION: f32 = 1e-6;
 
 pub struct SchurDecomp {
@@ -21,10 +23,19 @@ impl SchurDecomp {
 //     SchurDecomp { rotation, kernel }
 // }
 fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
-    let qr = qr_decompose(schur.kernel);
+    let mut qr2 = qr_decompose(schur.kernel.clone());
+    let mut qr = qr_decompose(schur.kernel);
     // Apply Q to a matrix X ie (QR) -> Qx
-    qr.left_multiply(&mut schur.rotation); // RQ = Q'AQ
-    SchurDecomp { rotation:schur.rotation, kernel:qr.triangle }
+    println!("triangle before {:?}", qr.triangle);
+    let baseline = tensor_mult(4, &qr.triangle, &qr.projection_matrix());
+    qr2.triangle_rotation(); 
+    qr.triangle_rotation_b(); 
+    println!("qr2.triangle {:?}", qr2.triangle);
+    println!("qr.triangle {:?}", qr.triangle);
+    println!("triangle after {:?}", qr.triangle);
+    qr.left_multiply(&mut schur.rotation);
+    schur.kernel = qr.triangle;
+    schur
 }
 
 fn real_schur_threshold(kernel: &NdArray) -> f32 {
@@ -37,16 +48,32 @@ fn real_schur_threshold(kernel: &NdArray) -> f32 {
             off_diagonal += kernel.data[i * rows + j].abs();
         }
     }
+    println!("off_diagonal {off_diagonal:?}");
     off_diagonal
 }
+
+// pub fn real_schur(kernel: NdArray) -> SchurDecomp {
+//     let rows = kernel.dims[0];
+//     let identity = create_identity_matrix(rows);
+//     let mut schur = SchurDecomp::new(identity, kernel);
+//     println!("hello world");
+//     while CONVERGENCE_CONDITION < real_schur_threshold(&schur.kernel) {
+//         println!("going");
+//         schur = real_schur_iteration(schur);
+//     }
+//     schur
+// }
 
 pub fn real_schur(kernel: NdArray) -> SchurDecomp {
     let rows = kernel.dims[0];
     let identity = create_identity_matrix(rows);
     let mut schur = SchurDecomp::new(identity, kernel);
-
+    println!("hello world");
     while CONVERGENCE_CONDITION < real_schur_threshold(&schur.kernel) {
+        real_schur_threshold(&schur.kernel);
+        println!("going");
         schur = real_schur_iteration(schur);
+        assert!(false);
     }
     schur
 }
