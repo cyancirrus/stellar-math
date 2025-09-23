@@ -23,14 +23,11 @@ impl SchurDecomp {
 //     SchurDecomp { rotation, kernel }
 // }
 fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
-    let mut qr2 = qr_decompose(schur.kernel.clone());
     let mut qr = qr_decompose(schur.kernel);
     // Apply Q to a matrix X ie (QR) -> Qx
     println!("triangle before {:?}", qr.triangle);
     let baseline = tensor_mult(4, &qr.triangle, &qr.projection_matrix());
-    qr2.triangle_rotation(); 
-    qr.triangle_rotation_b(); 
-    println!("qr2.triangle {:?}", qr2.triangle);
+    qr.triangle_rotation(); 
     println!("qr.triangle {:?}", qr.triangle);
     println!("triangle after {:?}", qr.triangle);
     qr.left_multiply(&mut schur.rotation);
