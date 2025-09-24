@@ -16,10 +16,15 @@ impl SchurDecomp {
         Self { rotation, kernel }
     }
 }
-
+// fn real_schur_iteration(schur: SchurDecomp) -> SchurDecomp {
+//     let qr = qr_decompose(schur.kernel);
+//     let rotation = qr.left_multiply(schur.rotation); // RQ = Q'AQ
+//     let kernel = qr.triangle_rotation();
+//     SchurDecomp { rotation, kernel }
+// }
 fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
-    // Apply Q to a matrix X ie (QR) -> Qx
     let mut qr = qr_decompose(schur.kernel);
+    // Apply Q to a matrix X ie (QR) -> Qx
     qr.triangle_rotation(); 
     qr.left_multiply(&mut schur.rotation);
     schur.kernel = qr.triangle;
