@@ -54,17 +54,14 @@ QR should be x (
         (-0.385,  0.077),
 )
 
+#TODO: Debug QR = A
+// Tests are updated
+// Need to make matrices of different shapes and test
 
 
-// ortho raw projections 
-[HouseholderReflection { beta: 1.1961162, vector: [-1.2198039, 1.0] },
-HouseholderReflection { beta: 0.5, vector: [2.0] }]
-pre transpose (
-        (-0.780,  1.459),
-        ( 1.459,  0.196),
+result of implicit multiply
+result (
+        (-0.038,  5.385),
+        ( 0.192,  0.077),
 )
-
-// from main
-[HouseholderReflection { beta: 0.8038838, vector: [-1.2198039, 1.0] }, Householde
-rReflection { beta: 0.5, vector: [2.0] }]
 

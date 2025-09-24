@@ -64,6 +64,30 @@ mod tests {
         assert!(approx_eq(&left_result.data, &expected, 1e-3));
         assert!(approx_eq(&right_result.data, &expected, 1e-3));
     }
+
+    #[test]
+    fn test_qr_projection_and_implicit_mult() {
+        let dims = vec![2, 2];
+        let data = vec![
+            -1.0, 0.0,
+             5.0, 2.0,
+        ];
+        let other = vec![
+            1.5, -0.3,
+             3.0, 1.2,
+        ];
+        let x = NdArray::new(dims.clone(), data);
+        let mut y_implicit = NdArray::new(dims.clone(), other.clone());
+        let y_explicit = NdArray::new(dims, other);
+        let qr = qr_decompose(x);
+        let projection = qr.projection_matrix();
+        qr.left_multiply(&mut y_implicit);
+        assert!(approx_eq(
+            &tensor_mult(4, &projection, &y_explicit).data,
+            &y_implicit.data,
+            1e-3
+        ));
+    }
     // #[test]
     // fn test_qr_triangle() {
     //     let dims = vec![2, 2];
@@ -81,25 +105,25 @@ mod tests {
     //     assert!(approx_eq(&qr.triangle.data, &expected, 1e-3));
     // }
     
-    // #[test]
-    // fn test_qr_decomp_equals_matrix() {
-    //     let dims = vec![2, 2];
-    //     let data = vec![
-    //         -1.0, 0.0,
-    //          5.0, 2.0,
-    //     ];
-    //     let x = NdArray::new(dims, data);
-    //     let qr = qr_decompose(x);
-    //     let result = tensor_mult(4, &qr.projection_matrix(), &qr.triangle); 
-    //     // let mut result = qr.triangle.clone();
-    //     // qr.left_multiply(&mut result);
-    //     let expected = vec![
-    //         -1.0, 0.0,
-    //          5.0, 2.0,
-    //     ];
-    //     println!("result {:?}", result);
-    //     assert!(approx_eq(&result.data, &expected, 1e-3));
-    // }
+    #[test]
+    fn test_qr_decomp_equals_matrix() {
+        let dims = vec![2, 2];
+        let data = vec![
+            -1.0, 0.0,
+             5.0, 2.0,
+        ];
+        let x = NdArray::new(dims, data);
+        let qr = qr_decompose(x);
+        let result = tensor_mult(4, &qr.projection_matrix(), &qr.triangle); 
+        // let mut result = qr.triangle.clone();
+        // qr.left_multiply(&mut result);
+        let expected = vec![
+            -1.0, 0.0,
+             5.0, 2.0,
+        ];
+        println!("result {:?}", result);
+        assert!(approx_eq(&result.data, &expected, 1e-3));
+    }
 
     // #[test]
     // fn test_left_multiply() {

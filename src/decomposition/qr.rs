@@ -101,9 +101,6 @@ impl QrDecomposition {
             triangle,
         }
     }
-    pub fn size(&self) -> usize {
-        self.card.saturating_sub(1)
-    }
     pub fn projection_matrix(&self) -> NdArray {
         let card = self.card;
         let mut matrix = create_identity_matrix(card);
