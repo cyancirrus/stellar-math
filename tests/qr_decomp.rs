@@ -5,7 +5,7 @@ use stellar::decomposition::schur::real_schur;
 
 #[cfg(test)]
 
-mod tests {
+mod qr_decomposition {
     use super::*; // bring your NdArray and functions in scope
 
     fn approx_eq(a: &[f32], b: &[f32], tol: f32) -> bool {
