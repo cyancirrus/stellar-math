@@ -12,12 +12,10 @@ pub struct QrDecomposition {
 }
 
 pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
-    // direct depends: left_multiply, projection_matrix, schur
-    let (rows, cols)  = (x.dims[0], x.dims[1]);
-    let card = rows.min(cols);
-    let mut projections = Vec::with_capacity(cols.min(rows));
-    let mut update: Vec<f32> = vec![0_f32; rows * cols];
-
+    // NOTE: I accidentally left factored need to right factor the matrix
+    let (rows, cols, card)  = (x.dims[0], x.dims[1], x.dims[0].min(x.dims[1]));
+    let mut projections = Vec::with_capacity(card.saturating_sub(1));
+    let mut w = vec![0_f32; rows];
     for o in 0..card.saturating_sub(1) {
         let column_vector = (o..rows)
             .into_par_iter()
@@ -25,24 +23,20 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
             .collect::<Vec<f32>>();
         let proj = householder_params(&column_vector);
         println!("projection {proj:?}");
+        // (i - buu')A
+        // A - bu(u'A)
+        // (u'A)' = A'u
         for i in o..rows {
             for j in o..cols {
-                // Need to compute the change for everything to the right of the initial vector
-                for k in o..cols {
-                    update[ i * cols + j ] += {
-                        x.data[ i * cols + k ] *
-                        proj.vector[k - o] * 
-                        proj.vector[j - o] *
-                        proj.beta
-                    }
-                }
+                w[i] += x.data[j * cols + i] * proj.vector[i-o];
             }
+            w[i] *= proj.beta;
         }
         for i in o..rows {
             for j in o..cols {
-                x.data[ i * cols + j ] -= update[ i * cols + j ];
-                update[ i * cols + j ] = 0_f32;
+                x.data[ i * cols + j ] -= w[i] * proj.vector[j - o];
             }
+            w[i] = 0_f32;
         }
         projections.push(proj);
     }
@@ -51,7 +45,7 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
             x.data[ i * cols + j ] = 0_f32
         }
     }
-    println!("traingle {:?}", x);
+    println!("triangle {:?}", x);
     QrDecomposition::new(rows, cols, card, projections, x)
 }
 
