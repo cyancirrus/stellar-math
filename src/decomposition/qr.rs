@@ -25,16 +25,15 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
             .collect::<Vec<f32>>();
         let proj = householder_params(&column_vector);
         println!("projection {proj:?}");
-        projections.push(proj);
         for i in o..rows {
             for j in o..cols {
                 // Need to compute the change for everything to the right of the initial vector
                 for k in o..cols {
                     update[ i * cols + j ] += {
                         x.data[ i * cols + k ] *
-                        projections[o].vector[k - o] * 
-                        projections[o].vector[j - o] *
-                        projections[o].beta
+                        proj.vector[k - o] * 
+                        proj.vector[j - o] *
+                        proj.beta
                     }
                 }
             }
@@ -45,12 +44,14 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
                 update[ i * cols + j ] = 0_f32;
             }
         }
+        projections.push(proj);
     }
     for i in 1..rows {
         for j in 0..i {
             x.data[ i * cols + j ] = 0_f32
         }
     }
+    println!("traingle {:?}", x);
     QrDecomposition::new(rows, cols, card, projections, x)
 }
 
