@@ -19,13 +19,13 @@ impl NdArray {
     pub fn card(&self) -> usize {
         self.data.len()
     }
-    pub fn diff(&mut self, other:Self) {
+    pub fn diff(&mut self, other: Self) {
         debug_assert!(other.dims() == self.dims());
         for idx in 0..self.card() {
             self.data[idx] -= other.data[idx];
         }
     }
-    pub fn sum(&mut self, other:Self) {
+    pub fn sum(&mut self, other: Self) {
         debug_assert!(other.dims() == self.dims());
         for idx in 0..self.dims.len() {
             self.data[idx] += other.data[idx];
@@ -33,17 +33,17 @@ impl NdArray {
     }
 }
 
-struct NdIterator <'a> {
-    drow:usize,
-    dcol:usize,
-    row:usize,
-    col:usize,
-    ndarray:&'a NdArray,
+struct NdIterator<'a> {
+    drow: usize,
+    dcol: usize,
+    row: usize,
+    col: usize,
+    ndarray: &'a NdArray,
 }
 
-impl <'a> Iterator for NdIterator <'a> {
+impl<'a> Iterator for NdIterator<'a> {
     type Item = f32;
-    
+
     fn next(&mut self) -> Option<Self::Item> {
         let (rows, cols) = (self.ndarray.dims[0], self.ndarray.dims[1]);
         (self.row, self.col) = (self.row + self.drow, self.col + self.dcol);
@@ -57,7 +57,7 @@ impl <'a> Iterator for NdIterator <'a> {
 }
 
 impl NdArray {
-    fn iterate(&self, drow:usize, dcol:usize, row:usize, col:usize) -> NdIterator {
+    fn iterate(&self, drow: usize, dcol: usize, row: usize, col: usize) -> NdIterator {
         NdIterator {
             drow,
             dcol,
@@ -70,7 +70,7 @@ impl NdArray {
         self.dims.swap(0, 1);
         for i in 0..self.dims[0] {
             for j in i + 1..self.dims[1] {
-                self.data.swap( i * self.dims[1] + j, j * self.dims[1] + i );
+                self.data.swap(i * self.dims[1] + j, j * self.dims[1] + i);
             }
         }
     }
@@ -80,7 +80,7 @@ impl NdArray {
         dims.swap(0, 1);
         for i in 0..dims[0] {
             for j in 0..dims[1] {
-                data[ i * dims[1] + j ] = self.data[ j * dims[0] + i ] 
+                data[i * dims[1] + j] = self.data[j * dims[0] + i]
             }
         }
         NdArray { dims, data }

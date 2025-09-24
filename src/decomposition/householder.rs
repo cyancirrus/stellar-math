@@ -15,15 +15,19 @@ impl HouseholderReflection {
     }
 }
 
-const EPSILON:f32 = 1e-6;
+const EPSILON: f32 = 1e-6;
 
-pub fn householder_params(x:&[f32]) -> HouseholderReflection {
+pub fn householder_params(x: &[f32]) -> HouseholderReflection {
     let length = x.len();
     let mut max_element = f32::NEG_INFINITY;
     let mut magnitude_squared = 0_f32;
-    for i in 0..length { max_element = max_element.max(x[ i ]); }
-    if max_element.abs() < EPSILON { return HouseholderReflection::new(0_f32, vec![0_f32]); }
-    let mut u = vec![0_f32;length];
+    for i in 0..length {
+        max_element = max_element.max(x[i]);
+    }
+    if max_element.abs() < EPSILON {
+        return HouseholderReflection::new(0_f32, vec![0_f32]);
+    }
+    let mut u = vec![0_f32; length];
     for i in 0..length {
         let result = x[i] / max_element;
         u[i] = result;

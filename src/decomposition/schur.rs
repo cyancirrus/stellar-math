@@ -1,6 +1,6 @@
 use crate::algebra::ndmethods::create_identity_matrix;
-use crate::decomposition::qr::{qr_decompose, QrDecomposition};
 use crate::algebra::ndmethods::tensor_mult;
+use crate::decomposition::qr::{qr_decompose, QrDecomposition};
 use crate::structure::ndarray::NdArray;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
@@ -18,7 +18,7 @@ impl SchurDecomp {
 fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
     let mut qr = qr_decompose(schur.kernel);
     // Apply Q to a matrix X ie (QR) -> Qx
-    qr.triangle_rotation(); 
+    qr.triangle_rotation();
     // might want to make a thing where not needed or optional
     qr.left_multiply(&mut schur.rotation);
     schur.kernel = qr.triangle;

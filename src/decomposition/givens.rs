@@ -13,7 +13,7 @@ pub struct SingularValueDecomp {
 }
 
 impl SingularValueDecomp {
-    pub fn new(u: NdArray, s: NdArray,  v: NdArray) -> Self {
+    pub fn new(u: NdArray, s: NdArray, v: NdArray) -> Self {
         Self { s, u, v }
     }
 }
@@ -28,30 +28,29 @@ pub fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
     let mut u = create_identity_matrix(m);
     let mut v = create_identity_matrix(n);
     // let mut max_iteration = 1<<12;
-    let mut max_iteration = 1<<4;
+    let mut max_iteration = 1 << 4;
     // left work
-    while 
-        offdiag_norm(&s) > CONVERGENCE_CONDITION
-        && max_iteration > 0
-        {
-        for i in 0..k-1 {
-            let (_, cosine, sine) = implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) *n + i]);
+    while offdiag_norm(&s) > CONVERGENCE_CONDITION && max_iteration > 0 {
+        for i in 0..k - 1 {
+            let (_, cosine, sine) =
+                implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
             // below diagonal element
-            let g = embed_givens(m, i,i + 1, cosine, sine);
+            let g = embed_givens(m, i, i + 1, cosine, sine);
             s = tensor_mult(2, &g, &s);
             u = tensor_mult(2, &u, &g);
-            
-            let (_, cosine, sine) = implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
+
+            let (_, cosine, sine) =
+                implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
             let g = embed_givens(n, i, i + 1, cosine, sine);
             s = tensor_mult(2, &s, &transpose(g.clone()));
             v = tensor_mult(2, &v, &g);
         }
-        max_iteration -=1
+        max_iteration -= 1
     }
     SingularValueDecomp { u, s, v }
 }
 
-fn embed_givens(n:usize, i:usize, j:usize, c:f32, s:f32) -> NdArray {
+fn embed_givens(n: usize, i: usize, j: usize, c: f32, s: f32) -> NdArray {
     let mut array = create_identity_matrix(n);
     array.data[i * n + i] = c;
     array.data[i * n + j] = s;
@@ -60,16 +59,16 @@ fn embed_givens(n:usize, i:usize, j:usize, c:f32, s:f32) -> NdArray {
     array
 }
 
-// m x n, m x m x n 
+// m x n, m x m x n
 
 fn offdiag_norm(s: &NdArray) -> f32 {
     let m = s.dims[0];
     let n = s.dims[1];
     let mut norm = 0.0;
-    for i in 0..m.min(n)-1 {
+    for i in 0..m.min(n) - 1 {
         // upper diagonal
         // norm += s.data[i * n + i + 1].abs();
-        norm += s.data[i * n + i + 1].abs() + s.data[ (i + 1) * n + 1 ].abs();
+        norm += s.data[i * n + i + 1].abs() + s.data[(i + 1) * n + 1].abs();
     }
     norm
 }
@@ -136,10 +135,10 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
 //     //
 //     let reference = golub_kahan_explicit(x.clone());
 //     println!("Reference {:?}", reference);
-    
+
 //     let y = qr_decompose(x.clone());
 //     println!("triangle {:?}", y.triangle);
-    
+
 //     let real_schur = real_schur(x.clone());
 //     println!("real schur kernel {:?}", real_schur.kernel);
 
@@ -147,4 +146,3 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
 //     println!("svd u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd.u, svd.s, svd.v);
 
 // }
-

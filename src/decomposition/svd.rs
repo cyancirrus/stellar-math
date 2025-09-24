@@ -5,7 +5,6 @@ use crate::structure::ndarray::NdArray;
 use rayon::prelude::ParallelIterator;
 use rayon::prelude::*;
 
-
 pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
     let rows = a.dims[0];
     let cols = a.dims[1];
@@ -48,7 +47,6 @@ pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
     }
     a
 }
-
 
 #[allow(non_snake_case)]
 pub fn golub_kahan_lanczos(a: NdArray) -> (NdArray, NdArray, NdArray) {

@@ -31,14 +31,14 @@ pub fn dot_product(x: &[f32], y: &[f32]) -> f32 {
 }
 
 pub fn distance_squared(x: &[f32], y: &[f32]) -> f32 {
-    x.iter().zip(y.iter()).map(|(&x, &y)| (x - y) * (x - y)).sum()
+    x.iter()
+        .zip(y.iter())
+        .map(|(&x, &y)| (x - y) * (x - y))
+        .sum()
 }
 
 pub fn magnitude_squared(x: &[f32]) -> f32 {
-    x.iter()
-        .zip(x.iter())
-        .map(|(&x, &y)| x * y)
-        .sum()
+    x.iter().zip(x.iter()).map(|(&x, &y)| x * y).sum()
 }
 
 pub fn magnitude(x: &[f32]) -> f32 {

@@ -1,9 +1,8 @@
-use crate::decomposition::svd::golub_kahan_explicit;
-use crate::decomposition::schur::real_schur;
-use crate::decomposition::qr::qr_decompose;
 use crate::decomposition::givens::givens_iteration;
+use crate::decomposition::qr::qr_decompose;
+use crate::decomposition::schur::real_schur;
+use crate::decomposition::svd::golub_kahan_explicit;
 use crate::structure::ndarray::NdArray;
-
 
 // Tihnov
 // https://en.wikipedia.org/wiki/Ridge_regression
@@ -11,31 +10,31 @@ use crate::structure::ndarray::NdArray;
 // Learn runge kutta soon
 // https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
 
-const EPSILON:f32 = 1e-6;
+const EPSILON: f32 = 1e-6;
 
-fn scale_identity(n:usize, c:f32) -> NdArray {
-    let mut mat = vec![0_f32;n*n];
+fn scale_identity(n: usize, c: f32) -> NdArray {
+    let mut mat = vec![0_f32; n * n];
     for i in 0..n {
-        mat[ i * n + i ] = c;
+        mat[i * n + i] = c;
     }
-    NdArray::new(vec![n,n], mat)
+    NdArray::new(vec![n, n], mat)
 }
 
-fn target_rotation_indices(matrix:&NdArray) -> (usize, usize) {
+fn target_rotation_indices(matrix: &NdArray) -> (usize, usize) {
     debug_assert!(matrix.dims.len() == 2);
     debug_assert!(matrix.dims[0] == matrix.dims[1]);
     let m = matrix.dims[0];
-    let mut rswap = m-1;
+    let mut rswap = m - 1;
     for i in 0..m {
-        if matrix.data[ i * m + i ].abs() < EPSILON {
+        if matrix.data[i * m + i].abs() < EPSILON {
             rswap = i;
             break;
         }
     }
-    return (rswap, m-1)
+    return (rswap, m - 1);
 }
 
-fn row_swap(i:usize, j:usize, matrix:&mut NdArray) {
+fn row_swap(i: usize, j: usize, matrix: &mut NdArray) {
     debug_assert!(matrix.dims.len() == 2);
     debug_assert!(matrix.dims[0] == matrix.dims[1]);
     let m = matrix.dims[1];
@@ -46,7 +45,7 @@ fn row_swap(i:usize, j:usize, matrix:&mut NdArray) {
     }
 }
 
-fn normalize(v:&mut Vec<f32>) {
+fn normalize(v: &mut Vec<f32>) {
     let mut norm = 0_f32;
     for i in 0..v.len() {
         norm += v[i] * v[i];
@@ -58,11 +57,11 @@ fn normalize(v:&mut Vec<f32>) {
 }
 
 // TODO: Need to have row_swap be within the loop
-pub fn retrieve_eigen(eig:f32, mut matrix:NdArray) -> Vec<f32> {
+pub fn retrieve_eigen(eig: f32, mut matrix: NdArray) -> Vec<f32> {
     // debug_assert!(matrix.dims.len() == 2);
     // debug_assert!(matrix.dims[0] == matrix.dims[1]);
     let m = matrix.dims[0];
-    let mut evector = vec![0_f32;m];
+    let mut evector = vec![0_f32; m];
     let lambda_i = scale_identity(m, eig);
     // (A - lambda I)v = 0
     // (A - lambda I) = L
@@ -83,7 +82,7 @@ pub fn retrieve_eigen(eig:f32, mut matrix:NdArray) -> Vec<f32> {
             evector[i] = 1_f32;
         } else {
             let mut sum = 0_f32;
-            for j in i+1..m {
+            for j in i + 1..m {
                 sum += qr.triangle.data[i * m + j] * evector[j];
             }
             evector[i] = -sum / diag;
@@ -94,16 +93,15 @@ pub fn retrieve_eigen(eig:f32, mut matrix:NdArray) -> Vec<f32> {
     evector
 }
 
-
 fn main() {
     // {
-        // Eigen values 2, -1
-        let mut data = vec![0_f32; 4];
-        let dims = vec![2; 2];
-        data[0] = -1_f32;
-        data[1] = 0_f32;
-        data[2] = 5_f32;
-        data[3] = 2_f32;
+    // Eigen values 2, -1
+    let mut data = vec![0_f32; 4];
+    let dims = vec![2; 2];
+    data[0] = -1_f32;
+    data[1] = 0_f32;
+    data[2] = 5_f32;
+    data[3] = 2_f32;
     // }
     // {
     //     data = vec![0_f32; 9];
@@ -123,18 +121,20 @@ fn main() {
     //
     let reference = golub_kahan_explicit(x.clone());
     println!("Reference {:?}", reference);
-    
+
     let y = qr_decompose(x.clone());
     println!("triangle {:?}", y.triangle);
-    
+
     let real_schur = real_schur(x.clone());
     // eigenvalues
     println!("real schur kernel {:?}", real_schur.kernel);
 
     let svd = givens_iteration(reference);
-    println!("svd u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd.u, svd.s, svd.v);
+    println!(
+        "svd u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",
+        svd.u, svd.s, svd.v
+    );
 
     let evector = retrieve_eigen(real_schur.kernel.data[3], x.clone());
     println!("eigen vec {evector:?}");
 }
-

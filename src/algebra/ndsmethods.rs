@@ -1,5 +1,5 @@
-use crate::structure::ndsignal::{Complex, NdSignal};
 use crate::algebra::fourier::{fft, ifft};
+use crate::structure::ndsignal::{Complex, NdSignal};
 use std::f32::consts::PI;
 
 pub fn complex_tensor_mult(a: NdSignal, b: NdSignal) -> NdSignal {
@@ -44,7 +44,7 @@ pub fn fft_rowwise(a: &mut NdSignal) {
     let card = a.dims.iter().product();
     let mut i = 0;
     while i < card {
-        fft(&mut a.data[i..i+cols]);
+        fft(&mut a.data[i..i + cols]);
         i += cols;
     }
 }
