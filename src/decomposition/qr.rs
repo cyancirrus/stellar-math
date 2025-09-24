@@ -26,17 +26,18 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
         // (i - buu')A
         // A - bu(u'A)
         // (u'A)' = A'u
-        for i in o..rows {
-            for j in o..cols {
-                w[i] += x.data[j * cols + i] * proj.vector[i-o];
+        for j in o..cols {
+            for i in o..rows {
+                w[j] += x.data[ i * cols + j ] * proj.vector[ i - o ];
             }
-            w[i] *= proj.beta;
+            w[j] *= proj.beta;
+            // tanspose vector
         }
-        for i in o..rows {
-            for j in o..cols {
-                x.data[ i * cols + j ] -= w[j] * proj.vector[i - o];
+        for j in o..cols {
+            for i in o..rows {
+                x.data[ i * cols + j ] -= w[ j ] * proj.vector[ i - o ];
             }
-            w[i] = 0_f32;
+            w[j] = 0_f32;
         }
         projections.push(proj);
     }
