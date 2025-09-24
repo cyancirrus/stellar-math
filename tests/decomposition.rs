@@ -98,29 +98,27 @@ mod tests {
         let expected = data.clone();
         let x = NdArray::new(dims, data);
         let qr = qr_decompose(x);
-        let result = tensor_mult(4, &qr.projection_matrix(), &qr.triangle); 
-        // let mut result = qr.triangle.clone();
-        // qr.left_multiply(&mut result);
-        println!("result {:?}", result);
+        // let result = tensor_mult(4, &qr.projection_matrix(), &qr.triangle); 
+        let mut result = qr.triangle.clone();
+        qr.left_multiply(&mut result);
         assert!(approx_eq(&result.data, &expected, 1e-3));
     }
-    // wrong value of triangle
-    // #[test]
-    // fn test_qr_triangle() {
-    //     let dims = vec![2, 2];
-    //     let data = vec![
-    //         -1.0, 0.0,
-    //          5.0, 2.0,
-    //     ];
-    //     let x = NdArray::new(dims, data);
-    //     let qr = qr_decompose(x);
-    //     let expected = vec![
-    //         5.099,  1.961,
-    //         0.000, -0.392,
-    //     ];
 
-    //     assert!(approx_eq(&qr.triangle.data, &expected, 1e-3));
-    // }
+    #[test]
+    fn test_qr_triangle() {
+        let dims = vec![2, 2];
+        let data = vec![
+            -1.0, 0.0,
+             5.0, 2.0,
+        ];
+        let x = NdArray::new(dims, data);
+        let qr = qr_decompose(x);
+        let expected = vec![
+            5.099, 1.961,
+            0.000, 0.392,
+        ];
+        assert!(approx_eq(&qr.triangle.data, &expected, 1e-3));
+    }
     
 
     // #[test]
