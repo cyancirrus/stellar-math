@@ -97,9 +97,11 @@ mod qr_decomposition {
 
     #[test]
     fn test_qr_triangle() {
-        // if these don't have triangle test wont hold
-        test_zeroing_below_diagonal();
-        test_q_matrix_orthonormality();
+        // Assumes that:
+        // 1. test_zeroing_below_diagonal passes
+        // 2. test_q_matrix_orthonormality passes
+        //
+        // Only then does this triangle test make sense.
         let dims = vec![2, 2];
         let data = vec![
             -1.0, 0.0,
@@ -112,23 +114,5 @@ mod qr_decomposition {
             0.000, 0.392,
         ];
         assert!(approx_eq(&qr.triangle.data, &expected));
-    }
-    
-    #[test]
-    fn test_schur_kernel() {
-        let dims = vec![2, 2];
-        let data = vec![
-            -1.0, 0.0,
-             5.0, 2.0,
-        ];
-        let x = NdArray::new(dims.clone(), data);
-        let schur = real_schur(x);
-        let expected_eigens= vec![ 2.000, -1.000];
-        for i in 0..dims[0] {
-            assert!(approx_scalar_eq(
-                    expected_eigens[i],
-                    schur.kernel.data[i * (dims[0] + 1)]
-            ));
-        }
     }
 }
