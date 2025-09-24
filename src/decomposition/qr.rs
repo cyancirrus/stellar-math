@@ -34,7 +34,7 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
         }
         for i in o..rows {
             for j in o..cols {
-                x.data[ i * cols + j ] -= w[i] * proj.vector[j - o];
+                x.data[ i * cols + j ] -= w[j] * proj.vector[i - o];
             }
             w[i] = 0_f32;
         }
