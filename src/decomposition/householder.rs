@@ -37,11 +37,10 @@ pub fn householder_params(x:&[f32]) -> HouseholderReflection {
 }
 
 pub fn householder_factor(mut x: NdArray) -> QrDecomposition {
-    let rows = x.dims[0];
-    let cols = x.dims[1];
-    let mut projections = Vec::with_capacity(cols.min(rows));
+    let (rows, cols, card) = (x.dims[0], x.dims[1], x.dims[0].min(x.dims[1]));
+    let mut projections = Vec::with_capacity(card);
 
-    for o in 0..cols.min(rows) {
+    for o in 0..card {
         let column_vector = (o..rows)
             .into_par_iter()
             .map(|r| x.data[r * cols + o])
@@ -70,5 +69,5 @@ pub fn householder_factor(mut x: NdArray) -> QrDecomposition {
         queue.iter().for_each(|q| x.data[q.0] -= q.1);
         (o + 1..rows).for_each(|i| x.data[i * cols + o] = 0_f32);
     }
-    QrDecomposition::new(projections, x)
+    QrDecomposition::new(card, projections, x)
 }

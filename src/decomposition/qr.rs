@@ -6,58 +6,103 @@ use rayon::prelude::*;
 
 #[derive(Debug)]
 pub struct QrDecomposition {
+    pub cardinality: usize,
     pub projections: Vec<HouseholderReflection>,
     pub triangle: NdArray,
 }
 
 pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
-    // TODO : currently this runs for 0..cols.min(rows) should run to 0..cols.min(rows) - 1
     // direct depends: left_multiply, projection_matrix, schur
-    let rows = x.dims[0];
-    let cols = x.dims[1];
+    let (rows, cols)  = (x.dims[0], x.dims[1]);
+    let cardinality = rows.min(cols);
     let mut projections = Vec::with_capacity(cols.min(rows));
+    let mut update: Vec<f32> = vec![0_f32; rows * cols];
 
-    for o in 0..cols.min(rows) {
+    for o in 0..cardinality.saturating_sub(1) {
         let column_vector = (o..rows)
             .into_par_iter()
             .map(|r| x.data[r * cols + o])
             .collect::<Vec<f32>>();
-        let householder = householder_params(&column_vector);
-        projections.push(householder);
-        let mut update: Vec<(usize, f32)> = vec![(0, 0_f32); (cols - o) * (rows - o)];
-        for i in 0..(rows - o).min(cols - o) {
-            for j in 0..cols - o {
+        let proj = householder_params(&column_vector);
+        println!("projection {proj:?}");
+        projections.push(proj);
+        for i in o..rows {
+            for j in o..cols {
                 // Need to compute the change for everything to the right of the initial vector
-                if i <= j || j > o {
-                    let sum = (0..rows - o)
-                        .into_par_iter()
-                        .map(|k| {
-                            x.data[(k + o) * cols + (j + o)]
-                                * projections[o].beta
-                                * projections[o].vector[i]
-                                * projections[o].vector[k]
-                        })
-                        .sum();
-                    update[i * (cols - o) + j].0 = (i + o) * cols + (j + o);
-                    update[i * (cols - o) + j].1 = sum;
+                for k in o..cols {
+                    update[ i * cols + j ] += {
+                        x.data[ i * cols + k ] *
+                        projections[o].vector[k - o] * 
+                        projections[o].vector[j - o] *
+                        projections[o].beta
+                    }
                 }
             }
         }
-        update.iter().for_each(|q| x.data[q.0] -= q.1);
-        (o + 1..rows).for_each(|i| x.data[i * cols + o] = 0_f32);
+        for i in o..rows {
+            for j in o..cols {
+                x.data[ i * cols + j ] -= update[ i * cols + j ];
+                update[ i * cols + j ] = 0_f32;
+            }
+        }
     }
-    QrDecomposition::new(projections, x)
+    for i in 1..rows {
+        for j in 0..i {
+            x.data[ i * cols + j ] = 0_f32
+        }
+    }
+    QrDecomposition::new(cardinality, projections, x)
 }
 
+// pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
+//     // TODO : currently this runs for 0..cols.min(rows) should run to 0..cols.min(rows) - 1
+//     // direct depends: left_multiply, projection_matrix, schur
+//     let rows = x.dims[0];
+//     let cols = x.dims[1];
+//     let mut projections = Vec::with_capacity(cols.min(rows));
+
+//     for o in 0..cols.min(rows) {
+//         let column_vector = (o..rows)
+//             .into_par_iter()
+//             .map(|r| x.data[r * cols + o])
+//             .collect::<Vec<f32>>();
+//         let householder = householder_params(&column_vector);
+//         projections.push(householder);
+//         let mut update: Vec<(usize, f32)> = vec![(0, 0_f32); (cols - o) * (rows - o)];
+//         for i in 0..(rows - o).min(cols - o) {
+//             for j in 0..cols - o {
+//                 // Need to compute the change for everything to the right of the initial vector
+//                 if i <= j || j > o {
+//                     let sum = (0..rows - o)
+//                         .into_par_iter()
+//                         .map(|k| {
+//                             x.data[(k + o) * cols + (j + o)]
+//                                 * projections[o].beta
+//                                 * projections[o].vector[i]
+//                                 * projections[o].vector[k]
+//                         })
+//                         .sum();
+//                     update[i * (cols - o) + j].0 = (i + o) * cols + (j + o);
+//                     update[i * (cols - o) + j].1 = sum;
+//                 }
+//             }
+//         }
+//         update.iter().for_each(|q| x.data[q.0] -= q.1);
+//         (o + 1..rows).for_each(|i| x.data[i * cols + o] = 0_f32);
+//     }
+//     QrDecomposition::new(projections, x)
+// }
+
 impl QrDecomposition {
-    pub fn new(projections: Vec<HouseholderReflection>, triangle: NdArray) -> Self {
+    pub fn new(cardinality:usize, projections: Vec<HouseholderReflection>, triangle: NdArray) -> Self {
         Self {
+            cardinality,
             projections,
             triangle,
         }
     }
     pub fn size(&self) -> usize {
-        self.projections.len()
+        self.cardinality - 1
     }
     pub fn projection_matrix(&self) -> NdArray {
         let size = self.size();
@@ -68,7 +113,7 @@ impl QrDecomposition {
         // Hu := w
         // H[i+1] -= B[i] *w[i+1]u'[i]
         // TODO: This should coincide with the change in the for 0..cols.min(rows)-1 change
-        for p in 0..size-1 {
+        for p in 0..size {
             let proj = &self.projections[p];
             for i in p..size {
                 for j in p..size {
@@ -88,19 +133,19 @@ impl QrDecomposition {
     pub fn triangle_rotation(&mut self) {
         // Specifically for the Schur algorithm
         // A' = Q'AQ = Q'(QR)Q = RQ
-        let size = self.size();
-        let mut w: Vec<f32> = vec![0_f32; size]; 
-        for p in 0..size-1 {
+        let card = self.cardinality;
+        let mut w: Vec<f32> = vec![0_f32; card]; 
+        for p in 0..self.cardinality.saturating_sub(1) {
             let proj = &self.projections[p];
-            for i in p..size {
-                for j in p..size {
-                    w[ i ] += self.triangle.data[ i * size + j ] * proj.vector[ j - p ];
+            for i in p..card {
+                for j in p..card {
+                    w[ i ] += self.triangle.data[ i * card + j ] * proj.vector[ j - p ];
                 }
                 w[ i ] *= proj.beta;
             }
-            for i in p..size {
-                for j in p..size {
-                    self.triangle.data[ i * size + j ] -= w[ i ] * proj.vector[ j - p ]; 
+            for i in p..card {
+                for j in p..card {
+                    self.triangle.data[ i * card + j ] -= w[ i ] * proj.vector[ j - p ]; 
                 }
                 w[ i ] = 0_f32;
             }
@@ -121,11 +166,11 @@ impl QrDecomposition {
         // H[i]*X = X - Buu'X
         // w = u'X
         debug_assert!(target.dims[0] == target.dims[1]);
-        debug_assert!(target.dims[0] == self.size());
-        let (rows, cols) = (target.dims[0], target.dims[1]);
+        debug_assert!(target.dims[0] == self.cardinality);
+        let (rows, cols, card) = (target.dims[0], target.dims[1], self.cardinality);
         let mut w = vec![0_f32; rows];
         // TODO: Only iterate up to that version
-        for p in 0..self.size() - 1 {
+        for p in 0..card.saturating_sub(1) {
             let proj = &self.projections[p];
             for j in 0..cols {
                 for i in p..rows {
