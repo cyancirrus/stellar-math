@@ -105,25 +105,25 @@ impl QrDecomposition {
         self.cardinality - 1
     }
     pub fn projection_matrix(&self) -> NdArray {
-        let size = self.size();
-        let mut matrix = create_identity_matrix(size);
-        let mut w: Vec<f32> = vec![0_f32; size ];
+        let card = self.cardinality;
+        let mut matrix = create_identity_matrix(card);
+        let mut w: Vec<f32> = vec![0_f32; card ];
         // I - Buu'
         // H[i+1] * H[i] = H[i+1] - B[i](H[i+1]u[i])u'[i]
         // Hu := w
         // H[i+1] -= B[i] *w[i+1]u'[i]
         // TODO: This should coincide with the change in the for 0..cols.min(rows)-1 change
-        for p in 0..size {
+        for p in 0..card.saturating_sub(1) {
             let proj = &self.projections[p];
-            for i in p..size {
-                for j in p..size {
-                    w[ i ] += matrix.data[ i * size + j ] * proj.vector[ j - p ];
+            for i in p..card {
+                for j in p..card {
+                    w[ i ] += matrix.data[ i * card + j ] * proj.vector[ j - p ];
                 }
                 w[ i ] *= proj.beta;
             }
-            for i in p..size {
-                for j in p..size {
-                    matrix.data[ i * size + j ] -= w[ i ] * proj.vector[ j - p ];
+            for i in p..card {
+                for j in p..card {
+                    matrix.data[ i * card + j ] -= w[ i ] * proj.vector[ j - p ];
                 }
                 w[ i ] = 0_f32;
             }
