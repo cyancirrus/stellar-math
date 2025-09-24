@@ -3,7 +3,6 @@ use crate::decomposition::schur::real_schur;
 use crate::decomposition::qr::qr_decompose;
 use crate::decomposition::givens::givens_iteration;
 use crate::structure::ndarray::NdArray;
-use crate::decomposition::householder::householder_factor;
 
 
 // Tihnov
@@ -76,7 +75,7 @@ pub fn retrieve_eigen(eig:f32, mut matrix:NdArray) -> Vec<f32> {
     // // QR = (B L )
     // // QRv = 0
     // // Q'Qrv = 0
-    let qr = householder_factor(matrix);
+    let qr = qr_decompose(matrix);
     // // Rv' = 0 <-> O'v :: QRv = 0
     for i in (0..m).rev() {
         let diag = qr.triangle.data[i * m + i];

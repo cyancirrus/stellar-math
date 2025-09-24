@@ -6,7 +6,7 @@ use stellar::algebra::ndmethods::tensor_mult;
 use stellar::decomposition::svd::golub_kahan_explicit;
 use stellar::decomposition::schur::real_schur;
 use stellar::decomposition::givens::givens_iteration;
-use stellar::decomposition::householder::{householder_factor, HouseholderReflection};
+use stellar::decomposition::householder::HouseholderReflection;
 use stellar::solver::eigenvector::retrieve_eigen;
 
 

@@ -7,7 +7,6 @@ use stellar::algebra::vector::vector_product;
 use stellar::decomposition::svd::golub_kahan_explicit;
 use stellar::decomposition::schur::real_schur;
 use stellar::decomposition::givens::givens_iteration;
-use stellar::decomposition::householder::householder_factor;
 
 
 

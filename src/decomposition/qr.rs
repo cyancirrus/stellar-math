@@ -6,7 +6,7 @@ use rayon::prelude::*;
 
 #[derive(Debug)]
 pub struct QrDecomposition {
-    pub cardinality: usize,
+    pub rows: usize, pub cols: usize, pub card: usize,
     pub projections: Vec<HouseholderReflection>,
     pub triangle: NdArray,
 }
@@ -14,11 +14,11 @@ pub struct QrDecomposition {
 pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
     // direct depends: left_multiply, projection_matrix, schur
     let (rows, cols)  = (x.dims[0], x.dims[1]);
-    let cardinality = rows.min(cols);
+    let card = rows.min(cols);
     let mut projections = Vec::with_capacity(cols.min(rows));
     let mut update: Vec<f32> = vec![0_f32; rows * cols];
 
-    for o in 0..cardinality.saturating_sub(1) {
+    for o in 0..card.saturating_sub(1) {
         let column_vector = (o..rows)
             .into_par_iter()
             .map(|r| x.data[r * cols + o])
@@ -51,7 +51,7 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
             x.data[ i * cols + j ] = 0_f32
         }
     }
-    QrDecomposition::new(cardinality, projections, x)
+    QrDecomposition::new(rows, cols, card, projections, x)
 }
 
 // pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
@@ -94,18 +94,18 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
 // }
 
 impl QrDecomposition {
-    pub fn new(cardinality:usize, projections: Vec<HouseholderReflection>, triangle: NdArray) -> Self {
+    pub fn new(rows:usize, cols:usize, card:usize, projections: Vec<HouseholderReflection>, triangle: NdArray) -> Self {
         Self {
-            cardinality,
+            rows, cols, card,
             projections,
             triangle,
         }
     }
     pub fn size(&self) -> usize {
-        self.cardinality - 1
+        self.card.saturating_sub(1)
     }
     pub fn projection_matrix(&self) -> NdArray {
-        let card = self.cardinality;
+        let card = self.card;
         let mut matrix = create_identity_matrix(card);
         let mut w: Vec<f32> = vec![0_f32; card ];
         // I - Buu'
@@ -133,9 +133,9 @@ impl QrDecomposition {
     pub fn triangle_rotation(&mut self) {
         // Specifically for the Schur algorithm
         // A' = Q'AQ = Q'(QR)Q = RQ
-        let card = self.cardinality;
+        let card = self.card;
         let mut w: Vec<f32> = vec![0_f32; card]; 
-        for p in 0..self.cardinality.saturating_sub(1) {
+        for p in 0..self.card.saturating_sub(1) {
             let proj = &self.projections[p];
             for i in p..card {
                 for j in p..card {
@@ -166,8 +166,8 @@ impl QrDecomposition {
         // H[i]*X = X - Buu'X
         // w = u'X
         debug_assert!(target.dims[0] == target.dims[1]);
-        debug_assert!(target.dims[0] == self.cardinality);
-        let (rows, cols, card) = (target.dims[0], target.dims[1], self.cardinality);
+        debug_assert!(target.dims[0] == self.card);
+        let (rows, cols, card) = (target.dims[0], target.dims[1], self.card);
         let mut w = vec![0_f32; rows];
         // TODO: Only iterate up to that version
         for p in 0..card.saturating_sub(1) {
@@ -222,18 +222,18 @@ impl QrDecomposition {
     //     // NdArray::new(dims, data)
     // }
     fn multiply_vector(&self, mut data: Vec<f32>) -> Vec<f32> {
-        let size = self.size(); 
-        debug_assert!(data.len() == size);
+        debug_assert!(data.len() == self.rows);
+
         // H[i+1]x = (I - buu')x  = x - b*u*(u'x)
-        for p in 0..size {
+        for p in 0..self.card.saturating_sub(1) {
             let mut scalar = 0_f32;
-            let proj = &self.projections[p];
-            debug_assert!(size == proj.vector.len() + p);
-            for i in 0..size-p {
-                scalar += data[ i + p ] * proj.vector[i];
+            let proj = &self.projections[ p ];
+            debug_assert!(self.card == proj.vector.len() + p);
+            for i in p..self.rows {
+                scalar += data[ i  ] * proj.vector[ i - p ];
             }
-            for i in 0..size-p {
-                data[ i + p ] -= scalar * proj.beta * proj.vector[i];
+            for i in p..self.rows {
+                data[ i  ] -= scalar * proj.beta * proj.vector[ i - p ];
             }
         }
         data

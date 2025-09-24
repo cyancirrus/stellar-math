@@ -36,38 +36,38 @@ pub fn householder_params(x:&[f32]) -> HouseholderReflection {
     HouseholderReflection::new(2_f32 / magnitude_squared, u)
 }
 
-pub fn householder_factor(mut x: NdArray) -> QrDecomposition {
-    let (rows, cols, card) = (x.dims[0], x.dims[1], x.dims[0].min(x.dims[1]));
-    let mut projections = Vec::with_capacity(card);
+// pub fn householder_factor(mut x: NdArray) -> QrDecomposition {
+//     let (rows, cols, card) = (x.dims[0], x.dims[1], x.dims[0].min(x.dims[1]));
+//     let mut projections = Vec::with_capacity(card);
 
-    for o in 0..card {
-        let column_vector = (o..rows)
-            .into_par_iter()
-            .map(|r| x.data[r * cols + o])
-            .collect::<Vec<f32>>();
-        let householder = householder_params(&column_vector);
-        projections.push(householder);
-        let mut queue: Vec<(usize, f32)> = vec![(0, 0_f32); (cols - o) * (rows - o)];
-        for i in 0..(rows - o).min(cols - o) {
-            for j in 0..cols - o {
-                // Need to compute the change for everything to the right of the initial vector
-                if i <= j || j > o {
-                    let sum = (0..rows - o)
-                        .into_par_iter()
-                        .map(|k| {
-                            x.data[(k + o) * cols + (j + o)]
-                                * projections[o].beta
-                                * projections[o].vector[i]
-                                * projections[o].vector[k]
-                        })
-                        .sum();
-                    queue[i * (cols - o) + j].0 = (i + o) * cols + (j + o);
-                    queue[i * (cols - o) + j].1 = sum;
-                }
-            }
-        }
-        queue.iter().for_each(|q| x.data[q.0] -= q.1);
-        (o + 1..rows).for_each(|i| x.data[i * cols + o] = 0_f32);
-    }
-    QrDecomposition::new(card, projections, x)
-}
+//     for o in 0..card {
+//         let column_vector = (o..rows)
+//             .into_par_iter()
+//             .map(|r| x.data[r * cols + o])
+//             .collect::<Vec<f32>>();
+//         let householder = householder_params(&column_vector);
+//         projections.push(householder);
+//         let mut queue: Vec<(usize, f32)> = vec![(0, 0_f32); (cols - o) * (rows - o)];
+//         for i in 0..(rows - o).min(cols - o) {
+//             for j in 0..cols - o {
+//                 // Need to compute the change for everything to the right of the initial vector
+//                 if i <= j || j > o {
+//                     let sum = (0..rows - o)
+//                         .into_par_iter()
+//                         .map(|k| {
+//                             x.data[(k + o) * cols + (j + o)]
+//                                 * projections[o].beta
+//                                 * projections[o].vector[i]
+//                                 * projections[o].vector[k]
+//                         })
+//                         .sum();
+//                     queue[i * (cols - o) + j].0 = (i + o) * cols + (j + o);
+//                     queue[i * (cols - o) + j].1 = sum;
+//                 }
+//             }
+//         }
+//         queue.iter().for_each(|q| x.data[q.0] -= q.1);
+//         (o + 1..rows).for_each(|i| x.data[i * cols + o] = 0_f32);
+//     }
+//     QrDecomposition::new(rows, cols, card, projections, x)
+// }
