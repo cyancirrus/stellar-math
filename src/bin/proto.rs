@@ -10,6 +10,17 @@ use stellar::solver::eigenvector::retrieve_eigen;
 use stellar::structure::ndarray::NdArray;
 
 // TODO: Respond to the email asking to speak from founder
+// TODO: Idea of a state interpolation function
+// essentially w[i] = exp(-b||distance(current state, target)||)
+// w[i]' = w[i] / Sum w[j];
+// Build a matrix of like pos, vel, accel, jerk
+// jerk = constant
+// -> going from bottom up
+//  vel' =  vel + accel + const
+//  wanted vel is a mix of different states
+//  -> State' ~= product state[i] * weight[i];
+//  should hopefully be online
+//  implement this in cpp
 
 
 // #[cfg(target_arch = "x86_64")]
