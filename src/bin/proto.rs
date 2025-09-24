@@ -9,6 +9,9 @@ use stellar::learning::knn::LshKNearestNeighbors;
 use stellar::solver::eigenvector::retrieve_eigen;
 use stellar::structure::ndarray::NdArray;
 
+// TODO: Respond to the email asking to speak from founder
+
+
 // #[cfg(target_arch = "x86_64")]
 use rand::distr::StandardUniform;
 use rand::prelude::*;

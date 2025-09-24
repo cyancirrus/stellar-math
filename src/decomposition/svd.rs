@@ -6,6 +6,7 @@ use rayon::prelude::ParallelIterator;
 use rayon::prelude::*;
 
 pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
+    // TODO: refactor so householder_params mutates in place
     let rows = a.dims[0];
     let cols = a.dims[1];
     let mut householder: HouseholderReflection;

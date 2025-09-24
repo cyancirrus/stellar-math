@@ -18,6 +18,10 @@ impl HouseholderReflection {
 const EPSILON: f32 = 1e-6;
 
 pub fn householder_params(x: &[f32]) -> HouseholderReflection {
+    //TODO: change the above to take ownership of the vector
+    // already cloning it and QR requires column and golub kahn requires rows
+
+    // pub fn householder_params(mut x: Vec<f32>) -> HouseholderReflection {
     let length = x.len();
     let mut max_element = f32::NEG_INFINITY;
     let mut magnitude_squared = 0_f32;
