@@ -16,20 +16,11 @@ impl SchurDecomp {
         Self { rotation, kernel }
     }
 }
-// fn real_schur_iteration(schur: SchurDecomp) -> SchurDecomp {
-//     let qr = qr_decompose(schur.kernel);
-//     let rotation = qr.left_multiply(schur.rotation); // RQ = Q'AQ
-//     let kernel = qr.triangle_rotation();
-//     SchurDecomp { rotation, kernel }
-// }
+
 fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
-    let mut qr = qr_decompose(schur.kernel);
     // Apply Q to a matrix X ie (QR) -> Qx
-    println!("triangle before {:?}", qr.triangle);
-    let baseline = tensor_mult(4, &qr.triangle, &qr.projection_matrix());
+    let mut qr = qr_decompose(schur.kernel);
     qr.triangle_rotation(); 
-    println!("qr.triangle {:?}", qr.triangle);
-    println!("triangle after {:?}", qr.triangle);
     qr.left_multiply(&mut schur.rotation);
     schur.kernel = qr.triangle;
     schur
@@ -45,21 +36,8 @@ fn real_schur_threshold(kernel: &NdArray) -> f32 {
             off_diagonal += kernel.data[i * rows + j].abs();
         }
     }
-    println!("off_diagonal {off_diagonal:?}");
     off_diagonal
 }
-
-// pub fn real_schur(kernel: NdArray) -> SchurDecomp {
-//     let rows = kernel.dims[0];
-//     let identity = create_identity_matrix(rows);
-//     let mut schur = SchurDecomp::new(identity, kernel);
-//     println!("hello world");
-//     while CONVERGENCE_CONDITION < real_schur_threshold(&schur.kernel) {
-//         println!("going");
-//         schur = real_schur_iteration(schur);
-//     }
-//     schur
-// }
 
 pub fn real_schur(kernel: NdArray) -> SchurDecomp {
     let rows = kernel.dims[0];
@@ -70,7 +48,6 @@ pub fn real_schur(kernel: NdArray) -> SchurDecomp {
         real_schur_threshold(&schur.kernel);
         println!("going");
         schur = real_schur_iteration(schur);
-        assert!(false);
     }
     schur
 }
