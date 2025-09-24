@@ -3,7 +3,6 @@ mod qr_decomposition {
     use stellar::structure::ndarray::NdArray;
     use stellar::decomposition::qr::qr_decompose;
     use stellar::algebra::ndmethods::tensor_mult;
-    use stellar::decomposition::schur::real_schur;
     const TOLERANCE:f32 = 1e-3;
 
     fn approx_eq(a: &[f32], b: &[f32]) -> bool {
