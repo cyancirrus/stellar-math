@@ -12,7 +12,6 @@ pub struct QrDecomposition {
 }
 
 pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
-    // NOTE: I accidentally left factored need to right factor the matrix
     let (rows, cols, card)  = (x.dims[0], x.dims[1], x.dims[0].min(x.dims[1]));
     let mut projections = Vec::with_capacity(card.saturating_sub(1));
     let mut w = vec![0_f32; rows];
@@ -28,14 +27,14 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
         // (u'A)' = A'u
         for j in o..cols {
             for i in o..rows {
-                w[j] += x.data[ i * cols + j ] * proj.vector[ i - o ];
+                w[j] += proj.vector[ i - o ] * x.data[ i * cols + j ];
             }
             w[j] *= proj.beta;
             // tanspose vector
         }
         for j in o..cols {
             for i in o..rows {
-                x.data[ i * cols + j ] -= w[ j ] * proj.vector[ i - o ];
+                x.data[ i * cols + j ] -= proj.vector[ i - o ] * w[ j ];
             }
             w[j] = 0_f32;
         }
