@@ -3,7 +3,6 @@ use crate::decomposition::qr::{qr_decompose, QrDecomposition};
 use crate::algebra::ndmethods::tensor_mult;
 use crate::structure::ndarray::NdArray;
 
-// const CONVERGENCE_CONDITION: f32 = 1e-6;
 const CONVERGENCE_CONDITION: f32 = 1e-6;
 
 pub struct SchurDecomp {
@@ -16,16 +15,11 @@ impl SchurDecomp {
         Self { rotation, kernel }
     }
 }
-// fn real_schur_iteration(schur: SchurDecomp) -> SchurDecomp {
-//     let qr = qr_decompose(schur.kernel);
-//     let rotation = qr.left_multiply(schur.rotation); // RQ = Q'AQ
-//     let kernel = qr.triangle_rotation();
-//     SchurDecomp { rotation, kernel }
-// }
 fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
     let mut qr = qr_decompose(schur.kernel);
     // Apply Q to a matrix X ie (QR) -> Qx
     qr.triangle_rotation(); 
+    // might want to make a thing where not needed or optional
     qr.left_multiply(&mut schur.rotation);
     schur.kernel = qr.triangle;
     schur
@@ -48,10 +42,8 @@ pub fn real_schur(kernel: NdArray) -> SchurDecomp {
     let rows = kernel.dims[0];
     let identity = create_identity_matrix(rows);
     let mut schur = SchurDecomp::new(identity, kernel);
-    println!("hello world");
     while CONVERGENCE_CONDITION < real_schur_threshold(&schur.kernel) {
         real_schur_threshold(&schur.kernel);
-        println!("going");
         schur = real_schur_iteration(schur);
     }
     schur

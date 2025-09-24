@@ -21,10 +21,6 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
             .map(|r| x.data[r * cols + o])
             .collect::<Vec<f32>>();
         let proj = householder_params(&column_vector);
-        println!("projection {proj:?}");
-        // (i - buu')A
-        // A - bu(u'A)
-        // (u'A)' = A'u
         for j in o..cols {
             for i in o..rows {
                 w[j] += proj.vector[ i - o ] * x.data[ i * cols + j ];
@@ -45,7 +41,6 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
             x.data[ i * cols + j ] = 0_f32
         }
     }
-    println!("triangle {:?}", x);
     QrDecomposition::new(rows, cols, card, projections, x)
 }
 
