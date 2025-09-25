@@ -2,6 +2,8 @@ use crate::algebra::vector::{dot_product, magnitude, vector_multiply, vector_dif
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
+const EPSILON: f32 = 1e-6;
+
 #[derive(Debug)]
 pub struct HouseholderReflection {
     pub beta: f32,        // store 2 / u'u
@@ -14,7 +16,6 @@ impl HouseholderReflection {
     }
 }
 
-const EPSILON: f32 = 1e-6;
 
 pub fn householder_params(mut u: Vec<f32>) -> HouseholderReflection {
     let length = u.len();

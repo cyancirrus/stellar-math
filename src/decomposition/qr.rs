@@ -70,10 +70,10 @@ impl QrDecomposition {
         let card = self.card;
         let mut matrix = create_identity_matrix(self.rows);
         let mut w: Vec<f32> = vec![0_f32; self.rows];
+        // Justification for using rows as column when we are using column major form
         // A ~ Matrix[i, j]
         // QR(A) -> (Q, R)
         // Q ~ M[i, i]
-        // this is why self.rows is used as column indexing
         for p in (0..card).rev() {
             let proj = &self.projections[p];
             for i in p..self.rows {
@@ -109,19 +109,20 @@ impl QrDecomposition {
         }
     }
     pub fn left_multiply(&self, target: &mut NdArray) {
-        // AX -> QX
+        // f(X) -> QX
         // H[i]*X = X - Buu'X
         // w = u'X
         debug_assert!(target.dims[0] == self.rows);
         let mut w = vec![0_f32; self.rows];
+        let cols = target.dims[1];
         for p in (0..self.card).rev() {
             let proj = &self.projections[p];
-            for j in 0..self.cols {
+            for j in 0..cols {
                 for i in p..self.rows {
-                    w[j] += proj.vector[i - p] * target.data[i * self.cols + j];
+                    w[j] += proj.vector[i - p] * target.data[i * cols + j];
                 }
                 for i in p..self.rows {
-                    target.data[i * self.cols + j] -= proj.beta * w[j] * proj.vector[i - p];
+                    target.data[i * cols + j] -= proj.beta * w[j] * proj.vector[i - p];
                 }
                 w[j] = 0_f32;
             }
