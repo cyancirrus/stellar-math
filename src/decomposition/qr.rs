@@ -73,9 +73,9 @@ impl QrDecomposition {
         // H[i+1] * H[i] = H[i+1] - B[i](H[i+1]u[i])u'[i]
         // Hu := w
         // H[i+1] -= B[i] *w[i+1]u'[i]
-        // TODO: This should coincide with the change in the for 0..cols.min(rows)-1 change
-        for p in 0..card.saturating_sub(1) {
+        for p in (0..card.saturating_sub(1)).rev() {
             let proj = &self.projections[p];
+            println!("w :: {w:?}");
             for i in p..card {
                 for j in p..card {
                     w[i] += matrix.data[i * card + j] * proj.vector[j - p];
@@ -122,7 +122,7 @@ impl QrDecomposition {
         let mut w = vec![0_f32; rows];
         // TODO: Only iterate up to that version
         // for p in 0..card.saturating_sub(1) {
-        for p in 0..card.saturating_sub(1) {
+        for p in (0..card.saturating_sub(1)).rev() {
             let proj = &self.projections[p];
             for j in 0..cols {
                 for i in p..rows {

@@ -28,6 +28,7 @@ mod qr_decomposition {
         let qr = qr_decompose(x.clone());
         let projection = qr.projection_matrix();
         let result = tensor_mult(4, &projection, &x);
+        println!("zero below diagonal {result:?}");
         for i in 0..rows {
             for j in 0..i {
                 assert!(approx_scalar_eq( result.data[i*cols + j], 0_f32 ));
@@ -43,6 +44,8 @@ mod qr_decomposition {
         let left_result = tensor_mult(4, &ortho, &ortho_transpose);
         let right_result = tensor_mult(4, &ortho_transpose, &ortho);
         let expected = create_identity_matrix(card);
+        println!("QQ' {left_result:?}");
+        println!("Q'Q {right_result:?}");
         assert!(approx_eq(&left_result.data, &expected.data));
         assert!(approx_eq(&right_result.data, &expected.data));
     }
