@@ -17,10 +17,6 @@ use rand::Rng;
 use rand_distr::Normal;
 use rand_distr::StandardNormal;
 
-// write article on how to do the (I - buu')(I- buu').. Q[i] -BQ[i]uu'
-// also include the like Qx and QX like work
-// motivate it by the eigenvecs
-
 // move code into examples directory
 // cargo run --example demo
 

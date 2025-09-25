@@ -42,7 +42,8 @@ pub fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
             let g = embed_givens(n, i, i + 1, cosine, sine);
-            s = tensor_mult(2, &s, &transpose(g.clone()));
+            let g_t = g.transpose();
+            s = tensor_mult(2, &s, &g_t);
             v = tensor_mult(2, &v, &g);
         }
         max_iteration -= 1
