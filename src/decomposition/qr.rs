@@ -104,8 +104,6 @@ impl QrDecomposition {
                     w[i] += self.triangle.data[i * self.cols + j] * proj.vector[j - p];
                 }
                 w[i] *= proj.beta;
-            }
-            for i in p..self.rows {
                 for j in p..self.cols {
                     self.triangle.data[i * self.cols + j] -= w[i] * proj.vector[j - p];
                 }
