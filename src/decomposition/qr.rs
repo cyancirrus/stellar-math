@@ -14,12 +14,10 @@ pub struct QrDecomposition {
 }
 
 pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
-    println!("hello world");
     let (rows, cols, card) = (x.dims[0], x.dims[1], x.dims[0].min(x.dims[1]));
     let mut projections = Vec::with_capacity(card.saturating_sub(1));
     let mut w = vec![0_f32; rows];
     for o in 0..card.saturating_sub(1) {
-        println!("this is now within the thing");
         // TODO: This is a double clone refactor so golub and schur can use it
         let column_vector = (o..rows)
             .into_par_iter()
@@ -75,7 +73,6 @@ impl QrDecomposition {
         // H[i+1] -= B[i] *w[i+1]u'[i]
         for p in (0..card.saturating_sub(1)).rev() {
             let proj = &self.projections[p];
-            println!("w :: {w:?}");
             for i in p..card {
                 for j in p..card {
                     w[i] += matrix.data[i * card + j] * proj.vector[j - p];
@@ -120,8 +117,6 @@ impl QrDecomposition {
         debug_assert!(target.dims[0] == self.card);
         let (rows, cols, card) = (target.dims[0], target.dims[1], self.card);
         let mut w = vec![0_f32; rows];
-        // TODO: Only iterate up to that version
-        // for p in 0..card.saturating_sub(1) {
         for p in (0..card.saturating_sub(1)).rev() {
             let proj = &self.projections[p];
             for j in 0..cols {
