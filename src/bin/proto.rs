@@ -20,7 +20,8 @@ use rand_distr::StandardNormal;
 // move code into examples directory
 // cargo run --example demo
 
-const CONVERGENCE_CONDITION: f32 = 1e-6;
+// const CONVERGENCE_CONDITION: f32 = 1e-6;
+const CONVERGENCE_CONDITION: f32 = 1e-3;
 
 fn generate_random_matrix(dims: &[usize]) -> NdArray {
     debug_assert!(dims.len() > 0 && dims[0] > 0);
@@ -58,7 +59,8 @@ fn random_eigenvector_decomp(matrix: NdArray) -> NdArray {
     debug_assert!(matrix.dims[0] == matrix.dims[1]);
     let mut eigen = generate_random_matrix(&matrix.dims);
     let mut error = 1_f32;
-    while CONVERGENCE_CONDITION < error {
+    for i in 0..4 {
+    // while CONVERGENCE_CONDITION < error {
         let next = tensor_mult(4, &eigen, &matrix);
         let qr = qr_decompose(next);
         let projection = qr.projection_matrix();
@@ -110,65 +112,85 @@ fn quick_outer_product(reflection: HouseholderReflection) -> NdArray {
     ndarray
 }
 
-fn main() {
-    // {
-    // Eigen values 2, -1
-    let mut data = vec![0_f32; 4];
-    let dims = vec![2; 2];
-    data[0] = -1_f32;
-    data[1] = 0_f32;
-    data[2] = 5_f32;
-    data[3] = 2_f32;
-    // }
-    // {
-    //     data = vec![0_f32; 9];
-    //     dims = vec![3; 2];
-    //     data[0] = 1_f32;
-    //     data[1] = 2_f32;
-    //     data[2] = 3_f32;
-    //     data[3] = 3_f32;
-    //     data[4] = 4_f32;
-    //     data[5] = 5_f32;
-    //     data[6] = 6_f32;
-    //     data[7] = 7_f32;
-    //     data[8] = 8_f32;
-    // }
-    let x = NdArray::new(dims, data.clone());
-    println!("x: {:?}", x);
-    //
-    let reference = golub_kahan_explicit(x.clone());
-    println!("Reference {:?}", reference);
+fn test_random_eigenvectors() {
+    let n = 3;
 
-    let y = qr_decompose(x.clone());
-    println!("triangle {:?}", y.triangle);
+    // Step 1: create a random symmetric matrix
+    let mut rng = rand::rng();
+    let mut data = vec![0.0_f32; n * n];
+    for i in 0..n {
+        for j in i..n {
+            let val = rng.sample(StandardNormal);
+            data[i * n + j] = val;
+            data[j * n + i] = val; // symmetric
+        }
+    }
+    let matrix = NdArray {
+        dims: vec![n, n],
+        data,
+    };
 
-    let real_schur = real_schur(x.clone());
-    // eigenvalues
-    println!("real schur kernel {:?}", real_schur.kernel);
+    // Step 2: run your eigenvector decomposition
+    let eigenvecs = random_eigenvector_decomp(matrix.clone());
 
-    let svd = givens_iteration(reference);
-    println!(
-        "svd u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",
-        svd.u, svd.s, svd.v
-    );
+    // Step 3: check orthonormality Q^T Q ~ I
+    for i in 0..n {
+        for j in 0..n {
+            let mut dot = 0.0;
+            for k in 0..n {
+                dot += eigenvecs.data[k * n + i] * eigenvecs.data[k * n + j];
+            }
+            if i == j {
+                assert!((dot - 1.0).abs() < 1e-4, "Column {} not normalized", i);
+            } else {
+                assert!(dot.abs() < 1e-4, "Columns {} and {} not orthogonal", i, j);
+            }
+        }
+    }
 
-    let evector = retrieve_eigen(real_schur.kernel.data[3], x.clone());
-    println!("eigen vec {evector:?}");
+    // Step 4: check eigenvector property A v ~ lambda v
+    for col in 0..n {
+        let mut Av = vec![0.0; n];
+        for i in 0..n {
+            for j in 0..n {
+                Av[i] += matrix.data[i * n + j] * eigenvecs.data[j * n + col];
+            }
+        }
+
+        // estimate lambda as ratio of norms
+        let mut lambda_est = 0.0;
+        let mut norm_v = 0.0;
+        for i in 0..n {
+            lambda_est += Av[i] * eigenvecs.data[i * n + col];
+            norm_v += eigenvecs.data[i * n + col].powi(2);
+        }
+        lambda_est /= norm_v;
+
+        // check that A v ~ lambda v
+        for i in 0..n {
+            let diff = (Av[i] - lambda_est * eigenvecs.data[i * n + col]).abs();
+            assert!(diff < 1e-3, "Eigenvector column {} failed A v ~ lambda v, diff={}", col, diff);
+        }
+    }
+
+    println!("All tests passed!");
 }
 
-// fn main() {
-//     let data = generate_clusters(100, 2, 3); // 100 points, 2D, 3 clusters
-//     // for p in &data {
-//     //     println!("{:?}", p);
-//     // }
-//     let mut knn = LshKNearestNeighbors::new(7, 2, 6);
-//     knn.parse(data.clone());
-//     // for p in &data {
-//     //     println!("{:?}", p);
-//     // }
-//     let result = knn.knn(5, data[0].clone());
-//     println!("--------------");
-//     for p in &result {
-//         println!("{:?}", p);
-//     }
-// }
+
+fn main() {
+    test_random_eigenvectors();
+    // let data = generate_clusters(100, 2, 3); // 100 points, 2D, 3 clusters
+    // // for p in &data {
+    // //     println!("{:?}", p);
+    // // }
+    // let mut knn = LshKNearestNeighbors::new(7, 2, 6);
+    // knn.parse(data.clone());
+    // // for p in &data {
+    // //     println!("{:?}", p);
+    // // }
+    // let result = knn.knn(5, data[0].clone());
+    // println!("--------------");
+    // for p in &result {
+    //     println!("{:?}", p);
+    // }
+}

@@ -4,6 +4,9 @@ mod qr_decomposition {
     use stellar::algebra::ndmethods::tensor_mult;
     use stellar::decomposition::qr::qr_decompose;
     use stellar::algebra::ndmethods::create_identity_matrix;
+    use rand::Rng;
+    use rand_distr::StandardNormal;
+    
     const TOLERANCE: f32 = 1e-3;
 
     fn approx_eq(a: &[f32], b: &[f32]) -> bool {
@@ -22,6 +25,22 @@ mod qr_decomposition {
         let mut result = qr.triangle.clone();
         qr.left_multiply(&mut result);
         assert!(approx_eq(&result.data, &expected.data));
+    }
+    fn test_random(n:usize) {
+        let mut rng = rand::rng();
+        let mut data = vec![0.0_f32; n * n];
+        for i in 0..n {
+            for j in i..n {
+                let val = rng.sample(StandardNormal);
+                data[i * n + j] = val;
+                data[j * n + i] = val; // symmetric
+            }
+        }
+        let matrix = NdArray {
+            dims: vec![n, n],
+            data,
+        };
+        test_reconstruction(matrix)
     }
     fn test_zeroing_below_diagonal(x:NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
@@ -78,7 +97,6 @@ mod qr_decomposition {
         };
         test_orthogonal(x)
     }
-    
     #[test]
     fn test_zeroing_below_diagonal_2x2() {
         let x = NdArray {
@@ -87,7 +105,6 @@ mod qr_decomposition {
         };
         test_zeroing_below_diagonal(x)
     }
-    
     #[test]
     fn test_projection_and_implicit_mult_equivalence_2x2() {
         let x = NdArray {
@@ -126,7 +143,6 @@ mod qr_decomposition {
         };
         test_reconstruction(x)
     }
-    
     #[test]
     fn test_orthogonal_3x3() {
         let x = NdArray {
@@ -139,7 +155,6 @@ mod qr_decomposition {
         };
         test_orthogonal(x)
     }
-    
     #[test]
     fn test_zeroing_below_diagonal_3x3() {
         let x = NdArray {
@@ -151,5 +166,12 @@ mod qr_decomposition {
             ],
         };
         test_zeroing_below_diagonal(x)
+    }
+    #[test]
+    fn test_random_nxn() {
+        let numbers = vec![1, 2, 5, 7, 23];
+        for n in numbers {
+            test_random(n)
+        }
     }
 }
