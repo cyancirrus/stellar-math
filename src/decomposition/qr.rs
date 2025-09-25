@@ -24,12 +24,12 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
             .map(|r| x.data[r * cols + o])
             .collect::<Vec<f32>>();
         let proj = householder_params(column_vector);
+        // x'A
         for j in o..cols {
             for i in o..rows {
                 w[j] += proj.vector[i - o] * x.data[i * cols + j];
             }
             w[j] *= proj.beta;
-            // tanspose vector
             for i in o..rows {
                 x.data[i * cols + j] -= proj.vector[i - o] * w[j];
             }
