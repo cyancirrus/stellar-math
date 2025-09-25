@@ -1,23 +1,18 @@
 use crate::algebra::ndmethods::create_identity_matrix;
-use crate::decomposition::givens::givens_iteration;
-use crate::decomposition::qr::qr_decompose;
-use crate::decomposition::schur::real_schur;
-use crate::decomposition::svd::golub_kahan_explicit;
 use crate::structure::ndarray::NdArray;
 
 const TOLERANCE_CONDITION: f32 = 1e-6;
 
-struct LU {
+pub struct LU {
     lower: NdArray,
     upper: NdArray,
 }
 
-fn lower_upper(mut upper: NdArray) -> LU {
+pub fn lu_decomposition(mut upper: NdArray) -> LU {
     // A[j, *] = c *A[i, *]
     // => c = A[i,j] / A[j,j]
-    let rows = upper.dims[0];
-    let cols = upper.dims[1];
-    debug_assert_eq!(rows, cols);
+    debug_assert_eq!(upper.dims[0], upper.dims[1]);
+    let (rows, cols) = (upper.dims[0], upper.dims[1]); 
     let mut lower = create_identity_matrix(rows);
 
     for i in 0..cols {
