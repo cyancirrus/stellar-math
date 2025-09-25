@@ -50,4 +50,25 @@ mod schur_decomposition {
             &data,
         ));
     }
+    // #[test]
+    // fn test_reconstruction_3() {
+    //     let dims = vec![3, 3];
+    //     let data = vec![
+    //         -1.0, 0.0, 3.0,
+    //          5.0, 2.0, 4.0,
+    //          -3.0, 0.7, 1.2,
+    //     ];
+    //     let x = NdArray::new(dims.clone(), data.clone());
+    //     let schur = real_schur(x);
+    //     let q_star = schur.rotation.transpose();
+    //     let q = &schur.rotation;
+
+    //     let result = tensor_mult(4, &q_star, &schur.kernel);
+    //     let result = tensor_mult(4, &result, q);
+    //     println!("result {result:?}");
+    //     assert!(approx_vector_eq(
+    //         &result.data,
+    //         &data,
+    //     ));
+    // }
 }

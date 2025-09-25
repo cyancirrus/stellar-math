@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod qr_decomposition {
+    use stellar::structure::ndarray::NdArray;
     use stellar::algebra::ndmethods::tensor_mult;
     use stellar::decomposition::qr::qr_decompose;
-    use stellar::structure::ndarray::NdArray;
+    use stellar::algebra::ndmethods::create_identity_matrix;
     const TOLERANCE: f32 = 1e-3;
 
     fn approx_eq(a: &[f32], b: &[f32]) -> bool {
@@ -15,80 +16,133 @@ mod qr_decomposition {
         (a - b).abs() < TOLERANCE
     }
 
-    #[test]
-    fn test_reconstruction() {
-        let dims = vec![2, 2];
-        let data = vec![-1.0, 0.0, 5.0, 2.0];
-        let expected = data.clone();
-        let x = NdArray::new(dims, data);
+    fn test_reconstruction(x:NdArray) {
+        let expected = x.clone();
         let qr = qr_decompose(x);
-        // let result = tensor_mult(4, &qr.projection_matrix(), &qr.triangle);
         let mut result = qr.triangle.clone();
         qr.left_multiply(&mut result);
-        assert!(approx_eq(&result.data, &expected));
+        assert!(approx_eq(&result.data, &expected.data));
     }
-
-    #[test]
-    fn test_zeroing_below_diagonal() {
-        let dims = vec![2, 2];
-        let data = vec![-1.0, 0.0, 5.0, 2.0];
-        let x = NdArray::new(dims, data);
+    fn test_zeroing_below_diagonal(x:NdArray) {
+        let (rows, cols) = (x.dims[0], x.dims[1]);
         let qr = qr_decompose(x.clone());
-        let ortho = qr.projection_matrix();
-        let result = tensor_mult(4, &ortho, &x);
-        for i in 1..x.dims[0] {
+        let projection = qr.projection_matrix();
+        let result = tensor_mult(4, &projection, &x);
+        for i in 0..rows {
             for j in 0..i {
-                assert!(approx_scalar_eq(0_f32, result.data[i * x.dims[1] + j]));
+                assert!(approx_scalar_eq( result.data[i*cols + j], 0_f32 ));
             }
         }
     }
-
-    #[test]
-    fn test_q_matrix_orthonormality() {
-        let dims = vec![2, 2];
-        let data = vec![-1.0, 0.0, 5.0, 2.0];
-        let x = NdArray::new(dims, data);
+    fn test_orthogonal(x:NdArray) {
+        let card = x.dims[0].min(x.dims[1]);
         let qr = qr_decompose(x);
         let ortho = qr.projection_matrix();
         let mut ortho_transpose = ortho.clone();
         ortho_transpose.transpose_square();
         let left_result = tensor_mult(4, &ortho, &ortho_transpose);
         let right_result = tensor_mult(4, &ortho_transpose, &ortho);
-        let expected = vec![1.0, 0.0, 0.0, 1.0];
-
-        assert!(approx_eq(&left_result.data, &expected));
-        assert!(approx_eq(&right_result.data, &expected));
+        let expected = create_identity_matrix(card);
+        assert!(approx_eq(&left_result.data, &expected.data));
+        assert!(approx_eq(&right_result.data, &expected.data));
     }
-
-    #[test]
-    fn test_qr_projection_construction_and_implicit_mult_equivalence() {
-        let dims = vec![2, 2];
-        let data = vec![-1.0, 0.0, 5.0, 2.0];
-        let other = vec![1.5, -0.3, 3.0, 1.2];
-        let x = NdArray::new(dims.clone(), data);
-        let mut y_implicit = NdArray::new(dims.clone(), other.clone());
-        let y_explicit = NdArray::new(dims, other);
+    fn test_qr_triangle(x:NdArray, expected:NdArray) {
+        let qr = qr_decompose(x);
+        assert!(approx_eq(&qr.triangle.data, &expected.data));
+    }
+    fn test_projection_and_implicit_mult_equivalence(x:NdArray, mut y_implicit:NdArray) {
         let qr = qr_decompose(x);
         let projection = qr.projection_matrix();
+        let y_explicit = &tensor_mult(4, &projection, &y_implicit);
         qr.left_multiply(&mut y_implicit);
-        assert!(approx_eq(
-            &tensor_mult(4, &projection, &y_explicit).data,
-            &y_implicit.data,
-        ));
+        assert!(approx_eq( &y_implicit.data, &y_explicit.data));
     }
 
+
     #[test]
-    fn test_qr_triangle() {
-        // Assumes that:
-        // 1. test_zeroing_below_diagonal passes
-        // 2. test_q_matrix_orthonormality passes
-        //
-        // Only then does this triangle test make sense.
-        let dims = vec![2, 2];
-        let data = vec![-1.0, 0.0, 5.0, 2.0];
-        let x = NdArray::new(dims, data);
-        let qr = qr_decompose(x);
-        let expected = vec![5.099, 1.961, 0.000, 0.392];
-        assert!(approx_eq(&qr.triangle.data, &expected));
+    fn test_reconstruction_2x2() {
+        let x = NdArray {
+            dims : vec![2, 2],
+            data : vec![-1.0, 0.0, 5.0, 2.0],
+        };
+        test_reconstruction(x)
+    }
+    #[test]
+    fn test_reconstruction_3x3() {
+        let x = NdArray {
+            dims: vec![3, 3],
+            data: vec![
+            -1.0, 0.0, 3.0,
+             5.0, 2.0, 4.0,
+             -3.0, 0.7, 1.2,
+            ],
+        };
+        test_reconstruction(x)
+    }
+    #[test]
+    fn test_orthogonal_2x2() {
+        let x = NdArray {
+            dims : vec![2, 2],
+            data : vec![-1.0, 0.0, 5.0, 2.0],
+        };
+        test_orthogonal(x)
+    }
+    #[test]
+    fn test_orthogonal_3x3() {
+        let x = NdArray {
+            dims : vec![3, 3],
+            data : vec![
+                -1.0, 0.0, 3.0,
+                 5.0, 2.0, 4.0,
+                 -3.0, 0.7, 1.2,
+            ],
+        };
+        test_orthogonal(x)
+    }
+    
+    #[test]
+    fn test_zeroing_below_diagonal_2x2() {
+        let x = NdArray {
+            dims: vec![2,2],
+            data: vec![-1.0, 0.0, 5.0, 2.0],
+        };
+        test_zeroing_below_diagonal(x)
+    }
+    
+    #[test]
+    fn test_zeroing_below_diagonal_3x3() {
+        let x = NdArray {
+            dims: vec![3, 3],
+            data: vec![
+                -1.0, 0.0, 3.0,
+                 5.0, 2.0, 4.0,
+                 -3.0, 0.7, 1.2,
+            ],
+        };
+        test_zeroing_below_diagonal(x)
+    }
+    #[test]
+    fn test_projection_and_implicit_mult_equivalence_2x2() {
+        let x = NdArray {
+            dims: vec![2, 2],
+            data: vec![ -1.0, 0.0, 5.0, 2.0],
+        };
+        let y = NdArray {
+            dims: vec![2, 2],
+            data: vec![1.5, -0.3, 3.0, 1.2]
+        };
+        test_projection_and_implicit_mult_equivalence(x, y)
+    }
+    #[test]
+    fn test_qr_triangle_2x2() {
+        let x = NdArray {
+            dims : vec![2, 2],
+            data : vec![-1.0, 0.0, 5.0, 2.0],
+        };
+        let expected = NdArray {
+            dims : vec![2, 2],
+            data : vec![5.099, 1.961, 0.000, 0.392],
+        };
+        test_qr_triangle(x, expected)
     }
 }
