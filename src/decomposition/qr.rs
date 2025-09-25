@@ -136,7 +136,7 @@ impl QrDecomposition {
         debug_assert!(data.len() == self.rows);
 
         // H[i+1]x = (I - buu')x  = x - b*u*(u'x)
-        for p in 0..self.card.saturating_sub(1) {
+        for p in (0..self.card.saturating_sub(1)).rev() {
             let mut scalar = 0_f32;
             let proj = &self.projections[p];
             debug_assert!(self.card == proj.vector.len() + p);
