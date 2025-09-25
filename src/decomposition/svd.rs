@@ -19,21 +19,18 @@ pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
             .into_par_iter()
             .map(|r| a.data[r * cols + o])
             .collect::<Vec<f32>>();
-        householder = householder_params(&column_vector);
+        householder = householder_params(column_vector);
         for i in 0..rows - o {
             for j in 0..cols - o {
                 new.data[(o + i) * cols + j + o] -=
                     householder.beta * householder.vector[i] * householder.vector[j]
             }
         }
-        // println!("Left multiplication {:?}", new);
         a = tensor_mult(4, &new, &a);
-        // println!("Here's what the mult looks like check 0's {:?}", a);
         if o < cols.min(rows) - 2 {
             new = create_identity_matrix(cols);
             let row_vector: Vec<f32> = a.data[(o * cols) + 1..(o + 1) * cols].to_vec();
-            // println!("Row vector should be dim 3 and the top row {:?}", row_vector);
-            householder = householder_params(&row_vector);
+            householder = householder_params(row_vector);
 
             for i in 0..rows - o - 1 {
                 for j in 0..cols - o - 1 {
@@ -41,9 +38,7 @@ pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
                         householder.beta * householder.vector[i] * householder.vector[j];
                 }
             }
-            // println!("This should be the matrix {:?}", new);
             a = tensor_mult(4, &a, &new);
-            // println!("This is what a looks like {:?}", a);
         }
     }
     a

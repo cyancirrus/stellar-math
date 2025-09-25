@@ -19,12 +19,11 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
     let mut projections = Vec::with_capacity(card);
     let mut w = vec![0_f32; rows];
     for o in 0..card {
-        // TODO: This is a double clone refactor so golub and schur can use it
         let column_vector = (o..rows)
             .into_par_iter()
             .map(|r| x.data[r * cols + o])
             .collect::<Vec<f32>>();
-        let proj = householder_params(&column_vector);
+        let proj = householder_params(column_vector);
         for j in o..cols {
             for i in o..rows {
                 w[j] += proj.vector[i - o] * x.data[i * cols + j];
