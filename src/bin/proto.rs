@@ -9,7 +9,6 @@ use stellar::learning::knn::LshKNearestNeighbors;
 use stellar::solver::eigenvector::retrieve_eigen;
 use stellar::structure::ndarray::NdArray;
 
-// TODO: Respond to the email asking to speak from founder
 // TODO: Idea of a state interpolation function
 // essentially w[i] = exp(-b||distance(current state, target)||)
 // w[i]' = w[i] / Sum w[j];
