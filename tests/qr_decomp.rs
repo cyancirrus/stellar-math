@@ -7,8 +7,9 @@ mod qr_decomposition {
     use rand::Rng;
     use rand_distr::StandardNormal;
     
+    // utilities
     const TOLERANCE: f32 = 1e-3;
-
+    
     fn approx_eq(a: &[f32], b: &[f32]) -> bool {
         a.len() == b.len()
             && a.iter()
@@ -19,6 +20,7 @@ mod qr_decomposition {
         (a - b).abs() < TOLERANCE
     }
 
+    // test functions
     fn test_reconstruction(x:NdArray) {
         let expected = x.clone();
         let qr = qr_decompose(x);
@@ -56,15 +58,12 @@ mod qr_decomposition {
     fn test_orthogonal(x:NdArray) {
         let card = x.dims[0].min(x.dims[1]);
         let qr = qr_decompose(x);
-        println!("here");
         let ortho = qr.projection_matrix();
         let mut ortho_transpose = ortho.clone();
         ortho_transpose.transpose_square();
-        println!("here");
         let left_result = tensor_mult(4, &ortho, &ortho_transpose);
         let right_result = tensor_mult(4, &ortho_transpose, &ortho);
         let expected = create_identity_matrix(card);
-        println!("here");
         assert!(approx_eq(&left_result.data, &expected.data));
         assert!(approx_eq(&right_result.data, &expected.data));
     }
@@ -79,8 +78,9 @@ mod qr_decomposition {
         qr.left_multiply(&mut y_implicit);
         assert!(approx_eq( &y_implicit.data, &y_explicit.data));
     }
+    // tests
     
-    // SAMPLE 2X2
+    // sample 2x2
     #[test]
     fn test_reconstruction_2x2() {
         let x = NdArray {
@@ -129,8 +129,7 @@ mod qr_decomposition {
         };
         test_qr_triangle(x, expected)
     }
-
-    // SAMPLE 3X3
+    // sample 3X3
     #[test]
     fn test_reconstruction_3x3() {
         let x = NdArray {
