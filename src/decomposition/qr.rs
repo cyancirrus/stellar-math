@@ -31,8 +31,6 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
             }
             w[j] *= proj.beta;
             // tanspose vector
-        }
-        for j in o..cols {
             for i in o..rows {
                 x.data[i * cols + j] -= proj.vector[i - o] * w[j];
             }
@@ -123,8 +121,6 @@ impl QrDecomposition {
                 for i in p..self.rows {
                     w[j] += proj.vector[i - p] * target.data[i * self.cols + j];
                 }
-            }
-            for j in 0..self.cols {
                 for i in p..self.rows {
                     target.data[i * self.cols + j] -= proj.beta * w[j] * proj.vector[i - p];
                 }
