@@ -57,8 +57,8 @@ mod qr_decomposition {
         qr.left_multiply(&mut y_implicit);
         assert!(approx_eq( &y_implicit.data, &y_explicit.data));
     }
-
-
+    
+    // SAMPLE 2X2
     #[test]
     fn test_reconstruction_2x2() {
         let x = NdArray {
@@ -68,34 +68,10 @@ mod qr_decomposition {
         test_reconstruction(x)
     }
     #[test]
-    fn test_reconstruction_3x3() {
-        let x = NdArray {
-            dims: vec![3, 3],
-            data: vec![
-            -1.0, 0.0, 3.0,
-             5.0, 2.0, 4.0,
-             -3.0, 0.7, 1.2,
-            ],
-        };
-        test_reconstruction(x)
-    }
-    #[test]
     fn test_orthogonal_2x2() {
         let x = NdArray {
             dims : vec![2, 2],
             data : vec![-1.0, 0.0, 5.0, 2.0],
-        };
-        test_orthogonal(x)
-    }
-    #[test]
-    fn test_orthogonal_3x3() {
-        let x = NdArray {
-            dims : vec![3, 3],
-            data : vec![
-                -1.0, 0.0, 3.0,
-                 5.0, 2.0, 4.0,
-                 -3.0, 0.7, 1.2,
-            ],
         };
         test_orthogonal(x)
     }
@@ -109,18 +85,6 @@ mod qr_decomposition {
         test_zeroing_below_diagonal(x)
     }
     
-    #[test]
-    fn test_zeroing_below_diagonal_3x3() {
-        let x = NdArray {
-            dims: vec![3, 3],
-            data: vec![
-                -1.0, 0.0, 3.0,
-                 5.0, 2.0, 4.0,
-                 -3.0, 0.7, 1.2,
-            ],
-        };
-        test_zeroing_below_diagonal(x)
-    }
     #[test]
     fn test_projection_and_implicit_mult_equivalence_2x2() {
         let x = NdArray {
@@ -144,5 +108,45 @@ mod qr_decomposition {
             data : vec![5.099, 1.961, 0.000, 0.392],
         };
         test_qr_triangle(x, expected)
+    }
+
+    // SAMPLE 3X3
+    #[test]
+    fn test_reconstruction_3x3() {
+        let x = NdArray {
+            dims: vec![3, 3],
+            data: vec![
+            -1.0, 0.0, 3.0,
+             5.0, 2.0, 4.0,
+             -3.0, 0.7, 1.2,
+            ],
+        };
+        test_reconstruction(x)
+    }
+    
+    #[test]
+    fn test_orthogonal_3x3() {
+        let x = NdArray {
+            dims : vec![3, 3],
+            data : vec![
+                -1.0, 0.0, 3.0,
+                 5.0, 2.0, 4.0,
+                 -3.0, 0.7, 1.2,
+            ],
+        };
+        test_orthogonal(x)
+    }
+    
+    #[test]
+    fn test_zeroing_below_diagonal_3x3() {
+        let x = NdArray {
+            dims: vec![3, 3],
+            data: vec![
+                -1.0, 0.0, 3.0,
+                 5.0, 2.0, 4.0,
+                 -3.0, 0.7, 1.2,
+            ],
+        };
+        test_zeroing_below_diagonal(x)
     }
 }
