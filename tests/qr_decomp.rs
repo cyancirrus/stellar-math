@@ -37,12 +37,15 @@ mod qr_decomposition {
     fn test_orthogonal(x:NdArray) {
         let card = x.dims[0].min(x.dims[1]);
         let qr = qr_decompose(x);
+        println!("here");
         let ortho = qr.projection_matrix();
         let mut ortho_transpose = ortho.clone();
         ortho_transpose.transpose_square();
+        println!("here");
         let left_result = tensor_mult(4, &ortho, &ortho_transpose);
         let right_result = tensor_mult(4, &ortho_transpose, &ortho);
         let expected = create_identity_matrix(card);
+        println!("here");
         assert!(approx_eq(&left_result.data, &expected.data));
         assert!(approx_eq(&right_result.data, &expected.data));
     }

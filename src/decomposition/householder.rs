@@ -1,5 +1,4 @@
 use crate::algebra::vector::{dot_product, magnitude, vector_multiply, vector_diff};
-use crate::decomposition::qr::QrDecomposition;
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
