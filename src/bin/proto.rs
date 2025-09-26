@@ -1,8 +1,8 @@
 use stellar::algebra::ndmethods::create_identity_matrix;
-use stellar::decomposition::qr::{qr_decompose, QrDecomposition};
 use stellar::algebra::ndmethods::tensor_mult;
 use stellar::decomposition::givens::givens_iteration;
 use stellar::decomposition::householder::HouseholderReflection;
+use stellar::decomposition::qr::{qr_decompose, QrDecomposition};
 use stellar::decomposition::schur::real_schur;
 use stellar::decomposition::svd::golub_kahan_explicit;
 use stellar::learning::knn::LshKNearestNeighbors;
@@ -16,8 +16,6 @@ use rand::prelude::*;
 use rand::Rng;
 use rand_distr::Normal;
 use rand_distr::StandardNormal;
-
-
 
 // reading : https://en.wikipedia.org/wiki/Schur_complement
 
@@ -101,7 +99,6 @@ fn random_eigenvector_decomp(matrix: NdArray) -> NdArray {
     eigen
 }
 
-
 fn test_random_eigenvectors() {
     let n = 4;
 
@@ -159,13 +156,17 @@ fn test_random_eigenvectors() {
         // check that A v ~ lambda v
         for i in 0..n {
             let diff = (a_v[i] - lambda_est * eigenvecs.data[i * n + col]).abs();
-            assert!(diff < 1e-1, "Eigenvector column {} failed A v ~ lambda v, diff={}", col, diff);
+            assert!(
+                diff < 1e-1,
+                "Eigenvector column {} failed A v ~ lambda v, diff={}",
+                col,
+                diff
+            );
         }
     }
 
     println!("All tests passed!");
 }
-
 
 fn main() {
     test_random_eigenvectors();

@@ -1,4 +1,4 @@
-use crate::algebra::vector::{dot_product, magnitude, vector_multiply, vector_diff};
+use crate::algebra::vector::{dot_product, magnitude, vector_diff, vector_multiply};
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
@@ -15,7 +15,6 @@ impl HouseholderReflection {
         Self { beta, vector }
     }
 }
-
 
 pub fn householder_params(mut u: Vec<f32>) -> HouseholderReflection {
     let length = u.len();

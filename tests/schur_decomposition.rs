@@ -1,8 +1,8 @@
 #[cfg(test)]
 
 mod schur_decomposition {
-    use stellar::decomposition::schur::real_schur;
     use stellar::algebra::ndmethods::tensor_mult;
+    use stellar::decomposition::schur::real_schur;
     use stellar::structure::ndarray::NdArray;
     const TOLERANCE: f32 = 1e-3;
 
@@ -34,10 +34,7 @@ mod schur_decomposition {
     #[test]
     fn test_reconstruction() {
         let dims = vec![2, 2];
-        let data = vec![
-            -1.0, 0.0,
-             5.0, 2.0,
-        ];
+        let data = vec![-1.0, 0.0, 5.0, 2.0];
         let x = NdArray::new(dims.clone(), data.clone());
         let schur = real_schur(x);
         let q_star = schur.rotation.transpose();
@@ -45,10 +42,7 @@ mod schur_decomposition {
 
         let result = tensor_mult(4, &q_star, &schur.kernel);
         let result = tensor_mult(4, &result, q);
-        assert!(approx_vector_eq(
-            &result.data,
-            &data,
-        ));
+        assert!(approx_vector_eq(&result.data, &data,));
     }
     // #[test]
     // fn test_reconstruction_3() {

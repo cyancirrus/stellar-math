@@ -14,27 +14,27 @@ pub struct LU {
 pub fn lu_decompose(mut upper: NdArray) -> LU {
     // A[j, *] = c *A[i, *]
     // => c = A[i,j] / A[j,j]
-    // could be extended to non-square matrices 
+    // could be extended to non-square matrices
     debug_assert_eq!(upper.dims[0], upper.dims[1]);
-    let (rows, cols) = (upper.dims[0], upper.dims[1]); 
+    let (rows, cols) = (upper.dims[0], upper.dims[1]);
     let mut lower = create_identity_matrix(rows);
 
     for i in 0..rows {
-       for j in 0..cols {
+        for j in 0..cols {
             for k in 0..i {
                 upper.data[i * cols + j] -= lower.data[i * cols + k] * upper.data[k * cols + j]
             }
             if i > j {
                 // NOTE: Can store this directly if we want to merge but need virtual methods
-                lower.data[ i * cols + j ] = upper.data[ i * cols + j ] /  upper.data[ j * cols + j ]
+                lower.data[i * cols + j] = upper.data[i * cols + j] / upper.data[j * cols + j]
             } else {
-                upper.data[ i * cols + j ] = upper.data[ i * cols + j] / lower.data[ i * cols + i]
+                upper.data[i * cols + j] = upper.data[i * cols + j] / lower.data[i * cols + i]
             }
-       }
+        }
     }
     for i in 0..rows {
         for j in 0..i {
-            upper.data[ i * cols + j ] = 0_f32;
+            upper.data[i * cols + j] = 0_f32;
         }
     }
     LU { lower, upper }

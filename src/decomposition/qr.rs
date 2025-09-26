@@ -8,14 +8,14 @@ use rayon::prelude::*;
 pub struct QrDecomposition {
     pub rows: usize, // rows in input matrix
     pub cols: usize, // cols in input matrix
-    pub card: usize, // count householder transforms 
+    pub card: usize, // count householder transforms
     pub projections: Vec<HouseholderReflection>,
     pub triangle: NdArray,
 }
 
 pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
     let (rows, cols) = (x.dims[0], x.dims[1]);
-    let card = rows.min(cols) - (rows<=cols) as usize;
+    let card = rows.min(cols) - (rows <= cols) as usize;
     let mut projections = Vec::with_capacity(card);
     let mut w = vec![0_f32; rows];
     for o in 0..card {
@@ -100,7 +100,7 @@ impl QrDecomposition {
     pub fn triangle_rotation(&mut self) {
         // Specifically for the Schur algorithm which requires square matrices
         // A' = Q'AQ = Q'(QR)Q = RQ
-        debug_assert!(self.rows==self.cols);
+        debug_assert!(self.rows == self.cols);
         let mut w: Vec<f32> = vec![0_f32; self.rows];
         for p in 0..self.card {
             let proj = &self.projections[p];

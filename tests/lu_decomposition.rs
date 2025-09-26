@@ -1,15 +1,15 @@
 #[cfg(test)]
 mod lu_decomposition {
-    use stellar::structure::ndarray::NdArray;
-    use stellar::algebra::ndmethods::tensor_mult;
-    use stellar::decomposition::lu::lu_decompose;
-    use stellar::algebra::ndmethods::create_identity_matrix;
     use rand::Rng;
     use rand_distr::StandardNormal;
-    
+    use stellar::algebra::ndmethods::create_identity_matrix;
+    use stellar::algebra::ndmethods::tensor_mult;
+    use stellar::decomposition::lu::lu_decompose;
+    use stellar::structure::ndarray::NdArray;
+
     // utilities
     const TOLERANCE: f32 = 1e-3;
-    
+
     fn approx_eq(a: &[f32], b: &[f32]) -> bool {
         a.len() == b.len()
             && a.iter()
@@ -20,7 +20,7 @@ mod lu_decomposition {
         (a - b).abs() < TOLERANCE
     }
     // functions
-    fn test_reconstruction(x:NdArray) {
+    fn test_reconstruction(x: NdArray) {
         let expected = x.clone();
         let lu = lu_decompose(x);
         println!("L {:?}", lu.upper);
@@ -29,16 +29,16 @@ mod lu_decomposition {
         println!("Result {result:?}");
         assert!(approx_eq(&result.data, &expected.data));
     }
-    fn test_zeroing_below_diagonal(x:NdArray) {
+    fn test_zeroing_below_diagonal(x: NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x.clone());
         for i in 0..rows {
             for j in 0..i {
-                assert!(approx_scalar_eq( lu.upper.data[i*cols + j], 0_f32 ));
+                assert!(approx_scalar_eq(lu.upper.data[i * cols + j], 0_f32));
             }
         }
     }
-    fn test_random(n:usize) {
+    fn test_random(n: usize) {
         let mut rng = rand::rng();
         let mut data = vec![0.0_f32; n * n];
         for i in 0..n {
@@ -54,13 +54,13 @@ mod lu_decomposition {
         };
         test_reconstruction(matrix)
     }
-    
+
     // sample 2x2
     #[test]
     fn test_reconstruction_2x2() {
         let x = NdArray {
-            dims : vec![2, 2],
-            data : vec![-1.0, 0.0, 5.0, 2.0],
+            dims: vec![2, 2],
+            data: vec![-1.0, 0.0, 5.0, 2.0],
         };
         test_reconstruction(x)
     }
@@ -77,11 +77,7 @@ mod lu_decomposition {
     fn test_reconstruction_3x3() {
         let x = NdArray {
             dims: vec![3, 3],
-            data: vec![
-            -1.0, 0.0, 3.0,
-             5.0, 2.0, 4.0,
-             -3.0, 0.7, 1.2,
-            ],
+            data: vec![-1.0, 0.0, 3.0, 5.0, 2.0, 4.0, -3.0, 0.7, 1.2],
         };
         test_reconstruction(x)
     }
