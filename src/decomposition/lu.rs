@@ -3,7 +3,10 @@ use crate::structure::ndarray::NdArray;
 
 const TOLERANCE_CONDITION: f32 = 1e-6;
 
+// TODO: Consider making this densely packed
 pub struct LU {
+    // This could be densely packed in order to save memory
+    // However would need virtual methods to multiply component parts
     pub lower: NdArray,
     pub upper: NdArray,
 }
