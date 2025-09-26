@@ -21,20 +21,15 @@ pub fn lu_decompose(mut upper: NdArray) -> LU {
 
     for i in 0..rows {
        for j in 0..cols {
-           if i == j {
-                for k in 0..i {
-                    upper.data[ i * cols  + j] -= lower.data[i * cols + k] * upper.data[k * cols + j]
-                }
-           } else {
-                for k in 0.. i {
-                    upper.data[i * cols + j] -= lower.data[i * cols + k] * upper.data[k * cols + j]
-                }
-                if i > j {
-                    lower.data[ i * cols + j ] = upper.data[ i * cols + j ] /  upper.data[ j * cols + j ]
-                } else {
-                    upper.data[ i * cols + j ] = upper.data[ i * cols + j] / lower.data[ i * cols + i]
-                }
-           }
+            for k in 0..i {
+                upper.data[i * cols + j] -= lower.data[i * cols + k] * upper.data[k * cols + j]
+            }
+            if i > j {
+                // NOTE: Can store this directly if we want to merge but need virtual methods
+                lower.data[ i * cols + j ] = upper.data[ i * cols + j ] /  upper.data[ j * cols + j ]
+            } else {
+                upper.data[ i * cols + j ] = upper.data[ i * cols + j] / lower.data[ i * cols + i]
+            }
        }
     }
     for i in 0..rows {
