@@ -67,7 +67,7 @@ mod qr_decomposition {
         assert!(approx_eq(&left_result.data, &expected.data));
         assert!(approx_eq(&right_result.data, &expected.data));
     }
-    fn test_qr_triangle(x:NdArray, expected:NdArray) {
+    fn test_triangle(x:NdArray, expected:NdArray) {
         let qr = qr_decompose(x);
         assert!(approx_eq(&qr.triangle.data, &expected.data));
     }
@@ -118,7 +118,7 @@ mod qr_decomposition {
         test_projection_and_implicit_mult_equivalence(x, y)
     }
     #[test]
-    fn test_qr_triangle_2x2() {
+    fn test_triangle_2x2() {
         let x = NdArray {
             dims : vec![2, 2],
             data : vec![-1.0, 0.0, 5.0, 2.0],
@@ -127,7 +127,7 @@ mod qr_decomposition {
             dims : vec![2, 2],
             data : vec![5.099, 1.961, 0.000, 0.392],
         };
-        test_qr_triangle(x, expected)
+        test_triangle(x, expected)
     }
     // sample 3X3
     #[test]
