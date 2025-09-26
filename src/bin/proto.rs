@@ -17,6 +17,10 @@ use rand::Rng;
 use rand_distr::Normal;
 use rand_distr::StandardNormal;
 
+
+
+// reading : https://en.wikipedia.org/wiki/Schur_complement
+
 // move code into examples directory
 // cargo run --example demo
 
