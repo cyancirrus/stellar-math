@@ -4,6 +4,7 @@ use crate::decomposition::householder::{householder_params, HouseholderReflectio
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
+
 #[derive(Debug)]
 pub struct QrDecomposition {
     pub rows: usize, // rows in input matrix
@@ -70,10 +71,11 @@ impl QrDecomposition {
         }
     }
     pub fn projection_matrix(&self) -> NdArray {
+        // Iteration is decreasing due to constraints
         // I - Buu'
-        // H[i+1] * H[i] = H[i+1] - B[i](H[i+1]u[i])u'[i]
+        // H[i] * H[i-1] = H[i] - B[i-1](H[i]u[i-1])u'[i-1]
         // Hu := w
-        // H[i+1] -= B[i] *w[i+1]u'[i]
+        // H[i+1] -= B[i-1] *w[i]u'[i-1]
 
         let card = self.card;
         let mut matrix = create_identity_matrix(self.rows);
