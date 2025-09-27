@@ -72,6 +72,7 @@ impl QrDecomposition {
     }
     pub fn projection_matrix(&self) -> NdArray {
         // Iteration is decreasing due to constraints
+        // Computes H[i] <- f(Householder i, Hi-1)
         // I - Buu'
         // H[i] * H[i-1] = H[i] - B[i-1](H[i]u[i-1])u'[i-1]
         // Hu := w
