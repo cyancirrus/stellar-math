@@ -18,6 +18,9 @@ use rand_distr::Normal;
 use rand_distr::StandardNormal;
 
 // reading : https://en.wikipedia.org/wiki/Schur_complement
+// when writing article write something about recursive / iterative defns and which info is
+// available, ie why need to reverse iteration on QR
+
 
 // move code into examples directory
 // cargo run --example demo
