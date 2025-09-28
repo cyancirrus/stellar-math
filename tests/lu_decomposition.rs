@@ -110,7 +110,7 @@ mod lu_decomposition {
         for (n, a) in dimensions {
             let x = generate_random(n,n);
             let y = generate_random(n,a);
-            test_left_apply_l(x, y) 
+            test_left_apply_u(x, y) 
         }
     }
 }
