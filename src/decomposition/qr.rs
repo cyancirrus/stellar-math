@@ -43,7 +43,7 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
             x.data[i * cols + j] = 0_f32
         }
     }
-    // NOTE: If wanted positive elements for thetriangular matrix diagonal
+    // // NOTE: If wanted positive elements for thetriangular matrix diagonal
     // for i in 0..card {
     //     if x.data[i*cols + i] < 0_f32 {
     //         for e in &mut projections[i].vector {
