@@ -5,6 +5,7 @@
 
 pub mod algebra;
 pub mod decomposition;
+pub mod equality;
 pub mod random;
 pub mod learning;
 pub mod solver;

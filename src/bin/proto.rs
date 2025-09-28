@@ -1,8 +1,3 @@
-use stellar::decomposition::qr::{qr_decompose};
-use stellar::decomposition::lu::{lu_decompose};
-use stellar::structure::ndarray::NdArray;
-use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
-
 // #[cfg(target_arch = "x86_64")]
 
 // reading : https://en.wikipedia.org/wiki/Schur_complement
@@ -12,34 +7,59 @@ use stellar::random::generation::{generate_random_matrix, generate_random_symetr
 
 // move code into examples directory
 // cargo run --example demo
+use stellar::decomposition::qr::{qr_decompose};
+use stellar::decomposition::lu::{lu_decompose};
+use stellar::structure::ndarray::NdArray;
+use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
+
 const CONVERGENCE_CONDITION: f32 = 1e-4;
 
-fn rayleigh_inverse_iteration(mut matrix: NdArray) -> NdArray {
+fn rayleigh_inverse_iteration(mut a: NdArray) -> NdArray {
     // (A - Iu)y = x;
     // x' = Q from QR(y)
     // let M := (A-Iu)
     // LU(M) -> solve => y
     // u' := rayleigh quotient of x
-    debug_assert!(matrix.dims.len() == 2);
-    debug_assert!(matrix.dims[0] == matrix.dims[1]);
-    let n = matrix.dims[0];
-    let mut current = generate_random_matrix(n, n);
-    let mut u = vec![0_f32;n];
+    debug_assert!(a.dims.len() == 2);
+    debug_assert!(a.dims[0] == a.dims[1]);
+    let n = a.dims[0];
+    let mut x_cur = generate_random_matrix(n, n);
+    let mut u: NdArray;
+    let mut m: NdArray;
     let mut error = 1_f32;
-    // for i in 0..20 {
     while CONVERGENCE_CONDITION < error {
-        // transforms M' = (A - Iu + Iu - Iu')
-        let previous = current.clone();
-        estimate_eigenvalues(&mut u, &mut matrix, &current);
-        let lu = lu_decompose(matrix.clone());
-        // eigen is now y
-        lu.solve_inplace(&mut current);
-        let qr = qr_decompose(current.clone());
-        current = qr.projection_matrix();
-        error = frobenius_diff_norm(&current, &previous);
+        let x_pre = x_cur.clone();
+        u = estimate_eigenvalues(&mut a, &x_cur);
+        m = determine_m(&a, &u, &x_cur);
+        let lu = lu_decompose(m);
+        lu.solve_inplace(&mut x_cur);
+        println!("before qr");
+        let qr = qr_decompose(x_cur);
+        println!("after qr");
+        x_cur = qr.projection_matrix();
+        error = frobenius_diff_norm(&x_cur, &x_pre);
         println!("error: {error:?}");
     }
-    current
+    x_cur
+}
+
+fn determine_m(a:&NdArray,  u:&NdArray, x:&NdArray) -> NdArray {
+    // M := A - XUX' == A - XX'UXX'
+    let (n, k) = (a.dims[1], u.dims[0]);
+    let mut m = a.clone();
+    
+    for i in 0..n {
+        for j in 0..n {
+            let mut sum = 0.0;
+            for p in 0..k {
+                for q in 0..k {
+                    sum += x.data[i * k + p] * u.data[p * k + q] * x.data[j * k + q];
+                }
+            }
+            m.data[i * n + j] = a.data[i * n + j] - sum;
+        }
+    }
+    m
 }
     
 fn frobenius_diff_norm(a: &NdArray, b: &NdArray) -> f32 {
@@ -57,38 +77,40 @@ fn frobenius_diff_norm(a: &NdArray, b: &NdArray) -> f32 {
     (error / (rows * cols) as f32).sqrt()
 }
 
-fn estimate_eigenvalues(u:&mut[f32], a: &mut NdArray, x:&NdArray) {
+fn estimate_eigenvalues(a: &mut NdArray, x:&NdArray) -> NdArray {
     // estimated via rayleigh quotient
     // x'Ax/x'x
+    // k for eventual subsetting
     debug_assert_eq!(a.dims[0], a.dims[1]); 
-    let n = a.dims[0];
-    // center M to A ->  A-u +u = A
+    let (n, k) = (a.dims[0], x.dims[1]);
+    let mut ax = vec![0_f32; n * k];
+    let mut xt_a_x = vec![0_f32; k*k];
+    // A ~ n,n
+    // Ax ~ n, k
+    // x'n, k ~ k,k
     for i in 0..n {
-        a.data[i * n + i] += u[i];
-    }
-    // only desire the diagonal
-    for d in 0..n {
-        let mut w = vec![0f32;n];
-        let mut numerator = 0_f32;
-        let mut denominator = 0_f32;
-        for i in 0..n {
-            for k in 0..n {
-                w[i] +=  a.data[ i * n + k] * x.data[k * n + d];
+        for j in 0..k {
+            for m in 0..n {
+                ax[i * k + j] += a.data[i * n + m] * x.data[ m * k + j];
             }
         }
-        for k in 0..n {
-            numerator += w[k] * x.data[k * n + d];
-            denominator += x.data[k * n + d] * x.data[k * n + d];
+    }
+    for i in 0..k {
+        for j in 0..k {
+            for m in 0..n {
+                // x is transposed, either x or ax needs to be transposed x is nxn
+                xt_a_x[i * k + j] += x.data[m * k + i] * ax[m * k + j];
+            }
         }
-        u[d] = numerator / denominator;
-        // perterb M by new uii : A - u' 
-        a.data[d * n + d] -= u[d];
+    }
+    NdArray {
+        dims: vec![k,k],
+        data: xt_a_x,
     }
 }
 
-
 fn test_random_eigenvectors() {
-    let n = 2;
+    let n = 3;
 
     // Step 1: create a random symmetric matrix
     let matrix = generate_random_symetric(n);

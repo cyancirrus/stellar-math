@@ -3,25 +3,15 @@ mod lu_decomposition {
     use stellar::algebra::ndmethods::tensor_mult;
     use stellar::decomposition::lu::lu_decompose;
     use stellar::structure::ndarray::NdArray;
+    use stellar::equality::approximate::approx_vector_eq;
     use stellar::random::generation::{generate_random_matrix, generate_random_vector};
 
-    // utilities
-    const TOLERANCE: f32 = 1e-3;
-
-    fn approx_eq(a: &[f32], b: &[f32]) -> bool {
-        let n = a.len();
-        let mut error = 0_f32;
-        for i in 0..n {
-            error += (a[i] - b[i]).abs();
-        }
-        error / (n as f32).sqrt() < TOLERANCE
-    }
     // functions
     fn reconstruction(x: NdArray) {
         let expected = x.clone();
         let lu = lu_decompose(x);
         let result = lu.reconstruct();
-        assert!(approx_eq(&result.data, &expected.data))
+        assert!(approx_vector_eq(&result.data, &expected.data))
     }
     fn solve_inplace_vec_ax_y(a:NdArray, y:&mut [f32]) {
         let lu = lu_decompose(a);
@@ -30,7 +20,7 @@ mod lu_decomposition {
         lu.solve_inplace_vec(result);
         lu.left_apply_u_vec( result);
         lu.left_apply_l_vec( result);
-        assert!(approx_eq(&expected, &result));
+        assert!(approx_vector_eq(&expected, &result));
 
     }
     fn solve_inplace_ax_y(a:NdArray, y:&mut NdArray) {
@@ -40,7 +30,7 @@ mod lu_decomposition {
         lu.solve_inplace(result);
         lu.left_apply_u( result);
         lu.left_apply_l( result);
-        assert!(approx_eq(&expected.data, &result.data));
+        assert!(approx_vector_eq(&expected.data, &result.data));
 
     }
     // matrix applications
@@ -57,7 +47,7 @@ mod lu_decomposition {
         }
         let expected = tensor_mult(4, &l, &y);
         lu.left_apply_l(&mut result);
-        assert!(approx_eq(&result.data, &expected.data))
+        assert!(approx_vector_eq(&result.data, &expected.data))
     }
     fn left_apply_u(x:NdArray, y:NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
@@ -71,7 +61,7 @@ mod lu_decomposition {
         }
         let expected = tensor_mult(4, &u, &y);
         lu.left_apply_u(&mut result);
-        assert!(approx_eq(&result.data, &expected.data))
+        assert!(approx_vector_eq(&result.data, &expected.data))
     }
     fn right_apply_l(x:NdArray, y:NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
@@ -86,7 +76,7 @@ mod lu_decomposition {
         }
         let expected = tensor_mult(4, &y, &l);
         lu.right_apply_l(&mut result);
-        assert!(approx_eq(&result.data, &expected.data))
+        assert!(approx_vector_eq(&result.data, &expected.data))
     }
     fn right_apply_u(x:NdArray, y:NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
@@ -100,7 +90,7 @@ mod lu_decomposition {
         }
         let expected = tensor_mult(4, &y, &u);
         lu.right_apply_u(&mut result);
-        assert!(approx_eq(&result.data, &expected.data))
+        assert!(approx_vector_eq(&result.data, &expected.data))
     }
     fn left_apply_l_vec(x:NdArray, y:Vec<f32>) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
@@ -116,7 +106,7 @@ mod lu_decomposition {
         }
         let expected = tensor_mult(4, &l, &y_matrix);
         lu.left_apply_l_vec(&mut result);
-        assert!(approx_eq(&result, &expected.data))
+        assert!(approx_vector_eq(&result, &expected.data))
     }
 
     // vector applications
@@ -133,7 +123,7 @@ mod lu_decomposition {
         }
         let expected = tensor_mult(4, &u, &y_matrix);
         lu.left_apply_u_vec(&mut result);
-        assert!(approx_eq(&result, &expected.data))
+        assert!(approx_vector_eq(&result, &expected.data))
     }
     
     fn right_apply_l_vec(x:NdArray, y:Vec<f32>) {
@@ -150,7 +140,7 @@ mod lu_decomposition {
         }
         let expected = tensor_mult(4, &y_matrix, &l);
         lu.right_apply_l_vec(&mut result);
-        assert!(approx_eq(&result, &expected.data))
+        assert!(approx_vector_eq(&result, &expected.data))
     }
     fn right_apply_u_vec(x:NdArray, y:Vec<f32>) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
@@ -165,7 +155,7 @@ mod lu_decomposition {
         }
         let expected = tensor_mult(4, &y_matrix, &u);
         lu.right_apply_u_vec(&mut result);
-        assert!(approx_eq(&result, &expected.data))
+        assert!(approx_vector_eq(&result, &expected.data))
     }
 
     // sample 2x2

@@ -4,17 +4,7 @@ mod schur_decomposition {
     use stellar::algebra::ndmethods::tensor_mult;
     use stellar::decomposition::schur::real_schur;
     use stellar::structure::ndarray::NdArray;
-    const TOLERANCE: f32 = 1e-3;
-
-    fn approx_vector_eq(a: &[f32], b: &[f32]) -> bool {
-        a.len() == b.len()
-            && a.iter()
-                .zip(b.iter())
-                .all(|(x, y)| (x - y).abs() < TOLERANCE)
-    }
-    fn approx_scalar_eq(a: f32, b: f32) -> bool {
-        (a - b).abs() < TOLERANCE
-    }
+    use stellar::equality::approximate::{approx_vector_eq, approx_scalar_eq};
 
     #[test]
     fn test_schur_kernel() {
