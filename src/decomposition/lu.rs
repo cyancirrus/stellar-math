@@ -3,10 +3,9 @@ use crate::structure::ndarray::NdArray;
 
 const TOLERANCE_CONDITION: f32 = 1e-6;
 
-// TODO: Consider making this densely packed
 pub struct LU {
     // matrix contains both lower and upper logically
-    // lower l[i,i] := 1;
+    // lower l[i,i] := 1; // lower and upper share diagonal
     pub matrix: NdArray,
 }
 
@@ -68,7 +67,7 @@ impl LU {
         }
     }
     pub fn reconstruct(&self) -> NdArray {
-        debug_assert_eq!(self.matrix.dims[0], self.matrix.dims[0]);
+        debug_assert_eq!(self.matrix.dims[0], self.matrix.dims[1]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         let dims = self.matrix.dims.clone();
         let mut data = vec![0_f32; rows * cols];
