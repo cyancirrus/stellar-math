@@ -66,12 +66,8 @@ mod lu_decomposition {
                 u.data[i * cols + j] = 0_f32;
             }
         }
-        println!("u {u:?}");
-        println!("y {y:?}");
         let expected = tensor_mult(4, &u, &y);
         lu.left_apply_u(&mut result);
-        println!("expected {:?}", expected);
-        println!("actual {:?}", result);
         assert!(approx_eq(&result.data, &expected.data))
     }
     fn right_apply_l(x:NdArray, y:NdArray) {
@@ -85,8 +81,12 @@ mod lu_decomposition {
                 l.data[i * cols + j] = 0_f32;
             }
         }
+        println!("y {y:?}");
+        println!("l {l:?}");
         let expected = tensor_mult(4, &y, &l);
         lu.right_apply_l(&mut result);
+        println!("expected {expected:?}");
+        println!("result {result:?}");
         assert!(approx_eq(&result.data, &expected.data))
     }
     
@@ -147,15 +147,16 @@ mod lu_decomposition {
             left_apply_u(x, y) 
         }
     }
-    // #[test]
-    // fn random_right_apply_l_nxn_nxa() {
-    //     let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
-    //     for (n, a) in dimensions {
-    //         let x = generate_random(n,n);
-    //         let y = generate_random(n,a);
-    //         right_apply_l(x, y) 
-    //     }
-    // }
+    #[test]
+    fn random_right_apply_l_axn_nxn() {
+        let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+        // let dimensions = vec![(2,2)];
+        for (n, a) in dimensions {
+            let x = generate_random(n,n);
+            let y = generate_random(a,n);
+            right_apply_l(x, y) 
+        }
+    }
     // #[test]
     // fn random_right_apply_u_nxn_nxa() {
     //     let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
