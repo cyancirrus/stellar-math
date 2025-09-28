@@ -6,19 +6,7 @@ mod qr_decomposition {
     use stellar::algebra::ndmethods::tensor_mult;
     use stellar::decomposition::qr::qr_decompose;
     use stellar::structure::ndarray::NdArray;
-
-    // utilities
-    const TOLERANCE: f32 = 1e-3;
-
-    fn approx_eq(a: &[f32], b: &[f32]) -> bool {
-        a.len() == b.len()
-            && a.iter()
-                .zip(b.iter())
-                .all(|(x, y)| (x - y).abs() < TOLERANCE)
-    }
-    fn approx_scalar_eq(a: f32, b: f32) -> bool {
-        (a - b).abs() < TOLERANCE
-    }
+    use stellar::equality::approximate::{approx_vector_eq, approx_scalar_eq};
 
     // test functions
     fn test_reconstruction(x: NdArray) {
@@ -26,7 +14,7 @@ mod qr_decomposition {
         let qr = qr_decompose(x);
         let mut result = qr.triangle.clone();
         qr.left_multiply(&mut result);
-        assert!(approx_eq(&result.data, &expected.data));
+        assert!(approx_vector_eq(&result.data, &expected.data));
     }
     fn test_random(n: usize) {
         let mut rng = rand::rng();
@@ -63,19 +51,19 @@ mod qr_decomposition {
         let left_result = tensor_mult(4, &ortho, &ortho_transpose);
         let right_result = tensor_mult(4, &ortho_transpose, &ortho);
         let expected = create_identity_matrix(card);
-        assert!(approx_eq(&left_result.data, &expected.data));
-        assert!(approx_eq(&right_result.data, &expected.data));
+        assert!(approx_vector_eq(&left_result.data, &expected.data));
+        assert!(approx_vector_eq(&right_result.data, &expected.data));
     }
     fn test_triangle(x: NdArray, expected: NdArray) {
         let qr = qr_decompose(x);
-        assert!(approx_eq(&qr.triangle.data, &expected.data));
+        assert!(approx_vector_eq(&qr.triangle.data, &expected.data));
     }
     fn test_projection_and_implicit_mult_equivalence(x: NdArray, mut y_implicit: NdArray) {
         let qr = qr_decompose(x);
         let projection = qr.projection_matrix();
         let y_explicit = &tensor_mult(4, &projection, &y_implicit);
         qr.left_multiply(&mut y_implicit);
-        assert!(approx_eq(&y_implicit.data, &y_explicit.data));
+        assert!(approx_vector_eq(&y_implicit.data, &y_explicit.data));
     }
     // tests
 
