@@ -24,6 +24,7 @@ mod lu_decomposition {
         let expected = x.clone();
         let lu = lu_decompose(x);
         let result = lu.reconstruct();
+        println!("LU {:?}", lu.matrix); 
         // println!("L {:?}", lu.upper);
         // println!("u {:?}", lu.lower);
         // let result = tensor_mult(4, &lu.lower, &lu.upper);

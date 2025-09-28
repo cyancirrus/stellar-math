@@ -104,10 +104,5 @@ pub fn lu_decompose(mut matrix: NdArray) -> LU {
             }
         }
     }
-    for i in 0..rows {
-        for j in 0..i {
-            matrix.data[i * cols + j] = 0_f32;
-        }
-    }
     LU { matrix }
 }
