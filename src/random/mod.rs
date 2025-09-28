@@ -1,2 +1,2 @@
 pub mod generation;
-pub mod rayleigh_eigen_vector;
+pub mod rayleigh_eigenvector;
