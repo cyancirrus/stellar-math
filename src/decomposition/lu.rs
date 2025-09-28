@@ -35,7 +35,8 @@ impl LU {
             for j in 0..tcols {
                 target.data[ i * tcols + j] *= self.matrix.data[i * cols + i];
                 for k in i+1..cols {
-                    target.data[ i * tcols + j] += self.matrix.data[ i * cols + k] * target.data[ k * cols + j ]; 
+                    println!(" i, j, k  :: ({i:}, {j:}, {k:}");
+                    target.data[ i * tcols + j] += self.matrix.data[ i * cols + k] * target.data[ k * tcols + j ]; 
                 }
             }
         }
@@ -53,7 +54,7 @@ impl LU {
             }
         }
     }
-    pub fn right_apply_u(&self, target:&mut NdArray) {
+    pub fn right_apply_u(&self, target: &mut NdArray) {
         // AU = Output
         debug_assert_eq!(target.dims[1], self.matrix.dims[0]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);

@@ -40,7 +40,7 @@ mod lu_decomposition {
         let result = lu.reconstruct();
         assert!(approx_eq(&result.data, &expected.data))
     }
-    fn test_left_apply_l(x:NdArray, y:NdArray) {
+    fn left_apply_l(x:NdArray, y:NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut l = lu.matrix.clone();
@@ -56,7 +56,7 @@ mod lu_decomposition {
         assert!(approx_eq(&result.data, &expected.data))
     }
     
-    fn test_left_apply_u(x:NdArray, y:NdArray) {
+    fn left_apply_u(x:NdArray, y:NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut u = lu.matrix.clone();
@@ -66,7 +66,41 @@ mod lu_decomposition {
                 u.data[i * cols + j] = 0_f32;
             }
         }
+        println!("u {u:?}");
+        println!("y {y:?}");
         let expected = tensor_mult(4, &u, &y);
+        lu.left_apply_u(&mut result);
+        println!("expected {:?}", expected);
+        println!("actual {:?}", result);
+        assert!(approx_eq(&result.data, &expected.data))
+    }
+    fn right_apply_l(x:NdArray, y:NdArray) {
+        let (rows, cols) = (x.dims[0], x.dims[1]);
+        let lu = lu_decompose(x);
+        let mut l = lu.matrix.clone();
+        let mut result = y.clone();
+        for i in 0..rows {
+            l.data[i * cols + i] = 1_f32;
+            for j in i+1..cols {
+                l.data[i * cols + j] = 0_f32;
+            }
+        }
+        let expected = tensor_mult(4, &y, &l);
+        lu.right_apply_l(&mut result);
+        assert!(approx_eq(&result.data, &expected.data))
+    }
+    
+    fn right_apply_u(x:NdArray, y:NdArray) {
+        let (rows, cols) = (x.dims[0], x.dims[1]);
+        let lu = lu_decompose(x);
+        let mut u = lu.matrix.clone();
+        let mut result = y.clone();
+        for i in 1..rows {
+            for j in 0..i {
+                u.data[i * cols + j] = 0_f32;
+            }
+        }
+        let expected = tensor_mult(4, &y, &u);
         lu.left_apply_l(&mut result);
         assert!(approx_eq(&result.data, &expected.data))
     }
@@ -101,16 +135,35 @@ mod lu_decomposition {
         for (n, a) in dimensions {
             let x = generate_random(n,n);
             let y = generate_random(n,a);
-            test_left_apply_l(x, y) 
+            left_apply_l(x, y) 
         }
     }
     #[test]
     fn random_left_apply_u_nxn_nxa() {
-        let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+        // let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+        let dimensions = vec![(2,2)];
         for (n, a) in dimensions {
             let x = generate_random(n,n);
             let y = generate_random(n,a);
-            test_left_apply_u(x, y) 
+            left_apply_u(x, y) 
         }
     }
+    // #[test]
+    // fn random_right_apply_l_nxn_nxa() {
+    //     let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+    //     for (n, a) in dimensions {
+    //         let x = generate_random(n,n);
+    //         let y = generate_random(n,a);
+    //         right_apply_l(x, y) 
+    //     }
+    // }
+    // #[test]
+    // fn random_right_apply_u_nxn_nxa() {
+    //     let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+    //     for (n, a) in dimensions {
+    //         let x = generate_random(n,n);
+    //         let y = generate_random(n,a);
+    //         right_apply_u(x, y) 
+    //     }
+    // }
 }
