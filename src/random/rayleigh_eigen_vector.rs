@@ -108,9 +108,7 @@ fn estimate_eigenvalues(u:&mut f32, a: &mut NdArray, x:&[f32]) {
 
 // fn test_random_eigenvector() {
 //     let n = 128;
-
 //     // Step 1: create a random symmetric matrix
-//     // let matrix = generate_random_matrix(n,n);
 //     let matrix = generate_random_symetric(n);
 
 //     // Step 2: run your single-vector eigenvector iteration

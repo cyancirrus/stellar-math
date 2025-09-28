@@ -1,44 +1,20 @@
 #[cfg(test)]
 mod lu_decomposition {
-    use rand::Rng;
-    use rand_distr::StandardNormal;
     use stellar::algebra::ndmethods::tensor_mult;
     use stellar::decomposition::lu::lu_decompose;
     use stellar::structure::ndarray::NdArray;
+    use stellar::random::generation::{generate_random_matrix, generate_random_vector};
 
     // utilities
     const TOLERANCE: f32 = 1e-3;
 
     fn approx_eq(a: &[f32], b: &[f32]) -> bool {
-        a.len() == b.len()
-            && a.iter()
-                .zip(b.iter())
-                .all(|(x, y)| (x - y).abs() < TOLERANCE)
-    }
-    fn approx_scalar_eq(a: f32, b: f32) -> bool {
-        (a - b).abs() < TOLERANCE
-    }
-    fn generate_random_matrix(m:usize, n:usize) -> NdArray {
-        let mut rng = rand::rng();
-        let mut data = vec![0.0_f32; m * n];
-        for i in 0..m {
-            for j in 0..n {
-                let val = rng.sample(StandardNormal);
-                data[i * n + j] = val;
-            }
-        }
-        NdArray {
-            dims: vec![m, n],
-            data,
-        }
-    }
-    fn generate_random_vector(n:usize) -> Vec<f32> {
-        let mut rng = rand::rng();
-        let mut data = vec![0.0_f32;  n];
+        let n = a.len();
+        let mut error = 0_f32;
         for i in 0..n {
-            data[i] = rng.sample(StandardNormal);
+            error += (a[i] - b[i]).abs();
         }
-        data
+        error / (n as f32).sqrt() < TOLERANCE
     }
     // functions
     fn reconstruction(x: NdArray) {
