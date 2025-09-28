@@ -5,14 +5,14 @@ const TOLERANCE_CONDITION: f32 = 1e-6;
 
 // NOTE: current implementation doesn't handle pivoting
 
-pub struct LU {
+pub struct LuDecomposition {
     // matrix contains both lower and upper logically
     // lower l[i,i] := 1; // lower and upper share diagonal
     pub matrix: NdArray,
 }
 
 
-impl LU {
+impl LuDecomposition {
     // for matrices
     pub fn left_apply_l(&self, target:&mut NdArray) {
         // LA = Output
@@ -87,7 +87,7 @@ impl LU {
 }
 
 
-impl LU {
+impl LuDecomposition {
     pub fn left_apply_l_vec(&self, target:&mut [f32]) {
         // Lx
         debug_assert_eq!(self.matrix.dims[1], target.len());
@@ -132,9 +132,9 @@ impl LU {
     }
 }
 
-impl LU {
+impl LuDecomposition {
     // Ax = y;
-    // LUx = y;
+    // LuDecompositionx = y;
     // Lz = y -> z;
     // Ux = z -> x;
     // => x
@@ -198,7 +198,7 @@ impl LU {
 }
 
 
-pub fn lu_decompose(mut matrix: NdArray) -> LU {
+pub fn lu_decompose(mut matrix: NdArray) -> LuDecomposition {
     // A[j, *] = c *A[i, *]
     // => c = A[i,j] / A[j,j]
     debug_assert_eq!(matrix.dims[0], matrix.dims[1]);
@@ -216,5 +216,5 @@ pub fn lu_decompose(mut matrix: NdArray) -> LU {
             }
         }
     }
-    LU { matrix }
+    LuDecomposition { matrix }
 }
