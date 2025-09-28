@@ -11,6 +11,7 @@ pub struct LU {
 
 
 impl LU {
+    // for matrices
     pub fn left_apply_l(&self, target:&mut NdArray) {
         // LA = Output
         debug_assert_eq!(target.dims[0], self.matrix.dims[1]);
@@ -74,13 +75,65 @@ impl LU {
         for i in 0..rows {
             for j in 0..cols {
                 for k in 0..=i.min(j) {
-                    if k == i { data[ i * cols + j] += self.matrix.data[ i * cols + j]; }
-                    else { data[i * cols + j] += self.matrix.data[ i * cols + k ] * self.matrix.data[ k * cols + j]; }
+                    if k == i { data[ i * cols + j] += self.matrix.data[ i * cols + j] }
+                    else { data[i * cols + j] += self.matrix.data[ i * cols + k ] * self.matrix.data[ k * cols + j] }
                 }
             }
         }
         NdArray { dims, data }
     }
+}
+
+
+impl LU {
+    pub fn left_apply_l_vec(&self, target:&mut [f32]) {
+        // Lx
+        debug_assert_eq!(self.matrix.dims[1], target.len());
+        let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+        for i in (0..rows).rev() {
+            for k in 0..i {
+                target[i] += self.matrix.data[i * cols + k] * target[k];
+            }
+        }
+    }
+    pub fn left_apply_u_vec(&self, target:&mut [f32]) {
+        // Ux
+        debug_assert_eq!(self.matrix.dims[1], target.len());
+        let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+        for i in 0..rows {
+            for k in i..cols {
+                target[i] += self.matrix.data[i * cols + k] * target[k];
+            }
+        }
+    }
+    pub fn right_apply_l_vec(&self, target:&mut [f32]) {
+        //x'L
+        debug_assert_eq!(self.matrix.dims[1], target.len());
+        let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+        for j in 0..cols {
+            for k in j+1..rows {
+                target[j] += target[k] * self.matrix.data[k * rows + j ]
+            }
+        }
+    }
+    pub fn right_apply_u_vec(&self, target:&mut [f32]) {
+        //x'U
+        debug_assert_eq!(self.matrix.dims[1], target.len());
+        let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+        for j in (0..cols).rev() {
+            target[j] *= self.matrix.data[j * rows + j];
+            for k in 0..j {
+                target[j] += target[k] * self.matrix.data[k * rows + j ] 
+            }
+        }
+    }
+    // fn forward_solve(&self, target:&mut [f32]) -> Vec<f32> {
+    //     let z = self.left_apply_u(target);
+    //     let result = vec![];
+
+
+    //     result
+    // }
 }
 
 pub fn lu_decompose(mut matrix: NdArray) -> LU {
