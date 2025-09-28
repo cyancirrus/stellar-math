@@ -90,9 +90,10 @@ pub fn lu_decompose(mut matrix: NdArray) -> LU {
     debug_assert_eq!(matrix.dims[0], matrix.dims[1]);
     let (rows, cols) = (matrix.dims[0], matrix.dims[1]);
 
-    for j in 0..cols {
-        // compute upper
-        for i in 0..rows {
+    // for lij, we need knowledge of ujj due to formula
+    // this means that we need u[0..i.min(j)] upper triangular calculated 
+    for i in 0..rows {
+        for j in 0..cols {
             for k in 0..i.min(j) {
                 matrix.data[i * cols + j] -= matrix.data[i * cols + k] * matrix.data[k * cols + j]
             }
