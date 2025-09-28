@@ -140,8 +140,7 @@ mod lu_decomposition {
     }
     #[test]
     fn random_left_apply_u_nxn_nxa() {
-        // let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
-        let dimensions = vec![(2,2)];
+        let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
         for (n, a) in dimensions {
             let x = generate_random(n,n);
             let y = generate_random(n,a);
