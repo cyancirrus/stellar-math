@@ -82,19 +82,35 @@ impl LU {
         NdArray { dims, data }
     }
 }
-    // for i in 0..rows {
-    //     for j in 0..cols {
-    //         for k in 0..i {
-    //             upper.data[i * cols + j] -= lower.data[i * cols + k] * upper.data[k * cols + j]
-    //         }
-    //         if i > j {
-    //             // NOTE: Can store this directly if we want to merge but need virtual methods
-    //             lower.data[i * cols + j] = upper.data[i * cols + j] / upper.data[j * cols + j]
-    //         } else {
-    //             upper.data[i * cols + j] = upper.data[i * cols + j] / lower.data[i * cols + i]
-    //         }
-    //     }
-    // }
+
+// pub fn lu_decompose(mut upper: NdArray) -> LU {
+//     // A[j, *] = c *A[i, *]
+//     // => c = A[i,j] / A[j,j]
+//     // could be extended to non-square matrices
+//     debug_assert_eq!(upper.dims[0], upper.dims[1]);
+//     let (rows, cols) = (upper.dims[0], upper.dims[1]);
+//     let mut lower = create_identity_matrix(rows);
+
+//     for i in 0..rows {
+//         for j in 0..cols {
+//             for k in 0..i {
+//                 upper.data[i * cols + j] -= lower.data[i * cols + k] * upper.data[k * cols + j]
+//             }
+//             if i > j {
+//                 // NOTE: Can store this directly if we want to merge but need virtual methods
+//                 lower.data[i * cols + j] = upper.data[i * cols + j] / upper.data[j * cols + j]
+//             } else {
+//                 upper.data[i * cols + j] = upper.data[i * cols + j] / lower.data[i * cols + i]
+//             }
+//         }
+//     }
+//     for i in 0..rows {
+//         for j in 0..i {
+//             upper.data[i * cols + j] = 0_f32;
+//         }
+//     }
+//     LU { lower, upper }
+// }
 
 
 pub fn lu_decompose(mut matrix: NdArray) -> LU {
@@ -103,24 +119,25 @@ pub fn lu_decompose(mut matrix: NdArray) -> LU {
     // could be extended to non-square matrices
     debug_assert_eq!(matrix.dims[0], matrix.dims[1]);
     let (rows, cols) = (matrix.dims[0], matrix.dims[1]);
-    let mut lower = vec![0_f32; rows * cols ];
+    let mut lower = create_identity_matrix(rows);
 
-    for i in (0..rows).rev() {
+    for i in 0..rows {
         for j in 0..cols {
             for k in 0..i {
-                matrix.data[i * cols + j] -= matrix.data[i * cols + k] * matrix.data[k * cols + j]
+                matrix.data[i * cols + j] -= lower.data[i * cols + k] * matrix.data[k * cols + j]
             }
             if i > j {
                 // NOTE: Can store this directly if we want to merge but need virtual methods
-                lower[i * cols + j] = matrix.data[i * cols + j] / matrix.data[j * cols + j]
+                lower.data[i * cols + j] = matrix.data[i * cols + j] / matrix.data[j * cols + j]
             } else {
                 matrix.data[i * cols + j] = matrix.data[i * cols + j] / matrix.data[i * cols + i]
             }
         }
     }
+    println!("lower {lower:?}");
     for i in 0..rows {
         for j in 0..i {
-            matrix.data[ i * cols + j ] = lower[i * cols + j]
+            matrix.data[ i * cols + j ] = lower.data[i * cols + j]
         }
     }
     LU { matrix }
