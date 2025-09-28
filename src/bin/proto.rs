@@ -42,7 +42,7 @@ fn rayleigh_inverse_iteration(mut matrix: NdArray) -> NdArray {
         lu.solve_inplace(&mut current);
         let qr = qr_decompose(current.clone());
         current = qr.projection_matrix();
-        error = stability_error(&current, &previous);
+        error = frobenius_diff_norm(&current, &previous);
         println!("error: {error:?}");
     }
     current
@@ -63,52 +63,7 @@ fn generate_random_matrix(m:usize, n:usize) -> NdArray {
     }
 }
 
-fn estimate_eigenvalues(u:&mut[f32], a: &mut NdArray, x:&NdArray) {
-    // estimated via rayleigh quotient
-    // x'Ax/x'x
-    debug_assert_eq!(a.dims[0], a.dims[1]); 
-    let n = a.dims[0];
-    // center M to A ->  A-u +u = A
-    for i in 0..n {
-        a.data[i + n + i] += u[i];
-        u[i] = 0_f32;
-    }
-    let mut w = vec![0f32;n];
-    // only desire the diagonal
-    for d in 0..n {
-        let mut magnitude = 0_f32;
-        for i in 0..n {
-            for k in 0..n {
-                w[i] +=  a.data[ i * n + k] * x.data[k * n + d];
-            }
-        }
-        for k in 0..n {
-            u[d] += w[k] * x.data[k * n + d];
-            magnitude += x.data[k * n + d];
-        }
-        u[d] /= magnitude;
-    }
-    // perterb M by new uii : A - u' 
-    for d in 0..n {
-        a.data[d * n + d] -= u[d];
-    }
-}
-
-fn stability_error(prev: &NdArray, curr: &NdArray) -> f32 {
-    debug_assert!(prev.dims == curr.dims);
-    let (rows, cols) = (prev.dims[0], curr.dims[1]);
-    let mut error = 0_f32;
-    for j in 0..cols {
-        for i in 0..rows {
-            let diff = curr.data[i * cols + j] - prev.data[i * cols + j];
-            error += diff * diff;
-        }
-    }
-    error
-}
-
-
-fn frobenius_norm(a: &NdArray, b: &NdArray) -> f32 {
+fn frobenius_diff_norm(a: &NdArray, b: &NdArray) -> f32 {
     // distance :: SS (sign*a[ij] - b[ij])^2
     // sign := a'b
     debug_assert!(a.dims == b.dims);
@@ -120,8 +75,38 @@ fn frobenius_norm(a: &NdArray, b: &NdArray) -> f32 {
             error += diff * diff;
         }
     }
-    error
+    error.sqrt()
 }
+
+fn estimate_eigenvalues(u:&mut[f32], a: &mut NdArray, x:&NdArray) {
+    // estimated via rayleigh quotient
+    // x'Ax/x'x
+    debug_assert_eq!(a.dims[0], a.dims[1]); 
+    let n = a.dims[0];
+    // center M to A ->  A-u +u = A
+    for i in 0..n {
+        a.data[i * n + i] += u[i];
+    }
+    // only desire the diagonal
+    for d in 0..n {
+        let mut w = vec![0f32;n];
+        let mut numerator = 0_f32;
+        let mut denominator = 0_f32;
+        for i in 0..n {
+            for k in 0..n {
+                w[i] +=  a.data[ i * n + k] * x.data[k * n + d];
+            }
+        }
+        for k in 0..n {
+            numerator += w[k] * x.data[k * n + d];
+            denominator += x.data[k * n + d] * x.data[k * n + d];
+        }
+        u[d] = numerator / denominator;
+        // perterb M by new uii : A - u' 
+        a.data[d * n + d] -= u[d];
+    }
+}
+
 
 
 // fn eigen_iteration(matrix: NdArray) -> NdArray {
