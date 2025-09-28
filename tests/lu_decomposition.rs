@@ -47,6 +47,16 @@ mod lu_decomposition {
         let result = lu.reconstruct();
         assert!(approx_eq(&result.data, &expected.data))
     }
+    fn solve_ax_y(a:NdArray, y:&mut [f32]) {
+        let lu = lu_decompose(a);
+        let expected = y.to_vec();
+        let result = y;
+        lu.solve(result);
+        lu.left_apply_u_vec( result);
+        lu.left_apply_l_vec( result);
+        assert!(approx_eq(&expected, &result));
+
+    }
     // matrix applications
     fn left_apply_l(x:NdArray, y:NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
@@ -135,13 +145,8 @@ mod lu_decomposition {
                 u.data[i * cols + j] = 0_f32;
             }
         }
-        println!("u {u:?}");
-        println!("y {y:?}");
         let expected = tensor_mult(4, &u, &y_matrix);
         lu.left_apply_u_vec(&mut result);
-        println!("result {result:?}");
-        println!("..........");
-        println!("expected {expected:?}");
         assert!(approx_eq(&result, &expected.data))
     }
     
@@ -271,6 +276,15 @@ mod lu_decomposition {
             let x = generate_random_matrix(n, n);
             let y = generate_random_vector(n);
             right_apply_u_vec(x,y)
+        }
+    }
+    #[test]
+    fn random_solve_ax_y() {
+        let dimensions = vec![ 2, 3, 4, 7, 23];
+        for n in dimensions {
+            let x = generate_random_matrix(n, n);
+            let mut y = generate_random_vector(n);
+            solve_ax_y(x, &mut y)
         }
     }
 }

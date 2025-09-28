@@ -113,7 +113,7 @@ impl LU {
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         for j in 0..cols {
             for k in j+1..rows {
-                target[j] += target[k] * self.matrix.data[k * rows + j ]
+                target[j] += target[k] * self.matrix.data[k * cols + j ]
             }
         }
     }
@@ -124,23 +124,49 @@ impl LU {
         for j in (0..cols).rev() {
             target[j] *= self.matrix.data[j * rows + j];
             for k in 0..j {
-                target[j] += target[k] * self.matrix.data[k * rows + j ] 
+                target[j] += target[k] * self.matrix.data[k * cols + j ] 
             }
         }
     }
-    // fn forward_solve(&self, target:&mut [f32]) -> Vec<f32> {
-    //     let z = self.left_apply_u(target);
-    //     let result = vec![];
-
-
-    //     result
-    // }
 }
+
+impl LU {
+    // Ax = y;
+    // LUx = y;
+    // Lz = y -> z;
+    // Ux = z -> x;
+    // => x
+    pub fn solve(&self, y:&mut [f32])  {
+        self.forward_solve(y);
+        self.backward_solve(y);
+    }
+    pub fn forward_solve(&self, y:&mut [f32]) {
+        // transforms y -> z
+        debug_assert_eq!(self.matrix.dims[1], y.len());
+        let cols = self.matrix.dims[1];
+        for i in 0..cols {
+            for k in 0..i {
+                y[i] -= self.matrix.data[i * cols + k] * y[k]
+            }
+        }
+    }
+    pub fn backward_solve(&self, z:&mut [f32]) {
+        // transforms z -> x
+        debug_assert_eq!(self.matrix.dims[1], z.len());
+        let cols = self.matrix.dims[1];
+        for i in (0..cols).rev() {
+            for k in i+1..cols {
+                z[i] -= self.matrix.data[i * cols + k] * z[k]
+            }
+            z[i] /= self.matrix.data[i * cols + i]
+        }
+    }
+}
+
 
 pub fn lu_decompose(mut matrix: NdArray) -> LU {
     // A[j, *] = c *A[i, *]
     // => c = A[i,j] / A[j,j]
-    // could be extended to non-square matrices
     debug_assert_eq!(matrix.dims[0], matrix.dims[1]);
     let (rows, cols) = (matrix.dims[0], matrix.dims[1]);
 
