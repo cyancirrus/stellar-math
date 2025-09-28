@@ -20,29 +20,32 @@ mod lu_decomposition {
         (a - b).abs() < TOLERANCE
     }
     // functions
-    fn test_reconstruction(x: NdArray) {
+    fn reconstruction(x: NdArray) {
         let expected = x.clone();
         let lu = lu_decompose(x);
         let result = lu.reconstruct();
         assert!(approx_eq(&result.data, &expected.data))
     }
-    fn test_random(n: usize) {
+    fn generate_random(m:usize, n:usize) -> NdArray {
         let mut rng = rand::rng();
-        let mut data = vec![0.0_f32; n * n];
-        for i in 0..n {
-            for j in i..n {
+        let mut data = vec![0.0_f32; m * n];
+        for i in 0..m {
+            for j in 0..n {
                 let val = rng.sample(StandardNormal);
                 data[i * n + j] = val;
-                data[j * n + i] = val; // symmetric
             }
         }
-        let matrix = NdArray {
-            dims: vec![n, n],
+        NdArray {
+            dims: vec![m, n],
             data,
-        };
-        test_reconstruction(matrix)
+        }
     }
-    fn test_left_apply_l(x:NdArray, mut y:NdArray) {
+
+    fn reconstruction_random(n: usize) {
+        reconstruction(generate_random(n, n))
+    }
+
+    fn test_left_apply_l(x:NdArray, y:NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut l = lu.matrix.clone();
@@ -60,26 +63,35 @@ mod lu_decomposition {
 
     // sample 2x2
     #[test]
-    fn test_reconstruction_2x2() {
+    fn reconstruction_2x2() {
         let x = NdArray {
             dims: vec![2, 2],
             data: vec![-1.0, 0.0, 5.0, 2.0],
         };
-        test_reconstruction(x)
+        reconstruction(x)
     }
     #[test]
-    fn test_reconstruction_3x3() {
+    fn reconstruction_3x3() {
         let x = NdArray {
             dims: vec![3, 3],
             data: vec![-1.0, 0.0, 3.0, 5.0, 2.0, 4.0, -3.0, 0.7, 1.2],
         };
-        test_reconstruction(x)
+        reconstruction(x)
     }
     #[test]
-    fn test_random_nxn() {
-        let numbers = vec![1, 2, 5, 7, 23];
-        for n in numbers {
-            test_random(n)
+    fn reconstruction_random_nxn() {
+        let dimensions = vec![1, 2, 5, 7, 23];
+        for n in dimensions {
+            reconstruction_random(n)
+        }
+    }
+    #[test]
+    fn random_left_apply_nxn_nxa() {
+        let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+        for (n, a) in dimensions {
+            let x = generate_random(n,n);
+            let y = generate_random(n,a);
+            test_left_apply_l(x, y) 
         }
     }
 }
