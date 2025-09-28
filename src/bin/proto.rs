@@ -86,14 +86,12 @@ fn rayleigh_inverse_iteration(mut matrix: NdArray) -> NdArray {
         // eigen is now y
         lu.solve_inplace(&mut current);
         let qr = qr_decompose(current.clone());
-        let projection = qr.projection_matrix();
-        error = stability_error(&projection, &previous);
+        current = qr.projection_matrix();
+        error = stability_error(&current, &previous);
         println!("error: {error:?}");
-        current = projection;
     }
     current
 }
-
 
 
 fn generate_random_matrix(dims: &[usize]) -> NdArray {
