@@ -3,6 +3,8 @@ use crate::structure::ndarray::NdArray;
 
 const TOLERANCE_CONDITION: f32 = 1e-6;
 
+// NOTE: current implementation doesn't handle pivoting
+
 pub struct LU {
     // matrix contains both lower and upper logically
     // lower l[i,i] := 1; // lower and upper share diagonal
