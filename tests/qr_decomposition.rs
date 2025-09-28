@@ -32,10 +32,9 @@ mod qr_decomposition {
         let mut rng = rand::rng();
         let mut data = vec![0.0_f32; n * n];
         for i in 0..n {
-            for j in i..n {
+            for j in 0..n {
                 let val = rng.sample(StandardNormal);
                 data[i * n + j] = val;
-                data[j * n + i] = val; // symmetric
             }
         }
         let matrix = NdArray {
