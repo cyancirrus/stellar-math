@@ -47,11 +47,11 @@ mod lu_decomposition {
         let result = lu.reconstruct();
         assert!(approx_eq(&result.data, &expected.data))
     }
-    fn solve_ax_y(a:NdArray, y:&mut [f32]) {
+    fn solve_inplace_ax_y(a:NdArray, y:&mut [f32]) {
         let lu = lu_decompose(a);
         let expected = y.to_vec();
         let result = y;
-        lu.solve(result);
+        lu.solve_inplace(result);
         lu.left_apply_u_vec( result);
         lu.left_apply_l_vec( result);
         assert!(approx_eq(&expected, &result));
@@ -279,12 +279,12 @@ mod lu_decomposition {
         }
     }
     #[test]
-    fn random_solve_ax_y() {
+    fn random_solve_inplace_ax_y() {
         let dimensions = vec![ 2, 3, 4, 7, 23];
         for n in dimensions {
             let x = generate_random_matrix(n, n);
             let mut y = generate_random_vector(n);
-            solve_ax_y(x, &mut y)
+            solve_inplace_ax_y(x, &mut y)
         }
     }
 }

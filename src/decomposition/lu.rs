@@ -136,11 +136,11 @@ impl LU {
     // Lz = y -> z;
     // Ux = z -> x;
     // => x
-    pub fn solve(&self, y:&mut [f32])  {
-        self.forward_solve(y);
-        self.backward_solve(y);
+    pub fn solve_inplace(&self, y:&mut [f32])  {
+        self.forward_solve_inplace(y);
+        self.backward_solve_inplace(y);
     }
-    pub fn forward_solve(&self, y:&mut [f32]) {
+    pub fn forward_solve_inplace(&self, y:&mut [f32]) {
         // transforms y -> z
         debug_assert_eq!(self.matrix.dims[1], y.len());
         let cols = self.matrix.dims[1];
@@ -150,7 +150,7 @@ impl LU {
             }
         }
     }
-    pub fn backward_solve(&self, z:&mut [f32]) {
+    pub fn backward_solve_inplace(&self, z:&mut [f32]) {
         // transforms z -> x
         debug_assert_eq!(self.matrix.dims[1], z.len());
         let cols = self.matrix.dims[1];
