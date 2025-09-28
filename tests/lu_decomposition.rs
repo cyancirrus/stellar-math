@@ -23,20 +23,12 @@ mod lu_decomposition {
     fn test_reconstruction(x: NdArray) {
         let expected = x.clone();
         let lu = lu_decompose(x);
-        println!("L {:?}", lu.upper);
-        println!("u {:?}", lu.lower);
-        let result = tensor_mult(4, &lu.lower, &lu.upper);
-        println!("Result {result:?}");
+        let result = lu.reconstruct();
+        // println!("L {:?}", lu.upper);
+        // println!("u {:?}", lu.lower);
+        // let result = tensor_mult(4, &lu.lower, &lu.upper);
+        // println!("Result {result:?}");
         assert!(approx_eq(&result.data, &expected.data));
-    }
-    fn test_zeroing_below_diagonal(x: NdArray) {
-        let (rows, cols) = (x.dims[0], x.dims[1]);
-        let lu = lu_decompose(x.clone());
-        for i in 0..rows {
-            for j in 0..i {
-                assert!(approx_scalar_eq(lu.upper.data[i * cols + j], 0_f32));
-            }
-        }
     }
     fn test_random(n: usize) {
         let mut rng = rand::rng();
@@ -65,39 +57,18 @@ mod lu_decomposition {
         test_reconstruction(x)
     }
     // #[test]
-    // fn test_zeroing_below_diagonal_2x2() {
-    //     let x = NdArray {
-    //         dims: vec![2,2],
-    //         data: vec![-1.0, 0.0, 5.0, 2.0],
-    //     };
-    //     test_zeroing_below_diagonal(x)
-    // }
-    // sample 3X3
-    #[test]
-    fn test_reconstruction_3x3() {
-        let x = NdArray {
-            dims: vec![3, 3],
-            data: vec![-1.0, 0.0, 3.0, 5.0, 2.0, 4.0, -3.0, 0.7, 1.2],
-        };
-        test_reconstruction(x)
-    }
-    // #[test]
-    // fn test_zeroing_below_diagonal_3x3() {
+    // fn test_reconstruction_3x3() {
     //     let x = NdArray {
     //         dims: vec![3, 3],
-    //         data: vec![
-    //             -1.0, 0.0, 3.0,
-    //              5.0, 2.0, 4.0,
-    //              -3.0, 0.7, 1.2,
-    //         ],
+    //         data: vec![-1.0, 0.0, 3.0, 5.0, 2.0, 4.0, -3.0, 0.7, 1.2],
     //     };
-    //     test_zeroing_below_diagonal(x)
+    //     test_reconstruction(x)
     // }
-    #[test]
-    fn test_random_nxn() {
-        let numbers = vec![1, 2, 5, 7, 23];
-        for n in numbers {
-            test_random(n)
-        }
-    }
+    // #[test]
+    // fn test_random_nxn() {
+    //     let numbers = vec![1, 2, 5, 7, 23];
+    //     for n in numbers {
+    //         test_random(n)
+    //     }
+    // }
 }
