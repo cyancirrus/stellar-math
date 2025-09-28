@@ -57,19 +57,19 @@ mod lu_decomposition {
         };
         test_reconstruction(x)
     }
-    // #[test]
-    // fn test_reconstruction_3x3() {
-    //     let x = NdArray {
-    //         dims: vec![3, 3],
-    //         data: vec![-1.0, 0.0, 3.0, 5.0, 2.0, 4.0, -3.0, 0.7, 1.2],
-    //     };
-    //     test_reconstruction(x)
-    // }
-    // #[test]
-    // fn test_random_nxn() {
-    //     let numbers = vec![1, 2, 5, 7, 23];
-    //     for n in numbers {
-    //         test_random(n)
-    //     }
-    // }
+    #[test]
+    fn test_reconstruction_3x3() {
+        let x = NdArray {
+            dims: vec![3, 3],
+            data: vec![-1.0, 0.0, 3.0, 5.0, 2.0, 4.0, -3.0, 0.7, 1.2],
+        };
+        test_reconstruction(x)
+    }
+    #[test]
+    fn test_random_nxn() {
+        let numbers = vec![1, 2, 5, 7, 23];
+        for n in numbers {
+            test_random(n)
+        }
+    }
 }
