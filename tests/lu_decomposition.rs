@@ -19,13 +19,6 @@ mod lu_decomposition {
     fn approx_scalar_eq(a: f32, b: f32) -> bool {
         (a - b).abs() < TOLERANCE
     }
-    // functions
-    fn reconstruction(x: NdArray) {
-        let expected = x.clone();
-        let lu = lu_decompose(x);
-        let result = lu.reconstruct();
-        assert!(approx_eq(&result.data, &expected.data))
-    }
     fn generate_random(m:usize, n:usize) -> NdArray {
         let mut rng = rand::rng();
         let mut data = vec![0.0_f32; m * n];
@@ -40,11 +33,13 @@ mod lu_decomposition {
             data,
         }
     }
-
-    fn reconstruction_random(n: usize) {
-        reconstruction(generate_random(n, n))
+    // functions
+    fn reconstruction(x: NdArray) {
+        let expected = x.clone();
+        let lu = lu_decompose(x);
+        let result = lu.reconstruct();
+        assert!(approx_eq(&result.data, &expected.data))
     }
-
     fn test_left_apply_l(x:NdArray, y:NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
@@ -57,6 +52,21 @@ mod lu_decomposition {
             }
         }
         let expected = tensor_mult(4, &l, &y);
+        lu.left_apply_l(&mut result);
+        assert!(approx_eq(&result.data, &expected.data))
+    }
+    
+    fn test_left_apply_u(x:NdArray, y:NdArray) {
+        let (rows, cols) = (x.dims[0], x.dims[1]);
+        let lu = lu_decompose(x);
+        let mut u = lu.matrix.clone();
+        let mut result = y.clone();
+        for i in 1..rows {
+            for j in 0..i {
+                u.data[i * cols + j] = 0_f32;
+            }
+        }
+        let expected = tensor_mult(4, &u, &y);
         lu.left_apply_l(&mut result);
         assert!(approx_eq(&result.data, &expected.data))
     }
@@ -82,11 +92,20 @@ mod lu_decomposition {
     fn reconstruction_random_nxn() {
         let dimensions = vec![1, 2, 5, 7, 23];
         for n in dimensions {
-            reconstruction_random(n)
+            reconstruction(generate_random(n,n))
         }
     }
     #[test]
-    fn random_left_apply_nxn_nxa() {
+    fn random_left_apply_l_nxn_nxa() {
+        let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+        for (n, a) in dimensions {
+            let x = generate_random(n,n);
+            let y = generate_random(n,a);
+            test_left_apply_l(x, y) 
+        }
+    }
+    #[test]
+    fn random_left_apply_u_nxn_nxa() {
         let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
         for (n, a) in dimensions {
             let x = generate_random(n,n);
