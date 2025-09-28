@@ -21,13 +21,55 @@ use rand_distr::StandardNormal;
 // cargo run --example demo
 const CONVERGENCE_CONDITION: f32 = 1e-6;
 
+fn rayleigh_inverse_iteration(mut matrix: NdArray) -> NdArray {
+    // (A - Iu)y = x;
+    // x' = Q from QR(y)
+    // let M := (A-Iu)
+    // LU(M) -> solve => y
+    // u' := rayleigh quotient of x
+    debug_assert!(matrix.dims.len() == 2);
+    debug_assert!(matrix.dims[0] == matrix.dims[1]);
+    let n = matrix.dims[0];
+    let mut current = generate_random_matrix(n, n);
+    let mut u = vec![0_f32;n];
+    let mut error = 1_f32;
+    while CONVERGENCE_CONDITION < error {
+        // transforms M' = (A - Iu + Iu - Iu')
+        let previous = current.clone();
+        estimate_eigenvalues(&mut u, &mut matrix, &current);
+        let lu = lu_decompose(matrix.clone());
+        // eigen is now y
+        lu.solve_inplace(&mut current);
+        let qr = qr_decompose(current.clone());
+        current = qr.projection_matrix();
+        error = stability_error(&current, &previous);
+        println!("error: {error:?}");
+    }
+    current
+}
+    
+fn generate_random_matrix(m:usize, n:usize) -> NdArray {
+    let mut rng = rand::rng();
+    let mut data = vec![0.0_f32; m * n];
+    for i in 0..m {
+        for j in 0..n {
+            let val = rng.sample(StandardNormal);
+            data[i * n + j] = val;
+        }
+    }
+    NdArray {
+        dims: vec![m, n],
+        data,
+    }
+}
+
 fn estimate_eigenvalues(u:&mut[f32], a: &mut NdArray, x:&NdArray) {
     // estimated via rayleigh quotient
     // x'Ax/x'x
     debug_assert_eq!(a.dims[0], a.dims[1]); 
     let n = a.dims[0];
+    // center M to A ->  A-u +u = A
     for i in 0..n {
-        // recenter A' = A-u +u
         a.data[i + n + i] += u[i];
         u[i] = 0_f32;
     }
@@ -46,9 +88,8 @@ fn estimate_eigenvalues(u:&mut[f32], a: &mut NdArray, x:&NdArray) {
         }
         u[d] /= magnitude;
     }
+    // perterb M by new uii : A - u' 
     for d in 0..n {
-        // perterb by new estimated eigens
-        // M = A-u'
         a.data[d * n + d] -= u[d];
     }
 }
@@ -66,44 +107,6 @@ fn stability_error(prev: &NdArray, curr: &NdArray) -> f32 {
     error
 }
 
-fn rayleigh_inverse_iteration(mut matrix: NdArray) -> NdArray {
-    // (A - Iu)y = x;
-    // x' = Q from QR(y)
-    // let M := (A-Iu)
-    // LU(M) -> solve => y
-    // u' := rayleigh quotient of x
-    debug_assert!(matrix.dims.len() == 2);
-    debug_assert!(matrix.dims[0] == matrix.dims[1]);
-    let n = matrix.dims[0];
-    let mut current = generate_random_matrix(&matrix.dims);
-    let mut u = vec![0_f32;n];
-    let mut error = 1_f32;
-    while CONVERGENCE_CONDITION < error {
-        // transforms M' = (A - Iu + Iu - Iu')
-        let previous = current.clone();
-        estimate_eigenvalues(&mut u, &mut matrix, &current);
-        let lu = lu_decompose(matrix.clone());
-        // eigen is now y
-        lu.solve_inplace(&mut current);
-        let qr = qr_decompose(current.clone());
-        current = qr.projection_matrix();
-        error = stability_error(&current, &previous);
-        println!("error: {error:?}");
-    }
-    current
-}
-
-
-fn generate_random_matrix(dims: &[usize]) -> NdArray {
-    debug_assert!(dims.len() > 0 && dims[0] > 0);
-    let mut rng = rand::rng();
-
-    let n = dims.iter().product();
-    NdArray {
-        dims: dims.to_vec(),
-        data: (0..n).map(|_| rng.sample(StandardNormal)).collect(),
-    }
-}
 
 fn frobenius_norm(a: &NdArray, b: &NdArray) -> f32 {
     // distance :: SS (sign*a[ij] - b[ij])^2
