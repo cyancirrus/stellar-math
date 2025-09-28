@@ -122,7 +122,7 @@ impl LU {
         debug_assert_eq!(self.matrix.dims[1], target.len());
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         for j in (0..cols).rev() {
-            target[j] *= self.matrix.data[j * rows + j];
+            target[j] *= self.matrix.data[j * cols + j];
             for k in 0..j {
                 target[j] += target[k] * self.matrix.data[k * cols + j ] 
             }
@@ -136,11 +136,29 @@ impl LU {
     // Lz = y -> z;
     // Ux = z -> x;
     // => x
-    pub fn solve_inplace(&self, y:&mut [f32])  {
+    
+    pub fn solve_inplace(&self, y:&mut NdArray) {
         self.forward_solve_inplace(y);
         self.backward_solve_inplace(y);
     }
-    pub fn forward_solve_inplace(&self, y:&mut [f32]) {
+    pub fn solve_inplace_vec(&self, y:&mut [f32])  {
+        self.forward_solve_inplace_vec(y);
+        self.backward_solve_inplace_vec(y);
+    }
+    pub fn forward_solve_inplace(&self, y:&mut NdArray) {
+        // transforms y -> z
+        debug_assert_eq!(self.matrix.dims[1], y.dims[0]);
+        let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+        let (trows, tcols) = (y.dims[0], y.dims[1]);
+        for i in 0..rows {
+            for j in 0..tcols {
+                for k in 0..i {
+                    y.data[ i * tcols + j] -= self.matrix.data[i * cols + k] * y.data[ k * tcols + j];
+                }
+            }
+        }
+    }
+    pub fn forward_solve_inplace_vec(&self, y:&mut [f32]) {
         // transforms y -> z
         debug_assert_eq!(self.matrix.dims[1], y.len());
         let cols = self.matrix.dims[1];
@@ -150,7 +168,21 @@ impl LU {
             }
         }
     }
-    pub fn backward_solve_inplace(&self, z:&mut [f32]) {
+    pub fn backward_solve_inplace(&self, z:&mut NdArray) {
+        // transforms y -> z
+        debug_assert_eq!(self.matrix.dims[1], z.dims[0]);
+        let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+        let (trows, tcols) = (z.dims[0], z.dims[1]);
+        for i in (0..rows).rev() {
+            for j in 0..tcols {
+                for k in i+1..cols {
+                    z.data[ i * tcols + j] -= self.matrix.data[i * cols + k] * z.data[ k * tcols + j];
+                }
+                z.data[i * cols + j] /= self.matrix.data[i * cols + i];
+            }
+        }
+    }
+    pub fn backward_solve_inplace_vec(&self, z:&mut [f32]) {
         // transforms z -> x
         debug_assert_eq!(self.matrix.dims[1], z.len());
         let cols = self.matrix.dims[1];
