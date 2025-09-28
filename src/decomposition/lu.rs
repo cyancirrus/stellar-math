@@ -5,8 +5,8 @@ const TOLERANCE_CONDITION: f32 = 1e-6;
 
 // TODO: Consider making this densely packed
 pub struct LU {
-    // Stores both lower and upper in the matrix
-    // Lower[i,i] := 1;
+    // matrix contains both lower and upper logically
+    // lower l[i,i] := 1;
     pub matrix: NdArray,
 }
 
@@ -17,8 +17,9 @@ impl LU {
         debug_assert_eq!(target.dims[0], self.matrix.dims[1]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        for i in (0..rows).rev() {
+        for i in (1..rows).rev() {
             for j in 0..tcols {
+                // lii == 1
                 for k in 0..i {
                     target.data[ i * tcols + j] += self.matrix.data[ i * cols + k] * target.data[ k * tcols + j];
                 }

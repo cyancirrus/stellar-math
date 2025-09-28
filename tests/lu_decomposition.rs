@@ -24,12 +24,7 @@ mod lu_decomposition {
         let expected = x.clone();
         let lu = lu_decompose(x);
         let result = lu.reconstruct();
-        println!("LU {:?}", lu.matrix); 
-        // println!("L {:?}", lu.upper);
-        // println!("u {:?}", lu.lower);
-        // let result = tensor_mult(4, &lu.lower, &lu.upper);
-        // println!("Result {result:?}");
-        assert!(approx_eq(&result.data, &expected.data));
+        assert!(approx_eq(&result.data, &expected.data))
     }
     fn test_random(n: usize) {
         let mut rng = rand::rng();
@@ -46,6 +41,21 @@ mod lu_decomposition {
             data,
         };
         test_reconstruction(matrix)
+    }
+    fn test_left_apply_l(x:NdArray, mut y:NdArray) {
+        let (rows, cols) = (x.dims[0], x.dims[1]);
+        let lu = lu_decompose(x);
+        let mut l = lu.matrix.clone();
+        let mut result = y.clone();
+        for i in 0..rows {
+            l.data[i * cols + i] = 1_f32;
+            for j in i+1..cols {
+                l.data[i * cols + j] = 0_f32;
+            }
+        }
+        let expected = tensor_mult(4, &l, &y);
+        lu.left_apply_l(&mut result);
+        assert!(approx_eq(&result.data, &expected.data))
     }
 
     // sample 2x2
