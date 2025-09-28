@@ -135,8 +135,13 @@ mod lu_decomposition {
                 u.data[i * cols + j] = 0_f32;
             }
         }
+        println!("u {u:?}");
+        println!("y {y:?}");
         let expected = tensor_mult(4, &u, &y_matrix);
         lu.left_apply_u_vec(&mut result);
+        println!("result {result:?}");
+        println!("..........");
+        println!("expected {expected:?}");
         assert!(approx_eq(&result, &expected.data))
     }
     

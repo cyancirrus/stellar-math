@@ -101,7 +101,8 @@ impl LU {
         debug_assert_eq!(self.matrix.dims[1], target.len());
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         for i in 0..rows {
-            for k in i..cols {
+            target[i] *= self.matrix.data[i * cols + i];
+            for k in i+1..cols {
                 target[i] += self.matrix.data[i * cols + k] * target[k];
             }
         }
