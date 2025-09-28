@@ -152,8 +152,8 @@ impl LuDecomposition {
         debug_assert_eq!(self.matrix.dims[1], y.dims[0]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         let (trows, tcols) = (y.dims[0], y.dims[1]);
-        for i in 0..rows {
-            for j in 0..tcols {
+        for j in 0..tcols {
+            for i in 0..rows {
                 for k in 0..i {
                     y.data[ i * tcols + j] -= self.matrix.data[i * cols + k] * y.data[ k * tcols + j];
                 }
