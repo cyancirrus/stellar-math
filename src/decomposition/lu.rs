@@ -48,7 +48,6 @@ impl LU {
         for i in 0..trows {
             for j in 0..rows {
                 for k in j+1..rows {
-                    println!(" i, j, k  :: ({i:}, {j:}, {k:}");
                     target.data[ i * tcols + j] += target.data[ i * tcols + k ] * self.matrix.data[ k * cols + j ];
                 }
             }
