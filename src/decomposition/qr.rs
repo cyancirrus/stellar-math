@@ -20,18 +20,18 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
     let mut projections = Vec::with_capacity(card);
     let mut w = vec![0_f32; rows];
     for o in 0..card {
-        let column_vector = (o..card)
+        let column_vector = (o..rows)
             .into_par_iter()
             .map(|r| x.data[r * cols + o])
             .collect::<Vec<f32>>();
         let proj = householder_params(column_vector);
         // x'A
-        for j in o..card {
-            for i in o..card {
+        for j in o..cols {
+            for i in o..rows {
                 w[j] += proj.vector[i - o] * x.data[i * cols + j];
             }
             w[j] *= proj.beta;
-            for i in o..card {
+            for i in o..rows {
                 x.data[i * cols + j] -= proj.vector[i - o] * w[j];
             }
             w[j] = 0_f32;
@@ -87,12 +87,12 @@ impl QrDecomposition {
         // Q ~ M[i, i]
         for p in (0..card).rev() {
             let proj = &self.projections[p];
-            for i in p..self.card {
-                for j in p..self.card {
+            for i in p..self.rows {
+                for j in p..self.cols {
                     w[i] += matrix.data[i * self.rows + j] * proj.vector[j - p];
                 }
                 w[i] *= proj.beta;
-                for j in p..self.card {
+                for j in p..self.cols {
                     matrix.data[i * self.rows + j] -= w[i] * proj.vector[j - p];
                 }
                 w[i] = 0_f32;
