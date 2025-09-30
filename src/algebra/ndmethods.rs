@@ -10,6 +10,14 @@ pub fn create_identity_matrix(n: usize) -> NdArray {
     }
     NdArray { dims, data }
 }
+pub fn create_identity_rectangle(m:usize, n: usize) -> NdArray {
+    let mut data = vec![0_f32; m * n];
+    let dims = vec![m, n];
+    for i in 0..m.min(n) {
+        data[i * n + i] = 1_f32;
+    }
+    NdArray { dims, data }
+}
 
 pub fn transpose(mut ndarray: NdArray) -> NdArray {
     let rows = ndarray.dims[0];

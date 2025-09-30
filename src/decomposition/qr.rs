@@ -1,4 +1,4 @@
-use crate::algebra::ndmethods::create_identity_matrix;
+use crate::algebra::ndmethods::{create_identity_matrix, create_identity_rectangle};
 use crate::algebra::vector::dot_product;
 use crate::decomposition::householder::{householder_params, HouseholderReflection};
 use crate::structure::ndarray::NdArray;
@@ -7,6 +7,11 @@ use rayon::prelude::*;
 
 #[derive(Debug)]
 pub struct QrDecomposition {
+    // Qn..Q1 * A = R;
+    // A = (Qn..Q1)'R 
+    // A = Q1'Q2'..QnR
+    // A = Q1Q2..QnR
+    // Q := product Q1..Qn
     pub rows: usize, // rows in input matrix
     pub cols: usize, // cols in input matrix
     pub card: usize, // count householder transforms
@@ -38,8 +43,13 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
         }
         projections.push(proj);
     }
-    for i in 1..rows {
-        for j in 0..i.min(cols) {
+    // A ~ M[m,n]
+    // QR(A) -> Q ~ M[m,n], R ~ M[n,n];
+    x.data.truncate(cols * cols);
+    x.dims[0] = cols;
+    for i in 1..cols {
+        // for j in 0..i.min(cols) {
+        for j in 0..i {
             x.data[i * cols + j] = 0_f32
         }
     }
@@ -78,7 +88,7 @@ impl QrDecomposition {
         // H[i+1] -= B[i-1] *w[i]u'[i-1]
 
         let card = self.card;
-        let mut matrix = create_identity_matrix(self.rows);
+        let mut matrix = create_identity_rectangle(self.rows, self.cols);
         let mut w: Vec<f32> = vec![0_f32; self.rows];
         // Justification for using rows as column when we are using column major form
         // A ~ Matrix[i, j]
@@ -87,11 +97,11 @@ impl QrDecomposition {
         for p in (0..card).rev() {
             let proj = &self.projections[p];
             for i in p..self.rows {
-                for j in p..self.rows {
+                for j in p..self.cols {
                     w[i] += matrix.data[i * self.rows + j] * proj.vector[j - p];
                 }
                 w[i] *= proj.beta;
-                for j in p..self.rows {
+                for j in p..self.cols {
                     matrix.data[i * self.rows + j] -= w[i] * proj.vector[j - p];
                 }
                 w[i] = 0_f32;
@@ -122,20 +132,23 @@ impl QrDecomposition {
         // f(X) :: Q'X
         debug_assert!(target.dims[1] == self.rows);
         let mut w = vec![0_f32; self.rows];
-        let cols = target.dims[1];
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        // Qn..Q1
         for p in 0..self.card {
             let proj = &self.projections[p];
-            for j in 0..cols {
-                for i in p..self.rows {
-                    w[j] += proj.vector[i-p] * target.data[ i * cols + j];
+            // ( I - Bvv') is symmetric order matters
+            for j in 0..tcols {
+                for i in p..trows.min(self.rows) {
+                    w[j] += proj.vector[i-p] * target.data[ i * tcols + j];
                 }
-                for i in p..self.rows {
-                    target.data[i * cols + j] -= proj.beta * w[j] * proj.vector[i - p];
+                for i in p..trows.min(self.rows) {
+                    target.data[i * tcols + j] -= proj.beta * w[j] * proj.vector[i - p];
                 }
                 w[j] = 0_f32;
             }
         }
-
+        target.data.truncate(self.rows * tcols);
+        target.dims[0] = self.rows;
     }
     pub fn left_apply_q(&self, target: &mut NdArray) {
         // f(X) :: QX
@@ -143,15 +156,15 @@ impl QrDecomposition {
         // w = u'X
         debug_assert!(target.dims[0] == self.rows);
         let mut w = vec![0_f32; self.rows];
-        let cols = target.dims[1];
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
         for p in (0..self.card).rev() {
             let proj = &self.projections[p];
-            for j in 0..cols {
-                for i in p..self.rows {
-                    w[j] += proj.vector[i - p] * target.data[i * cols + j];
+            for j in 0..tcols {
+                for i in p..trows.min(self.rows) {
+                    w[j] += proj.vector[i - p] * target.data[i * tcols + j];
                 }
-                for i in p..self.rows {
-                    target.data[i * cols + j] -= proj.beta * w[j] * proj.vector[i - p];
+                for i in p..trows.min(self.rows) {
+                    target.data[i * tcols + j] -= proj.beta * w[j] * proj.vector[i - p];
                 }
                 w[j] = 0_f32;
             }
