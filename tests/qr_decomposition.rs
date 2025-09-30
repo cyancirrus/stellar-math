@@ -11,15 +11,9 @@ mod qr_decomposition {
     // test functions
     fn test_reconstruction(x: NdArray) {
         let expected = x.clone();
-        println!("why isn't running ?");
         let qr = qr_decompose(x);
-        println!("fails here?");
         let mut result = qr.triangle.clone();
-        println!("triangle {result:?}");
-        println!("q {:?}", qr.projection_matrix());
         qr.left_multiply(&mut result);
-        println!("result {result:?}");
-        println!("expected {expected:?}");
         assert!(approx_vector_eq(&result.data, &expected.data));
     }
     fn test_random(n: usize) {

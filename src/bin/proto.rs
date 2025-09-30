@@ -67,8 +67,9 @@ fn main() {
     // let matrix = NdArray::new(dims, data);
     let x = matrix.clone();
     let bidiag_reference = golub_kahan_explicit(x);
-    let svd_reference = givens_iteration(bidiag_reference);
-    println!("svd_reference u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_reference.u, svd_reference.s, svd_reference.v);
+    println!("bidiag reference {bidiag_reference:?}");
+    // let svd_reference = givens_iteration(bidiag_reference);
+    // println!("svd_reference u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_reference.u, svd_reference.s, svd_reference.v);
      
     // let x = matrix.clone();
     // let svd_randomized = randomized_svd(4, x);
