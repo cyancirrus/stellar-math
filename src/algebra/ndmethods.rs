@@ -14,7 +14,6 @@ pub fn resize_rows(m:usize, x:&mut NdArray) {
 }
 
 pub fn resize_cols(n:usize, x:&mut NdArray) {
-    debug_assert!(x.dims[1] > n );
     let (rows, cols) = (x.dims[0], x.dims[1]);
     if n == cols { return; }
     else if n > cols {

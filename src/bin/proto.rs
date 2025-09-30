@@ -78,30 +78,37 @@ fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
     givens_iteration(reference)
 }
 
-fn main() {
-    let n = 10;
-    let matrix = generate_random_matrix(n, n);
-    // let mut data = vec![0_f32; 9];
-    // let dims = vec![3; 2];
-    // data[0] = 1_f32;
-    // data[1] = 2_f32;
-    // data[2] = 3_f32;
-    // data[3] = 5_f32;
-    // data[4] = 4_f32;
-    // data[5] = 5_f32;
-    // data[6] = 6_f32;
-    // data[7] = 2_f32;
-    // data[8] = 8_f32;
 
-    // let matrix = NdArray::new(dims, data);
-    let x = matrix.clone();
-    // let bidiag_reference = golub_kahan_explicit(x);
-    // println!("bidiag reference {bidiag_reference:?}");
-    // let svd_reference = givens_iteration(bidiag_reference);
-    // println!("svd_reference u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_reference.u, svd_reference.s, svd_reference.v);
-     
-    let x = matrix.clone();
-    let svd_randomized = randomized_svd(4, x);
-    println!("svd_randomized u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_randomized.u, svd_randomized.s, svd_randomized.v);
-    
+fn main() {
+    let n = 4;
+    let matrix = generate_random_matrix(n, n);
+    golub_kahan_explicit(matrix);
 }
+
+// fn main() {
+//     let n = 10;
+//     let matrix = generate_random_matrix(n, n);
+//     // let mut data = vec![0_f32; 9];
+//     // let dims = vec![3; 2];
+//     // data[0] = 1_f32;
+//     // data[1] = 2_f32;
+//     // data[2] = 3_f32;
+//     // data[3] = 5_f32;
+//     // data[4] = 4_f32;
+//     // data[5] = 5_f32;
+//     // data[6] = 6_f32;
+//     // data[7] = 2_f32;
+//     // data[8] = 8_f32;
+
+//     // let matrix = NdArray::new(dims, data);
+//     let x = matrix.clone();
+//     // let bidiag_reference = golub_kahan_explicit(x);
+//     // println!("bidiag reference {bidiag_reference:?}");
+//     // let svd_reference = givens_iteration(bidiag_reference);
+//     // println!("svd_reference u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_reference.u, svd_reference.s, svd_reference.v);
+     
+//     let x = matrix.clone();
+//     let svd_randomized = randomized_svd(4, x);
+//     println!("svd_randomized u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_randomized.u, svd_randomized.s, svd_randomized.v);
+    
+// }
