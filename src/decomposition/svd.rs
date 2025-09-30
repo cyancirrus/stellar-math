@@ -5,6 +5,8 @@ use crate::structure::ndarray::NdArray;
 use rayon::prelude::ParallelIterator;
 use rayon::prelude::*;
 
+const EPSILON:f32 = 1e-6;
+
 pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
     // TODO: refactor so householder_params mutates in place
     let rows = a.dims[0];
@@ -20,11 +22,13 @@ pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
             .map(|r| a.data[r * cols + o])
             .collect::<Vec<f32>>();
         householder = householder_params(column_vector);
+        if householder.beta < EPSILON { continue; }
         for i in 0..rows - o {
             for j in 0..cols - o {
                 new.data[(o + i) * cols + j + o] -=
                     householder.beta * householder.vector[i] * householder.vector[j]
             }
+
         }
         a = tensor_mult(4, &new, &a);
         if o < cols.min(rows) - 2 {
