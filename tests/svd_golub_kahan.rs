@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod svd_golub_kahan {
-    use stellar::decomposition::svd::{golub_kahan_explicit};
+    use stellar::decomposition::svd::{golub_kahan};
     use stellar::equality::approximate::{approx_vector_eq, approx_scalar_eq};
     use stellar::random::generation::{generate_random_matrix};
     use stellar::structure::ndarray::NdArray;
@@ -8,7 +8,7 @@ mod svd_golub_kahan {
     // test functions
     fn matrix_bidiagonalization(x: NdArray) {
         let mut error = 0f32;
-        let bidiagonal = golub_kahan_explicit(x);
+        let bidiagonal = golub_kahan(x);
         let (rows, cols) = (bidiagonal.dims[0], bidiagonal.dims[1]);
         for i in 0..rows {
             for j in 0..cols {
