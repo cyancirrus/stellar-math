@@ -11,9 +11,9 @@ pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
     let card = rows.min(cols) - (rows <= cols) as usize;
     let mut proj: HouseholderReflection;
     let mut w = vec![0f32; rows.max(cols)];
-    resize_rows(4,&mut a); 
-    resize_cols(4, &mut a); 
-    let (rows, cols) = (4, 4);
+    // resize_rows(4,&mut a); 
+    // resize_cols(4, &mut a); 
+    // let (rows, cols) = (4, 4);
     println!("a {a:?}");
     for o in 0..card {
         proj = householder_params(
