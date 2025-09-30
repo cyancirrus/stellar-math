@@ -9,7 +9,7 @@
 // cargo run --example demo
 use stellar::decomposition::qr::{qr_decompose};
 use stellar::decomposition::lu::{lu_decompose};
-use stellar::decomposition::svd::{golub_kahan_explicit};
+use stellar::decomposition::svd::{golub_kahan};
 use stellar::decomposition::givens::{givens_iteration, SingularValueDecomp};
 use stellar::structure::ndarray::NdArray;
 use stellar::algebra::ndmethods::tensor_mult;
@@ -44,12 +44,12 @@ const CONVERGENCE_CONDITION: f32 = 1e-4;
 //     // TODO: implement left apply for qr
 //     qr.left_apply_qt(&mut matrix);
 //     println!("matrix {matrix:?}");
-//     let reference = golub_kahan_explicit(matrix);
+//     let reference = golub_kahan(matrix);
 //     // let q = qr.projection_matrix();
 //     // println!("q matrix {q:?}");
 //     // let b = tensor_mult(4, &q.transpose(), &matrix);
 //     // println!("B matrix {b:?}");
-//     // let reference = golub_kahan_explicit(b);
+//     // let reference = golub_kahan(b);
 //     givens_iteration(reference)
 // }
 
@@ -68,12 +68,12 @@ fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
     // TODO: implement left apply for qr
     qr.left_apply_qt(&mut matrix);
     println!("matrix {matrix:?}");
-    let reference = golub_kahan_explicit(matrix);
+    let reference = golub_kahan(matrix);
     // let q = qr.projection_matrix();
     // println!("q matrix {q:?}");
     // let b = tensor_mult(4, &q.transpose(), &matrix);
     // println!("B matrix {b:?}");
-    // let reference = golub_kahan_explicit(b);
+    // let reference = golub_kahan(b);
     givens_iteration(reference)
 }
 
@@ -81,7 +81,7 @@ fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
 // fn main() {
 //     let n = 4;
 //     let matrix = generate_random_matrix(n, n);
-//     golub_kahan_explicit(matrix);
+//     golub_kahan(matrix);
 // }
 
 fn main() {
@@ -101,10 +101,10 @@ fn main() {
 
     // let matrix = NdArray::new(dims, data);
     let x = matrix.clone();
-    // let bidiag_reference = golub_kahan_explicit(x);
-    // println!("bidiag reference {bidiag_reference:?}");
-    // let svd_reference = givens_iteration(bidiag_reference);
-    // println!("svd_reference u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_reference.u, svd_reference.s, svd_reference.v);
+    let bidiag_reference = golub_kahan(x);
+    println!("bidiag reference {bidiag_reference:?}");
+    let svd_reference = givens_iteration(bidiag_reference);
+    println!("svd_reference u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_reference.u, svd_reference.s, svd_reference.v);
      
     let x = matrix.clone();
     let svd_randomized = randomized_svd(4, x);

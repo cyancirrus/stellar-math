@@ -1,7 +1,7 @@
 use crate::decomposition::givens::givens_iteration;
 use crate::decomposition::qr::qr_decompose;
 use crate::decomposition::schur::real_schur;
-use crate::decomposition::svd::golub_kahan_explicit;
+use crate::decomposition::svd::golub_kahan;
 use crate::structure::ndarray::NdArray;
 
 // Tihnov
@@ -119,7 +119,7 @@ fn main() {
     let x = NdArray::new(dims, data.clone());
     println!("x: {:?}", x);
     //
-    let reference = golub_kahan_explicit(x.clone());
+    let reference = golub_kahan(x.clone());
     println!("Reference {:?}", reference);
 
     let y = qr_decompose(x.clone());

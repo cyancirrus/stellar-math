@@ -101,7 +101,7 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
     (r, c, s)
 }
 
-// use stellar::decomposition::svd::golub_kahan_explicit;
+// use stellar::decomposition::svd::golub_kahan;
 // use stellar::decomposition::schur::real_schur;
 // use stellar::decomposition::qr::qr_decompose;
 // use stellar::decomposition::givens::givens_iteration;
@@ -133,7 +133,7 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
 //     let x = NdArray::new(dims, data.clone());
 //     println!("x: {:?}", x);
 //     //
-//     let reference = golub_kahan_explicit(x.clone());
+//     let reference = golub_kahan(x.clone());
 //     println!("Reference {:?}", reference);
 
 //     let y = qr_decompose(x.clone());
