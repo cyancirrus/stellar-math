@@ -29,6 +29,30 @@ const CONVERGENCE_CONDITION: f32 = 1e-4;
 //  data[i * cols + j] = data[j * cols + i]
 // }}
 
+// fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
+//     let n = matrix.dims[0];
+//     let sketch = generate_random_matrix(n, k);
+//     // might wish to inner product the resulting matrix
+//     let cov = tensor_mult(4, &matrix , &matrix.transpose());
+//     let a_sketch = tensor_mult(4, &matrix, &sketch);
+//     let y = tensor_mult(4, &cov, &a_sketch);
+//     println!("ymatrix {y:?}, ydims {:?}", y.dims);
+
+//     let qr = qr_decompose(y);
+//     println!("householders {qr:?}");
+
+//     // TODO: implement left apply for qr
+//     qr.left_apply_qt(&mut matrix);
+//     println!("matrix {matrix:?}");
+//     let reference = golub_kahan_explicit(matrix);
+//     // let q = qr.projection_matrix();
+//     // println!("q matrix {q:?}");
+//     // let b = tensor_mult(4, &q.transpose(), &matrix);
+//     // println!("B matrix {b:?}");
+//     // let reference = golub_kahan_explicit(b);
+//     givens_iteration(reference)
+// }
+
 fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
     let n = matrix.dims[0];
     let sketch = generate_random_matrix(n, k);
@@ -45,6 +69,7 @@ fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
     // qr.left_apply_qt(&mut matrix);
     // println!("matrix {matrix:?}");
     // let reference = golub_kahan_explicit(matrix);
+
     let q = qr.projection_matrix();
     println!("q matrix {q:?}");
     let b = tensor_mult(4, &q.transpose(), &matrix);
