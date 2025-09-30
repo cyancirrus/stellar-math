@@ -30,17 +30,13 @@ const CONVERGENCE_CONDITION: f32 = 1e-4;
 // }}
 
 fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
-    println!("hello");
     let n = matrix.dims[0];
     let sketch = generate_random_matrix(n, 2 * k);
     // might wish to inner product the resulting matrix
     let cov = tensor_mult(4, &matrix , &matrix.transpose());
-    println!("hello");
     let a_sketch = tensor_mult(4, &matrix, &sketch);
     let y = tensor_mult(4, &cov, &a_sketch);
-    println!("y {y:?}");
     let qr = qr_decompose(y);
-    println!("after qr");
     // TODO: implement left apply for qr
     // let b = qr.left_apply_q(matrix);
     let q = qr.projection_matrix();
