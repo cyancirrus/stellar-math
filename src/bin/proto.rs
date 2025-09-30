@@ -39,14 +39,17 @@ fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
     println!("ymatrix {y:?}, ydims {:?}", y.dims);
 
     let qr = qr_decompose(y);
-    println!("after qr");
+    println!("householders {qr:?}");
 
     // TODO: implement left apply for qr
-    qr.left_apply_qt(&mut matrix);
-    // let q = qr.projection_matrix();
-    // let b = tensor_mult(4, &q.transpose(), &matrix);
-    // let reference = golub_kahan_explicit(b);
-    let reference = golub_kahan_explicit(matrix);
+    // qr.left_apply_qt(&mut matrix);
+    // println!("matrix {matrix:?}");
+    // let reference = golub_kahan_explicit(matrix);
+    let q = qr.projection_matrix();
+    println!("q matrix {q:?}");
+    let b = tensor_mult(4, &q.transpose(), &matrix);
+    println!("B matrix {b:?}");
+    let reference = golub_kahan_explicit(b);
     givens_iteration(reference)
 }
 
@@ -67,10 +70,10 @@ fn main() {
 
     // let matrix = NdArray::new(dims, data);
     let x = matrix.clone();
-    let bidiag_reference = golub_kahan_explicit(x);
-    println!("bidiag reference {bidiag_reference:?}");
-    let svd_reference = givens_iteration(bidiag_reference);
-    println!("svd_reference u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_reference.u, svd_reference.s, svd_reference.v);
+    // let bidiag_reference = golub_kahan_explicit(x);
+    // println!("bidiag reference {bidiag_reference:?}");
+    // let svd_reference = givens_iteration(bidiag_reference);
+    // println!("svd_reference u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_reference.u, svd_reference.s, svd_reference.v);
      
     let x = matrix.clone();
     let svd_randomized = randomized_svd(4, x);
