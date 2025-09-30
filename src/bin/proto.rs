@@ -60,16 +60,16 @@ fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
     let cov = tensor_mult(4, &matrix , &matrix.transpose());
     let a_sketch = tensor_mult(4, &matrix, &sketch);
     let y = tensor_mult(4, &cov, &a_sketch);
-    println!("ymatrix {y:?}, ydims {:?}", y.dims);
+    // println!("ymatrix {y:?}, ydims {:?}", y.dims);
 
     let qr = qr_decompose(y);
-    println!("householders {qr:?}");
+    // println!("householders {qr:?}");
 
     // TODO: implement left apply for qr
     qr.left_apply_qt(&mut matrix);
     println!("matrix {matrix:?}");
     let reference = golub_kahan_explicit(matrix);
-
+    assert!(false);
     // let q = qr.projection_matrix();
     // println!("q matrix {q:?}");
     // let b = tensor_mult(4, &q.transpose(), &matrix);
