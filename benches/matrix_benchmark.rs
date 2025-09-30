@@ -1,16 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand::Rng;
-use StellarMath::algebra::ndmethods::{parallel_tensor_mult, tensor_mult};
-use StellarMath::algebra::simd::simd_tensor_mult;
-use StellarMath::structure::ndarray::NdArray;
-
-fn generate_matrix(rows: usize, cols: usize) -> NdArray {
-    let mut rng = rand::thread_rng();
-    let data: Vec<f32> = (0..rows * cols)
-        .map(|_| rng.gen_range(-10.0..10.0))
-        .collect();
-    NdArray::new(vec![rows, cols], data)
-}
+use stellar::algebra::ndmethods::{parallel_tensor_mult, tensor_mult};
+use stellar::algebra::simd::simd_tensor_mult;
+use stellar::structure::ndarray::NdArray;
+use stellar::random::generation::generate_random_matrix;
 
 fn benchmark(c: &mut Criterion) {
     // let small_size = 64;
@@ -20,14 +13,13 @@ fn benchmark(c: &mut Criterion) {
     let medium_size = 128;
     let large_size = 256;
     let blocksize = 32; // Example blocksize, modify as needed
-                        //
 
-    let small_x = generate_matrix(small_size, small_size);
-    let small_y = generate_matrix(small_size, small_size);
-    let medium_x = generate_matrix(medium_size, medium_size);
-    let medium_y = generate_matrix(medium_size, medium_size);
-    let large_x = generate_matrix(large_size, large_size);
-    let large_y = generate_matrix(large_size, large_size);
+    let small_x = generate_random_matrix(small_size, small_size);
+    let small_y = generate_random_matrix(small_size, small_size);
+    let medium_x = generate_random_matrix(medium_size, medium_size);
+    let medium_y = generate_random_matrix(medium_size, medium_size);
+    let large_x = generate_random_matrix(large_size, large_size);
+    let large_y = generate_random_matrix(large_size, large_size);
 
     // Small matrix tests
     c.bench_function("small_parallel_tensor_mult", |b| {
