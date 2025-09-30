@@ -19,6 +19,7 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
     let card = rows.min(cols) - (rows <= cols) as usize;
     let mut projections = Vec::with_capacity(card);
     let mut w = vec![0_f32; rows];
+    println!("main block");
     for o in 0..card {
         let column_vector = (o..rows)
             .into_par_iter()
@@ -39,7 +40,7 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
         projections.push(proj);
     }
     for i in 1..rows {
-        for j in 0..i {
+        for j in 0..i.min(cols) {
             x.data[i * cols + j] = 0_f32
         }
     }
