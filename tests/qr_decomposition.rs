@@ -1,11 +1,10 @@
 #[cfg(test)]
 mod qr_decomposition {
-    use rand::Rng;
-    use rand_distr::StandardNormal;
     use stellar::algebra::ndmethods::create_identity_matrix;
     use stellar::algebra::ndmethods::tensor_mult;
     use stellar::decomposition::qr::qr_decompose;
     use stellar::structure::ndarray::NdArray;
+    use stellar::random::generation::{generate_random_matrix};
     use stellar::equality::approximate::{approx_vector_eq, approx_scalar_eq};
 
     // test functions
@@ -17,18 +16,7 @@ mod qr_decomposition {
         assert!(approx_vector_eq(&result.data, &expected.data));
     }
     fn test_random(n: usize) {
-        let mut rng = rand::rng();
-        let mut data = vec![0.0_f32; n * n];
-        for i in 0..n {
-            for j in 0..n {
-                let val = rng.sample(StandardNormal);
-                data[i * n + j] = val;
-            }
-        }
-        let matrix = NdArray {
-            dims: vec![n, n],
-            data,
-        };
+        let matrix = generate_random_matrix(n, n);
         test_reconstruction(matrix)
     }
     fn test_zeroing_below_diagonal(x: NdArray) {
