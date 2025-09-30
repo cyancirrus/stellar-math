@@ -18,15 +18,17 @@ use rayon::prelude::*;
 
 pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
     let (rows, cols)  = (a.dims[0], a.dims[1]);
+    println!("rows {rows:}, cols {cols:}");
     let card = rows.min(cols) - (rows <= cols) as usize;
     let mut proj: HouseholderReflection;
-    let mut w = vec![0f32; rows];
+    let mut w = vec![0f32; rows.max(cols)];
     for o in 0..card {
         println!("a {a:?}");
         proj = householder_params(
             // column vector
             (o..rows).into_iter().map(|r| a.data[r * cols + o]).collect()
         );
+        println!("here?");
         
         // (I - bvv')A => w := bv'A
         //  A -= vw'
@@ -40,6 +42,7 @@ pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
             }
             w[j] = 0_f32;
         }
+        println!("there?");
         // stop one early for columns because a[m,n-1] can be non-zero
         if o+1 == card  { break; }
 
@@ -62,9 +65,9 @@ pub fn golub_kahan_explicit(mut a: NdArray) -> NdArray {
         }
     }
     // TODO: uncomment so flows naturally into givens
-    // let dims = rows.min(cols);
-    // resize_rows(dims,&mut a); 
-    // resize_cols(dims, &mut a); 
+    let dims = rows.min(cols);
+    resize_rows(dims,&mut a); 
+    resize_cols(dims, &mut a); 
     println!("a {a:?}");
     a
 }
