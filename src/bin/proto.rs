@@ -22,7 +22,7 @@ const CONVERGENCE_CONDITION: f32 = 1e-4;
 // for i in (j..rows).rev()
 // for k in (0..cols) {
 //   // store computed in the lower
-//   data[i.min(k) * cols + k.max(i)] * data[k.min(j) * cols + j.max(k)];
+//   data[ i * cols + j] = data[i.min(k) * cols + k.max(i)] * data[k.min(j) * cols + j.max(k)];
 // }
 // for i in 0..rows {
 // for j in i+1..cols {
@@ -42,10 +42,11 @@ fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
     println!("after qr");
 
     // TODO: implement left apply for qr
-    // let b = qr.left_apply_q(matrix);
-    let q = qr.projection_matrix();
-    let b = tensor_mult(4, &q.transpose(), &matrix);
-    let reference = golub_kahan_explicit(b);
+    qr.left_apply_qt(&mut matrix);
+    // let q = qr.projection_matrix();
+    // let b = tensor_mult(4, &q.transpose(), &matrix);
+    // let reference = golub_kahan_explicit(b);
+    let reference = golub_kahan_explicit(matrix);
     givens_iteration(reference)
 }
 

@@ -20,7 +20,7 @@ fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
     // Apply Q to a matrix X ie (QR) -> Qx
     qr.triangle_rotation();
     // might want to make a thing where not needed or optional
-    qr.left_multiply(&mut schur.rotation);
+    qr.left_apply_q(&mut schur.rotation);
     schur.kernel = qr.triangle;
     schur
 }

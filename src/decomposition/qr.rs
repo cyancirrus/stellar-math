@@ -118,8 +118,27 @@ impl QrDecomposition {
             }
         }
     }
-    pub fn left_multiply(&self, target: &mut NdArray) {
-        // f(X) -> QX
+    pub fn left_apply_qt(&self, target: &mut NdArray) {
+        // f(X) :: Q'X
+        debug_assert!(target.dims[1] == self.rows);
+        let mut w = vec![0_f32; self.rows];
+        let cols = target.dims[1];
+        for p in 0..self.card {
+            let proj = &self.projections[p];
+            for j in 0..cols {
+                for i in p..self.rows {
+                    w[j] += proj.vector[i-p] * target.data[ i * cols + j];
+                }
+                for i in p..self.rows {
+                    target.data[i * cols + j] -= proj.beta * w[j] * proj.vector[i - p];
+                }
+                w[j] = 0_f32;
+            }
+        }
+
+    }
+    pub fn left_apply_q(&self, target: &mut NdArray) {
+        // f(X) :: QX
         // H[i]*X = X - Buu'X
         // w = u'X
         debug_assert!(target.dims[0] == self.rows);
