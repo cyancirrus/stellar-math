@@ -98,11 +98,11 @@ impl QrDecomposition {
             let proj = &self.projections[p];
             for i in p..self.rows {
                 for j in p..self.cols {
-                    w[i] += matrix.data[i * self.rows + j] * proj.vector[j - p];
+                    w[i] += matrix.data[i * self.cols + j] * proj.vector[j - p];
                 }
                 w[i] *= proj.beta;
                 for j in p..self.cols {
-                    matrix.data[i * self.rows + j] -= w[i] * proj.vector[j - p];
+                    matrix.data[i * self.cols + j] -= w[i] * proj.vector[j - p];
                 }
                 w[i] = 0_f32;
             }
