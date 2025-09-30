@@ -41,8 +41,6 @@ pub fn golub_kahan(mut a: NdArray) -> NdArray {
                 w[i] += a.data[i * cols + j] * proj.vector[j - o - 1];
             }
             w[i] *= proj.beta;
-        }
-        for i in o..rows {
             for j in o+1..cols {
                 a.data[i * cols + j] -= w[i] * proj.vector[j - o - 1];
             }
