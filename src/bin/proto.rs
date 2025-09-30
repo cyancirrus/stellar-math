@@ -31,7 +31,7 @@ const CONVERGENCE_CONDITION: f32 = 1e-4;
 
 fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
     let n = matrix.dims[0];
-    let sketch = generate_random_matrix(n, 2 * k);
+    let sketch = generate_random_matrix(n, k);
     // might wish to inner product the resulting matrix
     let cov = tensor_mult(4, &matrix , &matrix.transpose());
     let a_sketch = tensor_mult(4, &matrix, &sketch);
