@@ -46,19 +46,21 @@ fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
 }
 
 fn main() {
-    let mut data = vec![0_f32; 9];
-    let dims = vec![3; 2];
-    data[0] = 1_f32;
-    data[1] = 2_f32;
-    data[2] = 3_f32;
-    data[3] = 5_f32;
-    data[4] = 4_f32;
-    data[5] = 5_f32;
-    data[6] = 6_f32;
-    data[7] = 2_f32;
-    data[8] = 8_f32;
+    let n = 5;
+    let matrix = generate_random_matrix(n, n);
+    // let mut data = vec![0_f32; 9];
+    // let dims = vec![3; 2];
+    // data[0] = 1_f32;
+    // data[1] = 2_f32;
+    // data[2] = 3_f32;
+    // data[3] = 5_f32;
+    // data[4] = 4_f32;
+    // data[5] = 5_f32;
+    // data[6] = 6_f32;
+    // data[7] = 2_f32;
+    // data[8] = 8_f32;
 
-    let matrix = NdArray::new(dims, data);
+    // let matrix = NdArray::new(dims, data);
     let x = matrix.clone();
     let bidiag_reference = golub_kahan_explicit(x);
     let svd_reference = givens_iteration(bidiag_reference);

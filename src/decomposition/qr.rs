@@ -54,7 +54,8 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
     QrDecomposition::new(rows, cols, card, projections, x)
 }
 
-impl QrDecomposition { pub fn new( rows: usize,
+impl QrDecomposition {
+    pub fn new( rows: usize,
         cols: usize,
         card: usize,
         projections: Vec<HouseholderReflection>,
