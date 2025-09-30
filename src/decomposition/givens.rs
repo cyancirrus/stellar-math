@@ -27,8 +27,7 @@ pub fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
     // row-space, column-space
     let mut u = create_identity_matrix(m);
     let mut v = create_identity_matrix(n);
-    // let mut max_iteration = 1<<12;
-    let mut max_iteration = 1 << 4;
+    let mut max_iteration = 1 << 8;
     // left work
     while offdiag_norm(&s) > CONVERGENCE_CONDITION && max_iteration > 0 {
         for i in 0..k - 1 {
