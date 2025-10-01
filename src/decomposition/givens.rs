@@ -30,6 +30,7 @@ pub fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
     // left work
     while offdiag_norm(&s) > CONVERGENCE_CONDITION && max_iteration > 0 {
         for i in 0..k - 1 {
+            // TODO: Optimize, there's a better way to do this it's only a trace over a bidiagonal
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
             // below diagonal element
