@@ -32,13 +32,6 @@ fn randomized_svd(k:usize, mut matrix:NdArray) -> SingularValueDecomp {
     givens_iteration(reference)
 }
 
-
-// fn main() {
-//     let n = 4;
-//     let matrix = generate_random_matrix(n, n);
-//     golub_kahan(matrix);
-// }
-
 fn main() {
     let n = 10;
     let matrix = generate_random_matrix(n, n);
