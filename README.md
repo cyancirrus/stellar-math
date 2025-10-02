@@ -81,5 +81,3 @@ All feedback is welcome — this library is meant to evolve with community input
 ---
 
 ## License
-
-MIT or Apache 2.0 (choose whichever fits your goals)
