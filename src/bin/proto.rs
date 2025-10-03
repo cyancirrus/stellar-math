@@ -9,6 +9,7 @@
 // move code into examples directory
 // cargo run --example demo
 
+//TODO: Refactor with column major form
 struct DecisionTree {
     dims:usize, // number of dims
     card:usize, // data size
@@ -17,6 +18,9 @@ struct DecisionTree {
     assignment:Vec<Assignment>, // idx -> node
     features:Vec<Vec<Feature>>, // sorted features (idx, f[idx;j], y[idx])
 }
+
+// split into Measure | Split Info
+
 
 #[derive(Clone, Copy)]
 struct Measure {
