@@ -144,6 +144,18 @@ impl DecisionTree {
         self.measure.push(right_node);
         self.nodes += 2;
     }
+
+    fn predict(&self, data:Vec<f32>) -> f32 {
+        let mut target = self.measure[0];
+        while let Some(p) = target.partition {
+            if data[target.feature] < p {
+                target = self.measure[target.left.unwrap()];
+            } else {
+                target = self.measure[target.right.unwrap()];
+            }
+        }
+        target.sum_linear / (target.card as f32)
+    }
 }
 
 impl Measure {
