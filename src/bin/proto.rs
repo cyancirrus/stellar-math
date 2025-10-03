@@ -82,6 +82,11 @@ impl DecisionTree {
             features,
         }
     }
+    fn train(&mut self, nodes:usize) {
+        for _ in 0..nodes {
+            self.split();
+        }
+    }
     fn split(&mut self) {
         // running candidate partitions
         let mut runnings:Vec<Measure> = (0..self.nodes).map( |idx| {
