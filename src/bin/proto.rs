@@ -8,9 +8,6 @@
 
 // move code into examples directory
 // cargo run --example demo
-use stellar::structure::ndarray::NdArray;
-use stellar::algebra::ndmethods::tensor_mult;
-use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
 
 struct DecisionTree {
     dims:usize, // number of dims
@@ -21,20 +18,16 @@ struct DecisionTree {
     features:Vec<Vec<Feature>>, // sorted features (idx, f[idx;j], y[idx])
 }
 
-struct Graph {
-}
-
-// Need partition crtieria ie feature and value and map
 #[derive(Clone, Copy)]
 struct Measure {
     card:usize,
     offset:usize,
     feature:usize,
     sum_linear:f32, // Sum y
-    sum_squared:f32, // Sum y * y;
-    partition:Option<f32>,
-    left:Option<usize>,
-    right:Option<usize>,
+    sum_squares:f32, // Sum y * y;
+    partition:Option<f32>, // value
+    left:Option<usize>, // split left 
+    right:Option<usize>, // split right
 }
 
 struct Assignment {
@@ -128,7 +121,7 @@ impl DecisionTree {
         for d in 0..self.dims {
             if d == current_idx { continue; }
             let dimension = &self.features[d];
-            for fidx in current.offset..current.card {
+            for fidx in current.offset..current.card + current.offset{
                 let feature = self.features[left_node.feature][fidx];
                 if self.assignment[feature.idx].node == left_nidx {
                     buffer[ridx] = dimension[fidx];
@@ -170,7 +163,7 @@ impl Measure {
             offset,
             card:0,
             sum_linear:0_f32,
-            sum_squared:0_f32,
+            sum_squares:0_f32,
             partition:None,
             left:None,
             right:None,
@@ -178,26 +171,29 @@ impl Measure {
     }
     fn increment(&mut self, feature:&Feature) {
         self.card += 1;
-        self.sum_linear += feature.value;
-        self.sum_squared += feature.value * feature.value;
+        self.sum_linear += feature.label;
+        self.sum_squares += feature.label * feature.label;
     }
     fn derive(data:&Vec<Vec<f32>>)  -> Self {
         if data.is_empty() || data[0].is_empty() { panic!("data is empty"); }
         let card = data.len();
         let label = data[0].len()-1;
-        let (mut sum_linear, mut sum_squared) = (0_f32, 0_f32);
+        let (mut sum_linear, mut sum_squares) = (0_f32, 0_f32);
         for idx in 0..card {
             let val = data[idx][label];
             sum_linear += val;
-            sum_squared += val * val;
+            sum_squares += val * val;
         }
-        Measure {feature:label, offset:0, card, sum_linear, sum_squared, partition:None, left:None, right:None}
+        Measure {feature:label, offset:0, card, sum_linear, sum_squares, partition:None, left:None, right:None}
     }
     fn delta(&self, running:&Self) -> f32 {
-        let current_variance = self.sum_squared - self.sum_linear * self.sum_linear;
-        let variance_node_left = running.sum_squared - running.sum_linear * running.sum_linear;
-        let variance_node_right = (self.sum_squared - running.sum_squared) - (self.sum_linear - running.sum_linear) * (self.sum_linear - running.sum_linear); 
-        current_variance - (variance_node_left + variance_node_right)
+        let (card, l_card, r_card) = (self.card as f32, running.card as f32, (self.card - running.card) as f32);
+        
+        let sse_curr= self.sum_squares - self.sum_linear * self.sum_linear / card;
+        let sse_left = running.sum_squares - running.sum_linear * running.sum_linear / l_card;
+        let sse_right = (self.sum_squares - running.sum_squares) - (self.sum_linear - running.sum_linear) * (self.sum_linear - running.sum_linear) / r_card;
+        // weighted variance
+        (sse_curr - sse_left - sse_right) / card
     }
     fn derive_right(&mut self, left:&Self) -> Self {
         Self {
@@ -205,7 +201,7 @@ impl Measure {
             offset:left.offset + left.card,
             card:self.card - left.card,
             sum_linear:self.sum_linear - left.sum_linear,
-            sum_squared:self.sum_squared - left.sum_squared,
+            sum_squares:self.sum_squares - left.sum_squares,
             partition:None,
             left:None,
             right:None,
