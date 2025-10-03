@@ -25,6 +25,7 @@ struct Measure {
     feature:usize,
     sum_linear:f32, // Sum y
     sum_squares:f32, // Sum y * y;
+    // TODO: split metadata and partition information
     partition:Option<f32>, // value
     left:Option<usize>, // split left 
     right:Option<usize>, // split right
@@ -36,6 +37,7 @@ struct Assignment {
 }
 
 #[derive(Clone, Copy)]
+// TODO: we only need indices
 struct Feature {
     idx:usize,
     value:f32,
@@ -82,6 +84,7 @@ impl DecisionTree {
     }
     fn split(&mut self) {
         // running candidate partitions
+        // TODO: Some nodes are no longer active this makes all nodes
         let mut runnings:Vec<Measure> = (0..self.nodes).map( |idx| {
             let m = &self.measure[idx];
             Measure::new(m.feature, m.offset)
