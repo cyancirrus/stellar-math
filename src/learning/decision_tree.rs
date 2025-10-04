@@ -1,13 +1,4 @@
-#![allow(dead_code)]
-// #[cfg(target_arch = "x86_64")]
-
-// reading : https://en.wikipedia.org/wiki/Schur_complement
-// when writing article write something about recursive / iterative defns and which info is
-// available, ie why need to reverse iteration on QR
-
-
-// move code into examples directory
-// cargo run --example demo
+// current work in progress
 
 //TODO: Refactor with column major form after this implement a GMM
 struct DecisionTree {
@@ -214,6 +205,4 @@ impl Measure {
             right:None,
         }
     }
-}
-fn main() {
 }
