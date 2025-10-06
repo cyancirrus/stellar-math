@@ -9,40 +9,30 @@
 // move code into examples directory
 // cargo run --example demo
 
-//TODO: Refactor with column major form after this implement a GMM
 struct DecisionTree {
+    data:Vec<Vec<f32>>, // feature major form, individual observations are columns
     dims:usize, // number of dims
     card:usize,
-    // node:usize, // number of nodes
     leafs:Vec<usize>,
+    assign:Vec<usize>, // idx -> node
     nodes:Vec<Node>,
     metadata:Vec<Metadata>,
-    // measure:Vec<Measure>, // measures for running values
-    assignment:Vec<Assignment>, // idx -> node
-    // features:Vec<Vec<Feature>>, // sorted features (idx, f[idx;j], y[idx])
-    features:Vec<Vec<Feature>>, // sorted features (idx, f[idx;j], y[idx])
+    dimensions:Vec<Vec<usize>>, // idx sorted by dimension
 }
-
-// split into Measure | Split Info
-
-#[derive(Clone, Copy)]
 struct Node {
-    id:usize,
     prediction:f32,
     partition:Option<Partition>,
 }
-#[derive(Clone, Copy)]
 struct Partition {
-    dim:usize,
-    value:f32, // value on which to split
-    left:usize, // split left 
-    right:usize, // split right
+    dim:usize, // dimension to consider
+    value:f32, // value of dimension 
+    left:usize, // split left x <= value
+    right:usize, // split right x > value
 }
 
 #[derive(Clone, Copy)]
 struct Metadata {
     // minimal
-    id:usize,
     dim:usize,
     // descriptives
     offset:usize,
@@ -51,52 +41,31 @@ struct Metadata {
     sum_squares:f32, // Sum y * y;
 }
 
-struct Assignment {
-    idx:usize,
-    node:usize,
-}
-
-#[derive(Clone, Copy)]
-// TODO: we only need indices
-struct Feature {
-    idx:usize,
-    value:f32,
-    label:f32,
-}
-
-impl Feature {
-    fn new() -> Self {
-        Self { idx: 0, value:0_f32, label:0_f32 }
-    }
-}
-
 impl DecisionTree {
     fn new(data:Vec<Vec<f32>>) -> Self {
         if data.is_empty() || data[0].is_empty() { panic!("data is empty"); }
         let card = data.len();
         let label = data[0].len();
         let dims = label-1;
-        let assignment = (0..card).map(|idx| Assignment {idx, node: 0 } ).collect();
-        let mut buffer = vec![Feature { idx:0, value:0_f32, label:0_f32 }; card];
-        let mut features = Vec::with_capacity(dims);
+        let assign:Vec<usize> = (0..card).collect();
+        let mut buffer:Vec<usize> = (0..card).collect();
+        let mut dimensions = Vec::with_capacity(dims);
         let metadata = Metadata::derive(&data);
-        let node = Node { id: 0, prediction: metadata.predict(), partition: None };
+        let node = Node { prediction: metadata.predict(), partition: None };
         for d in 0..dims {
-            for idx in 0..card {
-                buffer[idx] = Feature { idx, value: data[idx][d], label: data[idx][label-1] } ;
-            }
             // sort by feature
-            buffer.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
-            features.push(buffer.clone());
+            buffer.sort_by(|a, b| data[d][*a].partial_cmp(&data[d][*b]).unwrap());
+            dimensions.push(buffer.clone());
         }
         Self {
+            data,
+            assign,
             dims,
             card,
             leafs: vec![0],
             nodes: vec![node],
             metadata:vec![metadata],
-            assignment,
-            features,
+            dimensions,
         }
     }
     fn train(&mut self, nodes:usize) {
@@ -104,134 +73,137 @@ impl DecisionTree {
             self.split();
         }
     }
-
-    fn find_partitions(&mut self) -> (usize, usize, f32, usize) {
-        //  returns (ancestor, dimension, value)
-        // TODO: Some nodes are no longer active this makes all nodes
+    fn split(&mut self) {
+        let childs = (self.nodes.len(), self.nodes.len() + 1);
+        let (split, range) = self.find_partition();
+        self.update_assignment(split.1, childs, range);
+        self.sort_dimensions(split.1, childs, range);
+        self.update_ancestors(split.0, childs);
+        self.update_metadata(split, childs);
+    }
+    fn find_partition(&mut self) -> ((usize, usize, f32), (usize, usize, usize)) {
         let leafs = self.leafs.len();
+        let yindex = self.dims + 1;
+        let (mut ancestor, mut dimension) = (usize::MAX, usize::MAX);
+        let (mut delta, mut partition) = (0_f32, 0_f32);
+        // only consider splitting the current leafs
         let mut runnings:Vec<Metadata> = (0..leafs).map( |i| {
             let idx = self.leafs[i];
             let parent = &self.metadata[idx];
-            Metadata::default(parent.dim, parent.dim, parent.offset)
+            Metadata::default(parent.dim, parent.offset)
         }).collect();
-        let (mut ancestor, mut dimension) = (usize::MAX, usize::MAX);
-        let (mut delta, mut partition) = (0_f32, 0_f32);
         let mut target = Metadata { 
-            id:usize::MAX,
             card:usize::MAX,
             dim:usize::MAX,
             offset:usize::MAX,
             sum_linear:f32::MAX,
             sum_squares:f32::MAX
         };
-        // find best new partition
+        let output = &self.data[yindex];
         for d in 0..self.dims {
-            let feature = &self.features[d];
-            for idx in 0..self.card {
-                let node = &self.assignment[idx];
-                runnings[node.idx].increment(&feature[idx]);
-                let del = self.metadata[node.idx].delta(&runnings[node.idx]);
+            let dval= &self.data[d];
+            for &idx in &self.dimensions[d] {
+                let node = self.assign[idx];
+                let (dval, yval) = (dval[idx], output[idx]);
+                runnings[node].increment(yval);
+                let del = self.metadata[node].delta(&runnings[node]);
                 if del< delta { continue; }
-                ancestor = node.idx;
+                ancestor = node;
                 dimension = d;
                 delta = delta;
-                partition = self.features[d][idx].value;
-                target = runnings[node.idx].clone();
+                partition = dval;
+                target = runnings[node].clone();
             }
         }
-        let compliment = self.metadata[ancestor].derive_compliment(&target);
+        let mut parent = self.metadata[ancestor];
+        let compliment = parent.derive_compliment(&target);
         self.metadata.push(target);
         self.metadata.push(compliment);
-        (ancestor, dimension, partition, target.card)
+        let left_node = Node { prediction: target.predict(), partition: None };
+        let right_node = Node { prediction: compliment.predict(), partition: None };
+        self.nodes.push(left_node);
+        self.nodes.push(right_node);
+        let split = (
+            ancestor,
+            dimension,
+            partition
+        );
+        let range = (
+            parent.offset,  
+            parent.offset + target.offset,
+            parent.offset + parent.card
+        );
+        (split, range)
     }
-    fn update_assignment(&mut self, dim:usize, children:(usize, usize), range:(usize, usize, usize)) {
+    fn update_assignment(&mut self, dim:usize, childs:(usize, usize), range:(usize, usize, usize)) {
         let (start, split, end) = range;
         // update assignments for nodes
         for idx in start..end {
-            let feature = self.features[dim][idx];
+            let nidx = self.dimensions[dim][idx];
             if idx < split {
-                self.assignment[feature.idx].node = children.0;
+                self.assign[nidx] = childs.0;
             } else {
-                self.assignment[feature.idx].node = children.1;
+                self.assign[nidx] = childs.1;
             }
         }
     }
     fn sort_dimensions(&mut self, dim:usize, childs:(usize, usize), range:(usize, usize, usize)) {
         let (start, split, end) = range;
         let (mut lidx, mut ridx) = (0, split - start);
-        let mut buffer = vec![Feature::new();end - start];
-        // TODO: this needs to change to sorting the indices
+        let mut buffer = vec![usize::MAX;end - start];
         for d in 0..self.dims {
             if d == dim { continue; }
-            let dimension = &self.features[d];
+            let dimension = &self.dimensions[d];
             for idx in start..end {
                 let feature = dimension[idx];
-                if self.assignment[feature.idx].node == childs.0 {
+                if self.assign[feature] == childs.0 {
                     buffer[lidx] = dimension[idx];
+                    lidx += 1;
+                } else if self.assign[feature] == childs.1 {
+                    buffer[ridx] = dimension[idx];
                     ridx += 1;
                 } else {
-                    buffer[ridx] = dimension[idx];
-                    lidx += 1;
+                    panic!("corruption in the split assignment");
                 }
             }
-            self.features[d][start..end].copy_from_slice(&buffer);
+            self.dimensions[d][start..end].copy_from_slice(&buffer);
         }
     }
-    fn update_ancestors(&mut self, ancestor:usize) {
-        // remove the ancestor from the item
+    fn update_ancestors(&mut self, ancestor:usize, childs:(usize, usize)) {
+        // remove the ancestor from the active leaf nodes
         for idx in 0..self.leafs.len() {
             if self.leafs[idx] != ancestor { continue; }
             self.leafs.swap_remove(idx);
         }
+        self.leafs.push(childs.0);
+        self.leafs.push(childs.1);
     }
-    fn update_metadata(&mut self, ancestor:usize, split:(usize, f32), childs:(usize, usize)) {
-        let mut node = self.nodes[ancestor];
+    fn update_metadata(&mut self, split:(usize, usize, f32), childs:(usize, usize)) {
+        let node = &mut self.nodes[split.0];
         node.partition = Some(Partition {
-            dim:split.0,
-            value:split.1,
+            dim:split.1,
+            value:split.2,
             left: childs.0,
             right: childs.1
         });
     }
-    fn update_nodes(&mut self, childs:(usize, usize), predictions:(f32, f32)) {
-        let left_node = Node { id: childs.0, prediction: predictions.0, partition: None };
-        let right_node = Node { id: childs.1, prediction: predictions.1, partition: None };
-        self.nodes.push(left_node);
-        self.nodes.push(right_node);
-    }
-    fn split(&mut self) {
-    }
-
     fn predict(&self, data:Vec<f32>) -> f32 {
-        let mut node = self.nodes[0];
-        while let Some(partition) = node.partition {
+        let mut node = &self.nodes[0];
+        while let Some(partition) = &node.partition {
             if data[partition.dim] < partition.value {
-                node = self.nodes[partition.left];
+                node = &self.nodes[partition.left];
             } else {
-                node = self.nodes[partition.right];
+                node = &self.nodes[partition.right];
             }
         }
         node.prediction
     }
 }
 
-impl Node {
-    // Contains information for decision tree structure
-    fn new(id:usize, prediction:f32, partition:Option<Partition>) -> Self {
-        Self {
-            id,
-            prediction,
-            partition,
-        }
-    }
-}
-
-
 impl Metadata {
     // Contains information for splitting criterions
-    fn default(id:usize, dim:usize, offset:usize) -> Self {
+    fn default(dim:usize, offset:usize) -> Self {
         Self {
-            id: id,
             dim:dim,
             offset: offset,
             card: 0,
@@ -248,23 +220,21 @@ impl Metadata {
         // weighted variance
         (sse_curr - sse_left - sse_right) / card
     }
-    fn increment(&mut self, feature:&Feature) {
+    fn increment(&mut self, output:f32) {
         self.card += 1;
-        self.sum_linear += feature.label;
-        self.sum_squares += feature.label * feature.label;
+        self.sum_linear += output;
+        self.sum_squares += output * output;
     }
     fn derive(data:&Vec<Vec<f32>>)  -> Self {
         if data.is_empty() || data[0].is_empty() { panic!("data is empty"); }
-        let card = data.len();
-        let label = data[0].len()-1;
+        let label = data.len()-1;
+        let card = data[0].len();
         let (mut sum_linear, mut sum_squares) = (0_f32, 0_f32);
-        for idx in 0..card {
-            let val = data[idx][label];
+        for val in &data[label] {
             sum_linear += val;
             sum_squares += val * val;
         }
         Self {
-            id:0,
             dim:label,
             offset:0,
             card,
@@ -272,14 +242,13 @@ impl Metadata {
             sum_squares
         }
     }
-    fn derive_compliment(&mut self, left:&Self) -> Self {
+    fn derive_compliment(&mut self, target:&Self) -> Self {
         Self {
-            id:left.id + 1,
             dim:self.dim,
-            offset:left.offset + left.card,
-            card:self.card - left.card,
-            sum_linear:self.sum_linear - left.sum_linear,
-            sum_squares:self.sum_squares - left.sum_squares,
+            offset:target.offset + target.card,
+            card:self.card - target.card,
+            sum_linear:self.sum_linear - target.sum_linear,
+            sum_squares:self.sum_squares - target.sum_squares,
         }
     }
     fn predict(&self) -> f32 {
