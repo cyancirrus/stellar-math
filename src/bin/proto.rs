@@ -17,6 +17,20 @@ struct DecisionTree {
     metadata: Vec<Metadata>,
     dimensions: Vec<Vec<usize>>, // idx sorted by dimension
 }
+
+// TODO: implement this, and then test return this from train, also add a like step through the
+// vec<metadata> which computes the like increase in 1- total variance explained per step, for easy
+// visualization, will help debugging 
+
+
+//TODO: change "data" above to &data, current version would be tons of borrowing for RF and
+//slightly for gbm 
+
+struct DecisionTreeModel {
+    nodes: Vec<Node>,
+    metadata: Vec<Metadata>,
+}
+
 struct Node {
     prediction: f32,
     partition: Option<Partition>,
