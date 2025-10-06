@@ -2,8 +2,8 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand::Rng;
 use stellar::algebra::ndmethods::{parallel_tensor_mult, tensor_mult};
 use stellar::algebra::simd::simd_tensor_mult;
-use stellar::structure::ndarray::NdArray;
 use stellar::random::generation::generate_random_matrix;
+use stellar::structure::ndarray::NdArray;
 
 fn benchmark(c: &mut Criterion) {
     // let small_size = 64;

@@ -1,10 +1,12 @@
 use crate::algebra::ndmethods::create_identity_matrix;
 use crate::algebra::ndmethods::tensor_mult;
-use crate::decomposition::qr::qr_decompose;
 use crate::decomposition::lu::lu_decompose;
+use crate::decomposition::qr::qr_decompose;
 use crate::structure::ndarray::NdArray;
 
-use crate::random::generation::{generate_random_matrix, generate_random_vector, generate_random_symetric};
+use crate::random::generation::{
+    generate_random_matrix, generate_random_symetric, generate_random_vector,
+};
 
 const CONVERGENCE_CONDITION: f32 = 1e-4;
 
@@ -59,7 +61,6 @@ fn normalize_vector(x: &mut [f32]) {
         *val /= norm;
     }
 }
-    
 
 fn frobenius_diff_norm(a: &NdArray, b: &NdArray) -> f32 {
     // distance :: SS (sign*a[ij] - b[ij])^2
@@ -76,22 +77,22 @@ fn frobenius_diff_norm(a: &NdArray, b: &NdArray) -> f32 {
     error.sqrt()
 }
 
-fn estimate_eigenvalues(u:&mut f32, a: &mut NdArray, x:&[f32]) {
+fn estimate_eigenvalues(u: &mut f32, a: &mut NdArray, x: &[f32]) {
     // estimated via rayleigh quotient
     // x'Ax/x'x
-    debug_assert_eq!(a.dims[0], a.dims[1]); 
+    debug_assert_eq!(a.dims[0], a.dims[1]);
     let n = a.dims[0];
     // center M to A ->  A-u +u = A
     for i in 0..n {
         a.data[i * n + i] += *u;
     }
     // only desire the diagonal
-    let mut w = vec![0f32;n];
+    let mut w = vec![0f32; n];
     let mut numerator = 0_f32;
     let mut denominator = 0_f32;
     for i in 0..n {
         for k in 0..n {
-            w[i] +=  a.data[ i * n + k] * x[k];
+            w[i] += a.data[i * n + k] * x[k];
         }
     }
     for k in 0..n {
@@ -99,12 +100,11 @@ fn estimate_eigenvalues(u:&mut f32, a: &mut NdArray, x:&[f32]) {
         denominator += x[k] * x[k];
     }
     *u = numerator / denominator;
-    // perterb M by new uii : A - u' 
+    // perterb M by new uii : A - u'
     for d in 0..n {
         a.data[d * n + d] -= *u;
     }
 }
-
 
 // fn test_random_eigenvector() {
 //     let n = 128;
@@ -148,9 +148,7 @@ fn estimate_eigenvalues(u:&mut f32, a: &mut NdArray, x:&[f32]) {
 //     println!("Test passed! Eigenvalue estimate: {}", lambda);
 // }
 
-
 // fn main() {
 //     // it's in proto.bu
 //     test_random_eigenvector();
 // }
-

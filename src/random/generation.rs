@@ -8,7 +8,7 @@ use rand_distr::StandardNormal;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
 
-pub fn generate_random_matrix(m:usize, n:usize) -> NdArray {
+pub fn generate_random_matrix(m: usize, n: usize) -> NdArray {
     let mut rng = rand::rng();
     let mut data = vec![0.0_f32; m * n];
     for i in 0..m {
@@ -22,7 +22,7 @@ pub fn generate_random_matrix(m:usize, n:usize) -> NdArray {
         data,
     }
 }
-pub fn generate_random_symetric(n:usize) -> NdArray {
+pub fn generate_random_symetric(n: usize) -> NdArray {
     let mut rng = rand::rng();
     let mut data = vec![0.0_f32; n * n];
     for i in 0..n {
@@ -37,9 +37,9 @@ pub fn generate_random_symetric(n:usize) -> NdArray {
         data,
     }
 }
-pub fn generate_random_vector(n:usize) -> Vec<f32> {
+pub fn generate_random_vector(n: usize) -> Vec<f32> {
     let mut rng = rand::rng();
-    let mut data = vec![0.0_f32;  n];
+    let mut data = vec![0.0_f32; n];
     for i in 0..n {
         data[i] = rng.sample(StandardNormal);
     }

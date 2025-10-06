@@ -9,6 +9,6 @@ pub fn approx_vector_eq(a: &[f32], b: &[f32]) -> bool {
     error / (n as f32).sqrt() < TOLERANCE
 }
 
-pub fn approx_scalar_eq(a:f32, b:f32) -> bool {
-    (a-b).abs() < TOLERANCE
+pub fn approx_scalar_eq(a: f32, b: f32) -> bool {
+    (a - b).abs() < TOLERANCE
 }

@@ -2,7 +2,6 @@ use crate::algebra::vector::vector_add;
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
-
 fn multiply_summetric() {
     //TODO: Implement sketch below
     //
@@ -17,10 +16,11 @@ fn multiply_summetric() {
     //  data[i * cols + j] = data[j * cols + i]
     // }}
 }
-pub fn resize_rows(m:usize, x:&mut NdArray) {
+pub fn resize_rows(m: usize, x: &mut NdArray) {
     let (rows, cols) = (x.dims[0], x.dims[1]);
-    if m == rows { return; }
-    else if m > rows {
+    if m == rows {
+        return;
+    } else if m > rows {
         x.data.extend(vec![0_f32; (m - rows) * cols]);
     } else if m < rows {
         x.data.truncate(m * cols);
@@ -28,23 +28,24 @@ pub fn resize_rows(m:usize, x:&mut NdArray) {
     x.dims[0] = m;
 }
 
-pub fn resize_cols(n:usize, x:&mut NdArray) {
+pub fn resize_cols(n: usize, x: &mut NdArray) {
     let (rows, cols) = (x.dims[0], x.dims[1]);
-    if n == cols { return; }
-    else if n > cols {
+    if n == cols {
+        return;
+    } else if n > cols {
         x.data.extend(vec![0_f32; rows * (n - cols)]);
         for i in (0..rows).rev() {
-          for j in (0..n).rev() {
-              x.data.swap(i * n + j, i * cols + j);
-          }
+            for j in (0..n).rev() {
+                x.data.swap(i * n + j, i * cols + j);
+            }
         }
     } else {
         for i in 0..rows {
-          for j in 0..n {
-              x.data.swap(i * n + j, i * cols + j);
-          }
+            for j in 0..n {
+                x.data.swap(i * n + j, i * cols + j);
+            }
         }
-        x.data.truncate(rows * n );
+        x.data.truncate(rows * n);
     }
     x.dims[1] = n;
 }
@@ -57,7 +58,7 @@ pub fn create_identity_matrix(n: usize) -> NdArray {
     }
     NdArray { dims, data }
 }
-pub fn create_identity_rectangle(m:usize, n: usize) -> NdArray {
+pub fn create_identity_rectangle(m: usize, n: usize) -> NdArray {
     let mut data = vec![0_f32; m * n];
     let dims = vec![m, n];
     for i in 0..m.min(n) {

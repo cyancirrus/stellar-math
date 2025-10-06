@@ -4,11 +4,10 @@ use crate::decomposition::householder::{householder_params, HouseholderReflectio
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
-
 #[derive(Debug)]
 pub struct QrDecomposition {
     // Qn..Q1 * A = R;
-    // A = (Qn..Q1)'R 
+    // A = (Qn..Q1)'R
     // A = Q1'Q2'..QnR
     // A = Q1Q2..QnR
     // Q := product Q1..Qn
@@ -65,7 +64,8 @@ pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
 }
 
 impl QrDecomposition {
-    pub fn new( rows: usize,
+    pub fn new(
+        rows: usize,
         cols: usize,
         card: usize,
         projections: Vec<HouseholderReflection>,
@@ -139,7 +139,7 @@ impl QrDecomposition {
             // ( I - Bvv') is symmetric order matters
             for j in 0..tcols {
                 for i in p..trows.min(self.rows) {
-                    w[j] += proj.vector[i-p] * target.data[ i * tcols + j];
+                    w[j] += proj.vector[i - p] * target.data[i * tcols + j];
                 }
                 for i in p..trows.min(self.rows) {
                     target.data[i * tcols + j] -= proj.beta * w[j] * proj.vector[i - p];
@@ -189,4 +189,3 @@ impl QrDecomposition {
         data
     }
 }
-

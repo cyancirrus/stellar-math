@@ -1,4 +1,6 @@
-use crate::algebra::ndmethods::{create_identity_matrix, tensor_mult, transpose, resize_rows, resize_cols};
+use crate::algebra::ndmethods::{
+    create_identity_matrix, resize_cols, resize_rows, tensor_mult, transpose,
+};
 use crate::algebra::vector::{initialize_unit_vector, magnitude};
 use crate::decomposition::householder::{householder_params, HouseholderReflection};
 use crate::structure::ndarray::NdArray;
@@ -6,50 +8,55 @@ use rayon::prelude::ParallelIterator;
 use rayon::prelude::*;
 
 pub fn golub_kahan(mut a: NdArray) -> NdArray {
-    let (rows, cols)  = (a.dims[0], a.dims[1]);
+    let (rows, cols) = (a.dims[0], a.dims[1]);
     let card = rows.min(cols) - (rows <= cols) as usize;
     let mut proj: HouseholderReflection;
     let mut w = vec![0f32; rows.max(cols)];
     for o in 0..card {
         proj = householder_params(
             // column vector
-            (o..rows).into_iter().map(|r| a.data[r * cols + o]).collect()
+            (o..rows)
+                .into_iter()
+                .map(|r| a.data[r * cols + o])
+                .collect(),
         );
         // (I - bvv')A => w := bv'A
         //  A -= vw'
         for j in o..cols {
             for i in o..rows {
-                w[j] += proj.vector[i - o] * a.data[ i * cols + j];
+                w[j] += proj.vector[i - o] * a.data[i * cols + j];
             }
             w[j] *= proj.beta;
             for i in o..rows {
-                a.data[ i * cols + j] -= proj.vector[i - o] * w[j];
+                a.data[i * cols + j] -= proj.vector[i - o] * w[j];
             }
             w[j] = 0_f32;
         }
         // stop one early for columns because a[m,n-1] can be non-zero
-        if o+1 == card  { break; }
+        if o + 1 == card {
+            break;
+        }
         let row_vector = a.data[(o * cols) + 1 + o..(o + 1) * cols].to_vec();
         proj = householder_params(
             // row vector
-            a.data[(o * cols) + 1 + o..(o + 1) * cols].to_vec()
+            a.data[(o * cols) + 1 + o..(o + 1) * cols].to_vec(),
         );
         // A(I - bvv') => w = b * Av
         // A -= wv'
         for i in o..rows {
-            for j in o+1..cols {
+            for j in o + 1..cols {
                 w[i] += a.data[i * cols + j] * proj.vector[j - o - 1];
             }
             w[i] *= proj.beta;
-            for j in o+1..cols {
+            for j in o + 1..cols {
                 a.data[i * cols + j] -= w[i] * proj.vector[j - o - 1];
             }
             w[i] = 0_f32;
         }
     }
     let dims = rows.min(cols);
-    resize_rows(dims,&mut a); 
-    resize_cols(dims, &mut a); 
+    resize_rows(dims, &mut a);
+    resize_cols(dims, &mut a);
     a
 }
 

@@ -2,9 +2,9 @@
 mod lu_decomposition {
     use stellar::algebra::ndmethods::tensor_mult;
     use stellar::decomposition::lu::lu_decompose;
-    use stellar::structure::ndarray::NdArray;
     use stellar::equality::approximate::approx_vector_eq;
     use stellar::random::generation::{generate_random_matrix, generate_random_vector};
+    use stellar::structure::ndarray::NdArray;
 
     // functions
     fn reconstruction(x: NdArray) {
@@ -35,14 +35,14 @@ mod lu_decomposition {
 
     // }
     // matrix applications
-    fn left_apply_l(x:NdArray, y:NdArray) {
+    fn left_apply_l(x: NdArray, y: NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut l = lu.matrix.clone();
         let mut result = y.clone();
         for i in 0..rows {
             l.data[i * cols + i] = 1_f32;
-            for j in i+1..cols {
+            for j in i + 1..cols {
                 l.data[i * cols + j] = 0_f32;
             }
         }
@@ -50,7 +50,7 @@ mod lu_decomposition {
         lu.left_apply_l(&mut result);
         assert!(approx_vector_eq(&result.data, &expected.data))
     }
-    fn left_apply_u(x:NdArray, y:NdArray) {
+    fn left_apply_u(x: NdArray, y: NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut u = lu.matrix.clone();
@@ -64,14 +64,14 @@ mod lu_decomposition {
         lu.left_apply_u(&mut result);
         assert!(approx_vector_eq(&result.data, &expected.data))
     }
-    fn right_apply_l(x:NdArray, y:NdArray) {
+    fn right_apply_l(x: NdArray, y: NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut l = lu.matrix.clone();
         let mut result = y.clone();
         for i in 0..rows {
             l.data[i * cols + i] = 1_f32;
-            for j in i+1..cols {
+            for j in i + 1..cols {
                 l.data[i * cols + j] = 0_f32;
             }
         }
@@ -79,7 +79,7 @@ mod lu_decomposition {
         lu.right_apply_l(&mut result);
         assert!(approx_vector_eq(&result.data, &expected.data))
     }
-    fn right_apply_u(x:NdArray, y:NdArray) {
+    fn right_apply_u(x: NdArray, y: NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut u = lu.matrix.clone();
@@ -93,15 +93,18 @@ mod lu_decomposition {
         lu.right_apply_u(&mut result);
         assert!(approx_vector_eq(&result.data, &expected.data))
     }
-    fn left_apply_l_vec(x:NdArray, y:Vec<f32>) {
+    fn left_apply_l_vec(x: NdArray, y: Vec<f32>) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut l = lu.matrix.clone();
-        let y_matrix = NdArray { dims: vec![cols, 1], data: y.clone()};
+        let y_matrix = NdArray {
+            dims: vec![cols, 1],
+            data: y.clone(),
+        };
         let mut result = y.clone();
         for i in 0..rows {
             l.data[i * cols + i] = 1_f32;
-            for j in i+1..cols {
+            for j in i + 1..cols {
                 l.data[i * cols + j] = 0_f32;
             }
         }
@@ -111,11 +114,14 @@ mod lu_decomposition {
     }
 
     // vector applications
-    fn left_apply_u_vec(x:NdArray, y:Vec<f32>) {
+    fn left_apply_u_vec(x: NdArray, y: Vec<f32>) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut u = lu.matrix.clone();
-        let y_matrix = NdArray { dims: vec![cols, 1], data: y.clone()};
+        let y_matrix = NdArray {
+            dims: vec![cols, 1],
+            data: y.clone(),
+        };
         let mut result = y.clone();
         for i in 1..rows {
             for j in 0..i {
@@ -126,16 +132,19 @@ mod lu_decomposition {
         lu.left_apply_u_vec(&mut result);
         assert!(approx_vector_eq(&result, &expected.data))
     }
-    
-    fn right_apply_l_vec(x:NdArray, y:Vec<f32>) {
+
+    fn right_apply_l_vec(x: NdArray, y: Vec<f32>) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut l = lu.matrix.clone();
-        let y_matrix = NdArray { dims: vec![1, rows], data: y.clone()};
+        let y_matrix = NdArray {
+            dims: vec![1, rows],
+            data: y.clone(),
+        };
         let mut result = y.clone();
         for i in 0..rows {
             l.data[i * cols + i] = 1_f32;
-            for j in i+1..cols {
+            for j in i + 1..cols {
                 l.data[i * cols + j] = 0_f32;
             }
         }
@@ -143,11 +152,14 @@ mod lu_decomposition {
         lu.right_apply_l_vec(&mut result);
         assert!(approx_vector_eq(&result, &expected.data))
     }
-    fn right_apply_u_vec(x:NdArray, y:Vec<f32>) {
+    fn right_apply_u_vec(x: NdArray, y: Vec<f32>) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let lu = lu_decompose(x);
         let mut u = lu.matrix.clone();
-        let y_matrix = NdArray { dims: vec![1, rows], data: y.clone()};
+        let y_matrix = NdArray {
+            dims: vec![1, rows],
+            data: y.clone(),
+        };
         let mut result = y.clone();
         for i in 1..rows {
             for j in 0..i {
@@ -180,79 +192,79 @@ mod lu_decomposition {
     fn reconstruction_random_nxn() {
         let dimensions = vec![1, 2, 5, 7, 23];
         for n in dimensions {
-            reconstruction(generate_random_matrix(n,n))
+            reconstruction(generate_random_matrix(n, n))
         }
     }
     #[test]
     fn random_left_apply_l_nxn_nxa() {
-        let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+        let dimensions = vec![(1, 5), (2, 3), (7, 7), (23, 4)];
         for (n, a) in dimensions {
-            let x = generate_random_matrix(n,n);
-            let y = generate_random_matrix(n,a);
-            left_apply_l(x, y) 
+            let x = generate_random_matrix(n, n);
+            let y = generate_random_matrix(n, a);
+            left_apply_l(x, y)
         }
     }
     #[test]
     fn random_left_apply_u_nxn_nxa() {
-        let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+        let dimensions = vec![(1, 5), (2, 3), (7, 7), (23, 4)];
         for (n, a) in dimensions {
-            let x = generate_random_matrix(n,n);
-            let y = generate_random_matrix(n,a);
-            left_apply_u(x, y) 
+            let x = generate_random_matrix(n, n);
+            let y = generate_random_matrix(n, a);
+            left_apply_u(x, y)
         }
     }
     #[test]
     fn random_right_apply_l_axn_nxn() {
-        let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+        let dimensions = vec![(1, 5), (2, 3), (7, 7), (23, 4)];
         for (n, a) in dimensions {
-            let x = generate_random_matrix(n,n);
-            let y = generate_random_matrix(a,n);
-            right_apply_l(x, y) 
+            let x = generate_random_matrix(n, n);
+            let y = generate_random_matrix(a, n);
+            right_apply_l(x, y)
         }
     }
     #[test]
     fn random_right_apply_u_nxn_nxa() {
-        let dimensions = vec![(1, 5), (2, 3), (7,7), (23,4)];
+        let dimensions = vec![(1, 5), (2, 3), (7, 7), (23, 4)];
         for (n, a) in dimensions {
-            let x = generate_random_matrix(n,n);
-            let y = generate_random_matrix(a,n);
-            right_apply_u(x, y) 
+            let x = generate_random_matrix(n, n);
+            let y = generate_random_matrix(a, n);
+            right_apply_u(x, y)
         }
     }
     #[test]
     fn random_left_apply_l_vec() {
-        let dimensions = vec![ 2, 3, 4, 7, 23];
+        let dimensions = vec![2, 3, 4, 7, 23];
         for n in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_vector(n);
-            left_apply_l_vec(x,y)
+            left_apply_l_vec(x, y)
         }
     }
     #[test]
     fn random_left_apply_u_vec() {
-        let dimensions = vec![ 2, 3, 4, 7, 23];
+        let dimensions = vec![2, 3, 4, 7, 23];
         for n in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_vector(n);
-            left_apply_u_vec(x,y)
+            left_apply_u_vec(x, y)
         }
     }
     #[test]
     fn random_right_apply_l_vec() {
-        let dimensions = vec![ 2, 3, 4, 7, 23];
+        let dimensions = vec![2, 3, 4, 7, 23];
         for n in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_vector(n);
-            right_apply_l_vec(x,y)
+            right_apply_l_vec(x, y)
         }
     }
     #[test]
     fn random_right_apply_u_vec() {
-        let dimensions = vec![ 2, 3, 4, 7, 23];
+        let dimensions = vec![2, 3, 4, 7, 23];
         for n in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_vector(n);
-            right_apply_u_vec(x,y)
+            right_apply_u_vec(x, y)
         }
     }
     // #[test]

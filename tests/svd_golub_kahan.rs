@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod svd_golub_kahan {
-    use stellar::decomposition::svd::{golub_kahan};
-    use stellar::equality::approximate::{approx_vector_eq, approx_scalar_eq};
-    use stellar::random::generation::{generate_random_matrix};
+    use stellar::decomposition::svd::golub_kahan;
+    use stellar::equality::approximate::{approx_scalar_eq, approx_vector_eq};
+    use stellar::random::generation::generate_random_matrix;
     use stellar::structure::ndarray::NdArray;
 
     // test functions
@@ -22,13 +22,11 @@ mod svd_golub_kahan {
     }
     #[test]
     fn random_right_apply_u_vec() {
-        let dimensions = vec![ 2, 3, 4, 7, 23];
+        let dimensions = vec![2, 3, 4, 7, 23];
         // let dimensions = vec![  4];
         for n in dimensions {
             let x = generate_random_matrix(n, n);
             matrix_bidiagonalization(x)
         }
     }
-
-
 }

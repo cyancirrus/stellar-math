@@ -3,8 +3,8 @@
 mod schur_decomposition {
     use stellar::algebra::ndmethods::tensor_mult;
     use stellar::decomposition::schur::real_schur;
+    use stellar::equality::approximate::{approx_scalar_eq, approx_vector_eq};
     use stellar::structure::ndarray::NdArray;
-    use stellar::equality::approximate::{approx_vector_eq, approx_scalar_eq};
 
     #[test]
     fn test_schur_kernel() {

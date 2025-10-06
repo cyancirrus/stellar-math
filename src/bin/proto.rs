@@ -5,52 +5,56 @@
 // when writing article write something about recursive / iterative defns and which info is
 // available, ie why need to reverse iteration on QR
 
-
 // move code into examples directory
 // cargo run --example demo
 
 struct DecisionTree {
-    data:Vec<Vec<f32>>, // feature major form, individual observations are columns
-    dims:usize, // number of dims
-    card:usize,
-    assign:Vec<usize>, // idx -> node
-    nodes:Vec<Node>,
-    metadata:Vec<Metadata>,
-    dimensions:Vec<Vec<usize>>, // idx sorted by dimension
+    data: Vec<Vec<f32>>, // feature major form, individual observations are columns
+    dims: usize,         // number of dims
+    card: usize,
+    assign: Vec<usize>, // idx -> node
+    nodes: Vec<Node>,
+    metadata: Vec<Metadata>,
+    dimensions: Vec<Vec<usize>>, // idx sorted by dimension
 }
 struct Node {
-    prediction:f32,
-    partition:Option<Partition>,
+    prediction: f32,
+    partition: Option<Partition>,
 }
 struct Partition {
-    dim:usize, // dimension to consider
-    value:f32, // value of dimension 
-    left:usize, // split left x <= value
-    right:usize, // split right x > value
+    dim: usize,   // dimension to consider
+    value: f32,   // value of dimension
+    left: usize,  // split left x <= value
+    right: usize, // split right x > value
 }
 
 #[derive(Clone, Copy)]
 struct Metadata {
     // minimal
-    dim:usize,
+    dim: usize,
     // descriptives
-    offset:usize,
-    card:usize,
-    sum_linear:f32, // Sum y
-    sum_squares:f32, // Sum y * y;
+    offset: usize,
+    card: usize,
+    sum_linear: f32,  // Sum y
+    sum_squares: f32, // Sum y * y;
 }
 
 impl DecisionTree {
-    fn new(data:Vec<Vec<f32>>) -> Self {
-        if data.is_empty() || data[0].is_empty() { panic!("data is empty"); }
+    fn new(data: Vec<Vec<f32>>) -> Self {
+        if data.is_empty() || data[0].is_empty() {
+            panic!("data is empty");
+        }
         let label = data.len();
-        let dims = label-1;
+        let dims = label - 1;
         let card = data[0].len();
-        let assign:Vec<usize> = (0..card).collect();
-        let mut buffer:Vec<usize> = (0..card).collect();
+        let assign: Vec<usize> = (0..card).collect();
+        let mut buffer: Vec<usize> = (0..card).collect();
         let mut dimensions = Vec::with_capacity(dims);
         let metadata = Metadata::derive(&data);
-        let node = Node { prediction: metadata.predict(), partition: None };
+        let node = Node {
+            prediction: metadata.predict(),
+            partition: None,
+        };
         for d in 0..dims {
             // sort indices by dimension
             buffer.sort_by(|a, b| data[d][*a].partial_cmp(&data[d][*b]).unwrap());
@@ -62,11 +66,11 @@ impl DecisionTree {
             dims,
             card,
             nodes: vec![node],
-            metadata:vec![metadata],
+            metadata: vec![metadata],
             dimensions,
         }
     }
-    fn train(&mut self, nodes:usize) {
+    fn train(&mut self, nodes: usize) {
         for _ in 0..nodes {
             self.split();
         }
@@ -84,26 +88,30 @@ impl DecisionTree {
         let (mut ancestor, mut dimension) = (usize::MAX, usize::MAX);
         let (mut delta, mut partition) = (0_f32, 0_f32);
         // if iterate over leaves becomes worse could use hashmap but doesn't appear great
-        let mut runnings:Vec<Metadata> = (0..nodes).map( |idx| {
-            let parent = &self.metadata[idx];
-            Metadata::empty_from(parent.dim, parent.offset)
-        }).collect();
-        let mut target = Metadata { 
-            card:usize::MAX,
-            dim:usize::MAX,
-            offset:usize::MAX,
-            sum_linear:f32::MAX,
-            sum_squares:f32::MAX
+        let mut runnings: Vec<Metadata> = (0..nodes)
+            .map(|idx| {
+                let parent = &self.metadata[idx];
+                Metadata::empty_from(parent.dim, parent.offset)
+            })
+            .collect();
+        let mut target = Metadata {
+            card: usize::MAX,
+            dim: usize::MAX,
+            offset: usize::MAX,
+            sum_linear: f32::MAX,
+            sum_squares: f32::MAX,
         };
         let output = &self.data[yindex];
         for d in 0..self.dims {
-            let dval= &self.data[d];
+            let dval = &self.data[d];
             for &idx in &self.dimensions[d] {
                 let node = self.assign[idx];
                 let (dval, yval) = (dval[idx], output[idx]);
                 runnings[node].increment(yval);
                 let del = self.metadata[node].delta(&runnings[node]);
-                if del < delta { continue; }
+                if del < delta {
+                    continue;
+                }
                 ancestor = node;
                 dimension = d;
                 delta = del;
@@ -111,27 +119,34 @@ impl DecisionTree {
                 target = runnings[node].clone();
             }
         }
-        let mut parent = self.metadata[ancestor];
+        let parent = self.metadata[ancestor];
         let complement = parent.derive_complement(&target);
         self.metadata.push(target);
         self.metadata.push(complement);
-        let left_node = Node { prediction: target.predict(), partition: None };
-        let right_node = Node { prediction: complement.predict(), partition: None };
+        let left_node = Node {
+            prediction: target.predict(),
+            partition: None,
+        };
+        let right_node = Node {
+            prediction: complement.predict(),
+            partition: None,
+        };
         self.nodes.push(left_node);
         self.nodes.push(right_node);
-        let split = (
-            ancestor,
-            dimension,
-            partition
-        );
+        let split = (ancestor, dimension, partition);
         let range = (
-            parent.offset,  
+            parent.offset,
             parent.offset + target.card,
-            parent.offset + parent.card
+            parent.offset + parent.card,
         );
         (split, range)
     }
-    fn update_assignment(&mut self, dim:usize, childs:(usize, usize), range:(usize, usize, usize)) {
+    fn update_assignment(
+        &mut self,
+        dim: usize,
+        childs: (usize, usize),
+        range: (usize, usize, usize),
+    ) {
         let (start, split, end) = range;
         // update assignments for nodes
         for idx in start..end {
@@ -143,12 +158,19 @@ impl DecisionTree {
             }
         }
     }
-    fn sort_dimensions(&mut self, dim:usize, childs:(usize, usize), range:(usize, usize, usize)) {
+    fn sort_dimensions(
+        &mut self,
+        dim: usize,
+        childs: (usize, usize),
+        range: (usize, usize, usize),
+    ) {
         let (start, split, end) = range;
         let (mut lidx, mut ridx) = (0, split - start);
-        let mut buffer = vec![usize::MAX;end - start];
+        let mut buffer = vec![usize::MAX; end - start];
         for d in 0..self.dims {
-            if d == dim { continue; }
+            if d == dim {
+                continue;
+            }
             let dimension = &self.dimensions[d];
             for idx in start..end {
                 let feature = dimension[idx];
@@ -165,16 +187,16 @@ impl DecisionTree {
             self.dimensions[d][start..end].copy_from_slice(&buffer);
         }
     }
-    fn update_metadata(&mut self, split:(usize, usize, f32), childs:(usize, usize)) {
+    fn update_metadata(&mut self, split: (usize, usize, f32), childs: (usize, usize)) {
         let node = &mut self.nodes[split.0];
         node.partition = Some(Partition {
-            dim:split.1,
-            value:split.2,
+            dim: split.1,
+            value: split.2,
             left: childs.0,
-            right: childs.1
+            right: childs.1,
         });
     }
-    fn predict(&self, data:Vec<f32>) -> f32 {
+    fn predict(&self, data: Vec<f32>) -> f32 {
         let mut node = &self.nodes[0];
         while let Some(partition) = &node.partition {
             if data[partition.dim] < partition.value {
@@ -189,32 +211,40 @@ impl DecisionTree {
 
 impl Metadata {
     // Contains information for splitting criterions
-    fn empty_from(dim:usize, offset:usize) -> Self {
+    fn empty_from(dim: usize, offset: usize) -> Self {
         Self {
-            dim:dim,
+            dim: dim,
             offset: offset,
             card: 0,
-            sum_linear:0_f32, // Sum y
-            sum_squares:0_f32, // Sum y * y;
+            sum_linear: 0_f32,  // Sum y
+            sum_squares: 0_f32, // Sum y * y;
         }
     }
-    fn delta(&self, running:&Self) -> f32 {
-        let (card, l_card, r_card) = (self.card as f32, running.card as f32, (self.card - running.card) as f32);
-        
-        let sse_curr= self.sum_squares - self.sum_linear * self.sum_linear / card;
+    fn delta(&self, running: &Self) -> f32 {
+        let (card, l_card, r_card) = (
+            self.card as f32,
+            running.card as f32,
+            (self.card - running.card) as f32,
+        );
+
+        let sse_curr = self.sum_squares - self.sum_linear * self.sum_linear / card;
         let sse_left = running.sum_squares - running.sum_linear * running.sum_linear / l_card;
-        let sse_right = (self.sum_squares - running.sum_squares) - (self.sum_linear - running.sum_linear) * (self.sum_linear - running.sum_linear) / r_card;
+        let sse_right = (self.sum_squares - running.sum_squares)
+            - (self.sum_linear - running.sum_linear) * (self.sum_linear - running.sum_linear)
+                / r_card;
         // weighted variance
         (sse_curr - sse_left - sse_right) / card
     }
-    fn increment(&mut self, output:f32) {
+    fn increment(&mut self, output: f32) {
         self.card += 1;
         self.sum_linear += output;
         self.sum_squares += output * output;
     }
-    fn derive(data:&Vec<Vec<f32>>)  -> Self {
-        if data.is_empty() || data[0].is_empty() { panic!("data is empty"); }
-        let label = data.len()-1;
+    fn derive(data: &Vec<Vec<f32>>) -> Self {
+        if data.is_empty() || data[0].is_empty() {
+            panic!("data is empty");
+        }
+        let label = data.len() - 1;
         let card = data[0].len();
         let (mut sum_linear, mut sum_squares) = (0_f32, 0_f32);
         for val in &data[label] {
@@ -222,20 +252,20 @@ impl Metadata {
             sum_squares += val * val;
         }
         Self {
-            dim:label,
-            offset:0,
+            dim: label,
+            offset: 0,
             card,
             sum_linear,
-            sum_squares
+            sum_squares,
         }
     }
-    fn derive_complement(&self, target:&Self) -> Self {
+    fn derive_complement(&self, target: &Self) -> Self {
         Self {
-            dim:self.dim,
-            offset:target.offset + target.card,
-            card:self.card - target.card,
-            sum_linear:self.sum_linear - target.sum_linear,
-            sum_squares:self.sum_squares - target.sum_squares,
+            dim: self.dim,
+            offset: target.offset + target.card,
+            card: self.card - target.card,
+            sum_linear: self.sum_linear - target.sum_linear,
+            sum_squares: self.sum_squares - target.sum_squares,
         }
     }
     fn predict(&self) -> f32 {
@@ -243,5 +273,4 @@ impl Metadata {
     }
 }
 
-fn main() {
-}
+fn main() {}

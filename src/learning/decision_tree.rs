@@ -1,208 +1,266 @@
-// current work in progress
+// current work in progressshould not be public yet
 
-//TODO: Refactor with column major form after this implement a GMM
 struct DecisionTree {
-    dims:usize, // number of dims
-    card:usize, // data size
-    nodes:usize, // number of nodes
-    measure:Vec<Measure>, // measures for running values
-    assignment:Vec<Assignment>, // idx -> node
-    features:Vec<Vec<Feature>>, // sorted features (idx, f[idx;j], y[idx])
+    data: Vec<Vec<f32>>, // feature major form, individual observations are columns
+    dims: usize,         // number of dims
+    card: usize,
+    assign: Vec<usize>, // idx -> node
+    nodes: Vec<Node>,
+    metadata: Vec<Metadata>,
+    dimensions: Vec<Vec<usize>>, // idx sorted by dimension
 }
-
-// split into Measure | Split Info
-
-
-#[derive(Clone, Copy)]
-struct Measure {
-    card:usize,
-    offset:usize,
-    feature:usize,
-    sum_linear:f32, // Sum y
-    sum_squares:f32, // Sum y * y;
-    // TODO: split metadata and partition information
-    partition:Option<f32>, // value
-    left:Option<usize>, // split left 
-    right:Option<usize>, // split right
+struct Node {
+    prediction: f32,
+    partition: Option<Partition>,
 }
-
-struct Assignment {
-    idx:usize,
-    node:usize,
+struct Partition {
+    dim: usize,   // dimension to consider
+    value: f32,   // value of dimension
+    left: usize,  // split left x <= value
+    right: usize, // split right x > value
 }
 
 #[derive(Clone, Copy)]
-// TODO: we only need indices
-struct Feature {
-    idx:usize,
-    value:f32,
-    label:f32,
-}
-
-impl Feature {
-    fn new() -> Self {
-        Self { idx: 0, value:0_f32, label:0_f32 }
-    }
+struct Metadata {
+    // minimal
+    dim: usize,
+    // descriptives
+    offset: usize,
+    card: usize,
+    sum_linear: f32,  // Sum y
+    sum_squares: f32, // Sum y * y;
 }
 
 impl DecisionTree {
-    fn new(data:Vec<Vec<f32>>) -> Self {
-        if data.is_empty() || data[0].is_empty() { panic!("data is empty"); }
-        let card = data.len();
-        let label = data[0].len();
-        let dims = label-1;
-        let assignment = (0..card).map(|idx| Assignment {idx, node: 0 } ).collect();
-        let mut buffer = vec![Feature { idx:0, value:0_f32, label:0_f32 }; card];
-        let mut features = Vec::with_capacity(dims);
-        let measure = vec![Measure::derive(&data)];
+    fn new(data: Vec<Vec<f32>>) -> Self {
+        if data.is_empty() || data[0].is_empty() {
+            panic!("data is empty");
+        }
+        let label = data.len();
+        let dims = label - 1;
+        let card = data[0].len();
+        let assign: Vec<usize> = (0..card).collect();
+        let mut buffer: Vec<usize> = (0..card).collect();
+        let mut dimensions = Vec::with_capacity(dims);
+        let metadata = Metadata::derive(&data);
+        let node = Node {
+            prediction: metadata.predict(),
+            partition: None,
+        };
         for d in 0..dims {
-            for idx in 0..card {
-                buffer[idx] = Feature { idx, value: data[idx][d], label: data[idx][label-1] } ;
-            }
-            // sort by feature
-            buffer.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
-            features.push(buffer.clone());
+            // sort indices by dimension
+            buffer.sort_by(|a, b| data[d][*a].partial_cmp(&data[d][*b]).unwrap());
+            dimensions.push(buffer.clone());
         }
         Self {
+            data,
+            assign,
             dims,
             card,
-            nodes:1,
-            measure,
-            assignment,
-            features,
+            nodes: vec![node],
+            metadata: vec![metadata],
+            dimensions,
         }
     }
-    fn train(&mut self, nodes:usize) {
+    fn train(&mut self, nodes: usize) {
         for _ in 0..nodes {
             self.split();
         }
     }
     fn split(&mut self) {
-        // running candidate partitions
-        // TODO: Some nodes are no longer active this makes all nodes
-        let mut runnings:Vec<Measure> = (0..self.nodes).map( |idx| {
-            let m = &self.measure[idx];
-            Measure::new(m.feature, m.offset)
-        }).collect();
-        let (mut measure_delta, mut measure_partition) = (0_f32, 0_f32);
-        let (mut current_idx, left_nidx, right_nidx) = (0, self.nodes, self.nodes+1);
-        let mut left_node= Measure::new(usize::MAX,usize::MAX);
-        // find best new partition
+        let childs = (self.nodes.len(), self.nodes.len() + 1);
+        let (split, range) = self.find_partition();
+        self.update_assignment(split.1, childs, range);
+        self.sort_dimensions(split.1, childs, range);
+        self.update_metadata(split, childs);
+    }
+    fn find_partition(&mut self) -> ((usize, usize, f32), (usize, usize, usize)) {
+        let nodes = self.nodes.len();
+        let yindex = self.dims;
+        let (mut ancestor, mut dimension) = (usize::MAX, usize::MAX);
+        let (mut delta, mut partition) = (0_f32, 0_f32);
+        // if iterate over leaves becomes worse could use hashmap but doesn't appear great
+        let mut runnings: Vec<Metadata> = (0..nodes)
+            .map(|idx| {
+                let parent = &self.metadata[idx];
+                Metadata::empty_from(parent.dim, parent.offset)
+            })
+            .collect();
+        let mut target = Metadata {
+            card: usize::MAX,
+            dim: usize::MAX,
+            offset: usize::MAX,
+            sum_linear: f32::MAX,
+            sum_squares: f32::MAX,
+        };
+        let output = &self.data[yindex];
         for d in 0..self.dims {
-            let feature = &self.features[d];
-            for idx in 0..self.card {
-                let node = &self.assignment[idx];
-                runnings[node.idx].increment(&feature[idx]);
-                let delta = self.measure[node.idx].delta(&runnings[node.idx]);
-                if delta < measure_delta { continue; }
-                current_idx = node.idx;
-                measure_delta = delta;
-                measure_partition = self.features[d][idx].value;
-                left_node = runnings[node.idx].clone();
+            let dval = &self.data[d];
+            for &idx in &self.dimensions[d] {
+                let node = self.assign[idx];
+                let (dval, yval) = (dval[idx], output[idx]);
+                runnings[node].increment(yval);
+                let del = self.metadata[node].delta(&runnings[node]);
+                if del < delta {
+                    continue;
+                }
+                ancestor = node;
+                dimension = d;
+                delta = del;
+                partition = dval;
+                target = runnings[node].clone();
             }
         }
-        let current_node = self.measure[current_idx];
+        let parent = self.metadata[ancestor];
+        let complement = parent.derive_complement(&target);
+        self.metadata.push(target);
+        self.metadata.push(complement);
+        let left_node = Node {
+            prediction: target.predict(),
+            partition: None,
+        };
+        let right_node = Node {
+            prediction: complement.predict(),
+            partition: None,
+        };
+        self.nodes.push(left_node);
+        self.nodes.push(right_node);
+        let split = (ancestor, dimension, partition);
+        let range = (
+            parent.offset,
+            parent.offset + target.card,
+            parent.offset + parent.card,
+        );
+        (split, range)
+    }
+    fn update_assignment(
+        &mut self,
+        dim: usize,
+        childs: (usize, usize),
+        range: (usize, usize, usize),
+    ) {
+        let (start, split, end) = range;
         // update assignments for nodes
-        for i in 0..current_node.card {
-            let fidx = i + current_node.offset;
-            let feature = self.features[left_node.feature][fidx];
-            if i < left_node.card {
-                self.assignment[feature.idx].node = left_nidx;
+        for idx in start..end {
+            let nidx = self.dimensions[dim][idx];
+            if idx < split {
+                self.assign[nidx] = childs.0;
             } else {
-                self.assignment[feature.idx].node = right_nidx;
+                self.assign[nidx] = childs.1;
             }
         }
-        let mut buffer = vec![Feature::new(); current_node.card];
-        let current = &self.measure[current_idx];
-        let (mut lidx, mut ridx) = (current_node.offset, current_node.offset + left_node.card);
-        // sort the sub partitions in the data
+    }
+    fn sort_dimensions(
+        &mut self,
+        dim: usize,
+        childs: (usize, usize),
+        range: (usize, usize, usize),
+    ) {
+        let (start, split, end) = range;
+        let (mut lidx, mut ridx) = (0, split - start);
+        let mut buffer = vec![usize::MAX; end - start];
         for d in 0..self.dims {
-            if d == current_idx { continue; }
-            let dimension = &self.features[d];
-            for fidx in current.offset..current.card + current.offset{
-                let feature = self.features[left_node.feature][fidx];
-                if self.assignment[feature.idx].node == left_nidx {
-                    buffer[ridx] = dimension[fidx];
+            if d == dim {
+                continue;
+            }
+            let dimension = &self.dimensions[d];
+            for idx in start..end {
+                let feature = dimension[idx];
+                if self.assign[feature] == childs.0 {
+                    buffer[lidx] = dimension[idx];
+                    lidx += 1;
+                } else if self.assign[feature] == childs.1 {
+                    buffer[ridx] = dimension[idx];
                     ridx += 1;
                 } else {
-                    buffer[lidx] = dimension[fidx];
-                    lidx += 1;
+                    panic!("corruption in the split assignment");
                 }
             }
-            self.features[d][current.offset..current.offset+current.card].copy_from_slice(&buffer);
+            self.dimensions[d][start..end].copy_from_slice(&buffer);
         }
-        let right_node = self.measure[current_idx].derive_right(&left_node);
-        let current = &mut self.measure[current_idx];
-        current.partition = Some(measure_partition);
-        current.left = Some(left_nidx);
-        current.right = Some(right_nidx);
-        self.measure.push(left_node);
-        self.measure.push(right_node);
-        self.nodes += 2;
     }
-
-    fn predict(&self, data:Vec<f32>) -> f32 {
-        let mut target = self.measure[0];
-        while let Some(p) = target.partition {
-            if data[target.feature] < p {
-                target = self.measure[target.left.unwrap()];
+    fn update_metadata(&mut self, split: (usize, usize, f32), childs: (usize, usize)) {
+        let node = &mut self.nodes[split.0];
+        node.partition = Some(Partition {
+            dim: split.1,
+            value: split.2,
+            left: childs.0,
+            right: childs.1,
+        });
+    }
+    fn predict(&self, data: Vec<f32>) -> f32 {
+        let mut node = &self.nodes[0];
+        while let Some(partition) = &node.partition {
+            if data[partition.dim] < partition.value {
+                node = &self.nodes[partition.left];
             } else {
-                target = self.measure[target.right.unwrap()];
+                node = &self.nodes[partition.right];
             }
         }
-        target.sum_linear / (target.card as f32)
+        node.prediction
     }
 }
 
-impl Measure {
-    fn new(feature:usize, offset:usize) -> Self {
+impl Metadata {
+    // Contains information for splitting criterions
+    fn empty_from(dim: usize, offset: usize) -> Self {
         Self {
-            feature,
-            offset,
-            card:0,
-            sum_linear:0_f32,
-            sum_squares:0_f32,
-            partition:None,
-            left:None,
-            right:None,
+            dim: dim,
+            offset: offset,
+            card: 0,
+            sum_linear: 0_f32,  // Sum y
+            sum_squares: 0_f32, // Sum y * y;
         }
     }
-    fn increment(&mut self, feature:&Feature) {
-        self.card += 1;
-        self.sum_linear += feature.label;
-        self.sum_squares += feature.label * feature.label;
-    }
-    fn derive(data:&Vec<Vec<f32>>)  -> Self {
-        if data.is_empty() || data[0].is_empty() { panic!("data is empty"); }
-        let card = data.len();
-        let label = data[0].len()-1;
-        let (mut sum_linear, mut sum_squares) = (0_f32, 0_f32);
-        for idx in 0..card {
-            let val = data[idx][label];
-            sum_linear += val;
-            sum_squares += val * val;
-        }
-        Measure {feature:label, offset:0, card, sum_linear, sum_squares, partition:None, left:None, right:None}
-    }
-    fn delta(&self, running:&Self) -> f32 {
-        let (card, l_card, r_card) = (self.card as f32, running.card as f32, (self.card - running.card) as f32);
-        
-        let sse_curr= self.sum_squares - self.sum_linear * self.sum_linear / card;
+    fn delta(&self, running: &Self) -> f32 {
+        let (card, l_card, r_card) = (
+            self.card as f32,
+            running.card as f32,
+            (self.card - running.card) as f32,
+        );
+
+        let sse_curr = self.sum_squares - self.sum_linear * self.sum_linear / card;
         let sse_left = running.sum_squares - running.sum_linear * running.sum_linear / l_card;
-        let sse_right = (self.sum_squares - running.sum_squares) - (self.sum_linear - running.sum_linear) * (self.sum_linear - running.sum_linear) / r_card;
+        let sse_right = (self.sum_squares - running.sum_squares)
+            - (self.sum_linear - running.sum_linear) * (self.sum_linear - running.sum_linear)
+                / r_card;
         // weighted variance
         (sse_curr - sse_left - sse_right) / card
     }
-    fn derive_right(&mut self, left:&Self) -> Self {
-        Self {
-            feature:self.feature,
-            offset:left.offset + left.card,
-            card:self.card - left.card,
-            sum_linear:self.sum_linear - left.sum_linear,
-            sum_squares:self.sum_squares - left.sum_squares,
-            partition:None,
-            left:None,
-            right:None,
+    fn increment(&mut self, output: f32) {
+        self.card += 1;
+        self.sum_linear += output;
+        self.sum_squares += output * output;
+    }
+    fn derive(data: &Vec<Vec<f32>>) -> Self {
+        if data.is_empty() || data[0].is_empty() {
+            panic!("data is empty");
         }
+        let label = data.len() - 1;
+        let card = data[0].len();
+        let (mut sum_linear, mut sum_squares) = (0_f32, 0_f32);
+        for val in &data[label] {
+            sum_linear += val;
+            sum_squares += val * val;
+        }
+        Self {
+            dim: label,
+            offset: 0,
+            card,
+            sum_linear,
+            sum_squares,
+        }
+    }
+    fn derive_complement(&self, target: &Self) -> Self {
+        Self {
+            dim: self.dim,
+            offset: target.offset + target.card,
+            card: self.card - target.card,
+            sum_linear: self.sum_linear - target.sum_linear,
+            sum_squares: self.sum_squares - target.sum_squares,
+        }
+    }
+    fn predict(&self) -> f32 {
+        self.sum_linear / (self.card as f32)
     }
 }

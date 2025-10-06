@@ -3,9 +3,9 @@ mod qr_decomposition {
     use stellar::algebra::ndmethods::create_identity_matrix;
     use stellar::algebra::ndmethods::tensor_mult;
     use stellar::decomposition::qr::qr_decompose;
+    use stellar::equality::approximate::{approx_scalar_eq, approx_vector_eq};
+    use stellar::random::generation::generate_random_matrix;
     use stellar::structure::ndarray::NdArray;
-    use stellar::random::generation::{generate_random_matrix};
-    use stellar::equality::approximate::{approx_vector_eq, approx_scalar_eq};
 
     // test functions
     fn reconstruction(x: NdArray) {
