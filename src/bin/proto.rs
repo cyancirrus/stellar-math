@@ -104,19 +104,19 @@ impl DecisionTree {
             self.split();
         }
     }
-    fn split(&mut self) {
-        // running candidate partitions
+
+    fn find_partitions(&mut self) -> (usize, usize, f32, usize) {
+        //  returns (ancestor, dimension, value)
         // TODO: Some nodes are no longer active this makes all nodes
         let leafs = self.leafs.len();
-        let nodes = self.nodes.len();
         let mut runnings:Vec<Metadata> = (0..leafs).map( |i| {
             let idx = self.leafs[i];
             let parent = &self.metadata[idx];
             Metadata::default(parent.dim, parent.dim, parent.offset)
         }).collect();
-        let (mut measure_delta, mut measure_partition) = (0_f32, 0_f32);
-        let (mut current_idx, left_nidx, right_nidx) = (0, nodes, nodes+1);
-        let mut left_meta= Metadata { 
+        let (mut ancestor, mut dimension) = (usize::MAX, usize::MAX);
+        let (mut delta, mut partition) = (0_f32, 0_f32);
+        let mut target = Metadata { 
             id:usize::MAX,
             card:usize::MAX,
             dim:usize::MAX,
@@ -130,67 +130,76 @@ impl DecisionTree {
             for idx in 0..self.card {
                 let node = &self.assignment[idx];
                 runnings[node.idx].increment(&feature[idx]);
-                let delta = self.metadata[node.idx].delta(&runnings[node.idx]);
-                if delta < measure_delta { continue; }
-                current_idx = node.idx;
-                measure_delta = delta;
-                measure_partition = self.features[d][idx].value;
-                left_meta = runnings[node.idx].clone();
+                let del = self.metadata[node.idx].delta(&runnings[node.idx]);
+                if del< delta { continue; }
+                ancestor = node.idx;
+                dimension = d;
+                delta = delta;
+                partition = self.features[d][idx].value;
+                target = runnings[node.idx].clone();
             }
         }
-        let current_node = self.metadata[current_idx];
+        let compliment = self.metadata[ancestor].derive_compliment(&target);
+        self.metadata.push(target);
+        self.metadata.push(compliment);
+        (ancestor, dimension, partition, target.card)
+    }
+    fn update_assignment(&mut self, dim:usize, children:(usize, usize), range:(usize, usize, usize)) {
+        let (start, split, end) = range;
         // update assignments for nodes
-        for i in 0..current_node.card {
-            let fidx = i + current_node.offset;
-            let feature = self.features[left_meta.dim][fidx];
-            if i < left_meta.card {
-                self.assignment[feature.idx].node = left_nidx;
+        for idx in start..end {
+            let feature = self.features[dim][idx];
+            if idx < split {
+                self.assignment[feature.idx].node = children.0;
             } else {
-                self.assignment[feature.idx].node = right_nidx;
+                self.assignment[feature.idx].node = children.1;
             }
         }
-        let mut buffer = vec![Feature::new(); current_node.card];
-        let current = &self.metadata[current_idx];
-        let (mut lidx, mut ridx) = (current_node.offset, current_node.offset + left_meta.card);
-        // sort the sub partitions in the data
+    }
+    fn sort_dimensions(&mut self, dim:usize, childs:(usize, usize), range:(usize, usize, usize)) {
+        let (start, split, end) = range;
+        let (mut lidx, mut ridx) = (0, split - start);
+        let mut buffer = vec![Feature::new();end - start];
         // TODO: this needs to change to sorting the indices
         for d in 0..self.dims {
-            if d == current_idx { continue; }
-            let dim = &self.features[d];
-            for fidx in current.offset..current.card + current.offset{
-                let feature = self.features[left_meta.dim][fidx];
-                if self.assignment[feature.idx].node == left_nidx {
-                    buffer[ridx] = dim[fidx];
+            if d == dim { continue; }
+            let dimension = &self.features[d];
+            for idx in start..end {
+                let feature = dimension[idx];
+                if self.assignment[feature.idx].node == childs.0 {
+                    buffer[lidx] = dimension[idx];
                     ridx += 1;
                 } else {
-                    buffer[lidx] = dim[fidx];
+                    buffer[ridx] = dimension[idx];
                     lidx += 1;
                 }
             }
-            // remove the ancestor from the item
-            let mut lidx = usize::MAX;
-            for i in 0..leafs {
-                if self.leafs[i] == current_idx { lidx = i; break; }
-            }
-            self.leafs.swap_remove(lidx);
-
-            self.features[d][current.offset..current.offset+current.card].copy_from_slice(&buffer);
+            self.features[d][start..end].copy_from_slice(&buffer);
         }
-        let right_meta = self.metadata[current_idx].derive_right(&left_meta);
-        let current_node = &mut self.nodes[current_idx];
-        current_node.partition = Some(Partition {
-            dim:left_meta.dim,
-            value:measure_partition,
-            left: left_nidx,
-            right: right_nidx
-
+    }
+    fn update_ancestors(&mut self, ancestor:usize) {
+        // remove the ancestor from the item
+        for idx in 0..self.leafs.len() {
+            if self.leafs[idx] != ancestor { continue; }
+            self.leafs.swap_remove(idx);
+        }
+    }
+    fn update_metadata(&mut self, ancestor:usize, split:(usize, f32), childs:(usize, usize)) {
+        let mut node = self.nodes[ancestor];
+        node.partition = Some(Partition {
+            dim:split.0,
+            value:split.1,
+            left: childs.0,
+            right: childs.1
         });
-        self.metadata.push(left_meta);
-        self.metadata.push(right_meta);
-        let left_node = Node { id: left_nidx, prediction: left_meta.predict(), partition: None };
-        let right_node = Node { id: right_nidx, prediction: right_meta.predict(), partition: None };
+    }
+    fn update_nodes(&mut self, childs:(usize, usize), predictions:(f32, f32)) {
+        let left_node = Node { id: childs.0, prediction: predictions.0, partition: None };
+        let right_node = Node { id: childs.1, prediction: predictions.1, partition: None };
         self.nodes.push(left_node);
         self.nodes.push(right_node);
+    }
+    fn split(&mut self) {
     }
 
     fn predict(&self, data:Vec<f32>) -> f32 {
@@ -263,7 +272,7 @@ impl Metadata {
             sum_squares
         }
     }
-    fn derive_right(&mut self, left:&Self) -> Self {
+    fn derive_compliment(&mut self, left:&Self) -> Self {
         Self {
             id:left.id + 1,
             dim:self.dim,
