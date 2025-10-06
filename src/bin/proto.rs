@@ -13,7 +13,6 @@ struct DecisionTree {
     data:Vec<Vec<f32>>, // feature major form, individual observations are columns
     dims:usize, // number of dims
     card:usize,
-    leafs:Vec<usize>,
     assign:Vec<usize>, // idx -> node
     nodes:Vec<Node>,
     metadata:Vec<Metadata>,
@@ -44,16 +43,16 @@ struct Metadata {
 impl DecisionTree {
     fn new(data:Vec<Vec<f32>>) -> Self {
         if data.is_empty() || data[0].is_empty() { panic!("data is empty"); }
-        let card = data.len();
-        let label = data[0].len();
+        let label = data.len();
         let dims = label-1;
+        let card = data[0].len();
         let assign:Vec<usize> = (0..card).collect();
         let mut buffer:Vec<usize> = (0..card).collect();
         let mut dimensions = Vec::with_capacity(dims);
         let metadata = Metadata::derive(&data);
         let node = Node { prediction: metadata.predict(), partition: None };
         for d in 0..dims {
-            // sort by feature
+            // sort indices by dimension
             buffer.sort_by(|a, b| data[d][*a].partial_cmp(&data[d][*b]).unwrap());
             dimensions.push(buffer.clone());
         }
@@ -62,7 +61,6 @@ impl DecisionTree {
             assign,
             dims,
             card,
-            leafs: vec![0],
             nodes: vec![node],
             metadata:vec![metadata],
             dimensions,
@@ -78,17 +76,15 @@ impl DecisionTree {
         let (split, range) = self.find_partition();
         self.update_assignment(split.1, childs, range);
         self.sort_dimensions(split.1, childs, range);
-        self.update_ancestors(split.0, childs);
         self.update_metadata(split, childs);
     }
     fn find_partition(&mut self) -> ((usize, usize, f32), (usize, usize, usize)) {
-        let leafs = self.leafs.len();
+        let nodes = self.nodes.len();
         let yindex = self.dims + 1;
         let (mut ancestor, mut dimension) = (usize::MAX, usize::MAX);
         let (mut delta, mut partition) = (0_f32, 0_f32);
-        // only consider splitting the current leafs
-        let mut runnings:Vec<Metadata> = (0..leafs).map( |i| {
-            let idx = self.leafs[i];
+        // if iterate over leaves becomes worse could use hashmap but doesn't appear great
+        let mut runnings:Vec<Metadata> = (0..nodes).map( |idx| {
             let parent = &self.metadata[idx];
             Metadata::default(parent.dim, parent.offset)
         }).collect();
@@ -107,7 +103,7 @@ impl DecisionTree {
                 let (dval, yval) = (dval[idx], output[idx]);
                 runnings[node].increment(yval);
                 let del = self.metadata[node].delta(&runnings[node]);
-                if del< delta { continue; }
+                if del < delta { continue; }
                 ancestor = node;
                 dimension = d;
                 delta = delta;
@@ -168,15 +164,6 @@ impl DecisionTree {
             }
             self.dimensions[d][start..end].copy_from_slice(&buffer);
         }
-    }
-    fn update_ancestors(&mut self, ancestor:usize, childs:(usize, usize)) {
-        // remove the ancestor from the active leaf nodes
-        for idx in 0..self.leafs.len() {
-            if self.leafs[idx] != ancestor { continue; }
-            self.leafs.swap_remove(idx);
-        }
-        self.leafs.push(childs.0);
-        self.leafs.push(childs.1);
     }
     fn update_metadata(&mut self, split:(usize, usize, f32), childs:(usize, usize)) {
         let node = &mut self.nodes[split.0];
