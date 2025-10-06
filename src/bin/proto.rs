@@ -80,13 +80,13 @@ impl DecisionTree {
     }
     fn find_partition(&mut self) -> ((usize, usize, f32), (usize, usize, usize)) {
         let nodes = self.nodes.len();
-        let yindex = self.dims + 1;
+        let yindex = self.dims;
         let (mut ancestor, mut dimension) = (usize::MAX, usize::MAX);
         let (mut delta, mut partition) = (0_f32, 0_f32);
         // if iterate over leaves becomes worse could use hashmap but doesn't appear great
         let mut runnings:Vec<Metadata> = (0..nodes).map( |idx| {
             let parent = &self.metadata[idx];
-            Metadata::default(parent.dim, parent.offset)
+            Metadata::empty_from(parent.dim, parent.offset)
         }).collect();
         let mut target = Metadata { 
             card:usize::MAX,
@@ -106,17 +106,17 @@ impl DecisionTree {
                 if del < delta { continue; }
                 ancestor = node;
                 dimension = d;
-                delta = delta;
+                delta = del;
                 partition = dval;
                 target = runnings[node].clone();
             }
         }
         let mut parent = self.metadata[ancestor];
-        let compliment = parent.derive_compliment(&target);
+        let complement = parent.derive_complement(&target);
         self.metadata.push(target);
-        self.metadata.push(compliment);
+        self.metadata.push(complement);
         let left_node = Node { prediction: target.predict(), partition: None };
-        let right_node = Node { prediction: compliment.predict(), partition: None };
+        let right_node = Node { prediction: complement.predict(), partition: None };
         self.nodes.push(left_node);
         self.nodes.push(right_node);
         let split = (
@@ -126,7 +126,7 @@ impl DecisionTree {
         );
         let range = (
             parent.offset,  
-            parent.offset + target.offset,
+            parent.offset + target.card,
             parent.offset + parent.card
         );
         (split, range)
@@ -189,7 +189,7 @@ impl DecisionTree {
 
 impl Metadata {
     // Contains information for splitting criterions
-    fn default(dim:usize, offset:usize) -> Self {
+    fn empty_from(dim:usize, offset:usize) -> Self {
         Self {
             dim:dim,
             offset: offset,
@@ -229,7 +229,7 @@ impl Metadata {
             sum_squares
         }
     }
-    fn derive_compliment(&mut self, target:&Self) -> Self {
+    fn derive_complement(&self, target:&Self) -> Self {
         Self {
             dim:self.dim,
             offset:target.offset + target.card,
