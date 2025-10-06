@@ -167,6 +167,13 @@ impl DecisionTree {
                     lidx += 1;
                 }
             }
+            // remove the ancestor from the item
+            let mut lidx = usize::MAX;
+            for i in 0..leafs {
+                if self.leafs[i] == current_idx { lidx = i; break; }
+            }
+            self.leafs.swap_remove(lidx);
+
             self.features[d][current.offset..current.offset+current.card].copy_from_slice(&buffer);
         }
         let right_meta = self.metadata[current_idx].derive_right(&left_meta);
