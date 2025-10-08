@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 pub struct DecisionTree <'a> {
     data: &'a Vec<Vec<f32>>, // feature major form, individual observations are columns
     dims: usize,         // number of dims
@@ -7,15 +9,9 @@ pub struct DecisionTree <'a> {
     metadata: Vec<Metadata>,
     dimensions: Vec<Vec<usize>>, // idx sorted by dimension
 }
-
-// TODO: implement this, and then test return this from train, also add a like step through the
-// vec<metadata> which computes the like increase in 1- total variance explained per step, for easy
-// visualization, will help debugging 
-
-
 pub struct DecisionTreeModel {
-    nodes: Vec<Node>,
-    metadata: Vec<Metadata>,
+    pub nodes: Vec<Node>,
+    pub metadata: Vec<Metadata>,
 }
 #[derive(Clone, Copy)]
 pub struct Node {
@@ -30,9 +26,9 @@ struct Partition {
     right: usize, // split right x > value
 }
 #[derive(Clone, Copy)]
-struct Metadata {
+pub struct Metadata {
     // minimal
-    dim: usize,
+    pub dim: usize,
     // descriptives
     offset: usize,
     card: usize,
@@ -51,6 +47,32 @@ impl DecisionTreeModel {
             }
         }
         node.prediction
+    }
+    pub fn analyze_gains(&self) -> Vec<f32> {
+        let nodes = self.metadata.len();
+        let mut reductions = Vec::with_capacity(nodes);
+        let mut queue = VecDeque::from([0]);
+        
+        while let Some(idx) = queue.pop_front() {
+            if let Some(p) = self.nodes[idx].partition {
+                let delta = self.metadata[idx].sse() - self.metadata[p.left].sse() - self.metadata[p.right].sse();
+                reductions.push(delta);
+                queue.push_back(p.left);
+                queue.push_back(p.right);
+            }
+        }
+        reductions
+    }
+    pub fn analyze_variance(&self) -> Vec<f32> {
+        let total_sse = self.metadata[0].sse();
+        let gains = self.analyze_gains();
+        let mut cumulative = 0_f32;
+
+        for g in &gains {
+            cumulative += g;
+            println!("Variance Explained: {:3}%", 100f32 * cumulative / total_sse);
+        }
+        gains
     }
 }
 
@@ -214,6 +236,9 @@ impl <'a> DecisionTree <'a> {
 }
 
 impl Metadata {
+    pub fn sse(&self) -> f32 {
+        self.sum_squares - self.sum_linear * self.sum_linear / self.card as f32
+    }
     // Contains information for splitting criterions
     fn empty_from(dim: usize, offset: usize) -> Self {
         Self {

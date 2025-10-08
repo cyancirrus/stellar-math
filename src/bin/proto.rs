@@ -59,6 +59,9 @@ fn see_if_decision_tree_trains() -> DecisionTreeModel {
     println!("input_data {test:?}");
     let prediction = model.predict(&test);
     println!("prediction {prediction:?}");
+
+    println!("analyzing variance");
+    model.analyze_variance();
     model
 }
 
