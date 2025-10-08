@@ -1,7 +1,5 @@
-// current work in progressshould not be public yet
-
-struct DecisionTree {
-    data: Vec<Vec<f32>>, // feature major form, individual observations are columns
+pub struct DecisionTree <'a> {
+    data: &'a Vec<Vec<f32>>, // feature major form, individual observations are columns
     dims: usize,         // number of dims
     card: usize,
     assign: Vec<usize>, // idx -> node
@@ -9,17 +7,28 @@ struct DecisionTree {
     metadata: Vec<Metadata>,
     dimensions: Vec<Vec<usize>>, // idx sorted by dimension
 }
-struct Node {
+
+// TODO: implement this, and then test return this from train, also add a like step through the
+// vec<metadata> which computes the like increase in 1- total variance explained per step, for easy
+// visualization, will help debugging 
+
+
+pub struct DecisionTreeModel {
+    nodes: Vec<Node>,
+    metadata: Vec<Metadata>,
+}
+#[derive(Clone, Copy)]
+pub struct Node {
     prediction: f32,
     partition: Option<Partition>,
 }
+#[derive(Clone, Copy)]
 struct Partition {
     dim: usize,   // dimension to consider
     value: f32,   // value of dimension
     left: usize,  // split left x <= value
     right: usize, // split right x > value
 }
-
 #[derive(Clone, Copy)]
 struct Metadata {
     // minimal
@@ -31,15 +40,15 @@ struct Metadata {
     sum_squares: f32, // Sum y * y;
 }
 
-impl DecisionTree {
-    fn new(data: Vec<Vec<f32>>) -> Self {
+impl <'a> DecisionTree <'a> {
+    pub fn new(data: &'a Vec<Vec<f32>>) -> Self {
         if data.is_empty() || data[0].is_empty() {
             panic!("data is empty");
         }
         let label = data.len();
         let dims = label - 1;
         let card = data[0].len();
-        let assign: Vec<usize> = (0..card).collect();
+        let assign: Vec<usize> = vec![0;card];
         let mut buffer: Vec<usize> = (0..card).collect();
         let mut dimensions = Vec::with_capacity(dims);
         let metadata = Metadata::derive(&data);
@@ -62,20 +71,26 @@ impl DecisionTree {
             dimensions,
         }
     }
-    fn train(&mut self, nodes: usize) {
+    pub fn train(&mut self, nodes: usize) -> DecisionTreeModel {
         for _ in 0..nodes {
+            println!("hello");
             self.split();
         }
+        DecisionTreeModel { nodes: self.nodes.clone(), metadata: self.metadata.clone() }
     }
     fn split(&mut self) {
         let childs = (self.nodes.len(), self.nodes.len() + 1);
         let (split, range) = self.find_partition();
         self.update_assignment(split.1, childs, range);
+        println!("update assignemnt");
         self.sort_dimensions(split.1, childs, range);
+        println!("update_dimensions");
         self.update_metadata(split, childs);
+        println!("update_metadata");
     }
     fn find_partition(&mut self) -> ((usize, usize, f32), (usize, usize, usize)) {
         let nodes = self.nodes.len();
+        println!("nodes {nodes:?}");
         let yindex = self.dims;
         let (mut ancestor, mut dimension) = (usize::MAX, usize::MAX);
         let (mut delta, mut partition) = (0_f32, 0_f32);
@@ -93,17 +108,26 @@ impl DecisionTree {
             sum_linear: f32::MAX,
             sum_squares: f32::MAX,
         };
+        println!("y_index {}", yindex);
         let output = &self.data[yindex];
+        println!("after");
         for d in 0..self.dims {
+            println!("dimension loop {d}");
+            for node in &mut runnings { node.reset(); }
             let dval = &self.data[d];
             for &idx in &self.dimensions[d] {
                 let node = self.assign[idx];
                 let (dval, yval) = (dval[idx], output[idx]);
                 runnings[node].increment(yval);
+                // println!("node {node:}");
+                // println!("there");
                 let del = self.metadata[node].delta(&runnings[node]);
+                // println!("this?");
                 if del < delta {
+                    // println!("no like gain");
                     continue;
                 }
+                // println!("gain");
                 ancestor = node;
                 dimension = d;
                 delta = del;
@@ -188,7 +212,7 @@ impl DecisionTree {
             right: childs.1,
         });
     }
-    fn predict(&self, data: Vec<f32>) -> f32 {
+    pub fn predict(&self, data: Vec<f32>) -> f32 {
         let mut node = &self.nodes[0];
         while let Some(partition) = &node.partition {
             if data[partition.dim] < partition.value {
@@ -212,13 +236,18 @@ impl Metadata {
             sum_squares: 0_f32, // Sum y * y;
         }
     }
+    fn reset(&mut self) {
+        self.card = 0;
+        self.sum_linear = 0_f32;
+        self.sum_squares = 0_f32;
+    }
     fn delta(&self, running: &Self) -> f32 {
+        if self.card == 0 || running.card == 0 || self.card  == running.card { return 0_f32 };
         let (card, l_card, r_card) = (
             self.card as f32,
             running.card as f32,
             (self.card - running.card) as f32,
         );
-
         let sse_curr = self.sum_squares - self.sum_linear * self.sum_linear / card;
         let sse_left = running.sum_squares - running.sum_linear * running.sum_linear / l_card;
         let sse_right = (self.sum_squares - running.sum_squares)
