@@ -1,3 +1,4 @@
-pub mod decision_tree;
-pub mod random_forest;
 pub mod knn;
+pub mod decision_tree;
+pub mod gradient_boost;
+pub mod random_forest;

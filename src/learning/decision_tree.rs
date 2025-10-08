@@ -205,9 +205,7 @@ impl <'a> DecisionTree <'a> {
         childs: (usize, usize),
         range: (usize, usize, usize),
     ) {
-        println!("in here");
         let (start, split, end) = range;
-        println!("start : {start}, split {split}, end {end}");
         // update assignments for nodes
         for idx in start..end {
             let nidx = self.dimensions[dim][idx];
