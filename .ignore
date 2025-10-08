@@ -1,2 +1,4 @@
 tests/*
+# ignore backup files used in debugging
 *.bu
+*_bu.rs

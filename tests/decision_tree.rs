@@ -18,9 +18,7 @@ mod decision_tree {
         let headers = rdr.headers().unwrap().clone();
         let n_cols = headers.len();
 
-        // We'll collect columns (feature-major layout)
         let mut data: Vec<Vec<f32>> = vec![Vec::new(); n_cols];
-
         for result in rdr.records() {
             let record = result.unwrap();
             for (i, field) in record.iter().enumerate() {
@@ -28,20 +26,16 @@ mod decision_tree {
                 data[i].push(val);
             }
         }
-
-        println!("Loaded {} columns × {} rows", n_cols, data[0].len());
-        println!("First column {:?} -> {:?}", headers, &data[0][0..5.min(data[0].len())]);
         data
     }
- 
     #[test]
     fn boston_tree_basic_test() {
         // Load data
         let data = read_boston_data();
-        let mut dt = DecisionTree::new(&data);
+        let mut dt = DecisionTree::new(&data, 1_f32, 1_f32);
 
         // Train tree
-        let model = dt.train(8);
+        let model:DecisionTreeModel = dt.train(8);
 
         // Check dimensions
         assert_eq!(data.len(), model.metadata[0].dim + 1, "Number of columns mismatch");
@@ -56,6 +50,22 @@ mod decision_tree {
         let gains = model.analyze_gains();
         for &g in &gains { assert!(g >= 0.0, "Negative variance gain found"); }
 
+        let total_sse = model.metadata[0].sse();
+        let cumulative: f32 = gains.iter().sum();
+        println!("cumulative {cumulative}, total_sse {total_sse}");
+        assert!(cumulative <= total_sse, "Cumulative variance gain exceeds total SSE");
+        assert!(cumulative / total_sse > 0.65, "Total Explained Variance too low -> degredation");
+        assert!(cumulative / total_sse < 0.98, "Total Explained Variance too high to be realistic");
+    }
+    #[test]
+    fn decision_tree_subsample() {
+        // Load data
+        let data = read_boston_data();
+        let mut dt = DecisionTree::new(&data, 0.8, 0.8);
+        let model:DecisionTreeModel = dt.train(8);
+        // Test variance analysis
+        let gains = model.analyze_gains();
+        for &g in &gains { assert!(g >= 0.0, "Negative variance gain found"); }
         let total_sse = model.metadata[0].sse();
         let cumulative: f32 = gains.iter().sum();
         println!("cumulative {cumulative}, total_sse {total_sse}");
