@@ -7,6 +7,7 @@ use std::fs::File;
 
 // TODO: implement the smarter sum for SSE via kahan summation
 // TODO: implement smarter givens bulge chasing which only updates bidiagonals
+// TODO: keep buffer for decision tree as it's reused a bit
 
 fn read_boston_data() -> Vec<Vec<f32>> {
     let file = File::open("test_data/boston_housing.csv").unwrap();
