@@ -50,7 +50,7 @@ fn read_boston_data() -> Vec<Vec<f32>> {
 fn see_if_decision_tree_trains() {
     let data = read_boston_data();
     let mut dt = DecisionTree::new(&data);
-    let model = dt.train(1);
+    let model = dt.train(3);
     // let len = data.len();
     // let mut test = vec![0_f32; len];
     // for i in 0..len {

@@ -73,7 +73,6 @@ impl <'a> DecisionTree <'a> {
     }
     pub fn train(&mut self, nodes: usize) -> DecisionTreeModel {
         for _ in 0..nodes {
-            println!("hello");
             self.split();
         }
         DecisionTreeModel { nodes: self.nodes.clone(), metadata: self.metadata.clone() }
