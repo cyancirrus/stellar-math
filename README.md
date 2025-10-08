@@ -67,6 +67,14 @@ open -a firefox flamegraph.svg
 
 ---
 
+## Examples
+
+``` bash
+cargo run --example trees
+```
+
+---
+
 ## Feedback
 
 I’m especially interested in feedback on:

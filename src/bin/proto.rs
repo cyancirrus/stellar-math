@@ -114,10 +114,10 @@ fn checking_gradient_model() -> GradientBoost {
 
 
 fn main() {
-    checking_decision_model();
-    println!("--------------------------------------");
-    checking_forest_model();
-    println!("--------------------------------------");
-    checking_gradient_model();
-    println!("--------------------------------------");
+    // checking_decision_model();
+    // println!("--------------------------------------");
+    // checking_forest_model();
+    // println!("--------------------------------------");
+    // checking_gradient_model();
+    // println!("--------------------------------------");
 }
