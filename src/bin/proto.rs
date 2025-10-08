@@ -46,20 +46,20 @@ fn read_boston_data() -> Vec<Vec<f32>> {
     data
 }
 
-// fn see_if_decision_tree_trains() -> DecisionTreeModel {
-fn see_if_decision_tree_trains() {
+fn see_if_decision_tree_trains() -> DecisionTreeModel {
     let data = read_boston_data();
     let mut dt = DecisionTree::new(&data);
-    let model = dt.train(3);
-    // let len = data.len();
-    // let mut test = vec![0_f32; len];
-    // for i in 0..len {
-    //     test[i] = data[i][0];
-    // }
-    // println!("input_data {test:?}");
-    // let prediction = dt.predict(test);
-    // println!("prediction {prediction:?}");
-    // model
+    let model = dt.train(8);
+    let len = data.len();
+    let mut test = vec![0_f32; len];
+    let idx = 32;
+    for i in 0..len {
+        test[i] = data[i][idx];
+    }
+    println!("input_data {test:?}");
+    let prediction = model.predict(&test);
+    println!("prediction {prediction:?}");
+    model
 }
 
 

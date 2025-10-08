@@ -40,6 +40,20 @@ struct Metadata {
     sum_squares: f32, // Sum y * y;
 }
 
+impl DecisionTreeModel {
+    pub fn predict(&self, data: &[f32]) -> f32 {
+        let mut node = &self.nodes[0];
+        while let Some(partition) = &node.partition {
+            if data[partition.dim] < partition.value {
+                node = &self.nodes[partition.left];
+            } else {
+                node = &self.nodes[partition.right];
+            }
+        }
+        node.prediction
+    }
+}
+
 impl <'a> DecisionTree <'a> {
     pub fn new(data: &'a Vec<Vec<f32>>) -> Self {
         if data.is_empty() || data[0].is_empty() {
@@ -88,7 +102,7 @@ impl <'a> DecisionTree <'a> {
         let nodes = self.nodes.len();
         let yindex = self.dims;
         let (mut ancestor, mut dimension) = (usize::MAX, usize::MAX);
-        let (mut delta, mut partition) = (0_f32, 0_f32);
+        let (mut delta, mut partition) = (f32::NEG_INFINITY, f32::NEG_INFINITY);
         let mut runnings: Vec<Metadata> = (0..nodes)
             .map(|idx| {
                 let parent = &self.metadata[idx];
@@ -196,17 +210,6 @@ impl <'a> DecisionTree <'a> {
             left: childs.0,
             right: childs.1,
         });
-    }
-    pub fn predict(&self, data: Vec<f32>) -> f32 {
-        let mut node = &self.nodes[0];
-        while let Some(partition) = &node.partition {
-            if data[partition.dim] < partition.value {
-                node = &self.nodes[partition.left];
-            } else {
-                node = &self.nodes[partition.right];
-            }
-        }
-        node.prediction
     }
 }
 
