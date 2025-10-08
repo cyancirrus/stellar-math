@@ -1,8 +1,5 @@
 #![allow(dead_code)]
-use stellar::learning::decision_tree::{
-    DecisionTree,
-    DecisionTreeModel
-};
+use stellar::learning::decision_tree::{DecisionTree, DecisionTreeModel};
 use stellar::learning::gradient_boost::GradientBoost;
 use stellar::learning::random_forest::RandomForest;
 // reading : https://en.wikipedia.org/wiki/Schur_complement
@@ -14,12 +11,12 @@ use stellar::learning::random_forest::RandomForest;
 
 // TODO: implement this, and then test return this from train, also add a like step through the
 // vec<metadata> which computes the like increase in 1- total variance explained per step, for easy
-// visualization, will help debugging 
+// visualization, will help debugging
 // #![allow(dead_code)]
 
+use csv::ReaderBuilder;
 use std::error::Error;
 use std::fs::File;
-use csv::ReaderBuilder;
 // #[cfg(target_arch = "x86_64")]
 
 // reading : https://en.wikipedia.org/wiki/Schur_complement
@@ -31,13 +28,11 @@ use csv::ReaderBuilder;
 
 // TODO: implement this, and then test return this from train, also add a like step through the
 // vec<metadata> which computes the like increase in 1- total variance explained per step, for easy
-// visualization, will help debugging 
+// visualization, will help debugging
 
 fn read_boston_data() -> Vec<Vec<f32>> {
     let file = File::open("test_data/boston_housing.csv").unwrap();
-    let mut rdr = ReaderBuilder::new()
-        .has_headers(true)
-        .from_reader(file);
+    let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
 
     // Read header to know number of columns
     let headers = rdr.headers().unwrap().clone();
@@ -78,7 +73,6 @@ fn checking_decision_model() -> DecisionTreeModel {
     model
 }
 
-
 fn checking_forest_model() -> RandomForest {
     println!("Random Forest");
     let data = read_boston_data();
@@ -111,7 +105,6 @@ fn checking_gradient_model() -> GradientBoost {
     println!("prediction {prediction:?}");
     gradient
 }
-
 
 fn main() {
     // checking_decision_model();

@@ -1,11 +1,11 @@
-use std::collections::VecDeque;
-use rand::Rng;
 use rand::seq::SliceRandom;
+use rand::Rng;
+use std::collections::VecDeque;
 
-pub struct DecisionTree <'a> {
+pub struct DecisionTree<'a> {
     data: &'a Vec<Vec<f32>>, // feature major form, individual observations are columns
-    sample: (usize, usize), // observation sample, dimension sample
-    dims: usize,         // number of dims
+    sample: (usize, usize),  // observation sample, dimension sample
+    dims: usize,             // number of dims
     card: usize,
     assign: Vec<usize>, // idx -> node
     nodes: Vec<Node>,
@@ -55,10 +55,12 @@ impl DecisionTreeModel {
         let nodes = self.metadata.len();
         let mut reductions = Vec::with_capacity(nodes);
         let mut queue = VecDeque::from([0]);
-        
+
         while let Some(idx) = queue.pop_front() {
             if let Some(p) = self.nodes[idx].partition {
-                let delta = self.metadata[idx].sse() - self.metadata[p.left].sse() - self.metadata[p.right].sse();
+                let delta = self.metadata[idx].sse()
+                    - self.metadata[p.left].sse()
+                    - self.metadata[p.right].sse();
                 reductions.push(delta);
                 queue.push_back(p.left);
                 queue.push_back(p.right);
@@ -79,8 +81,8 @@ impl DecisionTreeModel {
     }
 }
 
-impl <'a> DecisionTree <'a> {
-    pub fn new(data: &'a Vec<Vec<f32>>, obs_sample:f32, dim_sample:f32) -> Self {
+impl<'a> DecisionTree<'a> {
+    pub fn new(data: &'a Vec<Vec<f32>>, obs_sample: f32, dim_sample: f32) -> Self {
         if data.is_empty() || data[0].is_empty() {
             panic!("data is empty");
         }
@@ -90,14 +92,16 @@ impl <'a> DecisionTree <'a> {
         let label = data.len();
         let dims = label - 1;
         let n_rows = data[0].len();
-        // let mut rng = rand::rng();
         let mut rng = rand::rng();
         let mut buffer: Vec<usize> = (0..n_rows).collect();
-        let sample = ((obs_sample * n_rows as f32 + 1_f32) as usize, (dim_sample * dims as f32 + 1f32) as usize);
+        let sample = (
+            (obs_sample * n_rows as f32 + 1_f32) as usize,
+            (dim_sample * dims as f32 + 1f32) as usize,
+        );
         buffer.shuffle(&mut rng);
         buffer.truncate(sample.0);
-        let card = buffer.len(); 
-        let assign: Vec<usize> = vec![0;n_rows];
+        let card = buffer.len();
+        let assign: Vec<usize> = vec![0; n_rows];
         let mut dimensions = Vec::with_capacity(dims);
         let metadata = Metadata::derive(&buffer, &data);
         let node = Node {
@@ -124,7 +128,10 @@ impl <'a> DecisionTree <'a> {
         for _ in 0..nodes {
             self.split();
         }
-        DecisionTreeModel { nodes: self.nodes.clone(), metadata: self.metadata.clone() }
+        DecisionTreeModel {
+            nodes: self.nodes.clone(),
+            metadata: self.metadata.clone(),
+        }
     }
     fn split(&mut self) {
         let childs = (self.nodes.len(), self.nodes.len() + 1);
@@ -144,7 +151,7 @@ impl <'a> DecisionTree <'a> {
         let mut dims: Vec<usize> = (0..self.dims).collect();
         dims.shuffle(&mut rng);
         dims.truncate(self.sample.1);
-        
+
         let mut runnings: Vec<Metadata> = (0..nodes)
             .map(|idx| {
                 let parent = &self.metadata[idx];
@@ -160,7 +167,9 @@ impl <'a> DecisionTree <'a> {
         };
         let output = &self.data[yindex];
         for d in dims {
-            for node in &mut runnings { node.reset(); }
+            for node in &mut runnings {
+                node.reset();
+            }
             let dval = &self.data[d];
             for &idx in &self.dimensions[d] {
                 let node = self.assign[idx];
@@ -225,7 +234,9 @@ impl <'a> DecisionTree <'a> {
         let (start, split, end) = range;
         let mut buffer = vec![usize::MAX; end - start];
         for d in 0..self.dims {
-            if d == dim { continue; }
+            if d == dim {
+                continue;
+            }
             let (mut lidx, mut ridx) = (0, split - start);
             let dimension = &self.dimensions[d];
             for idx in start..end {
@@ -274,7 +285,9 @@ impl Metadata {
         self.sum_squares = 0_f32;
     }
     fn delta(&self, running: &Self) -> f32 {
-        if self.card == 0 || running.card == 0 || self.card  == running.card { return 0_f32 };
+        if self.card == 0 || running.card == 0 || self.card == running.card {
+            return 0_f32;
+        };
         let (card, l_card, r_card) = (
             self.card as f32,
             running.card as f32,
@@ -293,7 +306,7 @@ impl Metadata {
         self.sum_linear += output;
         self.sum_squares += output * output;
     }
-    fn derive(include:&[usize], data: &Vec<Vec<f32>>) -> Self {
+    fn derive(include: &[usize], data: &Vec<Vec<f32>>) -> Self {
         if data.is_empty() || data[0].is_empty() {
             panic!("data is empty");
         }
