@@ -30,7 +30,7 @@ impl RandomForest {
     fn predict(&self, data:&[f32]) -> f32 {
         let mut cumulative = 0_f32;
         for tree in &self.forest {
-            cumulative = tree.predict(data);
+            cumulative += tree.predict(data);
         }
         cumulative / self.trees as f32
     }
