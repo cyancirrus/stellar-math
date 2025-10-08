@@ -2,6 +2,9 @@ use rand::seq::SliceRandom;
 use rand::Rng;
 use std::collections::VecDeque;
 
+// TODO: Implement Kahan Summation
+// reference : https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+
 pub struct DecisionTree<'a> {
     data: &'a Vec<Vec<f32>>, // feature major form, individual observations are columns
     sample: (usize, usize),  // observation sample, dimension sample

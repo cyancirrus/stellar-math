@@ -2,33 +2,11 @@
 use stellar::learning::decision_tree::{DecisionTree, DecisionTreeModel};
 use stellar::learning::gradient_boost::GradientBoost;
 use stellar::learning::random_forest::RandomForest;
-// reading : https://en.wikipedia.org/wiki/Schur_complement
-// when writing article write something about recursive / iterative defns and which info is
-// available, ie why need to reverse iteration on QR
-
-// move code into examples directory
-// cargo run --example demo
-
-// TODO: implement this, and then test return this from train, also add a like step through the
-// vec<metadata> which computes the like increase in 1- total variance explained per step, for easy
-// visualization, will help debugging
-// #![allow(dead_code)]
-
 use csv::ReaderBuilder;
-use std::error::Error;
 use std::fs::File;
-// #[cfg(target_arch = "x86_64")]
 
-// reading : https://en.wikipedia.org/wiki/Schur_complement
-// when writing article write something about recursive / iterative defns and which info is
-// available, ie why need to reverse iteration on QR
-
-// move code into examples directory
-// cargo run --example demo
-
-// TODO: implement this, and then test return this from train, also add a like step through the
-// vec<metadata> which computes the like increase in 1- total variance explained per step, for easy
-// visualization, will help debugging
+// TODO: implement the smarter sum for SSE via kahan summation
+// TODO: implement smarter givens bulge chasing which only updates bidiagonals
 
 fn read_boston_data() -> Vec<Vec<f32>> {
     let file = File::open("test_data/boston_housing.csv").unwrap();
@@ -107,10 +85,10 @@ fn checking_gradient_model() -> GradientBoost {
 }
 
 fn main() {
-    // checking_decision_model();
-    // println!("--------------------------------------");
-    // checking_forest_model();
-    // println!("--------------------------------------");
-    // checking_gradient_model();
-    // println!("--------------------------------------");
+    checking_decision_model();
+    println!("--------------------------------------");
+    checking_forest_model();
+    println!("--------------------------------------");
+    checking_gradient_model();
+    println!("--------------------------------------");
 }
