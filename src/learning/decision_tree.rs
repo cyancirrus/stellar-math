@@ -82,19 +82,14 @@ impl <'a> DecisionTree <'a> {
         let childs = (self.nodes.len(), self.nodes.len() + 1);
         let (split, range) = self.find_partition();
         self.update_assignment(split.1, childs, range);
-        println!("update assignemnt");
         self.sort_dimensions(split.1, childs, range);
-        println!("update_dimensions");
         self.update_metadata(split, childs);
-        println!("update_metadata");
     }
     fn find_partition(&mut self) -> ((usize, usize, f32), (usize, usize, usize)) {
         let nodes = self.nodes.len();
-        println!("nodes {nodes:?}");
         let yindex = self.dims;
         let (mut ancestor, mut dimension) = (usize::MAX, usize::MAX);
         let (mut delta, mut partition) = (0_f32, 0_f32);
-        // if iterate over leaves becomes worse could use hashmap but doesn't appear great
         let mut runnings: Vec<Metadata> = (0..nodes)
             .map(|idx| {
                 let parent = &self.metadata[idx];
@@ -108,26 +103,19 @@ impl <'a> DecisionTree <'a> {
             sum_linear: f32::MAX,
             sum_squares: f32::MAX,
         };
-        println!("y_index {}", yindex);
         let output = &self.data[yindex];
-        println!("after");
         for d in 0..self.dims {
-            println!("dimension loop {d}");
-            // for node in &mut runnings { node.reset(); }
+            // need to reset the runnings for the considered dimension
+            for node in &mut runnings { node.reset(); }
             let dval = &self.data[d];
             for &idx in &self.dimensions[d] {
                 let node = self.assign[idx];
                 let (dval, yval) = (dval[idx], output[idx]);
                 runnings[node].increment(yval);
-                // println!("node {node:}");
-                // println!("there");
                 let del = self.metadata[node].delta(&runnings[node]);
-                // println!("this?");
                 if del < delta {
-                    // println!("no like gain");
                     continue;
                 }
-                // println!("gain");
                 ancestor = node;
                 dimension = d;
                 delta = del;
@@ -181,12 +169,10 @@ impl <'a> DecisionTree <'a> {
         range: (usize, usize, usize),
     ) {
         let (start, split, end) = range;
-        let (mut lidx, mut ridx) = (0, split - start);
         let mut buffer = vec![usize::MAX; end - start];
         for d in 0..self.dims {
-            if d == dim {
-                continue;
-            }
+            if d == dim { continue; }
+            let (mut lidx, mut ridx) = (0, split - start);
             let dimension = &self.dimensions[d];
             for idx in start..end {
                 let feature = dimension[idx];
