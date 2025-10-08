@@ -113,7 +113,7 @@ impl <'a> DecisionTree <'a> {
         println!("after");
         for d in 0..self.dims {
             println!("dimension loop {d}");
-            for node in &mut runnings { node.reset(); }
+            // for node in &mut runnings { node.reset(); }
             let dval = &self.data[d];
             for &idx in &self.dimensions[d] {
                 let node = self.assign[idx];
