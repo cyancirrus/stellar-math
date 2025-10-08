@@ -1,19 +1,7 @@
-#![allow(dead_code)]
-use stellar::learning::decision_tree::{
+use crate::learning::decision_tree::{
     DecisionTree,
     DecisionTreeModel
 }; 
-// reading : https://en.wikipedia.org/wiki/Schur_complement
-// when writing article write something about recursive / iterative defns and which info is
-// available, ie why need to reverse iteration on QR
-
-// move code into examples directory
-// cargo run --example demo
-
-// TODO: implement this, and then test return this from train, also add a like step through the
-// vec<metadata> which computes the like increase in 1- total variance explained per step, for easy
-// visualization, will help debugging 
-
 struct RandomForest {
     trees: usize,
     forest: Vec<DecisionTreeModel>,
@@ -34,8 +22,4 @@ impl RandomForest {
         }
         cumulative / self.trees as f32
     }
-}
-
-
-fn main() {
 }
