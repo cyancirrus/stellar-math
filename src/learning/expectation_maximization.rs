@@ -2,18 +2,15 @@
 use rand::Rng;
 use rand::rngs::ThreadRng;
 use rand::distr::StandardUniform;
-use stellar::decomposition::lu::{lu_decompose, LuDecomposition};
-use stellar::random::generation::{generate_random_matrix, generate_random_vector, generate_zero_matrix};
-use stellar::algebra::vector::dot_product;
-use stellar::structure::ndarray::NdArray;
-
-
-// TODO: implement the smarter sum for SSE via kahan summation
-// TODO: implement smarter givens bulge chasing which only updates bidiagonals
-// TODO: keep buffer for decision tree as it's reused a bit
+use crate::decomposition::lu::{lu_decompose, LuDecomposition};
+use crate::random::generation::{generate_random_matrix, generate_random_vector, generate_zero_matrix};
+use crate::algebra::vector::dot_product;
+use crate::structure::ndarray::NdArray;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
 const EPSILON: f32 = 1e-6;
+
+// NOTE: NOT PRODUCTION READY OR TESTED
 
 struct GaussianMixtureModel {
     centroids:usize,
@@ -120,7 +117,4 @@ impl GaussianMixtureModel {
             prev = self.means.clone();
         }
     }
-}
-
-fn main() {
 }

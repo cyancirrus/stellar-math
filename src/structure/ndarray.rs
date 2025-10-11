@@ -19,6 +19,9 @@ impl NdArray {
     pub fn card(&self) -> usize {
         self.data.len()
     }
+    pub fn clear(&mut self) {
+        self.data = vec![0_f32; self.data.len()];
+    }
     pub fn diff(&mut self, other: Self) {
         debug_assert!(other.dims() == self.dims());
         for idx in 0..self.card() {

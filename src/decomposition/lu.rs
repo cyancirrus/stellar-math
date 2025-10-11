@@ -12,6 +12,17 @@ pub struct LuDecomposition {
 }
 
 impl LuDecomposition {
+    pub fn find_determinant(&self) -> f32 {
+        // |A B| = |A| |B|
+        // = diag |A| diag |B|
+        // = diag |B|
+        let n = self.matrix.dims[0];
+        let mut det = 1_f32;
+        for i in 0..n {
+            det *= self.matrix.data[i * n + i];
+        }
+        det
+    }
     // for matrices
     pub fn left_apply_l(&self, target: &mut NdArray) {
         // LA = Output
@@ -140,7 +151,7 @@ impl LuDecomposition {
 
 impl LuDecomposition {
     // Ax = y;
-    // LuDecompositionx = y;
+    // LuDecomposition*x = y;
     // Lz = y -> z;
     // Ux = z -> x;
     // => x
@@ -166,16 +177,6 @@ impl LuDecomposition {
             }
         }
     }
-    pub fn forward_solve_inplace_vec(&self, y: &mut [f32]) {
-        // transforms y -> z
-        debug_assert_eq!(self.matrix.dims[1], y.len());
-        let cols = self.matrix.dims[1];
-        for i in 0..cols {
-            for k in 0..i {
-                y[i] -= self.matrix.data[i * cols + k] * y[k]
-            }
-        }
-    }
     pub fn backward_solve_inplace(&self, z: &mut NdArray) {
         // transforms y -> z
         debug_assert_eq!(self.matrix.dims[1], z.dims[0]);
@@ -187,6 +188,16 @@ impl LuDecomposition {
                     z.data[i * tcols + j] -= self.matrix.data[i * cols + k] * z.data[k * tcols + j];
                 }
                 z.data[i * cols + j] /= self.matrix.data[i * cols + i];
+            }
+        }
+    }
+    pub fn forward_solve_inplace_vec(&self, y: &mut [f32]) {
+        // transforms y -> z
+        debug_assert_eq!(self.matrix.dims[1], y.len());
+        let cols = self.matrix.dims[1];
+        for i in 0..cols {
+            for k in 0..i {
+                y[i] -= self.matrix.data[i * cols + k] * y[k]
             }
         }
     }

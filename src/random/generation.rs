@@ -8,6 +8,13 @@ use rand_distr::StandardNormal;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
 
+pub fn generate_zero_matrix(m: usize, n: usize) -> NdArray {
+    NdArray {
+        dims: vec![m, n],
+        data :vec![0.0_f32; m * n],
+    }
+}
+
 pub fn generate_random_matrix(m: usize, n: usize) -> NdArray {
     let mut rng = rand::rng();
     let mut data = vec![0.0_f32; m * n];
