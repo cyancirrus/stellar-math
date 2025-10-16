@@ -1,17 +1,7 @@
-#![allow(dead_code)]
 use rand::Rng;
 use rand::rngs::ThreadRng;
 use rand::distr::StandardUniform;
-use stellar::decomposition::lu::{lu_decompose, LuDecomposition};
-use stellar::random::generation::{generate_random_matrix, generate_random_vector, generate_zero_matrix};
-use stellar::algebra::vector::dot_product;
-use stellar::structure::ndarray::NdArray;
-use rand_distr::StandardNormal;
-
-use stellar::learning::expectation_maximization::GaussianMixtureModel; 
-// TODO: implement the smarter sum for SSE via kahan summation
-// TODO: implement smarter givens bulge chasing which only updates bidiagonals
-// TODO: keep buffer for decision tree as it's reused a bit
+// use rand_distr::StandardNormal;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
 const EPSILON: f32 = 1e-3;
@@ -90,11 +80,4 @@ impl Kmeans {
             prev = self.means.clone();
         }
     }
-}
-
-
-fn main() {
-    // TODO: Check examples/gmm.rs
-    // test_gmm_2d();
-    // test_gmm_3d();
 }
