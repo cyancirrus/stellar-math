@@ -2,8 +2,7 @@ use rand::Rng;
 use rand_distr::StandardNormal;
 
 use itertools::Itertools;
-use stellar::learning::expectation_maximization::GaussianMixtureModel; 
-use stellar::learning::kmeans::Kmeans; 
+use stellar::learning::gaussian_mixture::{GaussianMixtureModel, kmeans_gmm_pipeline}; 
 // TODO: implement the smarter sum for SSE via kahan summation
 // TODO: implement smarter givens bulge chasing which only updates bidiagonals
 // TODO: keep buffer for decision tree as it's reused a bit
@@ -19,7 +18,6 @@ fn sample_gaussian_diag(mean: &[f32], var_diag: &[f32], rng: &mut impl Rng) -> V
     sample
 
 }
-
 
 fn generate_gmm_data(
     weights: &[f32],
@@ -97,30 +95,30 @@ fn test_gmm_3d() {
     println!("Mean error {:?}", error);
 }
 
-// fn test_gmm_3d() {
-//     // known parameters
-//     let weights = vec![0.3, 0.3, 0.4];
-//     let means = vec![
-//         vec![0.0, 0.0, -1.0],
-//         vec![3.0, 2.0, 3.0],
-//         vec![1.0, -1.0, 0.0],
-//     ];
-//     let covs = vec![
-//         vec![0.5, 0.2, 0.2],  // diagonal covariance
-//         vec![0.8, 0.4, 0.2],
-//         vec![0.3, 0.3, 0.4],
-//     ];
-//     let data = generate_gmm_data(&weights, &means, &covs, 3_000);
+fn test_gmm_3d_kmeans_gmm() {
+    // known parameters
+    let weights = vec![0.3, 0.3, 0.4];
+    let means = vec![
+        vec![0.0, 0.0, -1.0],
+        vec![3.0, 2.0, 3.0],
+        vec![1.0, -1.0, 0.0],
+    ];
+    let covs = vec![
+        vec![0.5, 0.2, 0.2],  // diagonal covariance
+        vec![0.8, 0.4, 0.2],
+        vec![0.3, 0.3, 0.4],
+    ];
+    let data = generate_gmm_data(&weights, &means, &covs, 3_000);
 
-//     let mut gmm = GaussianMixtureModel::new_from_kmeans(3, 3, &data);
+    let mut gmm = kmeans_gmm_pipeline(3, 3, &data);
 
-//     println!("True means: {:?}", means);
-//     println!("Fitted means: {:?}", gmm.means);
-//     println!("Fitted variance: {:?}", gmm.variance);
-//     println!("Mixtures: {:?}", gmm.mixtures);
-//     let error = mean_error(&means, &gmm.means);
-//     println!("Mean error {:?}", error);
-// }
+    println!("True means: {:?}", means);
+    println!("Fitted means: {:?}", gmm.means);
+    println!("Fitted variance: {:?}", gmm.variance);
+    println!("Mixtures: {:?}", gmm.mixtures);
+    let error = mean_error(&means, &gmm.means);
+    println!("Mean error {:?}", error);
+}
 
 fn mean_error(true_means: &[Vec<f32>], fitted_means: &[Vec<f32>]) -> f32 {
     // find the distribution closest to fitted values
@@ -165,4 +163,5 @@ fn permutation_mean_error(true_means: &[Vec<f32>], fitted_means: &[Vec<f32>]) ->
 fn main() {
     // test_gmm_2d();
     test_gmm_3d();
+test_gmm_3d_kmeans_gmm();
 }

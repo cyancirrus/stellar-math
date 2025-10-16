@@ -51,20 +51,21 @@ fn initialize_distribution(n:usize, rng:&mut ThreadRng) -> Vec<f32> {
     (0..n).map(|_| rng.sample(StandardUniform)).collect()
 }
 
+pub fn kmeans_gmm_pipeline(centroids:usize, cardinality:usize, data:&[Vec<f32>]) -> GaussianMixtureModel {
+    let mut kmeans = Kmeans::new(centroids, cardinality);
+    kmeans.solve(data);
+    let mut gmm = GaussianMixtureModel {
+        centroids,
+        cardinality,
+        mixtures: kmeans.mixtures,
+        means: kmeans.means,
+        variance: (0..centroids).map(|_| create_identity_matrix(cardinality)).collect(),
+    };
+    gmm.solve(data);
+    gmm
+}
+
 impl GaussianMixtureModel {
-    pub fn new_from_kmeans(centroids:usize, cardinality:usize, data:&[Vec<f32>]) -> Self {
-        let mut kmeans = Kmeans::new(centroids, cardinality);
-        kmeans.solve(data);
-        let mut gmm = Self {
-            centroids,
-            cardinality,
-            mixtures: kmeans.mixtures,
-            means: kmeans.means,
-            variance: (0..centroids).map(|_| create_identity_matrix(cardinality)).collect(),
-        };
-        gmm.solve(data);
-        gmm
-    }
     pub fn new(centroids:usize, cardinality:usize) -> Self {
         Self {
             centroids,
