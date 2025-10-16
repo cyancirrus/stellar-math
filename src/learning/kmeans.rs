@@ -10,6 +10,7 @@ pub struct Kmeans {
     centroids:usize,
     cardinality:usize,
     pub means:Vec<Vec<f32>>,
+    pub mixtures:Vec<f32>,
 }
 
 fn initialize_distribution(n:usize, rng:&mut ThreadRng) -> Vec<f32> {
@@ -30,10 +31,12 @@ impl Kmeans {
     pub fn new(centroids:usize, cardinality:usize) -> Self {
         let mut rng = rand::rng();
         let means = (0..centroids).map(|_| initialize_distribution(cardinality, &mut rng)).collect();
+        let mixtures = vec![1_f32/centroids as f32;centroids];
         Self {
             centroids,
             cardinality,
             means,
+            mixtures,
         }
     }
     fn maximization(&mut self, data:&[Vec<f32>]) {
@@ -59,6 +62,7 @@ impl Kmeans {
             for c in 0..self.cardinality {
                 sum_linear[k][c] /= cluster_ns[k].max(1) as f32;
             }
+            self.mixtures[k] = cluster_ns[k] as f32 / n as f32;
         }
         self.means = sum_linear;
     }

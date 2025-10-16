@@ -4,7 +4,9 @@ use rand::rngs::ThreadRng;
 use rand::distr::StandardUniform;
 use crate::decomposition::lu::{lu_decompose, LuDecomposition};
 use crate::random::generation::{generate_random_matrix, generate_random_vector, generate_zero_matrix};
+use crate::algebra::ndmethods::create_identity_matrix;
 use crate::algebra::vector::dot_product;
+use crate::learning::kmeans::Kmeans;
 use crate::structure::ndarray::NdArray;
 
 
@@ -50,13 +52,27 @@ fn initialize_distribution(n:usize, rng:&mut ThreadRng) -> Vec<f32> {
 }
 
 impl GaussianMixtureModel {
+    pub fn new_from_kmeans(centroids:usize, cardinality:usize, data:&[Vec<f32>]) -> Self {
+        let mut kmeans = Kmeans::new(centroids, cardinality);
+        kmeans.solve(data);
+        let mut gmm = Self {
+            centroids,
+            cardinality,
+            mixtures: kmeans.mixtures,
+            means: kmeans.means,
+            variance: (0..centroids).map(|_| create_identity_matrix(cardinality)).collect(),
+        };
+        gmm.solve(data);
+        gmm
+    }
     pub fn new(centroids:usize, cardinality:usize) -> Self {
         Self {
             centroids,
             cardinality:cardinality,
             mixtures:vec![1_f32 / centroids as f32; centroids],
             means: (0..centroids).map(|_| generate_random_vector(cardinality)).collect(),
-            variance: (0..centroids).map(|_| generate_random_matrix(cardinality, cardinality)).collect(),
+            // variance: (0..centroids).map(|_| generate_random_matrix(cardinality, cardinality)).collect(),
+            variance: (0..centroids).map(|_| create_identity_matrix(cardinality)).collect(),
         }
     }
     pub fn expectation_maximization(&mut self, data:&[Vec<f32>]) {
