@@ -10,7 +10,7 @@ use crate::structure::ndarray::NdArray;
 
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
-const EPSILON: f32 = 1e-6;
+const EPSILON: f32 = 1e-3;
 
 // NOTE: NOT PRODUCTION READY OR TESTED
 
@@ -50,6 +50,7 @@ fn ln_gaussian(x_bar:&mut Vec<f32>, z_buf:&mut Vec<f32>, det:f32, lu:&LuDecompos
 fn initialize_distribution(n:usize, rng:&mut ThreadRng) -> Vec<f32> {
     (0..n).map(|_| rng.sample(StandardUniform)).collect()
 }
+
 impl GaussianMixtureModel {
     pub fn new(centroids:usize, cardinality:usize) -> Self {
         Self {
@@ -77,14 +78,19 @@ impl GaussianMixtureModel {
             lus.push(lu);
         }
         for x_i in data {
-            let mut scaler = 0_f32;
+            let mut max_ln_prob = f32::MIN;
             for k in 0..self.centroids {
                 for c in 0..self.cardinality {
                     let val = x_i[c] - self.means[k][c];
                     x_bar[c] = val;
                     z_buf[c] = val;
                 }
-                probs[k] = self.mixtures[k] * gaussian(&mut x_bar, &mut z_buf, dets[k], &lus[k]);
+                probs[k] = self.mixtures[k].ln() + ln_gaussian(&mut x_bar, &mut z_buf, dets[k], &lus[k]);
+                max_ln_prob  = max_ln_prob.max(probs[k]);
+            }
+            let mut scaler = EPSILON;
+            for k in 0..self.centroids {
+                probs[k] = (probs[k] - max_ln_prob).exp().max(EPSILON);
                 scaler += probs[k];
             }
             for k in 0..self.centroids {
@@ -95,7 +101,7 @@ impl GaussianMixtureModel {
                 }
                 for i in 0..self.cardinality {
                     for j in 0..=i {
-                        sum_squares[k].data[i * self.cardinality + j] += pr * x_i[i] * x_i[j] + EPSILON;
+                        sum_squares[k].data[i * self.cardinality + j] += pr * x_i[i] * x_i[j];
                     }
                 }
             }
@@ -107,7 +113,7 @@ impl GaussianMixtureModel {
             }
             for i in 0..self.cardinality {
                 for j in 0..=i {
-                    sum_squares[k].data[i * self.cardinality + j] /= nweighted[k];
+                    sum_squares[k].data[i * self.cardinality + j] /= nweighted[k] + EPSILON;
                     sum_squares[k].data[i * self.cardinality + j] -= sum_linear[k][i] * sum_linear[k][j];
                     sum_squares[k].data[j * self.cardinality + i] = sum_squares[k].data[i * self.cardinality + j];
                 }
@@ -132,7 +138,62 @@ impl GaussianMixtureModel {
             self.expectation_maximization(data);
             delta = self.delta(&prev, &self.means);
             prev = self.means.clone();
-            println!("means {:?}", self.means);
         }
     }
 }
+    // pub fn expectation_maximization(&mut self, data:&[Vec<f32>]) {
+    //     let mut sum_linear = vec![vec![0_f32; self.cardinality]; self.centroids];
+    //     let mut sum_squares = vec![generate_zero_matrix(self.cardinality, self.cardinality); self.centroids];
+        
+    //     let n = data.len();
+    //     let mut x_bar = vec![0_f32; self.cardinality];
+    //     let mut nweighted = vec![0_f32; self.centroids];
+    //     let mut probs = vec![0_f32; self.centroids];
+    //     let mut lus = Vec::with_capacity(self.centroids);
+    //     let mut dets = Vec::with_capacity(self.centroids);
+    //     let mut z_buf= vec![0_f32; self.cardinality];
+    //     for k in 0..self.centroids {
+    //         let lu = lu_decompose(self.variance[k].clone());
+    //         dets.push(lu.find_determinant());
+    //         lus.push(lu);
+    //     }
+    //     for x_i in data {
+    //         let mut scaler = 0_f32;
+    //         for k in 0..self.centroids {
+    //             for c in 0..self.cardinality {
+    //                 let val = x_i[c] - self.means[k][c];
+    //                 x_bar[c] = val;
+    //                 z_buf[c] = val;
+    //             }
+    //             probs[k] = self.mixtures[k] * gaussian(&mut x_bar, &mut z_buf, dets[k], &lus[k]);
+    //             scaler += probs[k];
+    //         }
+    //         for k in 0..self.centroids {
+    //             let pr = probs[k] / scaler;
+    //             nweighted[k] += pr;
+    //             for c in 0..self.cardinality {
+    //                 sum_linear[k][c] += pr * x_i[c];
+    //             }
+    //             for i in 0..self.cardinality {
+    //                 for j in 0..=i {
+    //                     sum_squares[k].data[i * self.cardinality + j] += pr * x_i[i] * x_i[j] + EPSILON;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     for k in 0..self.centroids {
+    //         self.mixtures[k] = nweighted[k] / n as f32;
+    //         for c in 0..self.cardinality {
+    //             sum_linear[k][c] /= nweighted[k];
+    //         }
+    //         for i in 0..self.cardinality {
+    //             for j in 0..=i {
+    //                 sum_squares[k].data[i * self.cardinality + j] /= nweighted[k];
+    //                 sum_squares[k].data[i * self.cardinality + j] -= sum_linear[k][i] * sum_linear[k][j];
+    //                 sum_squares[k].data[j * self.cardinality + i] = sum_squares[k].data[i * self.cardinality + j];
+    //             }
+    //         }
+    //     }
+    //     self.means = sum_linear;
+    //     self.variance = sum_squares;
+    // }

@@ -14,9 +14,15 @@ use stellar::learning::expectation_maximization::{GaussianMixtureModel};
 // TODO: keep buffer for decision tree as it's reused a bit
 
 fn sample_gaussian_diag(mean: &[f32], var_diag: &[f32], rng: &mut impl Rng) -> Vec<f32> {
-    mean.iter().zip(var_diag.iter())
-        .map(|(&m, &v)| m + (v.sqrt()) * rng.sample::<f32, StandardNormal> (StandardNormal))
-        .collect()
+    let d= mean.len();
+    let mut sample = vec![0_f32;d];
+    for i in 0..d {
+        let z:f32 = rng.sample(StandardNormal);
+        // u + s * z
+        sample[i] += mean[i] + var_diag[i].sqrt() * z;
+    }
+    sample
+
 }
 
 
@@ -31,10 +37,10 @@ fn generate_gmm_data(
 
     let mut cumulative = vec![0.0; weights.len()];
     cumulative[0] = weights[0];
+    // make a cdf
     for k in 1..weights.len() {
         cumulative[k] = cumulative[k - 1] + weights[k];
     }
-
     for _ in 0..n {
         let r: f32 = rng.random();
         let mut k = 0;
@@ -43,30 +49,57 @@ fn generate_gmm_data(
         }
         data.push(sample_gaussian_diag(&means[k], &covs[k], &mut rng));
     }
-
     data
 }
 
-fn test_gmm_2d() {
+// fn test_gmm_2d() {
+//     // known parameters
+//     let weights = vec![0.4, 0.6];
+//     let means = vec![
+//         vec![0.0, 0.0],
+//         vec![3.0, 3.0],
+//     ];
+//     let covs = vec![
+//         vec![0.5, 0.5],  // diagonal covariance
+//         vec![0.8, 0.4],
+//     ];
+//     let data = generate_gmm_data(&weights, &means, &covs, 1200);
+
+//     let mut gmm = GaussianMixtureModel::new(2, 2);
+//     gmm.solve(&data);
+
+//     println!("True means: {:?}", means);
+//     println!("Fitted means: {:?}", gmm.means);
+//     println!("Fitted variance: {:?}", gmm.variance);
+//     println!("Mixtures: {:?}", gmm.mixtures);
+//     let error = mean_error(&means, &gmm.means);
+//     println!("Mean error {:?}", error);
+// }
+
+fn test_gmm_3d() {
     // known parameters
-    let weights = vec![0.4, 0.6];
+    let weights = vec![0.5, 0.3, 0.2];
     let means = vec![
-        vec![0.0, 0.0],
-        vec![3.0, 3.0],
+        vec![0.0, 0.0, -1.0],
+        vec![3.0, 3.0, 3.0],
+        vec![1.0, -5.0, 0.0],
     ];
     let covs = vec![
-        vec![0.5, 0.5],  // diagonal covariance
-        vec![0.8, 0.4],
+        vec![0.5, 0.5, 0.4],  // diagonal covariance
+        vec![0.8, 0.4, 0.2],
+        vec![0.3, 0.3, 0.4],
     ];
+    let data = generate_gmm_data(&weights, &means, &covs, 3000);
 
-    let data = generate_gmm_data(&weights, &means, &covs, 2000);
-
-    let mut gmm = GaussianMixtureModel::new(2, 2);
+    let mut gmm = GaussianMixtureModel::new(3, 3);
     gmm.solve(&data);
 
     println!("True means: {:?}", means);
     println!("Fitted means: {:?}", gmm.means);
+    println!("Fitted variance: {:?}", gmm.variance);
     println!("Mixtures: {:?}", gmm.mixtures);
+    let error = mean_error(&means, &gmm.means);
+    println!("Mean error {:?}", error);
 }
 
 fn mean_error(true_means: &[Vec<f32>], est_means: &[Vec<f32>]) -> f32 {
@@ -85,5 +118,6 @@ fn mean_error(true_means: &[Vec<f32>], est_means: &[Vec<f32>]) -> f32 {
 
 
 fn main() {
-    test_gmm_2d();
+    // test_gmm_2d();
+    test_gmm_3d();
 }
