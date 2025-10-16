@@ -6,121 +6,84 @@ use stellar::decomposition::lu::{lu_decompose, LuDecomposition};
 use stellar::random::generation::{generate_random_matrix, generate_random_vector, generate_zero_matrix};
 use stellar::algebra::vector::dot_product;
 use stellar::structure::ndarray::NdArray;
+use rand_distr::StandardNormal;
 
-
+use stellar::learning::expectation_maximization::{GaussianMixtureModel}; 
 // TODO: implement the smarter sum for SSE via kahan summation
 // TODO: implement smarter givens bulge chasing which only updates bidiagonals
 // TODO: keep buffer for decision tree as it's reused a bit
 
-const CONVERGENCE_CONDITION: f32 = 1e-6;
-const EPSILON: f32 = 1e-6;
-
-struct GaussianMixtureModel {
-    centroids:usize,
-    cardinality:usize,
-    mixtures:Vec<f32>,
-    means:Vec<Vec<f32>>,
-    variance: Vec<NdArray>,
+fn sample_gaussian_diag(mean: &[f32], var_diag: &[f32], rng: &mut impl Rng) -> Vec<f32> {
+    mean.iter().zip(var_diag.iter())
+        .map(|(&m, &v)| m + (v.sqrt()) * rng.sample::<f32, StandardNormal> (StandardNormal))
+        .collect()
 }
 
-fn gaussian(x_bar:&mut Vec<f32>, z_buf:&mut Vec<f32>, det:f32, lu:&LuDecomposition) -> f32 {
-    // xbar := x - mean;
-    // we have x'Vx, where V := 1/ self.variance
-    // solve sub problem LUx = z*; for z* and then <x, z*>
-    debug_assert_eq!(x_bar.to_vec(), z_buf.to_vec());
-    let card = x_bar.len();
-    lu.solve_inplace_vec(z_buf);
-    let scaling = -dot_product(&z_buf, &x_bar) / 2_f32;
-    scaling.exp() / (2_f32 * std::f32::consts::PI.powf(card as f32 / 2f32) * det.sqrt())
+
+fn generate_gmm_data(
+    weights: &[f32],
+    means: &[Vec<f32>],
+    covs: &[Vec<f32>], // diagonal variances for now
+    n: usize,
+) -> Vec<Vec<f32>> {
+    let mut rng = rand::rng();
+    let mut data = Vec::with_capacity(n);
+
+    let mut cumulative = vec![0.0; weights.len()];
+    cumulative[0] = weights[0];
+    for k in 1..weights.len() {
+        cumulative[k] = cumulative[k - 1] + weights[k];
+    }
+
+    for _ in 0..n {
+        let r: f32 = rng.random();
+        let mut k = 0;
+        while k + 1 < cumulative.len() && r > cumulative[k] {
+            k += 1;
+        }
+        data.push(sample_gaussian_diag(&means[k], &covs[k], &mut rng));
+    }
+
+    data
 }
-fn initialize_distribution(n:usize, rng:&mut ThreadRng) -> Vec<f32> {
-    (0..n).map(|_| rng.sample(StandardUniform)).collect()
+
+fn test_gmm_2d() {
+    // known parameters
+    let weights = vec![0.4, 0.6];
+    let means = vec![
+        vec![0.0, 0.0],
+        vec![3.0, 3.0],
+    ];
+    let covs = vec![
+        vec![0.5, 0.5],  // diagonal covariance
+        vec![0.8, 0.4],
+    ];
+
+    let data = generate_gmm_data(&weights, &means, &covs, 2000);
+
+    let mut gmm = GaussianMixtureModel::new(2, 2);
+    gmm.solve(&data);
+
+    println!("True means: {:?}", means);
+    println!("Fitted means: {:?}", gmm.means);
+    println!("Mixtures: {:?}", gmm.mixtures);
 }
-impl GaussianMixtureModel {
-    fn new(centroids:usize, cardinality:usize) -> Self {
-        Self {
-            centroids,
-            cardinality:cardinality,
-            mixtures:vec![1_f32 / centroids as f32; centroids],
-            means: (0..centroids).map(|_| generate_random_vector(cardinality)).collect(),
-            variance: (0..centroids).map(|_| generate_random_matrix(cardinality, cardinality)).collect(),
-        }
-    }
-    fn expectation_maximization(&mut self, data:&[Vec<f32>]) {
-        let mut sum_linear = vec![vec![0_f32; self.cardinality]; self.centroids];
-        let mut sum_squares = vec![generate_zero_matrix(self.cardinality, self.cardinality); self.centroids];
-        
-        let n = data.len();
-        let mut x_bar = vec![0_f32; self.cardinality];
-        let mut nweighted = vec![0_f32; self.centroids];
-        let mut probs = vec![0_f32; self.centroids];
-        let mut lus = Vec::with_capacity(self.centroids);
-        let mut dets = Vec::with_capacity(self.centroids);
-        let mut z_buf= vec![0_f32; self.cardinality];
-        for k in 0..self.centroids {
-            let lu = lu_decompose(self.variance[k].clone());
-            dets.push(lu.find_determinant());
-            lus.push(lu);
-        }
-        for x_i in data {
-            let mut scaler = 0_f32;
-            for k in 0..self.centroids {
-                for c in 0..self.cardinality {
-                    let val = x_i[c] - self.means[k][c];
-                    x_bar[c] = val;
-                    z_buf[c] = val;
-                }
-                probs[k] = self.mixtures[k] * gaussian(&mut x_bar, &mut z_buf, dets[k], &lus[k]);
-                scaler += probs[k];
-            }
-            for k in 0..self.centroids {
-                let pr = probs[k] / scaler;
-                nweighted[k] += pr;
-                for c in 0..self.cardinality {
-                    sum_linear[k][c] += pr * x_i[c];
-                }
-                for i in 0..self.cardinality {
-                    for j in 0..=i {
-                        sum_squares[k].data[i * self.cardinality + j] += pr * x_i[i] * x_i[j] + EPSILON;
-                    }
-                }
-            }
-        }
-        for k in 0..self.centroids {
-            self.mixtures[k] = nweighted[k] / n as f32;
-            for c in 0..self.cardinality {
-                sum_linear[k][c] /= nweighted[k];
-            }
-            for i in 0..self.cardinality {
-                for j in 0..=i {
-                    sum_squares[k].data[i * self.cardinality + j] /= nweighted[k];
-                    sum_squares[k].data[i * self.cardinality + j] -= sum_linear[k][i] * sum_linear[k][j];
-                    sum_squares[k].data[j * self.cardinality + i] = sum_squares[k].data[i * self.cardinality + j];
-                }
-            }
-        }
-        self.means = sum_linear;
-        self.variance = sum_squares;
-    }
-    fn delta(&self, prev:&[Vec<f32>], curr:&[Vec<f32>]) -> f32 {
-        let mut delta = 0_f32;
-        for cidx in 0..self.centroids {
-            for didx in 0..self.cardinality {
-                delta += (prev[cidx][didx] - curr[cidx][didx]).abs();
-            }
-        }
-        delta
-    }
-    fn solve(&mut self, data:&[Vec<f32>]) {
-        let mut prev = self.means.clone();
-        let mut delta = 1_f32;
-        while delta > CONVERGENCE_CONDITION {
-            self.expectation_maximization(data);
-            delta = self.delta(&prev, &self.means);
-            prev = self.means.clone();
-        }
-    }
+
+fn mean_error(true_means: &[Vec<f32>], est_means: &[Vec<f32>]) -> f32 {
+    let min_err = f32::MAX;
+    // account for permutation
+    let err_01 = (true_means[0][0] - est_means[0][0]).abs() +
+                 (true_means[0][1] - est_means[0][1]).abs() +
+                 (true_means[1][0] - est_means[1][0]).abs() +
+                 (true_means[1][1] - est_means[1][1]).abs();
+    let err_10 = (true_means[0][0] - est_means[1][0]).abs() +
+                 (true_means[0][1] - est_means[1][1]).abs() +
+                 (true_means[1][0] - est_means[0][0]).abs() +
+                 (true_means[1][1] - est_means[0][1]).abs();
+    min_err.min(err_01.min(err_10))
 }
+
 
 fn main() {
+    test_gmm_2d();
 }
