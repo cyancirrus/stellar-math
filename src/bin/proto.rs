@@ -1,100 +1,117 @@
-#![allow(dead_code)]
 use rand::Rng;
-use rand::rngs::ThreadRng;
-use rand::distr::StandardUniform;
-use stellar::decomposition::lu::{lu_decompose, LuDecomposition};
-use stellar::random::generation::{generate_random_matrix, generate_random_vector, generate_zero_matrix};
-use stellar::algebra::vector::dot_product;
-use stellar::structure::ndarray::NdArray;
 use rand_distr::StandardNormal;
 
 use stellar::learning::expectation_maximization::GaussianMixtureModel; 
+use stellar::learning::kmeans::Kmeans; 
 // TODO: implement the smarter sum for SSE via kahan summation
 // TODO: implement smarter givens bulge chasing which only updates bidiagonals
 // TODO: keep buffer for decision tree as it's reused a bit
 
-const CONVERGENCE_CONDITION: f32 = 1e-6;
-const EPSILON: f32 = 1e-3;
+fn sample_gaussian_diag(mean: &[f32], var_diag: &[f32], rng: &mut impl Rng) -> Vec<f32> {
+    let d= mean.len();
+    let mut sample = vec![0_f32;d];
+    for i in 0..d {
+        let z:f32 = rng.sample(StandardNormal);
+        // u + s * z
+        sample[i] += mean[i] + var_diag[i].sqrt() * z;
+    }
+    sample
 
-pub struct Kmeans {
-    centroids:usize,
-    cardinality:usize,
-    pub means:Vec<Vec<f32>>,
 }
 
-fn initialize_distribution(n:usize, rng:&mut ThreadRng) -> Vec<f32> {
-    (0..n).map(|_| rng.sample(StandardUniform)).collect()
+
+fn generate_gmm_data(
+    weights: &[f32],
+    means: &[Vec<f32>],
+    covs: &[Vec<f32>], // diagonal variances for now
+    n: usize,
+) -> Vec<Vec<f32>> {
+    let mut rng = rand::rng();
+    let mut data = Vec::with_capacity(n);
+
+    let mut cumulative = vec![0.0; weights.len()];
+    cumulative[0] = weights[0];
+    // make a cdf
+    for k in 1..weights.len() {
+        cumulative[k] = cumulative[k - 1] + weights[k];
+    }
+    for _ in 0..n {
+        let r: f32 = rng.random();
+        let mut k = 0;
+        while k + 1 < cumulative.len() && r > cumulative[k] {
+            k += 1;
+        }
+        data.push(sample_gaussian_diag(&means[k], &covs[k], &mut rng));
+    }
+    data
 }
 
+// fn test_gmm_2d() {
+//     // known parameters
+//     let weights = vec![0.4, 0.6];
+//     let means = vec![
+//         vec![0.0, 0.0],
+//         vec![3.0, 3.0],
+//     ];
+//     let covs = vec![
+//         vec![0.5, 0.5],  // diagonal covariance
+//         vec![0.8, 0.4],
+//     ];
+//     let data = generate_gmm_data(&weights, &means, &covs, 1200);
 
-fn squared_distance(x:&[f32], z:&[f32]) -> f32 {
-    // assymptotically equal when S := I
-    let mut squares = 0_f32;
-    for i in 0..x.len() {
-        squares += (x[i] - z[i]) * (x[i] - z[i]);
-    }
-    squares
+//     let mut gmm = GaussianMixtureModel::new(2, 2);
+//     gmm.solve(&data);
+
+//     println!("True means: {:?}", means);
+//     println!("Fitted means: {:?}", gmm.means);
+//     println!("Fitted variance: {:?}", gmm.variance);
+//     println!("Mixtures: {:?}", gmm.mixtures);
+//     let error = mean_error(&means, &gmm.means);
+//     println!("Mean error {:?}", error);
+// }
+
+fn test_gmm_3d() {
+    // known parameters
+    let weights = vec![0.3, 0.3, 0.4];
+    let means = vec![
+        vec![0.0, 0.0, -1.0],
+        vec![3.0, 2.0, 3.0],
+        vec![1.0, -1.0, 0.0],
+    ];
+    let covs = vec![
+        vec![0.5, 0.2, 0.2],  // diagonal covariance
+        vec![0.8, 0.4, 0.2],
+        vec![0.3, 0.3, 0.4],
+    ];
+    let data = generate_gmm_data(&weights, &means, &covs, 3_000);
+
+    let mut gmm = GaussianMixtureModel::new(3, 3);
+    gmm.solve(&data);
+
+    println!("True means: {:?}", means);
+    println!("Fitted means: {:?}", gmm.means);
+    println!("Fitted variance: {:?}", gmm.variance);
+    println!("Mixtures: {:?}", gmm.mixtures);
+    let error = mean_error(&means, &gmm.means);
+    println!("Mean error {:?}", error);
 }
 
-impl Kmeans {
-    pub fn new(centroids:usize, cardinality:usize) -> Self {
-        let mut rng = rand::rng();
-        let means = (0..centroids).map(|_| initialize_distribution(cardinality, &mut rng)).collect();
-        Self {
-            centroids,
-            cardinality,
-            means,
-        }
-    }
-    fn maximization(&mut self, data:&[Vec<f32>]) {
-        let mut sum_linear = vec![vec![0_f32;self.cardinality];self.centroids];
-        let mut cluster_ns = vec![0;self.centroids];
-        let n = data.len();
-        for i in 0..n {
-            let mut min_dist = f32::MAX;
-            let mut min_k = 0;
-            for k in 0..self.centroids {
-                let ln_prob = squared_distance(&data[i], &self.means[k]);
-                if ln_prob < min_dist {
-                    min_dist = ln_prob;
-                    min_k = k;
-                }
-            }
-            for k in 0..self.cardinality {
-                sum_linear[min_k][k] += data[i][k];
-            }
-            cluster_ns[min_k] += 1;
-        }
-        for k in 0..self.centroids {
-            for c in 0..self.cardinality {
-                sum_linear[k][c] /= cluster_ns[k].max(1) as f32;
-            }
-        }
-        self.means = sum_linear;
-    }
-    fn delta(&self, prev:&[Vec<f32>], curr:&[Vec<f32>]) -> f32 {
-        let mut delta = 0_f32;
-        for cidx in 0..self.centroids {
-            for didx in 0..self.cardinality {
-                delta += (prev[cidx][didx] - curr[cidx][didx]).abs();
-            }
-        }
-        delta
-    }
-    pub fn solve(&mut self, data:&[Vec<f32>]) {
-        let mut prev = self.means.clone();
-        let mut delta = 1_f32;
-        while delta > CONVERGENCE_CONDITION {
-            self.maximization(data);
-            delta = self.delta(&prev, &self.means);
-            prev = self.means.clone();
-        }
-    }
+fn mean_error(true_means: &[Vec<f32>], est_means: &[Vec<f32>]) -> f32 {
+    let min_err = f32::MAX;
+    // account for permutation
+    let err_01 = (true_means[0][0] - est_means[0][0]).abs() +
+                 (true_means[0][1] - est_means[0][1]).abs() +
+                 (true_means[1][0] - est_means[1][0]).abs() +
+                 (true_means[1][1] - est_means[1][1]).abs();
+    let err_10 = (true_means[0][0] - est_means[1][0]).abs() +
+                 (true_means[0][1] - est_means[1][1]).abs() +
+                 (true_means[1][0] - est_means[0][0]).abs() +
+                 (true_means[1][1] - est_means[0][1]).abs();
+    min_err.min(err_01.min(err_10))
 }
 
 
 fn main() {
-    // TODO: Check examples/gmm.rs
     // test_gmm_2d();
-    // test_gmm_3d();
+    test_gmm_3d();
 }
