@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use rand::Rng;
 use stellar::structure::ndarray::NdArray;
+use stellar::algebra::ndmethods::create_identity_matrix;
 use std::collections::HashMap;
 use rand_distr::StandardNormal;
 use std::collections::BinaryHeap;
@@ -11,16 +12,6 @@ use std::rc::Rc;
 struct MinNode {
     id:usize,
     cost:f32,
-}
-
-
-#[derive(Debug)]
-struct EdgeNode {
-    edge_id:usize,
-    node_id:usize,
-    cost:f32,
-    speed:f32,
-    distance: f32,
 }
 impl PartialEq for MinNode {
     fn eq(&self, other:&Self) -> bool {
@@ -40,7 +31,7 @@ impl PartialOrd for MinNode {
 }
 struct Network {
     web: HashMap<usize, Vec<usize>>,
-    // contains cost for edges
+    // contains cost for edges could flatten this
     edges: Vec<Vec<f32>>,
     // contains node_id -> (x,y)
     nodes: Vec<(f32, f32)>,
@@ -85,38 +76,85 @@ impl Network {
     }
 }
 
-
-struct Vehicle {
+struct State {
     theta: f32,
     velocity: f32,
-}
-struct Metadata {
-    prediction: (f32, f32),
-    measurement: (f32, f32),
-    var_prediction: NdArray,
-    var_meaurement: NdArray,
+    x: f32,
+    y: f32, 
+    dx: f32,
+    dy: f32,
 }
 
-impl Vehicle {
-    fn derivative(&self) -> (f32, f32) {
-        (self.theta.cos(), self.theta.sin()) 
-    }
-    fn prediction_position(&self) -> (f32, f32) {
-        (self.theta.cos(), self.theta.sin()) 
-    }
-    fn prediction(&self, meta:&mut Metadata) -> (f32, f32) {
-        meta.prediction.0 += self.velocity * self.theta.cos(); 
-        meta.prediction.1 += self.velocity * self.theta.sin(); 
-        meta.prediction
-    }
-    fn measurement(&self, path:Path) -> (f32, f32) {
-        let mut rng = rand::rng();
-        let rx:f32 = rng.sample(StandardNormal);
-        let ry:f32 = rng.sample(StandardNormal);
-        (path.position.0 + rx, path.position.1 + ry)
-        
+struct GpsSignal {}
+struct VehicleSignal {}
+
+struct Reference {
+    x:f32,
+    y:f32,
+}
+struct GpsData {
+    x:f32,
+    y:f32,
+}
+struct VehicleData {
+    theta: f32,
+    velocity:f32,
+}
+impl GpsSignal {
+    fn derive(basis:Reference, new:GpsData) -> State {
+        let dt = 0.01f32; // to eventually become a clock but static for the moment
+        let w = (new.x - basis.x, new.y - basis.y); // (dx, dy)
+        let theta = w.1.atan2(w.0); // theta based upon the changes
+        let velocity = (w.0 * w.0 + w.1 * w.1).sqrt(); //magnitude of root(dx^2 + dy^2)
+        // update the previous state
+        let dx = dt * velocity * theta.cos();
+        let dy = dt * velocity * theta.sin();
+        State {
+            theta,
+            velocity,
+            x: basis.x + dx,
+            y: basis.y + dy,
+            dx,
+            dy,
+        }
     }
 }
+impl VehicleSignal {
+    fn derive(basis:Reference, new:VehicleData) -> State {
+        let dt = 0.01f32; // to eventually become a clock but static for the moment
+        let dx = dt * new.velocity * new.theta.cos();
+        let dy = dt * new.velocity * new.theta.sin();
+        State {
+            theta: new.theta,
+            velocity: new.velocity,
+            x: basis.x + dx,
+            y: basis.y + dy,
+            dx,
+            dy,
+        }
+    }
+    fn jacobian(&self, state:State) -> NdArray {
+        // theta, velocity, x, y
+        let dt = 0.01f32; // to eventually become a clock but static for the moment
+        let n = 4;
+        let mut matrix = create_identity_matrix(4);
+        let velocity_squared = (state.velocity * state.velocity).max(1e-6);
+        matrix.data[2] = - state.dy/velocity_squared;
+        matrix.data[3] = state.dx /velocity_squared;
+        matrix.data[n + 2] = state.dx/state.velocity;
+        matrix.data[n + 3] = state.dy/state.velocity;
+        matrix.data[2 * n + 2] = dt * (state.dx / state.velocity * state.theta.cos() + state.velocity/velocity_squared * state.dy * state.theta.sin());
+        matrix.data[2 * n + 3] = dt * (state.dy / state.velocity * state.theta.cos() - state.velocity/velocity_squared * state.dx * state.theta.sin());
+        matrix.data[3 * n + 2] = dt * (state.dx / state.velocity * state.theta.sin() - state.velocity/velocity_squared * state.dy * state.theta.cos());
+        matrix.data[3 * n + 3] = dt * (state.dy / state.velocity * state.theta.sin() + state.velocity/velocity_squared * state.dx * state.theta.cos());
+        matrix
+    } 
+}
+
+trait Sensor {
+    fn measure(&self, truth: &State) -> State;
+}
+
 
 // x[k ; k] = x[k] + P[k] * y_k;
 // y_k = z[k] - h[k];
