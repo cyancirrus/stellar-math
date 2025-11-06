@@ -152,3 +152,16 @@ pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     dims[1] = y.dims[1];
     NdArray::new(dims, new)
 }
+
+pub fn mult_mat_vec(a:&NdArray, x:&[f32]) -> Vec<f32> {
+    debug_assert_eq!(a.dims[1], x.len());
+    let (m, n) = (a.dims[0], a.dims[1]);
+    let mut result = vec![0f32; n];
+    for i in 0..m {
+        for k in 0..n {
+            result[i] += a.data[i * n + k] * x[k];
+        }
+    }
+    result
+}
+
