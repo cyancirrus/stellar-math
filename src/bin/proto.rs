@@ -3,6 +3,7 @@ use rand::Rng;
 use stellar::structure::ndarray::NdArray;
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::mult_mat_vec;
+use stellar::algebra::ndmethods::in_place_add;
 use std::collections::HashMap;
 use rand_distr::StandardNormal;
 use std::collections::BinaryHeap;
@@ -210,6 +211,10 @@ impl VehicleSignal {
 
 struct ExtendedKahlman {
     basis:Reference,
+    // variance for the prediction
+    q_variance:NdArray,
+    // variance for the measurement
+    r_variance:NdArray,
     p:NdArray,
     h:NdArray,
     k:NdArray,
@@ -222,6 +227,7 @@ impl ExtendedKahlman {
         let f = VehicleSignal::jacobian(state);
         let result = tensor_mult(4, &f, &self.p);
         self.p = tensor_mult(4, &result, &f.transpose());
+        in_place_add(&mut self.p, &self.q_variance);
     }
     fn derive_k(&mut self, state:State) {
         // takes in GpsState
@@ -229,6 +235,7 @@ impl ExtendedKahlman {
         self.h =  GpsSignal::jacobian(state);
         let mut s_k = tensor_mult(4, &self.h, &self.p);
         s_k = tensor_mult(4, &s_k, &self.h.transpose());
+        in_place_add(&mut s_k, &self.r_variance);
         let mut k = tensor_mult(4, &self.p, &self.h);
         let lu = lu_decompose(s_k);
         lu.solve_inplace(&mut k);
@@ -246,7 +253,7 @@ impl ExtendedKahlman {
         let n = prediction.len();
         let y_star = mult_mat_vec(&self.k, measurement);
         for i in 0.. n {
-            prediction[i] -= y_star[i];
+            prediction[i] += y_star[i];
         }
     }
     fn predict_x(&mut self, basis:Reference, vehicle:VehicleData, gps:GpsData) -> Vec<f32> {
