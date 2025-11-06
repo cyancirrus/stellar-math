@@ -118,6 +118,17 @@ impl GpsSignal {
             dy,
         }
     }
+    fn jacobian(&self, state:State) -> NdArray {
+        // theta, velocity, x, y
+        let dt = 0.01f32; // to eventually become a clock but static for the moment
+        let n = 4;
+        let mut matrix = create_identity_matrix(n);
+        matrix.data[2 * n] = -dt * state.velocity * state.theta.sin();
+        matrix.data[2 * n + 1] = dt * state.theta.cos();
+        matrix.data[3 * n] = dt * state.velocity * state.theta.cos();
+        matrix.data[3 * n + 1] = dt * state.theta.sin();
+        matrix
+    }
 }
 impl VehicleSignal {
     fn derive(basis:Reference, new:VehicleData) -> State {
@@ -137,7 +148,7 @@ impl VehicleSignal {
         // theta, velocity, x, y
         let dt = 0.01f32; // to eventually become a clock but static for the moment
         let n = 4;
-        let mut matrix = create_identity_matrix(4);
+        let mut matrix = create_identity_matrix(n);
         let velocity_squared = (state.velocity * state.velocity).max(1e-6);
         matrix.data[2] = - state.dy/velocity_squared;
         matrix.data[3] = state.dx /velocity_squared;
