@@ -12,6 +12,20 @@ use crate::algebra::ndmethods::tensor_mult;
 use crate::decomposition::lu::lu_decompose;
 use std::cmp::Ordering;
 
+struct State {
+    theta: f32,
+    velocity: f32,
+    x: f32,
+    y: f32, 
+    dx: f32,
+    dy: f32,
+}
+
+impl State {
+    fn computational(&self) -> Vec<f32> {
+        vec![self.theta, self.velocity, self.x, self.y]
+    }
+}
 struct GpsSignal {}
 struct VehicleSignal {}
 
