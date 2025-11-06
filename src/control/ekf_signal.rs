@@ -1,98 +1,17 @@
 #![allow(dead_code)]
 use rand::Rng;
-use stellar::structure::ndarray::NdArray;
-use stellar::algebra::ndmethods::create_identity_matrix;
-use stellar::algebra::ndmethods::mult_mat_vec;
-use stellar::algebra::ndmethods::in_place_add;
-use stellar::algebra::ndmethods::in_place_sub;
-use stellar::algebra::vector::vec_in_place_add;
+use crate::structure::ndarray::NdArray;
+use crate::algebra::ndmethods::create_identity_matrix;
+use crate::algebra::ndmethods::mult_mat_vec;
+use crate::algebra::ndmethods::in_place_add;
+use crate::algebra::ndmethods::in_place_sub;
+use crate::algebra::vector::vec_in_place_add;
 use std::collections::HashMap;
 use std::collections::BinaryHeap;
-use stellar::algebra::ndmethods::tensor_mult;
-use stellar::decomposition::lu::lu_decompose;
+use crate::algebra::ndmethods::tensor_mult;
+use crate::decomposition::lu::lu_decompose;
 use std::cmp::Ordering;
 
-struct MinNode {
-    id:usize,
-    cost:f32,
-}
-impl PartialEq for MinNode {
-    fn eq(&self, other:&Self) -> bool {
-        self.cost == other.cost
-    }
-}
-impl Eq for MinNode {}
-impl Ord for MinNode {
-    fn cmp(&self, other:&Self) -> Ordering {
-        other.cost.total_cmp(&self.cost)
-    }
-}
-impl PartialOrd for MinNode {
-    fn partial_cmp(&self, other:&Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-struct Network {
-    web: HashMap<usize, Vec<usize>>,
-    // contains cost for edges could flatten this
-    edges: Vec<Vec<f32>>,
-    // contains node_id -> (x,y)
-    nodes: Vec<(f32, f32)>,
-    // contains (src, target) -> speed
-    speed: Vec<Vec<f32>>,
-    // contains number of nodes
-    size: usize,
-}
-
-impl Network {
-    fn find_path(&self, start:usize, end:usize) -> Vec<usize> {
-        let mut heap: BinaryHeap<MinNode>= BinaryHeap::new();
-        let mut seen:Vec<bool> =  vec![false; self.size];
-        let mut prev:Vec<usize> = vec![usize::MAX; self.size];
-        heap.push(MinNode { id: start, cost: 0f32});
-
-        while let Some(node) = heap.pop() {
-            seen[node.id] = true;
-            if node.id == end { break; }
-            for &target in self.web.get(&node.id).unwrap() {
-                if !seen[target] {
-                    prev[target] = node.id;
-                    heap.push( 
-                        MinNode {
-                            id: target,
-                            cost: node.cost + self.edges[node.id][target],
-                        }
-                    );
-                }
-            }
-        }
-        let mut path = vec![];
-        if prev[end] == usize::MAX { return path };
-        let mut curr = end;
-        while curr != start {
-            path.push(curr);
-            curr = prev[curr];
-        }
-        path.push(start);
-        path.reverse();
-        path
-    }
-}
-
-struct State {
-    theta: f32,
-    velocity: f32,
-    x: f32,
-    y: f32, 
-    dx: f32,
-    dy: f32,
-}
-
-impl State {
-    fn computational(&self) -> Vec<f32> {
-        vec![self.theta, self.velocity, self.x, self.y]
-    }
-}
 struct GpsSignal {}
 struct VehicleSignal {}
 
@@ -262,13 +181,4 @@ impl EkfVehicleGps {
         self.basis = Reference{ x:prediction[2], y: prediction[3]};
         prediction
     }
-}
-
-fn main() {
-    println!("hello world");
-    // // test_gmm_3d_kmeans_gmm();
-    // // test_gmm_3d();
-    // if let Err(e) = test_kmeans_gmm_visual() {
-    //     eprintln!("Error: {}", e);
-    // }
 }

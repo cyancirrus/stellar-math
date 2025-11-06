@@ -60,3 +60,17 @@ pub fn matrix_transpose(matrix: Vec<Vec<f32>>) -> Vec<Vec<f32>> {
     }
     transpose
 }
+
+pub fn vec_in_place_add(x:&mut Vec<f32>, y:&Vec<f32>) {
+    debug_assert_eq!(x.len(), y.len());
+    for i in 0..x.len() {
+        x[i] += y[i]
+    }
+}
+
+pub fn vec_in_place_sub(x:&mut Vec<f32>, y:&Vec<f32>) {
+    debug_assert_eq!(x.len(), y.len());
+    for i in 0..x.len() {
+        x[i] -= y[i]
+    }
+}
