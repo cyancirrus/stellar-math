@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use rand::Rng;
+// use rand::Rng;
 use stellar::structure::ndarray::NdArray;
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::mult_mat_vec;
@@ -80,7 +80,7 @@ impl Network {
     }
 }
 
-struct State {
+struct Kinematics {
     theta: f32,
     velocity: f32,
     x: f32,
@@ -89,15 +89,22 @@ struct State {
     dy: f32,
 }
 
-impl State {
-    fn computational(&self) -> Vec<f32> {
+impl State for Kinematics {
+    type Reference = Position;
+    fn to_comp(&self) -> Vec<f32> {
         vec![self.theta, self.velocity, self.x, self.y]
+    }
+    fn comp_to_ref(x:Vec<f32>) -> Self::Reference {
+        Self::Reference {
+            x:x[2],
+            y:x[3],
+        }
     }
 }
 struct GpsSignal {}
 struct VehicleSignal {}
 
-struct Reference {
+struct Position {
     x:f32,
     y:f32,
 }
@@ -110,7 +117,7 @@ struct VehicleData {
     velocity:f32,
 }
 
-impl Reference {
+impl Position {
     fn new(prediction:Vec<f32>) -> Self {
         Self {
             x: prediction[2],
@@ -120,10 +127,10 @@ impl Reference {
 }
 
 impl Signal for GpsSignal {
-    type State = State;
-    type Reference = Reference;
+    type State = Kinematics;
+    type Reference = Position;
     type Data = GpsData;
-    fn derive(basis:&Reference, new:&GpsData) -> State {
+    fn derive(basis:&Self::Reference, new:&Self::Data) -> Self::State {
         let dt = 0.01f32; // to eventually become a clock but static for the moment
         let w = (new.x - basis.x, new.y - basis.y); // (dx, dy)
         let theta = w.1.atan2(w.0); // theta based upon the changes
@@ -131,7 +138,7 @@ impl Signal for GpsSignal {
         // update the previous state
         let dx = dt * velocity * theta.cos();
         let dy = dt * velocity * theta.sin();
-        State {
+        Self::State {
             theta,
             velocity,
             x: basis.x + dx,
@@ -140,7 +147,7 @@ impl Signal for GpsSignal {
             dy,
         }
     }
-    fn jacobian(state:&State) -> NdArray {
+    fn jacobian(state:&Self::State) -> NdArray {
         // theta, velocity, x, y
         let dt = 0.01f32; // to eventually become a clock but static for the moment
         let n = 4;
@@ -153,7 +160,7 @@ impl Signal for GpsSignal {
         matrix.data[3 * n + 1] = dt * state.theta.sin();
         matrix
     }
-    fn representation(state:&State) -> Vec<f32> {
+    fn representation(state:&Self::State) -> Vec<f32> {
         vec![
             state.theta,
             state.velocity,
@@ -161,7 +168,7 @@ impl Signal for GpsSignal {
             state.y,
         ]
     }
-    fn insight(state:&State, data:&GpsData) -> Vec<f32> {
+    fn insight(state:&Self::State, data:&Self::Data) -> Vec<f32> {
         vec![
             state.theta,
             state.velocity,
@@ -171,14 +178,14 @@ impl Signal for GpsSignal {
     }
 }
 impl Signal for VehicleSignal {
-    type State = State;
-    type Reference = Reference;
+    type State = Kinematics;
+    type Reference = Position;
     type Data = VehicleData;
-    fn derive(basis:&Reference, new:&VehicleData) -> State {
+    fn derive(basis:&Self::Reference, new:&VehicleData) -> Self::State {
         let dt = 0.01f32; // to eventually become a clock but static for the moment
         let dx = dt * new.velocity * new.theta.cos();
         let dy = dt * new.velocity * new.theta.sin();
-        State {
+        Self::State {
             theta: new.theta,
             velocity: new.velocity,
             x: basis.x + dx,
@@ -187,7 +194,7 @@ impl Signal for VehicleSignal {
             dy,
         }
     }
-    fn jacobian(state:&State) -> NdArray {
+    fn jacobian(state:&Self::State) -> NdArray {
         // theta, velocity, x, y
         let dt = 0.01f32; // to eventually become a clock but static for the moment
         let n = 4;
@@ -207,7 +214,7 @@ impl Signal for VehicleSignal {
         matrix.data[3 * n + 3] = dt * (state.dy / state.velocity * state.theta.sin() + state.velocity/velocity_squared * state.dx * state.theta.cos());
         matrix
     } 
-    fn representation(state:&State) -> Vec<f32> {
+    fn representation(state:&Self::State) -> Vec<f32> {
         vec![
             state.theta,
             state.velocity,
@@ -215,7 +222,7 @@ impl Signal for VehicleSignal {
             state.y,
         ]
     }
-    fn insight(state:&State, data:&VehicleData) -> Vec<f32> {
+    fn insight(state:&Self::State, data:&Self::Data) -> Vec<f32> {
         vec![
             data.theta - state.theta,
             data.velocity - state.velocity,
@@ -234,6 +241,12 @@ trait Signal  {
     fn jacobian(state:&Self::State) -> NdArray;
     fn representation(state:&Self::State) -> Vec<f32>;
     fn insight(state:&Self::State, data:&Self::Data) -> Vec<f32>;
+}
+
+trait State {
+    type Reference;
+    fn to_comp(&self) -> Vec<f32>;
+    fn comp_to_ref(x:Vec<f32>) -> Self::Reference;
 }
 
 
@@ -258,6 +271,7 @@ where
 
 impl <R, S, F, H> Ekf <R, S, F, H>
 where
+    S: State,
     F: Signal<State = S, Reference = R> ,
     H: Signal<State = S, Reference = R>,
 {
@@ -301,7 +315,7 @@ where
         self.finalize_p();
         self.output(&mut prediction, &measurement);
         // TODO: update this to inegrate well
-        // self.basis = R::new(prediction);
+        // self.basis = Self::S::comp_to_ref(prediction);
         prediction
     }
 }
