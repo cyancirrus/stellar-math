@@ -1,22 +1,21 @@
+use plotters::prelude::*;
+use plotters::style::colors::full_palette::GREY_700;
 use rand::Rng;
 use rand_distr::StandardNormal;
-use plotters::style::colors::full_palette::GREY_700;
-use plotters::prelude::*;
-use stellar::learning::gaussian_mixture::{GaussianMixtureModel, kmeans_gmm_pipeline}; 
+use stellar::learning::gaussian_mixture::{kmeans_gmm_pipeline, GaussianMixtureModel};
 // TODO: implement the smarter sum for SSE via kahan summation
 // TODO: implement smarter givens bulge chasing which only updates bidiagonals
 // TODO: keep buffer for decision tree as it's reused a bit
 
 fn sample_gaussian_diag(mean: &[f32], var_diag: &[f32], rng: &mut impl Rng) -> Vec<f32> {
-    let d= mean.len();
-    let mut sample = vec![0_f32;d];
+    let d = mean.len();
+    let mut sample = vec![0_f32; d];
     for i in 0..d {
-        let z:f32 = rng.sample(StandardNormal);
+        let z: f32 = rng.sample(StandardNormal);
         // u + s * z
         sample[i] += mean[i] + var_diag[i].sqrt() * z;
     }
     sample
-
 }
 
 fn generate_gmm_data(
@@ -166,7 +165,10 @@ fn plot_gmm_clusters_2d(
         .margin(20)
         .x_label_area_size(40)
         .y_label_area_size(40)
-        .build_cartesian_2d((x_min - pad_x)..(x_max + pad_x), (y_min - pad_y)..(y_max + pad_y))?;
+        .build_cartesian_2d(
+            (x_min - pad_x)..(x_max + pad_x),
+            (y_min - pad_y)..(y_max + pad_y),
+        )?;
 
     chart.configure_mesh().draw()?;
 
@@ -183,7 +185,11 @@ fn plot_gmm_clusters_2d(
             .collect();
         if !points.is_empty() {
             chart
-                .draw_series(points.iter().map(|&(x, y)| Circle::new((x, y), 2, (*color).filled())))?
+                .draw_series(
+                    points
+                        .iter()
+                        .map(|&(x, y)| Circle::new((x, y), 2, (*color).filled())),
+                )?
                 .label(format!("Cluster {}", k))
                 .legend(move |(x, y)| Circle::new((x, y), 5, (*color).filled()));
         }
@@ -209,7 +215,9 @@ fn plot_gmm_clusters_2d(
         .label("Fitted means (KMeans→GMM)")
         .legend(|(x, y)| Cross::new((x, y), 8, BLACK.filled().stroke_width(2)));
 
-    chart .configure_series_labels() .background_style(&WHITE.mix(0.8))
+    chart
+        .configure_series_labels()
+        .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
         .draw()?;
 
@@ -228,7 +236,13 @@ fn test_kmeans_gmm_visual() -> Result<(), Box<dyn std::error::Error>> {
     println!("Fitted means (KMeans→GMM): {:?}", gmm.means);
     println!("Mean error: {:?}", mean_error(&means, &gmm.means));
 
-    plot_gmm_clusters_2d(&data, &labels, &means, &gmm.means, "kmeans_gmm_clusters.png")?;
+    plot_gmm_clusters_2d(
+        &data,
+        &labels,
+        &means,
+        &gmm.means,
+        "kmeans_gmm_clusters.png",
+    )?;
     Ok(())
 }
 

@@ -1,381 +1,257 @@
-#![allow(dead_code)]
-// use rand::Rng;
-use stellar::structure::ndarray::NdArray;
+#![allow(dead_code, unused)]
 use stellar::algebra::ndmethods::create_identity_matrix;
-use stellar::algebra::ndmethods::mult_mat_vec;
-use stellar::algebra::ndmethods::in_place_add;
-use stellar::algebra::ndmethods::in_place_sub;
-use stellar::algebra::vector::vec_in_place_add;
-use std::collections::HashMap;
-use std::collections::BinaryHeap;
-use stellar::algebra::ndmethods::tensor_mult;
-use stellar::decomposition::lu::lu_decompose;
-use std::cmp::Ordering;
-use std::marker::PhantomData;
+use stellar::decomposition::lu::{lu_decompose, LuDecomposition};
+use stellar::structure::ndarray::NdArray;
 
-struct MinNode {
-    id:usize,
-    cost:f32,
-}
-impl PartialEq for MinNode {
-    fn eq(&self, other:&Self) -> bool {
-        self.cost == other.cost
+const EPSILON: f32 = 1e-10;
+
+struct DualLinear {}
+impl DualLinear {
+    fn transform(a: NdArray) -> NdArray {
+        debug_assert!(a.dims[0] < a.dims[1], "m < n should not take dual");
+        let (m, n) = (a.dims[0], a.dims[1]);
+        let n_cols = 2 * m + 2 * n;
+        let mut data = Vec::with_capacity(n * n_cols);
+        for row in 0..n {
+            // A'
+            for col in 0..m {
+                data.push(a.data[col * n + row]);
+            }
+            // -A'
+            for col in 0..m {
+                data.push(-a.data[col * n + row]);
+            }
+            // I_slack
+            for col in 0..n {
+                data.push(if row == col { 1.0 } else { 0.0 });
+            }
+            // I_artificial
+            for col in 0..n {
+                data.push(if row == col { 1.0 } else { 0.0 });
+            }
+        }
+        debug_assert!(2 * n * (m + n) == data.len());
+        NdArray {
+            dims: vec![n, n_cols],
+            data,
+        }
     }
 }
-impl Eq for MinNode {}
-impl Ord for MinNode {
-    fn cmp(&self, other:&Self) -> Ordering {
-        other.cost.total_cmp(&self.cost)
-    }
-}
-impl PartialOrd for MinNode {
-    fn partial_cmp(&self, other:&Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-struct Network {
-    web: HashMap<usize, Vec<usize>>,
-    // contains cost for edges could flatten this
-    edges: Vec<Vec<f32>>,
-    // contains node_id -> (x,y)
-    nodes: Vec<(f32, f32)>,
-    // contains (src, target) -> speed
-    speed: Vec<Vec<f32>>,
-    // contains number of nodes
-    size: usize,
+
+// Ax = b; min sum(x); x[i] >= 0;
+struct LinearProgram {
+    class: ProgramClass,
+    // base matrix dimension
+    m: usize,
+    n: usize,
+    // cost vector, target
+    c: Vec<f32>,
+    b: Vec<f32>,
+    x: Vec<f32>,
+    basis: Vec<usize>,
+    // [A', -A', I_slack, I_artificial];
+    // [m, m, n, n];
+    constraint: NdArray,
 }
 
-impl Network {
-    fn find_path(&self, start:usize, end:usize) -> Vec<usize> {
-        let mut heap: BinaryHeap<MinNode>= BinaryHeap::new();
-        let mut seen:Vec<bool> =  vec![false; self.size];
-        let mut prev:Vec<usize> = vec![usize::MAX; self.size];
-        heap.push(MinNode { id: start, cost: 0f32});
+enum ProgramClass {
+    Primal,
+    Dual,
+}
 
-        while let Some(node) = heap.pop() {
-            seen[node.id] = true;
-            if node.id == end { break; }
-            for &target in self.web.get(&node.id).unwrap() {
-                if !seen[target] {
-                    prev[target] = node.id;
-                    heap.push( 
-                        MinNode {
-                            id: target,
-                            cost: node.cost + self.edges[node.id][target],
-                        }
-                    );
+impl LinearProgram {
+    fn new(c: Vec<f32>, b: Vec<f32>, matrix: NdArray) {
+        let (m, n) = (matrix.dims[0], matrix.dims[1]);
+        debug_assert!(m > n, "Primal initializer not yet created");
+        debug_assert_eq!(c.len(), n);
+        debug_assert_eq!(b.len(), m);
+        let x = vec![1.0; n];
+        let basis = (2 * m + n..2 * m + 2 * n).collect();
+        LinearProgram {
+            class: ProgramClass::Dual,
+            m,
+            n,
+            c,
+            b,
+            x,
+            basis,
+            constraint: DualLinear::transform(matrix),
+        };
+    }
+    fn setup_phase_one(&mut self) {
+        self.basis = (2 * self.m + self.n..2 * self.m + 2 * self.n).collect();
+    }
+    fn get_basis_matrix(&self) -> NdArray {
+        let mut data = Vec::with_capacity(self.m * self.m);
+        for &col in &self.basis {
+            for row in 0..self.m {
+                data.push(self.constraint.data[row * self.n + col]);
+            }
+        }
+        NdArray {
+            dims: vec![self.m, self.m],
+            data,
+        }
+    }
+    fn pivot(&mut self, entering_idx: usize, leaving_idx: usize) {
+        self.basis[leaving_idx] = entering_idx;
+    }
+    fn compute_direction(&self, entering_idx: usize) -> Vec<f32> {
+        // Travels in the inverse of this vector
+        let b = self.get_basis_matrix();
+        let lu = lu_decompose(b.transpose());
+        let n_cols = 2 * self.n + 2 * self.m;
+
+        let mut a_j = vec![0.0; self.n];
+        for i in 0..self.n {
+            // column basis vector
+            a_j[i] = self.constraint.data[i * n_cols + entering_idx];
+        }
+        let mut direction = a_j;
+        lu.solve_inplace_vec(&mut direction);
+        direction
+    }
+    fn select_entering_variable(&self, delta_costs: &[f32]) -> Option<usize> {
+        // Option returned in order to get terminating condition
+        let mut best_idx = None;
+        let mut best_val = 0.0;
+
+        for i in 0..delta_costs.len() {
+            // More negative is better cost reduction
+            if delta_costs[i] < best_val {
+                best_val = delta_costs[i];
+                best_idx = Some(i);
+            }
+        }
+        best_idx
+    }
+    fn compute_phase_one_delta_cost(&self) -> Vec<f32> {
+        let b = self.get_basis_matrix();
+        let lu = lu_decompose(b.transpose());
+        let n_cols = 2 * self.m + 2 * self.n;
+
+        let mut cost_b = vec![0.0; self.n];
+        for (i, &basis_idx) in self.basis.iter().enumerate() {
+            if basis_idx >= 2 * self.m + self.n {
+                cost_b[i] = 1.0;
+            }
+        }
+        let mut y = cost_b.clone();
+        lu.solve_inplace_vec(&mut y);
+        let mut delta = vec![0.0; n_cols];
+        for j in 0..n_cols {
+            if self.basis.contains(&j) {
+                continue;
+            }
+            // penalize if in artificial
+            let c_j = if j > 2 * self.m + self.n { 1.0 } else { 0.0 };
+            let mut y_dot_aj = 0.0;
+            for i in 0..self.n {
+                y_dot_aj += y[i] * self.constraint.data[i * n_cols + j];
+            }
+            delta[j] = c_j - y_dot_aj;
+        }
+        delta
+    }
+    fn compute_phase_two_delta_cost(&self) -> Vec<f32> {
+        let b = self.get_basis_matrix();
+        let lu = lu_decompose(b.transpose());
+        let n_cols = 2 * self.m + 2 * self.n;
+
+        let mut cost_b = vec![0.0;self.n];
+        for (i, &basis_idx) in self.basis.iter().enumerate() {
+            cost_b[i] = self.c[basis_idx];
+        }
+        let mut y = cost_b.clone();
+        lu.solve_inplace_vec(&mut y);
+        let mut delta = vec![0.0;n_cols];
+        for j in 0..n_cols {
+            if self.basis.contains(&j) {
+                continue;
+            }
+            let mut y_dot_ai = 0.0;
+            for i in 0..self.n {
+                y_dot_ai += y[i] * self.constraint.data[i * n_cols + j];
+            }
+            // for maximization want positive delta
+            delta[j] = self.c[j] - y_dot_ai;
+        }
+        delta
+
+    }
+    fn ratio_test(&self, direction: &[f32]) -> Option<usize> {
+        let x_b = self.get_basic_solution();
+        let mut min_ratio = f32::INFINITY;
+        let mut idx_leaving = None;
+        for (i, &basis_idx) in self.basis.iter().enumerate() {
+            if direction[i] > EPSILON {
+                let ratio = x_b[i] / direction[i];
+                if ratio < min_ratio {
+                    min_ratio = ratio;
+                    idx_leaving = Some(i);
                 }
             }
         }
-        let mut path = vec![];
-        if prev[end] == usize::MAX { return path };
-        let mut curr = end;
-        while curr != start {
-            path.push(curr);
-            curr = prev[curr];
+        idx_leaving
+    }
+    fn get_basic_solution(&self) -> Vec<f32> {
+        let basis = self.get_basis_matrix();
+        let lu = lu_decompose(basis.transpose());
+        let mut x_basic = self.b.clone();
+        let mut x = vec![0.0; self.n];
+        for (i, &basis_idx) in self.basis.iter().enumerate() {
+            x[basis_idx] = x_basic[i];
         }
-        path.push(start);
-        path.reverse();
-        path
+        x
     }
-}
-
-struct Kinematics {
-    theta: f32,
-    velocity: f32,
-    x: f32,
-    y: f32, 
-    dx: f32,
-    dy: f32,
-}
-
-impl State for Kinematics {
-    type Reference = Position;
-    fn to_comp(&self) -> Vec<f32> {
-        vec![self.theta, self.velocity, self.x, self.y]
-    }
-    fn comp_to_ref(x:Vec<f32>) -> Self::Reference {
-        Self::Reference {
-            x:x[2],
-            y:x[3],
+    fn run_phase_one(&mut self) -> Result<(), String> {
+        self.setup_phase_one();
+        loop {
+            let delta = self.compute_phase_one_delta_cost();
+            let entering = match self.select_entering_variable(&delta) {
+                Some(idx) => idx,
+                None => break,
+            };
+            let direction = self.compute_direction(entering);
+            let leaving = match self.ratio_test(&direction) {
+                Some(idx) => idx,
+                None => return Err(format!("Unbounded should not happen in phase 1").into()),
+            };
+            self.pivot(entering, leaving)
         }
-    }
-}
-struct GpsSignal {}
-struct VehicleSignal {}
-
-struct Position {
-    x:f32,
-    y:f32,
-}
-struct GpsData {
-    x:f32,
-    y:f32,
-}
-struct VehicleData {
-    theta: f32,
-    velocity:f32,
-}
-
-impl Position {
-    fn new(prediction:Vec<f32>) -> Self {
-        Self {
-            x: prediction[2],
-            y: prediction[3],
+        let x = self.get_basic_solution();
+        for &basic_idx in &self.basis {
+            if basic_idx >= 2 * self.m + self.n {
+                if x[basic_idx].abs() > EPSILON {
+                    return Err(format!("Infeasable Problem").into());
+                }
+            }
         }
+        Ok(())
     }
-}
-
-impl Signal for GpsSignal {
-    type State = Kinematics;
-    type Reference = Position;
-    type Data = GpsData;
-    fn derive(basis:&Self::Reference, new:&Self::Data) -> Self::State {
-        let dt = 0.01f32; // to eventually become a clock but static for the moment
-        let w = (new.x - basis.x, new.y - basis.y); // (dx, dy)
-        let theta = w.1.atan2(w.0); // theta based upon the changes
-        let velocity = (w.0 * w.0 + w.1 * w.1).sqrt(); //magnitude of root(dx^2 + dy^2)
-        // update the previous state
-        let dx = dt * velocity * theta.cos();
-        let dy = dt * velocity * theta.sin();
-        Self::State {
-            theta,
-            velocity,
-            x: basis.x + dx,
-            y: basis.y + dy,
-            dx,
-            dy,
+    fn run_phase_two(&mut self) -> Result<Vec<f32>, String> {
+        loop {
+            let delta = self.compute_phase_two_delta_cost();
+            let entering = match self.select_entering_variable(&delta) {
+                Some(idx) => idx,
+                None => break,
+            };
+            let direction = self.compute_direction(entering);
+            let leaving = match self.ratio_test(&direction) {
+                Some(idx) => idx,
+                None => return Err(format!("Unbounded").into()),
+            };
+            self.pivot(entering, leaving);
         }
-    }
-    fn jacobian(state:&Self::State) -> NdArray {
-        // theta, velocity, x, y
-        let dt = 0.01f32; // to eventually become a clock but static for the moment
-        let n = 4;
-        let mut matrix = create_identity_matrix(n);
-        // dx
-        matrix.data[2 * n] = -dt * state.velocity * state.theta.sin();
-        matrix.data[2 * n + 1] = dt * state.theta.cos();
-        // dy
-        matrix.data[3 * n] = dt * state.velocity * state.theta.cos();
-        matrix.data[3 * n + 1] = dt * state.theta.sin();
-        matrix
-    }
-    fn representation(state:&Self::State) -> Vec<f32> {
-        vec![
-            state.theta,
-            state.velocity,
-            state.x,
-            state.y,
-        ]
-    }
-    fn insight(state:&Self::State, data:&Self::Data) -> Vec<f32> {
-        vec![
-            state.theta,
-            state.velocity,
-            data.x - state.x,
-            data.y - state.y,
-        ]
-    }
-}
-impl Signal for VehicleSignal {
-    type State = Kinematics;
-    type Reference = Position;
-    type Data = VehicleData;
-    fn derive(basis:&Self::Reference, new:&VehicleData) -> Self::State {
-        let dt = 0.01f32; // to eventually become a clock but static for the moment
-        let dx = dt * new.velocity * new.theta.cos();
-        let dy = dt * new.velocity * new.theta.sin();
-        Self::State {
-            theta: new.theta,
-            velocity: new.velocity,
-            x: basis.x + dx,
-            y: basis.y + dy,
-            dx,
-            dy,
-        }
-    }
-    fn jacobian(state:&Self::State) -> NdArray {
-        // theta, velocity, x, y
-        let dt = 0.01f32; // to eventually become a clock but static for the moment
-        let n = 4;
-        let mut matrix = create_identity_matrix(n);
-        let velocity_squared = (state.velocity * state.velocity).max(1e-6);
-        // dtheta
-        matrix.data[2] = - state.dy/velocity_squared;
-        matrix.data[3] = state.dx /velocity_squared;
-        // dvelocity
-        matrix.data[n + 2] = state.dx/state.velocity;
-        matrix.data[n + 3] = state.dy/state.velocity;
-        // dx
-        matrix.data[2 * n + 2] = dt * (state.dx / state.velocity * state.theta.cos() + state.velocity/velocity_squared * state.dy * state.theta.sin());
-        matrix.data[2 * n + 3] = dt * (state.dy / state.velocity * state.theta.cos() - state.velocity/velocity_squared * state.dx * state.theta.sin());
-        // dy
-        matrix.data[3 * n + 2] = dt * (state.dx / state.velocity * state.theta.sin() - state.velocity/velocity_squared * state.dy * state.theta.cos());
-        matrix.data[3 * n + 3] = dt * (state.dy / state.velocity * state.theta.sin() + state.velocity/velocity_squared * state.dx * state.theta.cos());
-        matrix
-    } 
-    fn representation(state:&Self::State) -> Vec<f32> {
-        vec![
-            state.theta,
-            state.velocity,
-            state.x,
-            state.y,
-        ]
-    }
-    fn insight(state:&Self::State, data:&Self::Data) -> Vec<f32> {
-        vec![
-            data.theta - state.theta,
-            data.velocity - state.velocity,
-            state.x,
-            state.y,
-        ]
+        Ok(self.get_basic_solution())
+
     }
 }
 
-trait Signal  {
-    type State;
-    type Reference;
-    type Data;
-    // S: State, R: Reference, D: Data;
-    fn derive(basis:&Self::Reference, data:&Self::Data) -> Self::State;
-    fn jacobian(state:&Self::State) -> NdArray;
-    fn representation(state:&Self::State) -> Vec<f32>;
-    fn insight(state:&Self::State, data:&Self::Data) -> Vec<f32>;
+enum Phase {
+    FindVertex,
+    FindOptimum,
 }
-
-trait State {
-    type Reference;
-    fn to_comp(&self) -> Vec<f32>;
-    fn comp_to_ref(x:Vec<f32>) -> Self::Reference;
-}
-
-
-struct Ekf<R, S, F, H>
-where
-    F: Signal<State = S, Reference = R>, 
-    H: Signal<State = S, Reference = R>,
-{
-    basis:R,
-    // Signal Variances
-    q_variance: NdArray,
-    r_variance:NdArray,
-    // Computational Matrices
-    p:NdArray,
-    h:NdArray,
-    k:NdArray,
-    // prediction and measurement
-    _boo_f: PhantomData<F>,
-    _boo_h: PhantomData<H>,
-    _boo_s: PhantomData<S>,
-}
-
-impl <R, S, F, H> Ekf <R, S, F, H>
-where
-    S: State,
-    F: Signal<State = S, Reference = R> ,
-    H: Signal<State = S, Reference = R>,
-{
-    fn update_p(&mut self, state:F::State) {
-        // takes in VehicleState
-        // df/dx | x_{k|k-1};
-        let f = F::jacobian(&state);
-        let result = tensor_mult(4, &f, &self.p);
-        self.p = tensor_mult(4, &result, &f.transpose());
-        in_place_add(&mut self.p, &self.q_variance);
-    }
-    fn derive_k(&mut self, state:H::State) {
-        // takes in GpsState
-        // requires p to be updated prior
-        self.h =  H::jacobian(&state);
-        let mut s_k = tensor_mult(4, &self.h, &self.p);
-        s_k = tensor_mult(4, &s_k, &self.h.transpose());
-        in_place_add(&mut s_k, &self.r_variance);
-        let mut k = tensor_mult(4, &self.p, &self.h);
-        let lu = lu_decompose(s_k);
-        lu.solve_inplace(&mut k);
-        self.k = k;
-    }
-    fn finalize_p(&mut self) {
-        let mut update = tensor_mult(4, &self.k, &self.h);
-        update = tensor_mult(4, &update, &self.p);
-        in_place_sub(&mut self.p, &update);
-    }
-    fn output(&mut self, prediction:&mut Vec<f32>, measurement:&Vec<f32>) {
-        debug_assert_eq!(prediction.len(), measurement.len());
-        let y_star = mult_mat_vec(&self.k, measurement);
-        vec_in_place_add(prediction, &y_star);
-    }
-    fn predict_x(&mut self, basis:R, prediction:F::Data, measurement:H::Data) -> Vec<f32> {
-        let vstate = F::derive(&basis, &prediction);
-        let gstate = H::derive(&basis, &measurement);
-        let mut prediction = F::representation(&vstate);
-        let measurement = H::insight(&gstate, &measurement);
-        self.update_p(vstate);
-        self.derive_k(gstate);
-        self.finalize_p();
-        self.output(&mut prediction, &measurement);
-        // TODO: update this to inegrate well
-        // self.basis = Self::S::comp_to_ref(prediction);
-        prediction
-    }
-}
-
-
-// struct EkfVehicleGps {
-//     basis:Reference,
-//     // variance for the prediction
-//     q_variance:NdArray,
-//     // variance for the measurement
-//     r_variance:NdArray,
-//     p:NdArray,
-//     h:NdArray,
-//     k:NdArray,
-// }
-
-// impl EkfVehicleGps {
-//     fn update_p(&mut self, state:State) {
-//         // takes in VehicleState
-//         // df/dx | x_{k|k-1};
-//         let f = VehicleSignal::jacobian(&state);
-//         let result = tensor_mult(4, &f, &self.p);
-//         self.p = tensor_mult(4, &result, &f.transpose());
-//         in_place_add(&mut self.p, &self.q_variance);
-//     }
-//     fn derive_k(&mut self, state:State) {
-//         // takes in GpsState
-//         // requires p to be updated prior
-//         self.h =  GpsSignal::jacobian(&state);
-//         let mut s_k = tensor_mult(4, &self.h, &self.p);
-//         s_k = tensor_mult(4, &s_k, &self.h.transpose());
-//         in_place_add(&mut s_k, &self.r_variance);
-//         let mut k = tensor_mult(4, &self.p, &self.h);
-//         let lu = lu_decompose(s_k);
-//         lu.solve_inplace(&mut k);
-//         self.k = k;
-//     }
-//     fn finalize_p(&mut self) {
-//         let mut update = tensor_mult(4, &self.k, &self.h);
-//         update = tensor_mult(4, &update, &self.p);
-//         in_place_sub(&mut self.p, &update);
-//     }
-//     fn output(&mut self, prediction:&mut Vec<f32>, measurement:&Vec<f32>) {
-//         debug_assert_eq!(prediction.len(), measurement.len());
-//         let y_star = mult_mat_vec(&self.k, measurement);
-//         vec_in_place_add(prediction, &y_star);
-//     }
-//     fn predict_x(&mut self, basis:Reference, vehicle:VehicleData, gps:GpsData) -> Vec<f32> {
-//         let vstate = VehicleSignal::derive(&basis, &vehicle);
-//         let gstate = GpsSignal::derive(&basis, &gps);
-//         let mut prediction = VehicleSignal::representation(&vstate);
-//         let measurement = GpsSignal::insight(&gstate, &gps);
-//         self.update_p(vstate);
-//         self.derive_k(gstate);
-//         self.finalize_p();
-//         self.output(&mut prediction, &measurement);
-//         self.basis = Reference{ x:prediction[2], y: prediction[3]};
-//         prediction
-//     }
-// }
 
 fn main() {
     println!("hello world");

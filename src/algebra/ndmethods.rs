@@ -153,7 +153,7 @@ pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     NdArray::new(dims, new)
 }
 
-pub fn mult_mat_vec(a:&NdArray, x:&[f32]) -> Vec<f32> {
+pub fn mult_mat_vec(a: &NdArray, x: &[f32]) -> Vec<f32> {
     debug_assert_eq!(a.dims[1], x.len());
     let (m, n) = (a.dims[0], a.dims[1]);
     let mut result = vec![0f32; n];
@@ -165,17 +165,16 @@ pub fn mult_mat_vec(a:&NdArray, x:&[f32]) -> Vec<f32> {
     result
 }
 
-pub fn in_place_add(x:&mut NdArray, y:&NdArray) {
+pub fn in_place_add(x: &mut NdArray, y: &NdArray) {
     debug_assert_eq!(x.dims, y.dims);
     for i in 0..x.data.len() {
         x.data[i] += y.data[i];
     }
 }
 
-pub fn in_place_sub(x:&mut NdArray, y:&NdArray) {
+pub fn in_place_sub(x: &mut NdArray, y: &NdArray) {
     debug_assert_eq!(x.dims, y.dims);
     for i in 0..x.data.len() {
         x.data[i] -= y.data[i];
     }
 }
-

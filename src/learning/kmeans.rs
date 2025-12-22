@@ -1,6 +1,6 @@
-use rand::Rng;
-use rand::rngs::ThreadRng;
 use rand::distr::StandardUniform;
+use rand::rngs::ThreadRng;
+use rand::Rng;
 // use rand_distr::StandardNormal;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
@@ -10,18 +10,17 @@ const EPSILON: f32 = 1e-3;
 // (x-u)'(x-u) = <x,x> + <u,u> - 2<u, x>;
 
 pub struct Kmeans {
-    centroids:usize,
-    cardinality:usize,
-    pub means:Vec<Vec<f32>>,
-    pub mixtures:Vec<f32>,
+    centroids: usize,
+    cardinality: usize,
+    pub means: Vec<Vec<f32>>,
+    pub mixtures: Vec<f32>,
 }
 
-fn initialize_distribution(n:usize, rng:&mut ThreadRng) -> Vec<f32> {
+fn initialize_distribution(n: usize, rng: &mut ThreadRng) -> Vec<f32> {
     (0..n).map(|_| rng.sample(StandardUniform)).collect()
 }
 
-
-fn squared_distance(x:&[f32], z:&[f32]) -> f32 {
+fn squared_distance(x: &[f32], z: &[f32]) -> f32 {
     // assymptotically equal when S := I
     let mut squares = 0_f32;
     for i in 0..x.len() {
@@ -31,10 +30,12 @@ fn squared_distance(x:&[f32], z:&[f32]) -> f32 {
 }
 
 impl Kmeans {
-    pub fn new(centroids:usize, cardinality:usize) -> Self {
+    pub fn new(centroids: usize, cardinality: usize) -> Self {
         let mut rng = rand::rng();
-        let means = (0..centroids).map(|_| initialize_distribution(cardinality, &mut rng)).collect();
-        let mixtures = vec![1_f32/centroids as f32;centroids];
+        let means = (0..centroids)
+            .map(|_| initialize_distribution(cardinality, &mut rng))
+            .collect();
+        let mixtures = vec![1_f32 / centroids as f32; centroids];
         Self {
             centroids,
             cardinality,
@@ -42,9 +43,9 @@ impl Kmeans {
             mixtures,
         }
     }
-    fn maximization(&mut self, data:&[Vec<f32>]) {
-        let mut sum_linear = vec![vec![0_f32;self.cardinality];self.centroids];
-        let mut cluster_ns = vec![0;self.centroids];
+    fn maximization(&mut self, data: &[Vec<f32>]) {
+        let mut sum_linear = vec![vec![0_f32; self.cardinality]; self.centroids];
+        let mut cluster_ns = vec![0; self.centroids];
         let n = data.len();
         for i in 0..n {
             let mut min_dist = f32::MAX;
@@ -69,7 +70,7 @@ impl Kmeans {
         }
         self.means = sum_linear;
     }
-    fn delta(&self, prev:&[Vec<f32>], curr:&[Vec<f32>]) -> f32 {
+    fn delta(&self, prev: &[Vec<f32>], curr: &[Vec<f32>]) -> f32 {
         let mut delta = 0_f32;
         for cidx in 0..self.centroids {
             for didx in 0..self.cardinality {
@@ -78,7 +79,7 @@ impl Kmeans {
         }
         delta
     }
-    pub fn solve(&mut self, data:&[Vec<f32>]) {
+    pub fn solve(&mut self, data: &[Vec<f32>]) {
         let mut prev = self.means.clone();
         let mut delta = 1_f32;
         while delta > CONVERGENCE_CONDITION {
