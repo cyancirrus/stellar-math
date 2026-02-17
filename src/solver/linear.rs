@@ -1,5 +1,5 @@
 use crate::algebra::ndmethods::create_identity_matrix;
-use crate::decomposition::lu::{lu_decompose, LuDecomposition};
+use crate::decomposition::lower_upper::LuPivotDecompose;
 use crate::structure::ndarray::NdArray;
 
 const EPSILON: f32 = 1e-6;
@@ -98,7 +98,7 @@ impl LinearProgram {
     fn compute_direction(&self, entering_idx: usize) -> Vec<f32> {
         // Travels in the inverse of this vector
         let b = self.get_basis_matrix();
-        let lu = lu_decompose(b.transpose());
+        let lu = LuPivotDecompose::new(b.transpose());
         let n_cols = 2 * self.n + 2 * self.m;
 
         let mut a_j = vec![0.0; self.n];
