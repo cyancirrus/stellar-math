@@ -2,13 +2,13 @@ use crate::algebra::ndmethods::tensor_mult;
 use crate::random::generation::generate_random_matrix;
 use crate::structure::ndarray::NdArray;
 
-pub struct LuPivotDecomp {
+pub struct LuPivotDecompose {
     n: usize,
     swaps: usize,
     pivots: Vec<usize>,
-    matrix: NdArray,
+    pub matrix: NdArray,
 }
-impl LuPivotDecomp {
+impl LuPivotDecompose {
     pub fn new(mut matrix: NdArray) -> Self {
         // Croute
         // A[j, *] = c *A[i, *]
@@ -145,7 +145,7 @@ impl LuPivotDecomp {
     //     max_col_sum / min_uii
     // }
 }
-impl LuPivotDecomp {
+impl LuPivotDecompose {
     // for matrices
     pub fn left_apply_l(&self, target: &mut NdArray) {
         // LA = Output
@@ -209,7 +209,7 @@ impl LuPivotDecomp {
     }
 }
 
-impl LuPivotDecomp {
+impl LuPivotDecompose {
     pub fn left_apply_l_vec(&self, target: &mut [f32]) {
         // Lx
         debug_assert_eq!(self.matrix.dims[1], target.len());
@@ -254,7 +254,7 @@ impl LuPivotDecomp {
     }
 }
 
-impl LuPivotDecomp {
+impl LuPivotDecompose {
     // Ax = b;
     // PA ~ LU; 
     // PAx = Pb;
@@ -263,35 +263,47 @@ impl LuPivotDecomp {
     // => z
     // Ux = z;
     // => x
-
     pub fn solve_inplace(&self, y: &mut NdArray) {
         debug_assert_eq!(self.matrix.dims[1], y.dims[0]);
-        let (t_rows, t_cols) = (y.dims[0], y.dims[1]);
-        for (s, &d) in self.pivots.iter().enumerate() {
-            if s == d {
-                continue;
-            }
-            for k in 0..t_cols {
-                y.data.swap(s * t_cols + k, d * t_cols + k);
-            }
-        }
+        self.pivot_inplace(y);
         self.forward_solve_inplace(y);
         self.backward_solve_inplace(y);
     }
     pub fn solve_inplace_vec(&self, y: &mut [f32]) {
+        debug_assert_eq!(self.matrix.dims[1], y.len());
         self.pivot_inplace_vec(y);
         self.forward_solve_inplace_vec(y);
         self.backward_solve_inplace_vec(y);
     }
-    pub fn unpivot_inplace_vec(&self, y: &mut [f32]) {
+    pub fn pivot_inplace(&self, y: &mut NdArray) {
+        let t_cols = y.dims[1];
+        for (s, &d) in self.pivots.iter().enumerate() {
+            if s != d {
+                for k in 0..t_cols {
+                    y.data.swap(s * t_cols + k, d * t_cols + k);
+                }
+            }
+        }
+    }
+    pub fn unpivot_inplace(&self, y: &mut NdArray) {
+        let t_cols = y.dims[1];
         for (s, &d) in self.pivots.iter().enumerate().rev() {
             if s != d {
-                y.swap(d, s);
+                for k in 0..t_cols {
+                    y.data.swap(s * t_cols + k, d * t_cols + k);
+                }
             }
         }
     }
     pub fn pivot_inplace_vec(&self, y: &mut [f32]) {
         for (s, &d) in self.pivots.iter().enumerate() {
+            if s != d {
+                y.swap(d, s);
+            }
+        }
+    }
+    pub fn unpivot_inplace_vec(&self, y: &mut [f32]) {
+        for (s, &d) in self.pivots.iter().enumerate().rev() {
             if s != d {
                 y.swap(d, s);
             }
