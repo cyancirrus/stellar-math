@@ -123,7 +123,6 @@ impl LuPivotDecomp {
 fn test_reconstruct() {
     let n = 4;
     let x = generate_random_matrix(n, n);
-    println!("x {x:?}");
     let lu = LuPivotDecomp::new(x.clone());
     // let lu = LuDecomposition::new(x.clone());
     let out = lu.reconstruct();

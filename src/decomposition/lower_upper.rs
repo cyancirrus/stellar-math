@@ -1,9 +1,7 @@
-#![allow(dead_code, unused_imports)]
-
-use stellar::algebra::ndmethods::tensor_mult;
-use stellar::decomposition::lu::LuDecomposition;
-use stellar::random::generation::generate_random_matrix;
-use stellar::structure::ndarray::NdArray;
+use crate::algebra::ndmethods::tensor_mult;
+use crate::decomposition::lu::LuDecomposition;
+use crate::random::generation::generate_random_matrix;
+use crate::structure::ndarray::NdArray;
 
 pub struct LuPivotDecomp {
     n: usize,
@@ -120,16 +118,16 @@ impl LuPivotDecomp {
 // a [4] [ 2]
 // 1 -> 2, 2 -> 3, 3 -> 1
 
-fn test_reconstruct() {
-    let n = 4;
-    let x = generate_random_matrix(n, n);
-    println!("x {x:?}");
-    let lu = LuPivotDecomp::new(x.clone());
-    // let lu = LuDecomposition::new(x.clone());
-    let out = lu.reconstruct();
-    assert_eq!(x, out);
-}
+// fn test_reconstruct() {
+//     let n = 4;
+//     let x = generate_random_matrix(n, n);
+//     println!("x {x:?}");
+//     let lu = LuPivotDecomp::new(x.clone());
+//     // let lu = LuDecomposition::new(x.clone());
+//     let out = lu.reconstruct();
+//     assert_eq!(x, out);
+// }
 
-fn main() {
-    test_reconstruct();
-}
+// fn main() {
+//     test_reconstruct();
+// }
