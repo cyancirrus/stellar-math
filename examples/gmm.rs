@@ -231,7 +231,7 @@ fn test_kmeans_gmm_visual() -> Result<(), Box<dyn std::error::Error>> {
 
     let (data, labels) = generate_gmm_data(&weights, &means, &covs, 3000);
 
-    let mut gmm = kmeans_gmm_pipeline(3, 2, &data);
+    let gmm = kmeans_gmm_pipeline(3, 2, &data);
 
     println!("Fitted means (KMeans→GMM): {:?}", gmm.means);
     println!("Mean error: {:?}", mean_error(&means, &gmm.means));
