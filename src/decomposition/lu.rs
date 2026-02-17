@@ -12,6 +12,30 @@ pub struct LuDecomposition {
 }
 
 impl LuDecomposition {
+    pub fn new(mut matrix: NdArray) -> Self {
+        // A[j, *] = c *A[i, *]
+        // => c = A[i,j] / A[j,j]
+        debug_assert_eq!(matrix.dims[0], matrix.dims[1]);
+        let (rows, cols) = (matrix.dims[0], matrix.dims[1]);
+
+        // for lij, we need knowledge of ujj due to formula
+        // this means that we need u[0..i.min(j)] upper triangular calculated
+        for i in 0..rows {
+            for j in 0..cols {
+                for k in 0..i.min(j) {
+                    matrix.data[i * cols + j] -=
+                        matrix.data[i * cols + k] * matrix.data[k * cols + j]
+                }
+                if i > j {
+                    matrix.data[i * cols + j] /= matrix.data[j * cols + j];
+                }
+            }
+        }
+        Self { matrix }
+    }
+}
+
+impl LuDecomposition {
     pub fn find_determinant(&self) -> f32 {
         // |A B| = |A| |B|
         // = diag |A| diag |B|
