@@ -2,7 +2,7 @@ use crate::algebra::ndmethods::create_identity_matrix;
 use crate::decomposition::lu::{lu_decompose, LuDecomposition};
 use crate::structure::ndarray::NdArray;
 
-const EPSILON: f32 = 1e-10;
+const EPSILON: f32 = 1e-6;
 
 struct DualLinear {}
 impl DualLinear {
@@ -197,7 +197,7 @@ impl LinearProgram {
     fn get_basic_solution(&self) -> Vec<f32> {
         let basis = self.get_basis_matrix();
         let lu = lu_decompose(basis.transpose());
-        let mut x_basic = self.b.clone();
+        let x_basic = self.b.clone();
         let mut x = vec![0.0; self.n];
         for (i, &basis_idx) in self.basis.iter().enumerate() {
             x[basis_idx] = x_basic[i];

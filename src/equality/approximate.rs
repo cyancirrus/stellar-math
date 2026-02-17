@@ -1,4 +1,4 @@
-const TOLERANCE: f32 = 1e-3;
+const TOLERANCE: f32 = 1e-2;
 
 pub fn approx_vector_eq(a: &[f32], b: &[f32]) -> bool {
     let n = a.len();

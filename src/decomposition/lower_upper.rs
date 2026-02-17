@@ -106,35 +106,53 @@ impl LuPivotDecomp {
         }
         NdArray { dims, data }
     }
-    pub fn determinant(&self) -> f32 {
-        let mut det = 1f32;
+    pub fn log_determinant(&self) -> f32 {
+        let mut det = 0f32;
         for k in 0..self.n {
-            det *= self.matrix.data[ k * self.n + k];
+            det += self.matrix.data[ k * self.n + k].abs().ln();
         }
         if self.swaps & 1 == 1 {
             det = -det
         }
         det
     }
+    pub fn condition(&self) -> f32 {
+        let (mut max, mut min) = (0_f32, f32::MAX);
+        for k in 0..self.n {
+            let v = self.matrix.data[k * self.n + k].abs();
+            max = max.max(v);
+            min = min.min(v);
+        }
+        max / min
+    }
+    // pub fn condition(&self) -> f32 {
+    //     let mut max_col_sum:f32 = 0.0;
+    //     let mut min_uii:f32 = f32::MAX;
+    //     for j in 0..self.n {
+    //         let mut col_sum:f32 = 0.0;
+    //         for i in 0..self.n {
+    //             let v = self.matrix.data[i * self.n + j].abs();
+    //             col_sum += v;
+    //             if i == j {
+    //                 min_uii = min_uii.min(v);
+    //             }
+    //         }
+    //         max_col_sum = max_col_sum.max(col_sum);
+    //     }
+    //     if min_uii == 0.0 {
+    //         return f32::INFINITY
+    //     }
+    //     max_col_sum / min_uii
+    // }
 }
 impl LuPivotDecomp {
-    pub fn find_determinant(&self) -> f32 {
-        // |A B| = |A| |B|
-        // = diag |A| diag |B|
-        // = diag |B|
-        let n = self.matrix.dims[0];
-        let mut det = 1_f32;
-        for i in 0..n {
-            det *= self.matrix.data[i * n + i];
-        }
-        det
-    }
     // for matrices
     pub fn left_apply_l(&self, target: &mut NdArray) {
         // LA = Output
         debug_assert_eq!(target.dims[0], self.matrix.dims[1]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
+        
         for i in (1..rows).rev() {
             for j in 0..tcols {
                 // lii == 1
@@ -237,19 +255,47 @@ impl LuPivotDecomp {
 }
 
 impl LuPivotDecomp {
-    // Ax = y;
-    // LuDecomposition*x = y;
-    // Lz = y -> z;
-    // Ux = z -> x;
+    // Ax = b;
+    // PA ~ LU; 
+    // PAx = Pb;
+    // LUx = b*;
+    // Lz = b*;
+    // => z
+    // Ux = z;
     // => x
 
     pub fn solve_inplace(&self, y: &mut NdArray) {
+        debug_assert_eq!(self.matrix.dims[1], y.dims[0]);
+        let (t_rows, t_cols) = (y.dims[0], y.dims[1]);
+        for (s, &d) in self.pivots.iter().enumerate() {
+            if s == d {
+                continue;
+            }
+            for k in 0..t_cols {
+                y.data.swap(s * t_cols + k, d * t_cols + k);
+            }
+        }
         self.forward_solve_inplace(y);
         self.backward_solve_inplace(y);
     }
     pub fn solve_inplace_vec(&self, y: &mut [f32]) {
+        self.pivot_inplace_vec(y);
         self.forward_solve_inplace_vec(y);
         self.backward_solve_inplace_vec(y);
+    }
+    pub fn unpivot_inplace_vec(&self, y: &mut [f32]) {
+        for (s, &d) in self.pivots.iter().enumerate().rev() {
+            if s != d {
+                y.swap(d, s);
+            }
+        }
+    }
+    pub fn pivot_inplace_vec(&self, y: &mut [f32]) {
+        for (s, &d) in self.pivots.iter().enumerate() {
+            if s != d {
+                y.swap(d, s);
+            }
+        }
     }
     pub fn forward_solve_inplace(&self, y: &mut NdArray) {
         // transforms y -> z
@@ -270,11 +316,13 @@ impl LuPivotDecomp {
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         let (trows, tcols) = (z.dims[0], z.dims[1]);
         for i in (0..rows).rev() {
-            for j in 0..tcols {
-                for k in i + 1..cols {
+            for k in i + 1..cols {
+                for j in 0..tcols {
                     z.data[i * tcols + j] -= self.matrix.data[i * cols + k] * z.data[k * tcols + j];
                 }
-                z.data[i * cols + j] /= self.matrix.data[i * cols + i];
+            }
+            for j in 0..tcols {
+                z.data[i * tcols + j] /= self.matrix.data[i * cols + i];
             }
         }
     }

@@ -36,26 +36,24 @@ impl NdArray {
     }
 }
 
-const EPSILON:f32 = 1e-6;
-impl PartialEq for NdArray {
-    fn eq(&self, other:&Self) -> bool {
-        let c = self.dims.len();
-        if self.dims != other.dims {
-            return false;
-        }
-        if self.data.len() != other.data.len() {
-            return false;
-        }
-        for i in 0.. self.data.len() {
-            if (self.data[i] - other.data[i]).abs() > EPSILON {
-                return false;
-            }
-        }
-        true
-    }
-}
-
-
+// const EPSILON:f32 = 1e-6;
+// impl PartialEq for NdArray {
+//     fn eq(&self, other:&Self) -> bool {
+//         let c = self.dims.len();
+//         if self.dims != other.dims {
+//             return false;
+//         }
+//         if self.data.len() != other.data.len() {
+//             return false;
+//         }
+//         for i in 0.. self.data.len() {
+//             if (self.data[i] - other.data[i]).abs() > EPSILON {
+//                 return false;
+//             }
+//         }
+//         true
+//     }
+// }
 
 struct NdIterator<'a> {
     drow: usize,
