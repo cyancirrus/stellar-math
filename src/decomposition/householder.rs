@@ -23,9 +23,9 @@ pub fn householder_params(mut u: Vec<f32>) -> HouseholderReflection {
     for i in 0..length {
         max_element = max_element.max(u[i]);
     }
-    if max_element.abs() < EPSILON {
-        return HouseholderReflection::new(0_f32, vec![0_f32]);
-    }
+    // if max_element.abs() < EPSILON {
+    //     return HouseholderReflection::new(0_f32, vec![0_f32]);
+    // }
     for i in 0..length {
         u[i] /= max_element;
         magnitude_squared += u[i].powi(2);
