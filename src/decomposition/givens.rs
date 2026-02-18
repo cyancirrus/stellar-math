@@ -100,8 +100,7 @@ fn offdiag_norm(s: &NdArray) -> f32 {
     let mut norm = 0.0;
     for i in 0..m.min(n) - 1 {
         // upper diagonal
-        // norm += s.data[i * n + i + 1].abs();
-        norm += s.data[i * n + i + 1].abs() + s.data[(i + 1) * n + 1].abs();
+        norm += s.data[i * n + i + 1].abs() + s.data[(i + 1) * n + i].abs();
     }
     norm
 }
