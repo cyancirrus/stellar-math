@@ -1,8 +1,8 @@
 use crate::algebra::ndmethods::matrix_mult;
-use crate::decomposition::givens::{givens_iteration, SingularValueDecomp};
+use crate::decomposition::givens::{givens_iteration, full_givens_iteration, SingularValueDecomp};
 use crate::decomposition::lower_upper::LuPivotDecompose;
 use crate::decomposition::qr::{qr_decompose, QrDecomposition};
-use crate::decomposition::svd::golub_kahan;
+use crate::decomposition::svd::{golub_kahan, full_golub_kahan};
 use crate::random::generation::{generate_random_matrix, generate_random_symetric};
 use crate::structure::ndarray::NdArray;
 
@@ -79,8 +79,8 @@ impl RandomizedSvd {
         let mut tiny_core = matrix.transpose();
         let qrr = qr_decompose(tiny_core.clone());
         qrr.left_apply_qt(&mut tiny_core);
-        let reference = golub_kahan(tiny_core);
-        let svd =  givens_iteration(reference);
+        let (u, b, v) = full_golub_kahan(tiny_core.transpose());
+        let svd =  full_givens_iteration(u, b, v);
         RandomizedSvd {
             n,
             k,
