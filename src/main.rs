@@ -19,13 +19,14 @@ fn main() {
 
     ksvd.qrl.left_apply_qt(&mut x);
     x = x.transpose();
-    println!("intermediate x {x:?}");
     ksvd.qrr.left_apply_qt(&mut x);
     x = x.transpose();
     println!("final x {x:?}");
 
     let tiny = ksvd.approx();
     println!("tiny x {tiny:?}");
+
+        // println!("svd_randomized u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}", ksvd.svd.u, ksvd.svd.s, ksvd.svd.v);
 
 }
 

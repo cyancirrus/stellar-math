@@ -18,15 +18,51 @@ impl SingularValueDecomp {
     }
 }
 
-pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> SingularValueDecomp {
+// pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> SingularValueDecomp {
+//     println!("givens appears as {s:?}");
+//     // takes in bidiagonal and returns full SVD
+//     let m = s.dims[0];
+//     let n = s.dims[1];
+//     let k = m.min(n);
+//     let mut u = create_identity_matrix(m);
+//     let mut v = create_identity_matrix(n);
+//     // v = v.transpose();
+//     // row-space, column-space
+//     let mut max_iteration = 1 << 8;
+//     // left work
+//     while offdiag_norm(&s) > CONVERGENCE_CONDITION && max_iteration > 0 {
+//         for i in 0..k - 1 {
+//             // TODO: Optimize, there's a better way to do this it's only a trace over a bidiagonal
+//             let (_, cosine, sine) =
+//                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
+//             // below diagonal element
+//             let g = embed_givens(m, i, i + 1, cosine, sine);
+//             s = matrix_mult(&g, &s);
+//             u = matrix_mult(&u, &g);
+
+//             let (_, cosine, sine) =
+//                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
+//             let g = embed_givens(n, i, i + 1, cosine, sine);
+//             let g_t = g.transpose();
+//             s = matrix_mult(&s, &g_t);
+//             v = matrix_mult(&v, &g);
+//         }
+//         max_iteration -= 1
+//     }
+//     SingularValueDecomp { u, s, v }
+// }
+pub fn full_givens_iteration(mut u_k:NdArray, mut s: NdArray, mut v_k: NdArray) -> SingularValueDecomp {
+    let initial = matrix_mult(&matrix_mult(&u_k, &s), &v_k.transpose());
+    println!("initail recon {initial:?}");
+    println!("--------------------------");
     println!("givens appears as {s:?}");
     // takes in bidiagonal and returns full SVD
     let m = s.dims[0];
     let n = s.dims[1];
     let k = m.min(n);
     // row-space, column-space
-    // let mut u = create_identity_matrix(m);
-    // let mut v = create_identity_matrix(n);
+    let mut u = create_identity_matrix(m);
+    let mut v = create_identity_matrix(n);
     let mut max_iteration = 1 << 8;
     // left work
     while offdiag_norm(&s) > CONVERGENCE_CONDITION && max_iteration > 0 {
@@ -37,6 +73,7 @@ pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> S
             // below diagonal element
             let g = embed_givens(m, i, i + 1, cosine, sine);
             s = matrix_mult(&g, &s);
+            // u = matrix_mult(&u, &g);
             u = matrix_mult(&u, &g);
 
             let (_, cosine, sine) =
@@ -48,7 +85,12 @@ pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> S
         }
         max_iteration -= 1
     }
-    SingularValueDecomp { u, s, v }
+    let recon = matrix_mult(&matrix_mult(&u, &s), &v.transpose());
+    println!("givens internal recon {recon:?}");
+    let recon_k = matrix_mult(&matrix_mult(&u_k, &recon), &v_k.transpose());
+    println!("composed recon {recon_k:?}");
+    // SingularValueDecomp { u: matrix_mult(&u, &u_k), s, v: matrix_mult(&v, &v_k) }
+    SingularValueDecomp { u: matrix_mult(&u_k, &u), s, v: matrix_mult(&v_k, &v) }
 }
 
 
@@ -102,8 +144,7 @@ fn offdiag_norm(s: &NdArray) -> f32 {
     let mut norm = 0.0;
     for i in 0..m.min(n) - 1 {
         // upper diagonal
-        // norm += s.data[i * n + i + 1].abs();
-        norm += s.data[i * n + i + 1].abs() + s.data[(i + 1) * n + 1].abs();
+        norm += s.data[i * n + i + 1].abs() + s.data[(i + 1) * n + i].abs();
     }
     norm
 }
@@ -135,49 +176,3 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
     let r: f32 = (a.powi(2) + b.powi(2)).sqrt();
     (r, c, s)
 }
-
-// use stellar::decomposition::svd::golub_kahan;
-// use stellar::decomposition::schur::real_schur;
-// use stellar::decomposition::qr::qr_decompose;
-// use stellar::decomposition::givens::givens_iteration;
-// use stellar::structure::ndarray::NdArray;
-//
-// fn main() {
-//     // {
-//         // Eigen values 2, -1
-//         let mut data = vec![0_f32; 4];
-//         let dims = vec![2; 2];
-//         data[0] = -1_f32;
-//         data[1] = 0_f32;
-//         data[2] = 5_f32;
-//         data[3] = 2_f32;
-//     // }
-//     // {
-//     //     data = vec![0_f32; 9];
-//     //     dims = vec![3; 2];
-//     //     data[0] = 1_f32;
-//     //     data[1] = 2_f32;
-//     //     data[2] = 3_f32;
-//     //     data[3] = 3_f32;
-//     //     data[4] = 4_f32;
-//     //     data[5] = 5_f32;
-//     //     data[6] = 6_f32;
-//     //     data[7] = 7_f32;
-//     //     data[8] = 8_f32;
-//     // }
-//     let x = NdArray::new(dims, data.clone());
-//     println!("x: {:?}", x);
-//     //
-//     let reference = golub_kahan(x.clone());
-//     println!("Reference {:?}", reference);
-
-//     let y = qr_decompose(x.clone());
-//     println!("triangle {:?}", y.triangle);
-
-//     let real_schur = real_schur(x.clone());
-//     println!("real schur kernel {:?}", real_schur.kernel);
-
-//     let svd = givens_iteration(reference);
-//     println!("svd u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd.u, svd.s, svd.v);
-
-// }

@@ -79,6 +79,7 @@ impl RandomizedSvd {
         let mut tiny_core = matrix.transpose();
         let qrr = qr_decompose(tiny_core.clone());
         qrr.left_apply_qt(&mut tiny_core);
+        println!("fitting matrix {:?}", tiny_core.transpose());
         let (u, b, v) = full_golub_kahan(tiny_core.transpose());
         let svd =  full_givens_iteration(u, b, v);
         RandomizedSvd {
