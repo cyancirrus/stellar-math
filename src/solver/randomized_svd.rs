@@ -114,7 +114,7 @@ impl RandomizedSvd {
         self.qrr.left_apply_q(&mut output);
         output = output.transpose();
         output.data.resize(self.n * self.n, 0_f32);
-        output.dims[0] = self.n;
+        output.dims[1] = self.n;
         self.qrl.left_apply_q(&mut output);
         output.transpose()
     }

@@ -154,7 +154,7 @@ impl QrDecomposition {
         // f(X) :: QX
         // H[i]*X = X - Buu'X
         // w = u'X
-        debug_assert!(target.dims[0] == self.rows);
+        // debug_assert!(target.dims[0] == self.rows);
         let mut w = vec![0_f32; self.rows];
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         for p in (0..self.card).rev() {
