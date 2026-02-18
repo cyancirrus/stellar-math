@@ -70,15 +70,16 @@ pub fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
             // below diagonal element
             let g = embed_givens(m, i, i + 1, cosine, sine);
+            let g_t = g.transpose();
             s = matrix_mult(&g, &s);
-            u = matrix_mult(&u, &g);
+            u = matrix_mult(&u, &g_t);
 
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
             let g = embed_givens(n, i, i + 1, cosine, sine);
             let g_t = g.transpose();
             s = matrix_mult(&s, &g_t);
-            v = matrix_mult(&v, &g);
+            v = matrix_mult(&v, &g_t);
         }
         max_iteration -= 1
     }
