@@ -24,7 +24,9 @@ fn main() {
 
     let tiny = ksvd.approx();
     println!("tiny {tiny:?}");
-
+    
+    // TODO: Ensure this is behaving as intended need non noise matrix
+    // however appears to be directionally correct
     let big = ksvd.reconstruct();
     println!("big {big:?}");
 
