@@ -20,7 +20,6 @@ impl SingularValueDecomp {
 
 // HACK: Fix as soon as possible there's a weird sign in my rotations
 pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> SingularValueDecomp {
-    println!("givens appears as {s:?}");
     // takes in bidiagonal and returns full SVD
     let m = s.dims[0];
     let n = s.dims[1];
@@ -53,7 +52,6 @@ pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> S
 
 
 pub fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
-    println!("givens appears as {s:?}");
     // takes in bidiagonal and returns full SVD
     let m = s.dims[0];
     let n = s.dims[1];
