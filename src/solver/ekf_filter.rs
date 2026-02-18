@@ -4,7 +4,7 @@ use crate::algebra::ndmethods::in_place_sub;
 use crate::algebra::ndmethods::mult_mat_vec;
 use crate::algebra::ndmethods::tensor_mult;
 use crate::algebra::vector::vec_in_place_add;
-use crate::decomposition::lu::lu_decompose;
+use crate::decomposition::lower_upper::LuPivotDecompose;
 use crate::structure::ndarray::NdArray;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
@@ -288,7 +288,7 @@ where
         s_k = tensor_mult(4, &s_k, &self.h.transpose());
         in_place_add(&mut s_k, &self.r_variance);
         let mut k = tensor_mult(4, &self.p, &self.h);
-        let lu = lu_decompose(s_k);
+        let lu = LuPivotDecompose::new(s_k);
         lu.solve_inplace(&mut k);
         self.k = k;
     }

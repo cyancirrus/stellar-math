@@ -130,7 +130,7 @@ impl QrDecomposition {
     }
     pub fn left_apply_qt(&self, target: &mut NdArray) {
         // f(X) :: Q'X
-        debug_assert!(target.dims[1] == self.rows);
+        debug_assert!(target.dims[0] == self.rows);
         let mut w = vec![0_f32; self.rows];
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         // Qn..Q1

@@ -153,6 +153,15 @@ pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     NdArray::new(dims, new)
 }
 
+pub fn matrix_mult(x: &NdArray, y: &NdArray) -> NdArray {
+    let (k, j) = (x.dims[1], y.dims[1]);
+    if k <= 16 || j <= 16 {
+        tensor_mult(16, x, y)
+    } else {
+        tensor_mult(32, x, y)
+    }
+}
+
 pub fn mult_mat_vec(a: &NdArray, x: &[f32]) -> Vec<f32> {
     debug_assert_eq!(a.dims[1], x.len());
     let (m, n) = (a.dims[0], a.dims[1]);

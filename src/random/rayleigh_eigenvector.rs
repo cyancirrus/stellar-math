@@ -1,6 +1,6 @@
 use crate::algebra::ndmethods::create_identity_matrix;
 use crate::algebra::ndmethods::tensor_mult;
-use crate::decomposition::lu::lu_decompose;
+use crate::decomposition::lower_upper::LuPivotDecompose;
 use crate::decomposition::qr::qr_decompose;
 use crate::structure::ndarray::NdArray;
 
@@ -26,7 +26,7 @@ fn rayleigh_inverse_iteration(mut matrix: NdArray) -> Vec<f32> {
         // transforms M' = (A - Iu + Iu - Iu')
         let previous = current.clone();
         estimate_eigenvalues(&mut u, &mut matrix, &current);
-        let lu = lu_decompose(matrix.clone());
+        let lu = LuPivotDecompose::new(matrix.clone());
         // eigen is now y
         lu.solve_inplace_vec(&mut current);
         normalize_vector(&mut current);

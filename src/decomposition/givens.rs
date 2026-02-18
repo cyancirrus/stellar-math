@@ -1,5 +1,5 @@
 #![allow(warnings)]
-use crate::algebra::ndmethods::{create_identity_matrix, tensor_mult, transpose};
+use crate::algebra::ndmethods::{create_identity_matrix, matrix_mult, transpose};
 use crate::decomposition::qr;
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
@@ -19,6 +19,7 @@ impl SingularValueDecomp {
 }
 
 pub fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
+    println!("givens appears as {s:?}");
     // takes in bidiagonal and returns full SVD
     let m = s.dims[0];
     let n = s.dims[1];
@@ -35,15 +36,15 @@ pub fn givens_iteration(mut s: NdArray) -> SingularValueDecomp {
                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
             // below diagonal element
             let g = embed_givens(m, i, i + 1, cosine, sine);
-            s = tensor_mult(2, &g, &s);
-            u = tensor_mult(2, &u, &g);
+            s = matrix_mult(&g, &s);
+            u = matrix_mult(&u, &g);
 
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
             let g = embed_givens(n, i, i + 1, cosine, sine);
             let g_t = g.transpose();
-            s = tensor_mult(2, &s, &g_t);
-            v = tensor_mult(2, &v, &g);
+            s = matrix_mult(&s, &g_t);
+            v = matrix_mult(&v, &g);
         }
         max_iteration -= 1
     }

@@ -127,7 +127,7 @@ impl LinearProgram {
     }
     fn compute_phase_one_delta_cost(&self) -> Vec<f32> {
         let b = self.get_basis_matrix();
-        let lu = lu_decompose(b.transpose());
+        let lu = LuPivotDecompose::new(b.transpose());
         println!("lu {:?}", lu.matrix);
         let n_cols = 2 * self.m + 2 * self.n;
 
@@ -156,7 +156,7 @@ impl LinearProgram {
     }
     fn compute_phase_two_delta_cost(&self) -> Vec<f32> {
         let b = self.get_basis_matrix();
-        let lu = lu_decompose(b.transpose());
+        let lu = LuPivotDecompose::new(b.transpose());
         let n_cols = 2 * self.m + 2 * self.n;
 
         let mut cost_b = vec![0.0; self.n];
@@ -196,7 +196,7 @@ impl LinearProgram {
     }
     fn get_basic_solution(&self) -> Vec<f32> {
         let basis = self.get_basis_matrix();
-        let lu = lu_decompose(basis.transpose());
+        let lu = LuPivotDecompose::new(basis.transpose());
         let x_basic = self.b.clone();
         let mut x = vec![0.0; self.n];
         for (i, &basis_idx) in self.basis.iter().enumerate() {
