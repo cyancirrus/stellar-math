@@ -25,9 +25,6 @@ pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> S
     let m = s.dims[0];
     let n = s.dims[1];
     let k = m.min(n);
-    for i in 0..n-1 {
-        s.data[i * n + i + 1] = - s.data[i * n + i + 1];
-    }
     // row-space, column-space
     let mut max_iteration = 1 << 8;
     // left work
@@ -38,15 +35,16 @@ pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> S
                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
             // below diagonal element
             let g = embed_givens(m, i, i + 1, cosine, sine);
+            let g_t = g.transpose();
             s = matrix_mult(&g, &s);
-            u = matrix_mult(&u, &g);
+            u = matrix_mult(&u, &g_t);
 
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
             let g = embed_givens(n, i, i + 1, cosine, sine);
             let g_t = g.transpose();
             s = matrix_mult(&s, &g_t);
-            v = matrix_mult(&v, &g);
+            v = matrix_mult(&v, &g_t);
         }
         max_iteration -= 1
     }
@@ -137,49 +135,3 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
     let r: f32 = (a.powi(2) + b.powi(2)).sqrt();
     (r, c, s)
 }
-
-// use stellar::decomposition::svd::golub_kahan;
-// use stellar::decomposition::schur::real_schur;
-// use stellar::decomposition::qr::qr_decompose;
-// use stellar::decomposition::givens::givens_iteration;
-// use stellar::structure::ndarray::NdArray;
-//
-// fn main() {
-//     // {
-//         // Eigen values 2, -1
-//         let mut data = vec![0_f32; 4];
-//         let dims = vec![2; 2];
-//         data[0] = -1_f32;
-//         data[1] = 0_f32;
-//         data[2] = 5_f32;
-//         data[3] = 2_f32;
-//     // }
-//     // {
-//     //     data = vec![0_f32; 9];
-//     //     dims = vec![3; 2];
-//     //     data[0] = 1_f32;
-//     //     data[1] = 2_f32;
-//     //     data[2] = 3_f32;
-//     //     data[3] = 3_f32;
-//     //     data[4] = 4_f32;
-//     //     data[5] = 5_f32;
-//     //     data[6] = 6_f32;
-//     //     data[7] = 7_f32;
-//     //     data[8] = 8_f32;
-//     // }
-//     let x = NdArray::new(dims, data.clone());
-//     println!("x: {:?}", x);
-//     //
-//     let reference = golub_kahan(x.clone());
-//     println!("Reference {:?}", reference);
-
-//     let y = qr_decompose(x.clone());
-//     println!("triangle {:?}", y.triangle);
-
-//     let real_schur = real_schur(x.clone());
-//     println!("real schur kernel {:?}", real_schur.kernel);
-
-//     let svd = givens_iteration(reference);
-//     println!("svd u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd.u, svd.s, svd.v);
-
-// }
