@@ -125,11 +125,11 @@ pub fn full_golub_kahan(mut a: NdArray) -> (NdArray, NdArray, NdArray) {
         for j in 0..cols {
             let mut sum = 0_f32;
             for k in o + 1..cols {
-                sum += v.data[k * cols + j] * proj.vector[k - o - 1];
+                sum += v.data[j * cols + k] * proj.vector[k - o - 1];
             }
             sum *= proj.beta;
             for k in o + 1..cols {
-                v.data[k * cols + j] -= sum * proj.vector[k - o - 1];
+                v.data[j * cols + k] -= sum * proj.vector[k - o - 1];
             }
         }
     }
