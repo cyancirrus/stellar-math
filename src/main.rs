@@ -11,7 +11,7 @@ use stellar::solver::randomized_svd::{RankKSvd, RandomizedSvd};
 const CONVERGENCE_CONDITION: f32 = 1e-4;
 
 fn main() {
-    let n = 10;
+    let n = 6;
     let mut x = generate_random_matrix(n, n);
     println!("x {x:?}");
     let ksvd = RandomizedSvd::new(4, x.clone());
@@ -24,4 +24,8 @@ fn main() {
 
     let tiny = ksvd.approx();
     println!("tiny {tiny:?}");
+
+    let big = ksvd.reconstruct();
+    println!("big {big:?}");
+
 }

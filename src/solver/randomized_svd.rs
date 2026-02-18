@@ -107,29 +107,15 @@ impl RandomizedSvd {
         }
     }
     pub fn reconstruct(&self) -> NdArray {
-        // tiny 
         let mut output = self.approx();
         output.data.resize(self.n * self.k, 0_f32);
         output.dims[0] = self.n;
-        self.qrr.left_apply_q(&mut output);
+        self.qrl.left_apply_q(&mut output);
         output = output.transpose();
         output.data.resize(self.n * self.n, 0_f32);
-        output.dims[1] = self.n;
-        self.qrl.left_apply_q(&mut output);
-        output.transpose()
+        output.dims[0] = self.n;
+        self.qrr.left_apply_q(&mut output);
+        output = output.transpose();
+        output
     }
 }
-
-
-// fn main() {
-//     let n = 10;
-//     let matrix = generate_random_matrix(n, n);
-//     let x = matrix.clone();
-//     let bidiag_reference = golub_kahan(x);
-//     println!("bidiag reference {bidiag_reference:?}");
-//     let svd_reference = givens_iteration(bidiag_reference);
-//     println!("svd_reference u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",svd_reference.u, svd_reference.s, svd_reference.v);
-//     let x = matrix.clone();
-//     let ksvd = RandomizedSvd::new(4, x);
-//     println!("svd_randomized u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}", ksvd.svd.u, ksvd.svd.s, ksvd.svd.v);
-// }
