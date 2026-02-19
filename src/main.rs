@@ -41,13 +41,13 @@ fn main() {
     ksvd.qrr.left_apply_qt(&mut x);
     x = x.transpose();
     let tiny = ksvd.approx();
-    let _big = ksvd.reconstruct();
+    let big = ksvd.reconstruct();
     let svalues = RankKSvd::new(4, x.clone());
     let duration = start.elapsed();
     println!("Pipeline took {:?}", duration / 100);
     println!("rotated {x:?}");
     println!("tiny {tiny:?}");
-    // println!("big {big:?}");
+    println!("big {big:?}");
     println!("s reference {:?}", ksvd.svd.s);
     println!("singular values {:?}", svalues.singular);
 

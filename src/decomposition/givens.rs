@@ -41,8 +41,8 @@ pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> S
 
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
-            let g = embed_givens(n, i, i + 1, cosine, sine);
-            let g_t = g.transpose();
+            // let g = embed_givens(n, i, i + 1, cosine, sine);
+            // let g_t = g.transpose();
             // s = matrix_mult(&s, &g_t);
             // v = matrix_mult(&v, &g_t);
             apply_gt_right(&mut s, i, i+1, cosine, sine);
@@ -52,38 +52,6 @@ pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> S
     }
     SingularValueDecomp { u, s, v }
 }
-
-// pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> SingularValueDecomp {
-//     // takes in bidiagonal and returns full SVD
-//     let m = s.dims[0];
-//     let n = s.dims[1];
-//     let k = m.min(n);
-//     // row-space, column-space
-//     let mut max_iteration = 1 << 8;
-//     // left work
-//     while offdiag_norm(&s) > CONVERGENCE_CONDITION && max_iteration > 0 {
-//         for i in 0..k - 1 {
-//             // TODO: Optimize, there's a better way to do this it's only a trace over a bidiagonal
-//             let (_, cosine, sine) =
-//                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
-//             // below diagonal element
-//             let g = embed_givens(m, i, i + 1, cosine, sine);
-//             let g_t = g.transpose();
-//             s = matrix_mult(&g, &s);
-//             u = matrix_mult(&u, &g_t);
-
-//             let (_, cosine, sine) =
-//                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
-//             let g = embed_givens(n, i, i + 1, cosine, sine);
-//             let g_t = g.transpose();
-//             s = matrix_mult(&s, &g_t);
-//             v = matrix_mult(&v, &g_t);
-//         }
-//         max_iteration -= 1
-//     }
-//     SingularValueDecomp { u, s, v }
-// }
-
 
 pub fn givens_iteration(mut s: NdArray) -> Vec<f32> {
     // takes in bidiagonal and returns full SVD
@@ -102,15 +70,17 @@ pub fn givens_iteration(mut s: NdArray) -> Vec<f32> {
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
             // below diagonal element
-            let g = embed_givens(m, i, i + 1, cosine, sine);
-            let g_t = g.transpose();
-            s = matrix_mult(&g, &s);
+            apply_g_left(&mut s, i, i+1, cosine, sine);
+            // let g = embed_givens(m, i, i + 1, cosine, sine);
+            // let g_t = g.transpose();
+            // s = matrix_mult(&g, &s);
 
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
-            let g = embed_givens(n, i, i + 1, cosine, sine);
-            let g_t = g.transpose();
-            s = matrix_mult(&s, &g_t);
+            // let g = embed_givens(n, i, i + 1, cosine, sine);
+            // let g_t = g.transpose();
+            apply_gt_right(&mut s, i, i+1, cosine, sine);
+            // s = matrix_mult(&s, &g_t);
         }
         max_iteration -= 1
     }
