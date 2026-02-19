@@ -138,15 +138,16 @@ pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     for i in (0..x_rows).step_by(blocksize) {
         let ii_end = blocksize.min(x_rows - i);
         for k in 0..k_end {
-            let kk_end = blocksize.min(x_cols - k * blocksize);
+            let k_block = k * blocksize;
+            let kk_end = blocksize.min(x_cols - k_block);
             for j in (0..y_cols).step_by(blocksize) {
                 let jj_end = blocksize.min(y_cols - j);
                 for ii in 0..ii_end {
                     let x_row = (i + ii) * x_cols;
                     let out_row = (i + ii) * y_cols;
                     for kk in 0..kk_end {
-                        let k_offset = (k * blocksize + kk) * y_cols;
-                        let x_val = x.data[x_row + k * blocksize + kk];
+                        let k_offset = (k_block + kk) * y_cols;
+                        let x_val = x.data[x_row + k_block + kk];
                         for jj in 0..jj_end {
                             new[out_row + jj + j] += x_val * y.data[k_offset + jj + j];
                         }
