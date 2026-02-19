@@ -83,6 +83,7 @@ pub fn transpose(mut ndarray: NdArray) -> NdArray {
 }
 
 pub fn parallel_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
+    // NOTE: this could use a refactor
     assert!(blocksize > 0);
     assert_eq!(x.dims[1], y.dims[0], "dimension mismatch");
     let mut dims = x.dims.clone();
@@ -125,6 +126,7 @@ pub fn parallel_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArr
 }
 
 pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
+    // should be good up until padding
     debug_assert!(blocksize > 0);
     debug_assert_eq!(x.dims[1], y.dims[0], "dimension mismatch");
     let x_rows = x.dims[0];
