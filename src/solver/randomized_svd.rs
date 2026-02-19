@@ -29,10 +29,11 @@ impl RankKSvd {
         let n = matrix.dims[0];
         let sketch = generate_random_matrix(n, k);
         // might wish to inner product the resulting matrix
-        let cov = matrix_mult(&matrix, &matrix.transpose());
+        // let cov = matrix_mult(&matrix, &matrix.transpose());
         // n x k
         let a_sketch = matrix_mult(&matrix, &sketch);
-        let y = matrix_mult(&cov, &a_sketch);
+        // implicit covariance
+        let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
 
         let qrl = qr_decompose(y);
         qrl.left_apply_qt(&mut matrix);
@@ -53,10 +54,11 @@ impl RandomizedSvd {
         let n = matrix.dims[0];
         let sketch = generate_random_matrix(n, k);
         // might wish to inner product the resulting matrix
-        let cov = matrix_mult(&matrix, &matrix.transpose());
+        // let cov = matrix_mult(&matrix, &matrix.transpose());
         // n x k
-        let omega = matrix_mult(&matrix, &sketch);
-        let y = matrix_mult(&cov, &omega);
+        let a_sketch = matrix_mult(&matrix, &sketch);
+        // implicit covariance
+        let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
         // left ortho
         let qrl = qr_decompose(y);
         qrl.left_apply_qt(&mut matrix);
