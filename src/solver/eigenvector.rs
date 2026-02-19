@@ -1,4 +1,3 @@
-use crate::decomposition::givens::givens_iteration;
 use crate::decomposition::qr::qr_decompose;
 use crate::decomposition::schur::real_schur;
 use crate::decomposition::svd::golub_kahan;
@@ -91,50 +90,4 @@ pub fn retrieve_eigen(eig: f32, mut matrix: NdArray) -> Vec<f32> {
     evector.swap(i, j);
     normalize(&mut evector);
     evector
-}
-
-fn main() {
-    // {
-    // Eigen values 2, -1
-    let mut data = vec![0_f32; 4];
-    let dims = vec![2; 2];
-    data[0] = -1_f32;
-    data[1] = 0_f32;
-    data[2] = 5_f32;
-    data[3] = 2_f32;
-    // }
-    // {
-    //     data = vec![0_f32; 9];
-    //     dims = vec![3; 2];
-    //     data[0] = 1_f32;
-    //     data[1] = 2_f32;
-    //     data[2] = 3_f32;
-    //     data[3] = 3_f32;
-    //     data[4] = 4_f32;
-    //     data[5] = 5_f32;
-    //     data[6] = 6_f32;
-    //     data[7] = 7_f32;
-    //     data[8] = 8_f32;
-    // }
-    let x = NdArray::new(dims, data.clone());
-    println!("x: {:?}", x);
-    //
-    let reference = golub_kahan(x.clone());
-    println!("Reference {:?}", reference);
-
-    let y = qr_decompose(x.clone());
-    println!("triangle {:?}", y.triangle);
-
-    let real_schur = real_schur(x.clone());
-    // eigenvalues
-    println!("real schur kernel {:?}", real_schur.kernel);
-
-    let svd = givens_iteration(reference);
-    println!(
-        "svd u, s, v \nU: {:?}, \nS: {:?}, \nV: {:?}",
-        svd.u, svd.s, svd.v
-    );
-
-    let evector = retrieve_eigen(real_schur.kernel.data[3], x.clone());
-    println!("eigen vec {evector:?}");
 }

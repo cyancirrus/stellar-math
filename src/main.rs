@@ -29,5 +29,11 @@ fn main() {
     // however appears to be directionally correct
     let big = ksvd.reconstruct();
     println!("big {big:?}");
+    
+
+    println!("s reference {:?}", ksvd.svd.s);
+
+    let svalues = RankKSvd::new(4, x);
+    println!("singular values {:?}", svalues.singular);
 
 }
