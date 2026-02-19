@@ -119,29 +119,29 @@ impl RandomizedSvd {
 // const CONVERGENCE_CONDITION: f32 = 1e-4;
 
 // fn main() {
-//     let n = 6;
+//     let n = 1000;
 //     let mut x = generate_random_matrix(n, n);
 //     println!("x {x:?}");
-//     let ksvd = RandomizedSvd::new(4, x.clone());
+//     let start = Instant::now();
+//     for _ in 0..100 {
+//         let ksvd = RandomizedSvd::new(20, x.clone());
 
-//     ksvd.qrl.left_apply_qt(&mut x);
-//     x = x.transpose();
-//     ksvd.qrr.left_apply_qt(&mut x);
-//     x = x.transpose();
-//     println!("rotated {x:?}");
+//         ksvd.qrl.left_apply_qt(&mut x);
+//         x = x.transpose();
+//         ksvd.qrr.left_apply_qt(&mut x);
+//         x.transpose();
+//         let tiny = ksvd.approx();
+//         let big = ksvd.reconstruct();
+//         let svalues = RankKSvd::new(4, x.clone());
+//     }
+//     let duration = start.elapsed();
+//     println!("Pipeline took {:?}", duration / 100);
 
-//     let tiny = ksvd.approx();
-//     println!("tiny {tiny:?}");
-    
-//     // TODO: Ensure this is behaving as intended need non noise matrix
-//     // however appears to be directionally correct
-//     let big = ksvd.reconstruct();
-//     println!("big {big:?}");
-    
 
-//     println!("s reference {:?}", ksvd.svd.s);
-
-//     let svalues = RankKSvd::new(4, x);
-//     println!("singular values {:?}", svalues.singular);
+// //     println!("rotated {x:?}");
+// //     println!("tiny {tiny:?}");
+// //     // println!("big {big:?}");
+// //     println!("s reference {:?}", ksvd.svd.s);
+// //     println!("singular values {:?}", svalues.singular);
 
 // }

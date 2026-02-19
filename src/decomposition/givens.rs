@@ -32,22 +32,57 @@ pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> S
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
             // below diagonal element
-            let g = embed_givens(m, i, i + 1, cosine, sine);
-            let g_t = g.transpose();
-            s = matrix_mult(&g, &s);
-            u = matrix_mult(&u, &g_t);
+            apply_g_left(&mut s, i, i+1, cosine, sine);
+            apply_gt_right(&mut u, i, i+1, cosine, sine);
+            // let g = embed_givens(m, i, i + 1, cosine, sine);
+            // let g_t = g.transpose();
+            // s = matrix_mult(&g, &s);
+            // u = matrix_mult(&u, &g_t);
 
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
             let g = embed_givens(n, i, i + 1, cosine, sine);
             let g_t = g.transpose();
-            s = matrix_mult(&s, &g_t);
-            v = matrix_mult(&v, &g_t);
+            // s = matrix_mult(&s, &g_t);
+            // v = matrix_mult(&v, &g_t);
+            apply_gt_right(&mut s, i, i+1, cosine, sine);
+            apply_gt_right(&mut v, i, i+1, cosine, sine);
         }
         max_iteration -= 1
     }
     SingularValueDecomp { u, s, v }
 }
+
+// pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> SingularValueDecomp {
+//     // takes in bidiagonal and returns full SVD
+//     let m = s.dims[0];
+//     let n = s.dims[1];
+//     let k = m.min(n);
+//     // row-space, column-space
+//     let mut max_iteration = 1 << 8;
+//     // left work
+//     while offdiag_norm(&s) > CONVERGENCE_CONDITION && max_iteration > 0 {
+//         for i in 0..k - 1 {
+//             // TODO: Optimize, there's a better way to do this it's only a trace over a bidiagonal
+//             let (_, cosine, sine) =
+//                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
+//             // below diagonal element
+//             let g = embed_givens(m, i, i + 1, cosine, sine);
+//             let g_t = g.transpose();
+//             s = matrix_mult(&g, &s);
+//             u = matrix_mult(&u, &g_t);
+
+//             let (_, cosine, sine) =
+//                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
+//             let g = embed_givens(n, i, i + 1, cosine, sine);
+//             let g_t = g.transpose();
+//             s = matrix_mult(&s, &g_t);
+//             v = matrix_mult(&v, &g_t);
+//         }
+//         max_iteration -= 1
+//     }
+//     SingularValueDecomp { u, s, v }
+// }
 
 
 pub fn givens_iteration(mut s: NdArray) -> Vec<f32> {
@@ -134,3 +169,66 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
     let r: f32 = (a.powi(2) + b.powi(2)).sqrt();
     (r, c, s)
 }
+
+fn apply_g_left(a: &mut NdArray, i:usize, j: usize, c:f32, s:f32) {
+    // G * A 
+    // alpha, beta, gamma, delta,
+    // c, s, -s, c
+    // let (m, n) = (a.dims[0], a.dims[1]);
+    let n =a.dims[1];
+    for k in 0..n {
+        // alpha a[i*,k] + beta a[j*, k];
+        let i_replace = c * a.data[i * n + k] + s * a.data[j *n + k];
+        // gamma a[i*,k] + delta a[j*, k];
+        let j_replace = -s * a.data[i * n + k] + c * a.data[j *n + k];
+        a.data[i * n + k] = i_replace;
+        a.data[j * n + k] = j_replace;
+    }
+}
+
+fn apply_gt_left(a: &mut NdArray, i:usize, j: usize, c:f32, s:f32) {
+    // G' * A 
+    // transpose the negative sine
+    // alpha, beta, gamma, delta,
+    // c, -s, s, c
+    let n = a.dims[1];
+    for k in 0..n {
+        // alpha a[i*,j] + beta a[j*, j];
+        let i_replace = c * a.data[i * n + k] - s * a.data[j *n + k];
+        // gamma a[i*,j] + delta a[j*, j];
+        let j_replace = s * a.data[i * n + k] + c * a.data[j *n + k];
+        a.data[i * n + k] = i_replace;
+        a.data[j * n + k] = j_replace;
+    }
+}
+
+fn apply_g_right(a: &mut NdArray, i:usize, j: usize, c:f32, s:f32) {
+    // A * G 
+    // alpha, beta, gamma, delta,
+    // c, s, -s, c
+    let (m, n) = (a.dims[0], a.dims[1]);
+    for l in 0..m {
+        // alpha a[l,i*] + gamma a[l, j*];
+        let i_replace = c * a.data[l * n + i] - s * a.data[l * n + j];
+        // beta a[l,i*] + delta a[l, j*];
+        let j_replace = s * a.data[l * n + i] + c * a.data[l * n + j];
+        a.data[l * n + i] = i_replace;
+        a.data[l * n + j] = j_replace;
+    }
+}
+
+fn apply_gt_right(a: &mut NdArray, i:usize, j: usize, c:f32, s:f32) {
+    // A * G' 
+    // alpha, beta, gamma, delta,
+    // c, -s, s, c
+    let (m, n) = (a.dims[0], a.dims[1]);
+    for l in 0..m {
+        // alpha a[l,i*] + gamma a[l, j*];
+        let i_replace = c * a.data[l * n + i] + s * a.data[l * n + j];
+        // beta a[l,i*] + delta a[l, j*];
+        let j_replace = -s * a.data[l * n + i] + c * a.data[l * n + j];
+        a.data[l * n + i] = i_replace;
+        a.data[l * n + j] = j_replace;
+    }
+}
+
