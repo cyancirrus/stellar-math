@@ -12,27 +12,29 @@ use std::time::Instant;
 const CONVERGENCE_CONDITION: f32 = 1e-4;
 
 fn main() {
-    let n = 32;
+    let n = 1000;
     let mut x = generate_random_matrix(n, n);
-    // println!("x {x:?}");
+    println!("x {x:?}");
     let start = Instant::now();
-    let ksvd = RandomizedSvd::new(8, x.clone());
+    for _ in 0..100 {
+        let ksvd = RandomizedSvd::new(20, x.clone());
 
-    ksvd.qrl.left_apply_qt(&mut x);
-    x = x.transpose();
-    ksvd.qrr.left_apply_qt(&mut x);
-    x.transpose();
-    let tiny = ksvd.approx();
-    let big = ksvd.reconstruct();
-    let svalues = RankKSvd::new(4, x.clone());
+        ksvd.qrl.left_apply_qt(&mut x);
+        x = x.transpose();
+        ksvd.qrr.left_apply_qt(&mut x);
+        x.transpose();
+        let tiny = ksvd.approx();
+        let big = ksvd.reconstruct();
+        let svalues = RankKSvd::new(4, x.clone());
+    }
     let duration = start.elapsed();
-    println!("Pipeline took {:?}", duration);
+    println!("Pipeline took {:?}", duration / 100);
 
 
-    println!("rotated {x:?}");
-    println!("tiny {tiny:?}");
-    // println!("big {big:?}");
-    println!("s reference {:?}", ksvd.svd.s);
-    println!("singular values {:?}", svalues.singular);
+//     println!("rotated {x:?}");
+//     println!("tiny {tiny:?}");
+//     // println!("big {big:?}");
+//     println!("s reference {:?}", ksvd.svd.s);
+//     println!("singular values {:?}", svalues.singular);
 
 }
