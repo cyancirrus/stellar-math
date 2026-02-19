@@ -28,23 +28,14 @@ pub fn full_givens_iteration(mut u:NdArray, mut s: NdArray, mut v: NdArray) -> S
     // left work
     while offdiag_norm(&s) > CONVERGENCE_CONDITION && max_iteration > 0 {
         for i in 0..k - 1 {
-            // TODO: Optimize, there's a better way to do this it's only a trace over a bidiagonal
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
             // below diagonal element
             apply_g_left(&mut s, i, i+1, cosine, sine);
             apply_gt_right(&mut u, i, i+1, cosine, sine);
-            // let g = embed_givens(m, i, i + 1, cosine, sine);
-            // let g_t = g.transpose();
-            // s = matrix_mult(&g, &s);
-            // u = matrix_mult(&u, &g_t);
 
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
-            // let g = embed_givens(n, i, i + 1, cosine, sine);
-            // let g_t = g.transpose();
-            // s = matrix_mult(&s, &g_t);
-            // v = matrix_mult(&v, &g_t);
             apply_gt_right(&mut s, i, i+1, cosine, sine);
             apply_gt_right(&mut v, i, i+1, cosine, sine);
         }
@@ -66,21 +57,14 @@ pub fn givens_iteration(mut s: NdArray) -> Vec<f32> {
     // left work
     while offdiag_norm(&s) > CONVERGENCE_CONDITION && max_iteration > 0 {
         for i in 0..k - 1 {
-            // TODO: Optimize, there's a better way to do this it's only a trace over a bidiagonal
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[(i + 1) * n + i]);
             // below diagonal element
             apply_g_left(&mut s, i, i+1, cosine, sine);
-            // let g = embed_givens(m, i, i + 1, cosine, sine);
-            // let g_t = g.transpose();
-            // s = matrix_mult(&g, &s);
 
             let (_, cosine, sine) =
                 implicit_givens_rotation(s.data[i * n + i], s.data[i * n + i + 1]);
-            // let g = embed_givens(n, i, i + 1, cosine, sine);
-            // let g_t = g.transpose();
             apply_gt_right(&mut s, i, i+1, cosine, sine);
-            // s = matrix_mult(&s, &g_t);
         }
         max_iteration -= 1
     }
