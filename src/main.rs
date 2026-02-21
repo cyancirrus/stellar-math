@@ -27,21 +27,21 @@ fn main() {
     let mut x = generate_random_matrix(n, n);
     println!("x {x:?}");
     let start = Instant::now();
-    let ksvd = RandomizedSvd::new(6, x.clone());
+    let ksvd = RandomizedSvd::new(4, x.clone());
 
-    ksvd.qrl.left_apply_qt(&mut x);
-    x = x.transpose();
-    ksvd.qrr.left_apply_qt(&mut x);
-    x = x.transpose();
+    // ksvd.qrl.left_apply_qt(&mut x);
+    // x = x.transpose();
+    // ksvd.qrr.left_apply_qt(&mut x);
+    // x = x.transpose();
     let tiny = ksvd.approx();
-    let big = ksvd.reconstruct();
-    let svalues = RankKSvd::new(4, x.clone());
-    let duration = start.elapsed();
-    // println!("Pipeline took {:?}", duration / 100);
+    // let big = ksvd.reconstruct();
+    // let svalues = RankKSvd::new(4, x.clone());
+    // let duration = start.elapsed();
+    // // println!("Pipeline took {:?}", duration / 100);
 
     println!("rotated {x:?}");
     println!("tiny {tiny:?}");
-    println!("big {big:?}");
-    println!("s reference {:?}", ksvd.svd.s);
-    println!("singular values {:?}", svalues.singular);
+    // println!("big {big:?}");
+    // println!("s reference {:?}", ksvd.svd.s);
+    // println!("singular values {:?}", svalues.singular);
 }

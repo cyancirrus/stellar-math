@@ -37,7 +37,7 @@ impl NdArray {
 }
 
 impl NdArray {
-    pub fn resize(&mut self, nrows:usize, ncols:usize) {
+    pub fn resize(&mut self, nrows: usize, ncols: usize) {
         debug_assert_eq!(self.dims.len(), 2);
         let (rows, cols) = (self.dims[0], self.dims[1]);
         if ncols < cols {
@@ -51,11 +51,11 @@ impl NdArray {
             self.extend_rows(ncols, nrows);
         }
     }
-    fn truncate_rows(&mut self, cols:usize, nrows: usize) {
+    fn truncate_rows(&mut self, cols: usize, nrows: usize) {
         self.data.truncate(cols * nrows);
         self.dims[0] = nrows;
     }
-    fn truncate_cols(&mut self, rows:usize, cols:usize, ncols: usize) {
+    fn truncate_cols(&mut self, rows: usize, cols: usize, ncols: usize) {
         for i in 1..rows {
             for j in 0..ncols {
                 self.data.swap(i * cols + j, i * ncols + j);
@@ -64,11 +64,11 @@ impl NdArray {
         self.data.truncate(ncols * rows);
         self.dims[1] = ncols;
     }
-    fn extend_rows(&mut self, cols:usize, nrows: usize) {
+    fn extend_rows(&mut self, cols: usize, nrows: usize) {
         self.data.resize(nrows * cols, 0f32);
         self.dims[0] = nrows;
     }
-    fn extend_cols(&mut self, rows:usize, cols:usize, ncols: usize) {
+    fn extend_cols(&mut self, rows: usize, cols: usize, ncols: usize) {
         self.data.resize(ncols * rows, 0f32);
         for i in (1..rows).rev() {
             for j in (0..cols).rev() {
