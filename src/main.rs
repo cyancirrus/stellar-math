@@ -5,10 +5,10 @@ use stellar::decomposition::givens::{givens_iteration, SingularValueDecomp};
 use stellar::decomposition::lower_upper::LuPivotDecompose;
 use stellar::decomposition::qr::QrDecomposition;
 use stellar::decomposition::svd::golub_kahan;
+use stellar::equality::approximate::approx_vector_eq;
 use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
 use stellar::solver::randomized_svd::{RandomizedSvd, RankKSvd};
 use stellar::structure::ndarray::NdArray;
-use stellar::equality::approximate::approx_vector_eq;
 
 const CONVERGENCE_CONDITION: f32 = 1e-4;
 
@@ -44,5 +44,4 @@ fn main() {
     println!("big {big:?}");
     println!("s reference {:?}", ksvd.svd.s);
     println!("singular values {:?}", svalues.singular);
-
 }

@@ -121,7 +121,7 @@ impl QrDecomposition {
         // f(X) :: Q'X
         // debug_assert!(target.dims[0] == self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        let mut sum ;
+        let mut sum;
         for p in 0..self.card {
             let proj = &self.projections[p];
             // ( I - Bvv') is symmetric order matters
@@ -144,7 +144,7 @@ impl QrDecomposition {
         // H[i]*X = X - Buu'X
         // w = u'X
         // debug_assert!(target.dims[0] == self.cols);
-        let mut sum ;
+        let mut sum;
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         for p in (0..self.card).rev() {
             let proj = &self.projections[p];
@@ -178,7 +178,7 @@ impl QrDecomposition {
                 }
                 sum *= proj.beta;
                 for j in p..tcols.min(self.cols) {
-                    target.data[i * tcols + j] -= sum  * proj.vector[j - p];
+                    target.data[i * tcols + j] -= sum * proj.vector[j - p];
                 }
             }
         }
@@ -202,7 +202,7 @@ impl QrDecomposition {
                 }
                 // for j in p..tcols.min(self.rows) {
                 for j in p..tcols {
-                    target.data[i * tcols + j] -= sum * proj.beta  * proj.vector[j - p];
+                    target.data[i * tcols + j] -= sum * proj.beta * proj.vector[j - p];
                 }
             }
         }

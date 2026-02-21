@@ -20,7 +20,7 @@ impl NdArray {
         self.data.len()
     }
     pub fn clear(&mut self) {
-        self.data = vec![0_f32; self.data.len()];
+        self.data = vec![0f32; self.data.len()];
     }
     pub fn diff(&mut self, other: Self) {
         debug_assert!(other.dims() == self.dims());
@@ -36,24 +36,48 @@ impl NdArray {
     }
 }
 
-// const EPSILON:f32 = 1e-6;
-// impl PartialEq for NdArray {
-//     fn eq(&self, other:&Self) -> bool {
-//         let c = self.dims.len();
-//         if self.dims != other.dims {
-//             return false;
-//         }
-//         if self.data.len() != other.data.len() {
-//             return false;
-//         }
-//         for i in 0.. self.data.len() {
-//             if (self.data[i] - other.data[i]).abs() > EPSILON {
-//                 return false;
-//             }
-//         }
-//         true
-//     }
-// }
+impl NdArray {
+    pub fn resize(&mut self, nrows:usize, ncols:usize) {
+        debug_assert_eq!(self.dims.len(), 2);
+        let (rows, cols) = (self.dims[0], self.dims[1]);
+        if ncols < cols {
+            self.truncate_cols(rows, cols, ncols);
+        } else if ncols > cols {
+            self.extend_cols(rows, cols, ncols);
+        }
+        if nrows < rows {
+            self.truncate_rows(ncols, nrows);
+        } else if nrows > rows {
+            self.extend_rows(ncols, nrows);
+        }
+    }
+    fn truncate_rows(&mut self, cols:usize, nrows: usize) {
+        self.data.truncate(cols * nrows);
+        self.dims[0] = nrows;
+    }
+    fn truncate_cols(&mut self, rows:usize, cols:usize, ncols: usize) {
+        for i in 1..rows {
+            for j in 0..ncols {
+                self.data.swap(i * cols + j, i * ncols + j);
+            }
+        }
+        self.data.truncate(ncols * rows);
+        self.dims[1] = ncols;
+    }
+    fn extend_rows(&mut self, cols:usize, nrows: usize) {
+        self.data.resize(nrows * cols, 0f32);
+        self.dims[0] = nrows;
+    }
+    fn extend_cols(&mut self, rows:usize, cols:usize, ncols: usize) {
+        self.data.resize(ncols * rows, 0f32);
+        for i in (1..rows).rev() {
+            for j in (0..cols).rev() {
+                self.data.swap(i * cols + j, i * ncols + j);
+            }
+        }
+        self.dims[1] = ncols;
+    }
+}
 
 struct NdIterator<'a> {
     drow: usize,
@@ -99,7 +123,7 @@ impl NdArray {
     }
     pub fn transpose(&self) -> NdArray {
         let mut dims = self.dims.clone();
-        let mut data = vec![0_f32; self.card()];
+        let mut data = vec![0f32; self.card()];
         dims.swap(0, 1);
         for i in 0..dims[0] {
             for j in 0..dims[1] {
@@ -107,38 +131,6 @@ impl NdArray {
             }
         }
         NdArray { dims, data }
-    }
-}
-
-impl NdArray {
-    pub fn print(&self) {
-        let (rows, cols) = (self.dims[0], self.dims[1]);
-
-        // Determine the max width needed for alignment
-        let max_width = self
-            .data
-            .iter()
-            .map(|v| format!("{:.3}", v).len())
-            .max()
-            .unwrap_or(4); // Default width if empty
-
-        let mut output = String::new();
-        output.push_str("(\n");
-        for i in 0..rows {
-            output.push_str("\t(");
-            for j in 0..cols {
-                let idx = i * cols + j;
-                let formatted = format!("{:width$.3}", self.data[idx], width = max_width);
-                output.push_str(&formatted);
-                if j < cols - 1 {
-                    output.push_str(", ");
-                }
-            }
-            output.push_str("),\n");
-        }
-        output.push(')');
-
-        println!("{}", output);
     }
 }
 
