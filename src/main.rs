@@ -8,6 +8,7 @@ use stellar::decomposition::svd::golub_kahan;
 use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
 use stellar::solver::randomized_svd::{RandomizedSvd, RankKSvd};
 use stellar::structure::ndarray::NdArray;
+use stellar::equality::approximate::approx_vector_eq;
 
 const CONVERGENCE_CONDITION: f32 = 1e-4;
 
@@ -24,29 +25,44 @@ const CONVERGENCE_CONDITION: f32 = 1e-4;
 fn test_qr_right_apply_t() {
     let n = 6;
     let x = generate_random_matrix(n, n);
-    let x = QrDecomposition::new(x);
+    let qr = QrDecomposition::new(x);
+    let mut y = generate_random_matrix(n, n);
+    let y_clone = y.clone();
+    qr.right_apply_q(&mut y);
+    qr.right_apply_qt(&mut y);
+    assert!(approx_vector_eq(&y.data, &y_clone.data));
+    //-----------------------------------
+    let n = 6;
+    let x = generate_random_matrix(n, n);
+    let qr = QrDecomposition::new(x);
+    let mut y = generate_random_matrix(n, n);
+    let y_clone = y.clone();
+    qr.right_apply_qt(&mut y);
+    qr.right_apply_q(&mut y);
+    assert!(approx_vector_eq(&y.data, &y_clone.data));
+}
+
+fn test_qr_left_apply_t() {
+    let n = 6;
+    let x = generate_random_matrix(n, n);
+    let qr = QrDecomposition::new(x);
+    let mut y = generate_random_matrix(n, n);
+    let y_clone = y.clone();
+    qr.left_apply_q(&mut y);
+    qr.left_apply_qt(&mut y);
+    assert!(approx_vector_eq(&y.data, &y_clone.data));
+    //-----------------------------------
+    let n = 6;
+    let x = generate_random_matrix(n, n);
+    let qr = QrDecomposition::new(x);
+    let mut y = generate_random_matrix(n, n);
+    let y_clone = y.clone();
+    qr.left_apply_qt(&mut y);
+    qr.left_apply_q(&mut y);
+    assert!(approx_vector_eq(&y.data, &y_clone.data));
 }
 
 fn main() {
-    let n = 6;
-    let mut x = generate_random_matrix(n, n);
-    // println!("x {x:?}");
-    let start = Instant::now();
-    let ksvd = RandomizedSvd::new(4, x.clone());
-
-    ksvd.qrl.left_apply_qt(&mut x);
-    x = x.transpose();
-    ksvd.qrr.left_apply_qt(&mut x);
-    x = x.transpose();
-    let tiny = ksvd.approx();
-    // let big = ksvd.reconstruct();
-    let svalues = RankKSvd::new(4, x.clone());
-    let duration = start.elapsed();
-    println!("Pipeline took {:?}", duration);
-
-    println!("rotated {x:?}");
-    println!("tiny {tiny:?}");
-    // println!("big {big:?}");
-    println!("s reference {:?}", ksvd.svd.s);
-    println!("singular values {:?}", svalues.singular);
+    test_qr_right_apply_t();
+    test_qr_left_apply_t();
 }

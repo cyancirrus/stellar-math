@@ -163,6 +163,50 @@ impl QrDecomposition {
         target.data.truncate(self.rows * tcols);
         target.dims[0] = target.dims[0].min(self.rows);
     }
+    pub fn right_apply_q(&self, target: &mut NdArray) {
+        // f(X) :: XQ
+        // H[i]*X = X - Buu'X
+        // debug_assert!(target.dims[0] == self.cols);
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        let mut sum;
+        for p in 0..self.card {
+            let proj = &self.projections[p];
+            for i in 0..tcols {
+                sum = 0f32;
+                // inner product of a[i][*] and u[p]
+                for j in p..trows.min(self.cols) {
+                    sum += target.data[i * tcols + j] * proj.vector[j - p];
+                }
+                for j in p..trows.min(self.cols) {
+                    target.data[i * tcols + j] -= sum * proj.beta  * proj.vector[j - p];
+                }
+            }
+        }
+        target.data.truncate(tcols * self.cols);
+        target.dims[1] = self.cols;
+    }
+    pub fn right_apply_qt(&self, target: &mut NdArray) {
+        // f(X) :: XQ'
+        // H[i]*X = X - Buu'X
+        // debug_assert!(target.dims[0] == self.cols);
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        let mut sum;
+        for p in (0..self.card).rev() {
+            let proj = &self.projections[p];
+            for i in 0..tcols {
+                sum = 0f32;
+                // inner product of a[i][*] and u[p]
+                for j in p..trows.min(self.cols) {
+                    sum += target.data[i * tcols + j] * proj.vector[j - p];
+                }
+                for j in p..trows.min(self.cols) {
+                    target.data[i * tcols + j] -= sum * proj.beta  * proj.vector[j - p];
+                }
+            }
+        }
+        target.data.truncate(tcols * self.cols);
+        target.dims[1] = self.cols;
+    }
     fn multiply_vector(&self, mut data: Vec<f32>) -> Vec<f32> {
         // A ~ M[i,j] => Q ~ M[i,i]
         debug_assert!(data.len() == self.rows);

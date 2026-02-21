@@ -155,4 +155,42 @@ mod qr_decomposition {
             random_reconstruction(n)
         }
     }
+    #[test]
+    fn test_qr_right_apply_t() {
+        let n = 6;
+        let x = generate_random_matrix(n, n);
+        let qr = QrDecomposition::new(x);
+        let mut y = generate_random_matrix(n, n);
+        let y_clone = y.clone();
+        qr.right_apply_q(&mut y);
+        qr.right_apply_qt(&mut y);
+        assert!(approx_vector_eq(&y.data, &y_clone.data));
+        //-----------------------------------
+        let n = 6;
+        let x = generate_random_matrix(n, n);
+        let qr = QrDecomposition::new(x);
+        let mut y = generate_random_matrix(n, n);
+        let y_clone = y.clone();
+        qr.right_apply_qt(&mut y);
+        qr.right_apply_q(&mut y);
+        assert!(approx_vector_eq(&y.data, &y_clone.data));
+    }
+    #[test]
+    fn test_qr_left_apply_t() {
+        let n = 6;
+        let x = generate_random_matrix(n, n);
+        let qr = QrDecomposition::new(x);
+        let mut y = generate_random_matrix(n, n);
+        let y_clone = y.clone();
+        qr.left_apply_q(&mut y); qr.left_apply_qt(&mut y); assert!(approx_vector_eq(&y.data, &y_clone.data));
+        //-----------------------------------
+        let n = 6;
+        let x = generate_random_matrix(n, n);
+        let qr = QrDecomposition::new(x);
+        let mut y = generate_random_matrix(n, n);
+        let y_clone = y.clone();
+        qr.left_apply_qt(&mut y);
+        qr.left_apply_q(&mut y);
+        assert!(approx_vector_eq(&y.data, &y_clone.data));
+    }
 }
