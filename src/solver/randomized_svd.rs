@@ -88,8 +88,7 @@ impl RandomizedSvd {
         }
     }
     fn approx_padded(&self) -> NdArray {
-        println!("approx");
-        let mut tiny = vec![0_f32; self.n * self.n];
+        let mut tiny = vec![0_f32; self.k * self.n];
         for i in 0..self.k {
             for j in 0..self.k {
                 for k in 0..self.k {
@@ -100,18 +99,15 @@ impl RandomizedSvd {
             }
         }
         NdArray {
-            dims: vec![self.n, self.n],
+            dims: vec![self.k, self.n],
             data: tiny,
         }
     }
     pub fn reconstruct(&self) -> NdArray {
         let mut output = self.approx_padded();
-        println!("after zero {output:?}");
         self.qrr.right_apply_qt(&mut output);
-        println!("after first {output:?}");
         output.resize_rows(self.n);
         self.qrl.left_apply_q(&mut output);
-        println!("after second {output:?}");
         output
     }
 }
