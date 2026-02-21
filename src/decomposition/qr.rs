@@ -182,7 +182,7 @@ impl QrDecomposition {
                 }
             }
         }
-        target.data.truncate(tcols * self.cols);
+        target.data.truncate(trows * self.cols);
         target.dims[1] = self.cols;
     }
     pub fn right_apply_qt(&self, target: &mut NdArray) {
@@ -206,8 +206,8 @@ impl QrDecomposition {
                 }
             }
         }
-        target.data.truncate(tcols * self.cols);
-        target.dims[1] = self.cols;
+        target.data.truncate(trows * self.rows);
+        target.dims[1] = self.rows;
     }
     fn multiply_vector(&self, mut data: Vec<f32>) -> Vec<f32> {
         // A ~ M[i,j] => Q ~ M[i,i]
