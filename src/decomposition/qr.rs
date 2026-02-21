@@ -20,7 +20,8 @@ pub struct QrDecomposition {
 impl QrDecomposition {
     pub fn new(mut x: NdArray) -> Self {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        let card = rows.min(cols) - (rows <= cols) as usize;
+        // let card = rows.min(cols) - (rows <= cols) as usize;
+        let card = rows.min(cols) - 1;
         let mut projections = Vec::with_capacity(card);
         let mut w = vec![0_f32; rows];
         for o in 0..card {
@@ -29,7 +30,7 @@ impl QrDecomposition {
                 .collect::<Vec<f32>>();
             let proj = householder_params(column_vector);
             // x'A
-            for j in o..cols {
+            for j in o..=card {
                 for i in o..rows {
                     w[j] += proj.vector[i - o] * x.data[i * cols + j];
                 }
@@ -44,8 +45,8 @@ impl QrDecomposition {
         // A ~ M[m,n]
         // QR(A) -> Q ~ M[m,n], R ~ M[n,n];
         x.data.truncate(cols * cols);
-        x.dims[0] = cols;
-        for i in 1..cols {
+        x.dims[0] = rows.min(cols);
+        for i in 1..=card {
             // for j in 0..i.min(cols) {
             for j in 0..i {
                 x.data[i * cols + j] = 0_f32
@@ -211,8 +212,9 @@ impl QrDecomposition {
         // A ~ M[i,j] => Q ~ M[i,i]
         debug_assert!(data.len() == self.rows);
         // H[i+1]x = (I - buu')x  = x - b*u*(u'x)
+        let mut scalar ;
         for p in (0..self.card).rev() {
-            let mut scalar = 0_f32;
+            scalar = 0_f32;
             let proj = &self.projections[p];
             for i in p..self.rows {
                 scalar += data[i] * proj.vector[i - p];

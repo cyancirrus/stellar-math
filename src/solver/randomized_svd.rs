@@ -29,7 +29,6 @@ impl RankKSvd {
         let n = matrix.dims[0];
         let sketch = generate_random_matrix(n, k);
         // might wish to inner product the resulting matrix
-        // let cov = matrix_mult(&matrix, &matrix.transpose());
         // n x k
         let a_sketch = matrix_mult(&matrix, &sketch);
         // implicit covariance
@@ -44,13 +43,10 @@ impl RankKSvd {
 }
 
 impl RandomizedSvd {
-    // apply the transformations to u, v prior to storing requires
-    // refactor of golub kahan
     pub fn new(k: usize, mut matrix: NdArray) -> Self {
         let n = matrix.dims[0];
         let sketch = generate_random_matrix(n, k);
         // might wish to inner product the resulting matrix
-        // let cov = matrix_mult(&matrix, &matrix.transpose());
         // n x k
         let a_sketch = matrix_mult(&matrix, &sketch);
         // implicit covariance
@@ -61,7 +57,8 @@ impl RandomizedSvd {
         let mut tiny_core = matrix.transpose();
         let qrr = QrDecomposition::new(tiny_core.clone());
         qrr.left_apply_qt(&mut tiny_core);
-        let (u, b, v) = full_golub_kahan(tiny_core.transpose());
+        tiny_core.transpose_square();
+        let (u, b, v) = full_golub_kahan(tiny_core);
         let svd = full_givens_iteration(u, b, v);
         RandomizedSvd {
             n,
