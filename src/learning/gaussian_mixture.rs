@@ -33,7 +33,12 @@ fn gaussian(x_bar: &mut Vec<f32>, z_buf: &mut Vec<f32>, det: f32, lu: &LuPivotDe
     scaling.exp() / (2_f32 * std::f32::consts::PI).powf(card as f32 / 2f32) * det.sqrt()
 }
 
-fn ln_gaussian(x_bar: &mut Vec<f32>, z_buf: &mut Vec<f32>, ln_det: f32, lu: &LuPivotDecompose) -> f32 {
+fn ln_gaussian(
+    x_bar: &mut Vec<f32>,
+    z_buf: &mut Vec<f32>,
+    ln_det: f32,
+    lu: &LuPivotDecompose,
+) -> f32 {
     // xbar := x - mean;
     // we have x'Vx, where V := 1/ self.variance
     // solve sub problem LUx = z*; for z* and then <x, z*>

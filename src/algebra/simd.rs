@@ -115,6 +115,8 @@ pub fn simd_dot_product(x: &[f32], y: &[f32]) -> f32 {
     result
 }
 
+// NOTE: This is gross, use new implementation, also collect in a tight loop is horrible
+// refactor to use ikj for row major form
 pub fn simd_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     assert!(blocksize == 8); // Ensure blocksize is 8 for SIMD
     assert_eq!(x.dims[1], y.dims[0], "dimension mismatch");

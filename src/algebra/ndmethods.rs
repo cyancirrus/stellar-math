@@ -224,4 +224,3 @@ pub fn in_place_sub(x: &mut NdArray, y: &NdArray) {
 //     dims[1] = y.dims[1];
 //     NdArray::new(dims, new)
 // }
-

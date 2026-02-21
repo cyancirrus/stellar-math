@@ -1,8 +1,8 @@
 use crate::algebra::ndmethods::matrix_mult;
-use crate::decomposition::givens::{givens_iteration, full_givens_iteration, SingularValueDecomp};
+use crate::decomposition::givens::{full_givens_iteration, givens_iteration, SingularValueDecomp};
 use crate::decomposition::lower_upper::LuPivotDecompose;
 use crate::decomposition::qr::{qr_decompose, QrDecomposition};
-use crate::decomposition::svd::{golub_kahan, full_golub_kahan};
+use crate::decomposition::svd::{full_golub_kahan, golub_kahan};
 use crate::random::generation::{generate_random_matrix, generate_random_symetric};
 use crate::structure::ndarray::NdArray;
 
@@ -38,12 +38,8 @@ impl RankKSvd {
         let qrl = qr_decompose(y);
         qrl.left_apply_qt(&mut matrix);
         let reference = golub_kahan(matrix);
-        let singular =  givens_iteration(reference);
-        Self {
-            n,
-            k,
-            singular
-        }
+        let singular = givens_iteration(reference);
+        Self { n, k, singular }
     }
 }
 
@@ -66,23 +62,23 @@ impl RandomizedSvd {
         let qrr = qr_decompose(tiny_core.clone());
         qrr.left_apply_qt(&mut tiny_core);
         let (u, b, v) = full_golub_kahan(tiny_core.transpose());
-        let svd =  full_givens_iteration(u, b, v);
+        let svd = full_givens_iteration(u, b, v);
         RandomizedSvd {
             n,
             k,
             qrl,
             qrr,
-            svd
+            svd,
         }
     }
     pub fn approx(&self) -> NdArray {
-        let mut tiny= vec![0_f32 ; self.k * self.k ];
+        let mut tiny = vec![0_f32; self.k * self.k];
         for i in 0..self.k {
             for j in 0..self.k {
                 for k in 0..self.k {
-                    tiny[i * self.k  + j] += self.svd.u.data[ i * self.k + k]
-                        * self.svd.s.data[ k * self.k + k]
-                        * self.svd.v.data[ j * self.k + k];
+                    tiny[i * self.k + j] += self.svd.u.data[i * self.k + k]
+                        * self.svd.s.data[k * self.k + k]
+                        * self.svd.v.data[j * self.k + k];
                 }
             }
         }
@@ -136,7 +132,6 @@ impl RandomizedSvd {
 //     }
 //     let duration = start.elapsed();
 //     println!("Pipeline took {:?}", duration / 100);
-
 
 // //     println!("rotated {x:?}");
 // //     println!("tiny {tiny:?}");

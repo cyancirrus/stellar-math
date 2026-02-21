@@ -89,10 +89,11 @@ impl NdArray {
         }
     }
     pub fn transpose_square(&mut self) {
-        self.dims.swap(0, 1);
-        for i in 0..self.dims[0] {
-            for j in i + 1..self.dims[1] {
-                self.data.swap(i * self.dims[1] + j, j * self.dims[1] + i);
+        debug_assert_eq!(self.dims[0], self.dims[1]);
+        let n = self.dims[0];
+        for i in 0..n {
+            for j in i + 1..n {
+                self.data.swap(i * n + j, j * n + i);
             }
         }
     }

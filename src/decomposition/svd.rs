@@ -1,5 +1,5 @@
 use crate::algebra::ndmethods::{
-    create_identity_matrix, resize_cols, resize_rows, tensor_mult, transpose, matrix_mult,
+    create_identity_matrix, matrix_mult, resize_cols, resize_rows, tensor_mult, transpose,
 };
 use crate::algebra::vector::{initialize_unit_vector, magnitude};
 use crate::decomposition::householder::{householder_params, HouseholderReflection};
@@ -16,7 +16,7 @@ pub fn golub_kahan(mut a: NdArray) -> NdArray {
     let (rows, cols) = (a.dims[0], a.dims[1]);
     let card = rows.min(cols) - (rows <= cols) as usize;
     let mut proj: HouseholderReflection;
-    let mut w = vec![0f32; rows.max(cols)];
+    let mut sum;
     for o in 0..card {
         proj = householder_params(
             // column vector
@@ -28,14 +28,14 @@ pub fn golub_kahan(mut a: NdArray) -> NdArray {
         // (I - bvv')A => w := bv'A
         //  A -= vw'
         for j in o..cols {
+            sum = 0f32;
             for i in o..rows {
-                w[j] += proj.vector[i - o] * a.data[i * cols + j];
+                sum += proj.vector[i - o] * a.data[i * cols + j];
             }
-            w[j] *= proj.beta;
+            sum *= proj.beta;
             for i in o..rows {
-                a.data[i * cols + j] -= proj.vector[i - o] * w[j];
+                a.data[i * cols + j] -= proj.vector[i - o] * sum;
             }
-            w[j] = 0_f32;
         }
         // stop one early for columns because a[m,n-1] can be non-zero
         if o + 1 == card {
@@ -49,14 +49,14 @@ pub fn golub_kahan(mut a: NdArray) -> NdArray {
         // A(I - bvv') => w = b * Av
         // A -= wv'
         for i in o..rows {
+            sum = 0f32;
             for j in o + 1..cols {
-                w[i] += a.data[i * cols + j] * proj.vector[j - o - 1];
+                sum += a.data[i * cols + j] * proj.vector[j - o - 1];
             }
-            w[i] *= proj.beta;
+            sum *= proj.beta;
             for j in o + 1..cols {
-                a.data[i * cols + j] -= w[i] * proj.vector[j - o - 1];
+                a.data[i * cols + j] -= sum * proj.vector[j - o - 1];
             }
-            w[i] = 0_f32;
         }
     }
     let dims = rows.min(cols);
@@ -73,7 +73,7 @@ pub fn full_golub_kahan(mut a: NdArray) -> (NdArray, NdArray, NdArray) {
     let mut u = create_identity_matrix(rows);
     let mut v = create_identity_matrix(cols);
     let mut proj: HouseholderReflection;
-    let mut w = vec![0f32; rows.max(cols)];
+    let mut sum:f32;
     for o in 0..card {
         proj = householder_params(
             // column vector
@@ -82,18 +82,18 @@ pub fn full_golub_kahan(mut a: NdArray) -> (NdArray, NdArray, NdArray) {
         // (I - bvv')A => w := bv'A
         //  A -= vw'
         for j in o..cols {
+            sum = 0f32;
             for i in o..rows {
-                w[j] += proj.vector[i - o] * a.data[i * cols + j];
+                sum += proj.vector[i - o] * a.data[i * cols + j];
             }
-            w[j] *= proj.beta;
+            sum *= proj.beta;
             for i in o..rows {
-                a.data[i * cols + j] -= proj.vector[i - o] * w[j];
+                a.data[i * cols + j] -= proj.vector[i - o] * sum;
             }
-            w[j] = 0_f32;
         }
         // U(I - bvv')' = U(I - bvv')
         for i in 0..rows {
-            let mut sum = 0f32;
+            sum = 0f32;
             for k in o..rows {
                 sum += u.data[i * rows + k] * proj.vector[k - o];
             }
@@ -114,20 +114,20 @@ pub fn full_golub_kahan(mut a: NdArray) -> (NdArray, NdArray, NdArray) {
         // A(I - bvv') => w = b * Av
         // A -= wv'
         for i in o..rows {
+            sum = 0f32;
             for j in o + 1..cols {
-                w[i] += a.data[i * cols + j] * proj.vector[j - o - 1];
+                sum += a.data[i * cols + j] * proj.vector[j - o - 1];
             }
-            w[i] *= proj.beta;
+            sum *= proj.beta;
             for j in o + 1..cols {
-                a.data[i * cols + j] -= w[i] * proj.vector[j - o - 1];
+                a.data[i * cols + j] -= sum * proj.vector[j - o - 1];
             }
-            w[i] = 0_f32;
         }
         // (I - bvv')'V' ~ V(I- bvv')
         // v ~ (r1 r2 r3 r4)
         for j in 0..cols {
-            // inner product of v[i..] * b; 
-            let mut sum = 0_f32;
+            // inner product of v[i..] * b;
+            sum = 0_f32;
             for k in o + 1..cols {
                 sum += v.data[j * cols + k] * proj.vector[k - o - 1];
             }
@@ -139,4 +139,3 @@ pub fn full_golub_kahan(mut a: NdArray) -> (NdArray, NdArray, NdArray) {
     }
     (u, a, v)
 }
-
