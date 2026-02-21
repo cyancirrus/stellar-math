@@ -196,12 +196,10 @@ impl QrDecomposition {
             for i in 0..trows {
                 sum = 0f32;
                 // inner product of a[i][*] and u[p]
-                // for j in p..tcols.min(self.rows) {
-                for j in p..tcols {
+                for j in p..tcols.min(self.rows) {
                     sum += target.data[i * tcols + j] * proj.vector[j - p];
                 }
-                // for j in p..tcols.min(self.rows) {
-                for j in p..tcols {
+                for j in p..tcols.min(self.rows) {
                     target.data[i * tcols + j] -= sum * proj.beta * proj.vector[j - p];
                 }
             }
