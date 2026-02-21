@@ -73,7 +73,7 @@ pub fn full_golub_kahan(mut a: NdArray) -> (NdArray, NdArray, NdArray) {
     let mut u = create_identity_matrix(rows);
     let mut v = create_identity_matrix(cols);
     let mut proj: HouseholderReflection;
-    let mut sum:f32;
+    let mut sum: f32;
     for o in 0..card {
         proj = householder_params(
             // column vector
@@ -127,7 +127,7 @@ pub fn full_golub_kahan(mut a: NdArray) -> (NdArray, NdArray, NdArray) {
         // v ~ (r1 r2 r3 r4)
         for j in 0..cols {
             // inner product of v[i..] * b;
-            sum = 0_f32;
+            sum = 0f32;
             for k in o + 1..cols {
                 sum += v.data[j * cols + k] * proj.vector[k - o - 1];
             }

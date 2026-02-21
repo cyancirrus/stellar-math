@@ -21,14 +21,7 @@ const CONVERGENCE_CONDITION: f32 = 1e-4;
 // perhaps redefine householder to borrow
 // compilation for simd optimization in like simd matrix mult
 
-
-fn test_qr_right_apply_t() {
-
-}
-
-
-
-
+fn test_qr_right_apply_t() {}
 
 fn main() {
     let n = 6;
@@ -45,7 +38,7 @@ fn main() {
     // let big = ksvd.reconstruct();
     let svalues = RankKSvd::new(4, x.clone());
     let duration = start.elapsed();
-    println!("Pipeline took {:?}", duration );
+    println!("Pipeline took {:?}", duration);
 
     println!("rotated {x:?}");
     println!("tiny {tiny:?}");

@@ -15,14 +15,14 @@ impl LuPivotDecompose {
         // => c = A[i,j] / A[j,j]
         debug_assert_eq!(matrix.dims[0], matrix.dims[1]);
         let n = matrix.dims[0];
-        let mut pivots:Vec<usize> = (0..n).collect();
+        let mut pivots: Vec<usize> = (0..n).collect();
         let mut swaps = 0;
 
         // for lij, we need knowledge of ujj due to formula
         // this means that we need u[0..i.min(j)] upper triangular calculated
         for i in 0..n {
-            let mut val = matrix.data[ i * n + i].abs();
-            for k in i+1..n {
+            let mut val = matrix.data[i * n + i].abs();
+            for k in i + 1..n {
                 let mag = matrix.data[k * n + i].abs();
                 if mag > val {
                     pivots[i] = k;
@@ -44,7 +44,12 @@ impl LuPivotDecompose {
                 }
             }
         }
-        Self { n, swaps, pivots, matrix }
+        Self {
+            n,
+            swaps,
+            pivots,
+            matrix,
+        }
     }
     pub fn new_dl(mut matrix: NdArray) -> Self {
         // Doolittle
@@ -78,7 +83,12 @@ impl LuPivotDecompose {
                 }
             }
         }
-        Self { n, swaps, pivots, matrix }
+        Self {
+            n,
+            swaps,
+            pivots,
+            matrix,
+        }
     }
     pub fn reconstruct(&self) -> NdArray {
         let mut data = vec![0_f32; self.n * self.n];
@@ -109,7 +119,7 @@ impl LuPivotDecompose {
     pub fn log_determinant(&self) -> f32 {
         let mut det = 0f32;
         for k in 0..self.n {
-            det += self.matrix.data[ k * self.n + k].abs().ln();
+            det += self.matrix.data[k * self.n + k].abs().ln();
         }
         if self.swaps & 1 == 1 {
             det = -det
@@ -152,7 +162,7 @@ impl LuPivotDecompose {
         debug_assert_eq!(target.dims[0], self.matrix.dims[1]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        
+
         for i in (1..rows).rev() {
             for j in 0..tcols {
                 // lii == 1
@@ -256,7 +266,7 @@ impl LuPivotDecompose {
 
 impl LuPivotDecompose {
     // Ax = b;
-    // PA ~ LU; 
+    // PA ~ LU;
     // PAx = Pb;
     // LUx = b*;
     // Lz = b*;
