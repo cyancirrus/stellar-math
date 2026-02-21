@@ -2,7 +2,6 @@ use crate::algebra::ndmethods::{create_identity_matrix, create_identity_rectangl
 use crate::algebra::vector::dot_product;
 use crate::decomposition::householder::{householder_params, HouseholderReflection};
 use crate::structure::ndarray::NdArray;
-use rayon::prelude::*;
 
 #[derive(Debug)]
 pub struct QrDecomposition {
@@ -26,7 +25,6 @@ impl QrDecomposition {
         let mut w = vec![0_f32; rows];
         for o in 0..card {
             let column_vector = (o..rows)
-                .into_par_iter()
                 .map(|r| x.data[r * cols + o])
                 .collect::<Vec<f32>>();
             let proj = householder_params(column_vector);
@@ -138,8 +136,8 @@ impl QrDecomposition {
                 }
             }
         }
-        target.data.truncate(self.cols * tcols);
-        target.dims[0] = target.dims[0].min(self.cols);
+        // target.data.truncate(self.cols * tcols);
+        target.dims[0] = target.dims[0];
     }
     pub fn left_apply_q(&self, target: &mut NdArray) {
         // f(X) :: QX
@@ -161,8 +159,8 @@ impl QrDecomposition {
                 }
             }
         }
-        target.data.truncate(self.rows * tcols);
-        target.dims[0] = target.dims[0].min(self.rows);
+        // target.data.truncate(self.rows * tcols);
+        target.dims[0] = target.dims[0];
     }
     pub fn right_apply_q(&self, target: &mut NdArray) {
         // f(X) :: XQ
@@ -172,20 +170,20 @@ impl QrDecomposition {
         let mut sum;
         for p in 0..self.card {
             let proj = &self.projections[p];
-            for i in 0..tcols {
+            for i in 0..trows {
                 sum = 0f32;
                 // inner product of a[i][*] and u[p]
-                for j in p..trows.min(self.cols) {
+                for j in p..tcols.min(self.cols) {
                     sum += target.data[i * tcols + j] * proj.vector[j - p];
                 }
                 sum *= proj.beta;
-                for j in p..trows.min(self.cols) {
+                for j in p..tcols.min(self.cols) {
                     target.data[i * tcols + j] -= sum  * proj.vector[j - p];
                 }
             }
         }
-        target.data.truncate(tcols * self.cols);
-        target.dims[1] = self.cols;
+        // target.data.truncate(tcols * self.cols);
+        // target.dims[1] = self.cols;
     }
     pub fn right_apply_qt(&self, target: &mut NdArray) {
         // f(X) :: XQ'
@@ -195,19 +193,21 @@ impl QrDecomposition {
         let mut sum;
         for p in (0..self.card).rev() {
             let proj = &self.projections[p];
-            for i in 0..tcols {
+            for i in 0..trows {
                 sum = 0f32;
                 // inner product of a[i][*] and u[p]
-                for j in p..trows.min(self.cols) {
+                // for j in p..tcols.min(self.rows) {
+                for j in p..tcols {
                     sum += target.data[i * tcols + j] * proj.vector[j - p];
                 }
-                for j in p..trows.min(self.cols) {
+                // for j in p..tcols.min(self.rows) {
+                for j in p..tcols {
                     target.data[i * tcols + j] -= sum * proj.beta  * proj.vector[j - p];
                 }
             }
         }
-        target.data.truncate(tcols * self.cols);
-        target.dims[1] = self.cols;
+        // target.data.truncate(tcols * self.cols);
+        // target.dims[1] = self.cols;
     }
     fn multiply_vector(&self, mut data: Vec<f32>) -> Vec<f32> {
         // A ~ M[i,j] => Q ~ M[i,i]

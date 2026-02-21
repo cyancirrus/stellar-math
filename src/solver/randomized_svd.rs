@@ -87,19 +87,40 @@ impl RandomizedSvd {
             data: tiny,
         }
     }
+    fn approx_padded(&self) -> NdArray {
+        let mut tiny = vec![0_f32; self.n * self.n];
+        for i in 0..self.k {
+            for j in 0..self.k {
+                for k in 0..self.k {
+                    tiny[i * self.n + j] += self.svd.u.data[i * self.k + k]
+                        * self.svd.s.data[k * self.k + k]
+                        * self.svd.v.data[j * self.k + k];
+                }
+            }
+        }
+        NdArray {
+            dims: vec![self.n, self.n],
+            data: tiny,
+        }
+    }
     pub fn reconstruct(&self) -> NdArray {
-        let mut output = self.approx();
-        // output = output.transpose();
-        output.data.resize(self.n * self.k, 0_f32);
-        output.dims[0] = self.n;
+        let mut output = self.approx_padded();
         self.qrl.left_apply_q(&mut output);
-        output = output.transpose();
-        output.data.resize(self.n * self.n, 0_f32);
-        output.dims[0] = self.n;
-        self.qrr.left_apply_q(&mut output);
-        output = output.transpose();
+        self.qrr.right_apply_qt(&mut output);
         output
     }
+    // pub fn reconstruct(&self) -> NdArray {
+    //     let mut output = self.approx();
+    //     output.data.resize(self.n * self.k, 0_f32);
+    //     output.dims[0] = self.n;
+    //     self.qrl.left_apply_q(&mut output);
+    //     output = output.transpose();
+    //     output.data.resize(self.n * self.n, 0_f32);
+    //     output.dims[0] = self.n;
+    //     self.qrr.left_apply_q(&mut output);
+    //     output = output.transpose();
+    //     output
+    // }
 }
 
 // #![allow(dead_code, unused_imports)]
