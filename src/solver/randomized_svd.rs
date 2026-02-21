@@ -106,7 +106,9 @@ impl RandomizedSvd {
     pub fn reconstruct(&self) -> NdArray {
         let mut output = self.approx_padded();
         self.qrl.left_apply_q(&mut output);
+        println!("after first {output:?}");
         self.qrr.right_apply_qt(&mut output);
+        println!("after second {output:?}");
         output
     }
 }
