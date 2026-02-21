@@ -9,12 +9,10 @@ use stellar::equality::approximate::approx_vector_eq;
 use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
 use stellar::solver::randomized_svd::{RandomizedSvd, RankKSvd};
 use stellar::structure::ndarray::NdArray;
-
+use std::hint::black_box;
 const CONVERGENCE_CONDITION: f32 = 1e-4;
 
-// TODO: optimize qr applies
-// create apply_q_right for qr
-// create apply_qt_right for qr
+// TODO: 
 // optimize householder instantiation
 // derive outer product derivation for cholesky
 // rank 1 lu updates for lp
@@ -32,15 +30,12 @@ fn main() {
         let ksvd = RandomizedSvd::new(20, x.clone());
         let tiny = ksvd.approx();
         let big = ksvd.reconstruct();
+        black_box(tiny);
+        black_box(big);
+        black_box(&x);
         // let svalues = RankKSvd::new(4, x.clone());
     }
     let duration = start.elapsed();
     println!("Pipeline took {:?}", duration / 100);
-
-//     println!("rotated {x:?}");
-//     println!("tiny {tiny:?}");
-//     // println!("big {big:?}");
-//     println!("s reference {:?}", ksvd.svd.s);
-//     println!("singular values {:?}", svalues.singular);
 
 }
