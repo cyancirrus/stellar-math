@@ -1,4 +1,4 @@
-use crate::decomposition::qr::qr_decompose;
+use crate::decomposition::qr::QrDecomposition;
 use crate::decomposition::schur::real_schur;
 use crate::decomposition::svd::golub_kahan;
 use crate::structure::ndarray::NdArray;
@@ -73,7 +73,7 @@ pub fn retrieve_eigen(eig: f32, mut matrix: NdArray) -> Vec<f32> {
     // // QR = (B L )
     // // QRv = 0
     // // Q'Qrv = 0
-    let qr = qr_decompose(matrix);
+    let qr = QrDecomposition::new(matrix);
     // // Rv' = 0 <-> O'v :: QRv = 0
     for i in (0..m).rev() {
         let diag = qr.triangle.data[i * m + i];

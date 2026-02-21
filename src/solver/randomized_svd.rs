@@ -1,7 +1,7 @@
 use crate::algebra::ndmethods::matrix_mult;
 use crate::decomposition::givens::{full_givens_iteration, givens_iteration, SingularValueDecomp};
 use crate::decomposition::lower_upper::LuPivotDecompose;
-use crate::decomposition::qr::{qr_decompose, QrDecomposition};
+use crate::decomposition::qr::QrDecomposition;
 use crate::decomposition::svd::{full_golub_kahan, golub_kahan};
 use crate::random::generation::{generate_random_matrix, generate_random_symetric};
 use crate::structure::ndarray::NdArray;
@@ -35,7 +35,7 @@ impl RankKSvd {
         // implicit covariance
         let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
 
-        let qrl = qr_decompose(y);
+        let qrl = QrDecomposition::new(y);
         qrl.left_apply_qt(&mut matrix);
         let reference = golub_kahan(matrix);
         let singular = givens_iteration(reference);
@@ -56,10 +56,10 @@ impl RandomizedSvd {
         // implicit covariance
         let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
         // left ortho
-        let qrl = qr_decompose(y);
+        let qrl = QrDecomposition::new(y);
         qrl.left_apply_qt(&mut matrix);
         let mut tiny_core = matrix.transpose();
-        let qrr = qr_decompose(tiny_core.clone());
+        let qrr = QrDecomposition::new(tiny_core.clone());
         qrr.left_apply_qt(&mut tiny_core);
         let (u, b, v) = full_golub_kahan(tiny_core.transpose());
         let svd = full_givens_iteration(u, b, v);
@@ -106,7 +106,7 @@ impl RandomizedSvd {
 // use stellar::algebra::ndmethods::tensor_mult;
 // use stellar::decomposition::givens::{givens_iteration, SingularValueDecomp};
 // use stellar::decomposition::lower_upper::LuPivotDecompose;
-// use stellar::decomposition::qr::qr_decompose;
+// use stellar::decomposition::qr::QrDecomposition;
 // use stellar::decomposition::svd::golub_kahan;
 // use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
 // use stellar::structure::ndarray::NdArray;

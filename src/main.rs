@@ -1,9 +1,9 @@
-#![allow(dead_code, unused_imports)]
+#![allow(dead_code, unused_imports, unused_mut, unused_variables)]
 use std::time::Instant;
 use stellar::algebra::ndmethods::tensor_mult;
 use stellar::decomposition::givens::{givens_iteration, SingularValueDecomp};
 use stellar::decomposition::lower_upper::LuPivotDecompose;
-use stellar::decomposition::qr::qr_decompose;
+use stellar::decomposition::qr::QrDecomposition;
 use stellar::decomposition::svd::golub_kahan;
 use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
 use stellar::solver::randomized_svd::{RandomizedSvd, RankKSvd};
@@ -21,7 +21,11 @@ const CONVERGENCE_CONDITION: f32 = 1e-4;
 // perhaps redefine householder to borrow
 // compilation for simd optimization in like simd matrix mult
 
-fn test_qr_right_apply_t() {}
+fn test_qr_right_apply_t() {
+    let n = 6;
+    let x = generate_random_matrix(n, n);
+    let x = QrDecomposition::new(x);
+}
 
 fn main() {
     let n = 6;

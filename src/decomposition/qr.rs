@@ -18,67 +18,58 @@ pub struct QrDecomposition {
     pub triangle: NdArray,
 }
 
-pub fn qr_decompose(mut x: NdArray) -> QrDecomposition {
-    let (rows, cols) = (x.dims[0], x.dims[1]);
-    let card = rows.min(cols) - (rows <= cols) as usize;
-    let mut projections = Vec::with_capacity(card);
-    let mut w = vec![0_f32; rows];
-    for o in 0..card {
-        let column_vector = (o..rows)
-            .into_par_iter()
-            .map(|r| x.data[r * cols + o])
-            .collect::<Vec<f32>>();
-        let proj = householder_params(column_vector);
-        // x'A
-        for j in o..cols {
-            for i in o..rows {
-                w[j] += proj.vector[i - o] * x.data[i * cols + j];
-            }
-            w[j] *= proj.beta;
-            for i in o..rows {
-                x.data[i * cols + j] -= proj.vector[i - o] * w[j];
-            }
-            w[j] = 0_f32;
-        }
-        projections.push(proj);
-    }
-    // A ~ M[m,n]
-    // QR(A) -> Q ~ M[m,n], R ~ M[n,n];
-    x.data.truncate(cols * cols);
-    x.dims[0] = cols;
-    for i in 1..cols {
-        // for j in 0..i.min(cols) {
-        for j in 0..i {
-            x.data[i * cols + j] = 0_f32
-        }
-    }
-    // // NOTE: If wanted positive elements for thetriangular matrix diagonal
-    // for i in 0..card {
-    //     if x.data[i*cols + i] < 0_f32 {
-    //         for e in &mut projections[i].vector {
-    //             *e = - *e;
-    //         }
-    //     }
-    // }
-    QrDecomposition::new(rows, cols, card, projections, x)
-}
-
 impl QrDecomposition {
-    pub fn new(
-        rows: usize,
-        cols: usize,
-        card: usize,
-        projections: Vec<HouseholderReflection>,
-        triangle: NdArray,
-    ) -> Self {
+    pub fn new(mut x: NdArray) -> Self {
+        let (rows, cols) = (x.dims[0], x.dims[1]);
+        let card = rows.min(cols) - (rows <= cols) as usize;
+        let mut projections = Vec::with_capacity(card);
+        let mut w = vec![0_f32; rows];
+        for o in 0..card {
+            let column_vector = (o..rows)
+                .into_par_iter()
+                .map(|r| x.data[r * cols + o])
+                .collect::<Vec<f32>>();
+            let proj = householder_params(column_vector);
+            // x'A
+            for j in o..cols {
+                for i in o..rows {
+                    w[j] += proj.vector[i - o] * x.data[i * cols + j];
+                }
+                w[j] *= proj.beta;
+                for i in o..rows {
+                    x.data[i * cols + j] -= proj.vector[i - o] * w[j];
+                }
+                w[j] = 0_f32;
+            }
+            projections.push(proj);
+        }
+        // A ~ M[m,n]
+        // QR(A) -> Q ~ M[m,n], R ~ M[n,n];
+        x.data.truncate(cols * cols);
+        x.dims[0] = cols;
+        for i in 1..cols {
+            // for j in 0..i.min(cols) {
+            for j in 0..i {
+                x.data[i * cols + j] = 0_f32
+            }
+        }
+        // If wanted positive elements for thetriangular matrix diagonal
+        // for i in 0..card {
+        //     if x.data[i*cols + i] < 0_f32 {
+        //         for e in &mut projections[i].vector {
+        //             *e = - *e;
+        //         }
+        //     }
+        // }
         Self {
             rows,
             cols,
             card,
             projections,
-            triangle,
+            triangle: x,
         }
     }
+
     pub fn projection_matrix(&self) -> NdArray {
         // Iteration is decreasing due to constraints
         // Computes H[i] <- f(Householder i, Hi-1)

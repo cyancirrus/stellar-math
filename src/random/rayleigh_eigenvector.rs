@@ -1,7 +1,6 @@
 use crate::algebra::ndmethods::create_identity_matrix;
 use crate::algebra::ndmethods::tensor_mult;
 use crate::decomposition::lower_upper::LuPivotDecompose;
-use crate::decomposition::qr::qr_decompose;
 use crate::structure::ndarray::NdArray;
 
 use crate::random::generation::{

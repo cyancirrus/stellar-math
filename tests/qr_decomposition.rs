@@ -2,7 +2,7 @@
 mod qr_decomposition {
     use stellar::algebra::ndmethods::create_identity_matrix;
     use stellar::algebra::ndmethods::tensor_mult;
-    use stellar::decomposition::qr::qr_decompose;
+    use stellar::decomposition::qr::QrDecomposition;
     use stellar::equality::approximate::{approx_scalar_eq, approx_vector_eq};
     use stellar::random::generation::generate_random_matrix;
     use stellar::structure::ndarray::NdArray;
@@ -10,7 +10,7 @@ mod qr_decomposition {
     // test functions
     fn reconstruction(x: NdArray) {
         let expected = x.clone();
-        let qr = qr_decompose(x);
+        let qr = QrDecomposition::new(x);
         let mut result = qr.triangle.clone();
         qr.left_apply_q(&mut result);
         assert!(approx_vector_eq(&result.data, &expected.data));
@@ -21,7 +21,7 @@ mod qr_decomposition {
     }
     fn zeroing_below_diagonal(x: NdArray) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        let qr = qr_decompose(x.clone());
+        let qr = QrDecomposition::new(x.clone());
         let projection = qr.projection_matrix();
         let result = tensor_mult(4, &projection, &x);
         for i in 0..rows {
@@ -32,7 +32,7 @@ mod qr_decomposition {
     }
     fn orthogonal(x: NdArray) {
         let card = x.dims[0].min(x.dims[1]);
-        let qr = qr_decompose(x);
+        let qr = QrDecomposition::new(x);
         let ortho = qr.projection_matrix();
         let mut ortho_transpose = ortho.clone();
         ortho_transpose.transpose_square();
@@ -43,18 +43,18 @@ mod qr_decomposition {
         assert!(approx_vector_eq(&right_result.data, &expected.data));
     }
     fn triangle(x: NdArray, expected: NdArray) {
-        let qr = qr_decompose(x);
+        let qr = QrDecomposition::new(x);
         assert!(approx_vector_eq(&qr.triangle.data, &expected.data));
     }
     fn projection_and_implicit_mult_equivalence(x: NdArray, mut y_implicit: NdArray) {
-        let qr = qr_decompose(x);
+        let qr = QrDecomposition::new(x);
         let projection = qr.projection_matrix();
         let y_explicit = &tensor_mult(4, &projection, &y_implicit);
         qr.left_apply_q(&mut y_implicit);
         assert!(approx_vector_eq(&y_implicit.data, &y_explicit.data));
     }
     fn transpose_and_implicit_mult_equivalence(x: NdArray, mut y_implicit: NdArray) {
-        let qr = qr_decompose(x);
+        let qr = QrDecomposition::new(x);
         let projection = qr.projection_matrix();
         let y_explicit = &tensor_mult(4, &projection.transpose(), &y_implicit);
         qr.left_apply_qt(&mut y_implicit);
