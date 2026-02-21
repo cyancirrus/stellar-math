@@ -51,6 +51,22 @@ impl NdArray {
             self.extend_rows(ncols, nrows);
         }
     }
+    pub fn resize_cols(&mut self, ncols: usize) {
+        let (rows, cols) = (self.dims[0], self.dims[1]);
+        if ncols < cols {
+            self.truncate_cols(rows, cols, ncols);
+        } else if ncols > cols {
+            self.extend_cols(rows, cols, ncols);
+        }
+    }
+    pub fn resize_rows(&mut self, nrows: usize) {
+        let (rows, cols) = (self.dims[0], self.dims[1]);
+        if nrows < rows {
+            self.truncate_rows(cols, nrows);
+        } else if nrows > rows {
+            self.extend_rows(cols, nrows);
+        }
+    }
     fn truncate_rows(&mut self, cols: usize, nrows: usize) {
         self.data.truncate(cols * nrows);
         self.dims[0] = nrows;
