@@ -125,7 +125,7 @@ impl RandomizedSvd {
 //         ksvd.qrl.left_apply_qt(&mut x);
 //         x = x.transpose();
 //         ksvd.qrr.left_apply_qt(&mut x);
-//         x.transpose();
+//         x = x.transpose();
 //         let tiny = ksvd.approx();
 //         let big = ksvd.reconstruct();
 //         let svalues = RankKSvd::new(4, x.clone());

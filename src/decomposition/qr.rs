@@ -104,38 +104,38 @@ impl QrDecomposition {
         // Specifically for the Schur algorithm which requires square matrices
         // A' = Q'AQ = Q'(QR)Q = RQ
         debug_assert!(self.rows == self.cols);
-        let mut w: Vec<f32> = vec![0_f32; self.rows];
+        let mut sum;
         for p in 0..self.card {
             let proj = &self.projections[p];
             for i in p..self.rows {
+                sum = 0f32;
                 for j in p..self.cols {
-                    w[i] += self.triangle.data[i * self.cols + j] * proj.vector[j - p];
+                    sum += self.triangle.data[i * self.cols + j] * proj.vector[j - p];
                 }
-                w[i] *= proj.beta;
+                sum *= proj.beta;
                 for j in p..self.cols {
-                    self.triangle.data[i * self.cols + j] -= w[i] * proj.vector[j - p];
+                    self.triangle.data[i * self.cols + j] -= sum * proj.vector[j - p];
                 }
-                w[i] = 0_f32;
             }
         }
     }
     pub fn left_apply_qt(&self, target: &mut NdArray) {
         // f(X) :: Q'X
-        debug_assert!(target.dims[0] == self.rows);
-        let mut w = vec![0_f32; self.rows];
+        // debug_assert!(target.dims[0] == self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        // Qn..Q1
+        let mut sum ;
         for p in 0..self.card {
             let proj = &self.projections[p];
             // ( I - Bvv') is symmetric order matters
             for j in 0..tcols {
+                sum = 0f32;
                 for i in p..trows.min(self.rows) {
-                    w[j] += proj.vector[i - p] * target.data[i * tcols + j];
+                    sum += proj.vector[i - p] * target.data[i * tcols + j];
                 }
+                sum *= proj.beta;
                 for i in p..trows.min(self.rows) {
-                    target.data[i * tcols + j] -= proj.beta * w[j] * proj.vector[i - p];
+                    target.data[i * tcols + j] -= sum * proj.vector[i - p];
                 }
-                w[j] = 0_f32;
             }
         }
         target.data.truncate(self.cols * tcols);
@@ -145,19 +145,20 @@ impl QrDecomposition {
         // f(X) :: QX
         // H[i]*X = X - Buu'X
         // w = u'X
-        // debug_assert!(target.dims[0] == self.rows);
-        let mut w = vec![0_f32; self.rows];
+        // debug_assert!(target.dims[0] == self.cols);
+        let mut sum ;
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         for p in (0..self.card).rev() {
             let proj = &self.projections[p];
             for j in 0..tcols {
+                sum = 0f32;
                 for i in p..trows.min(self.rows) {
-                    w[j] += proj.vector[i - p] * target.data[i * tcols + j];
+                    sum += proj.vector[i - p] * target.data[i * tcols + j];
                 }
+                sum *= proj.beta;
                 for i in p..trows.min(self.rows) {
-                    target.data[i * tcols + j] -= proj.beta * w[j] * proj.vector[i - p];
+                    target.data[i * tcols + j] -= sum * proj.vector[i - p];
                 }
-                w[j] = 0_f32;
             }
         }
         target.data.truncate(self.rows * tcols);
@@ -177,8 +178,9 @@ impl QrDecomposition {
                 for j in p..trows.min(self.cols) {
                     sum += target.data[i * tcols + j] * proj.vector[j - p];
                 }
+                sum *= proj.beta;
                 for j in p..trows.min(self.cols) {
-                    target.data[i * tcols + j] -= sum * proj.beta  * proj.vector[j - p];
+                    target.data[i * tcols + j] -= sum  * proj.vector[j - p];
                 }
             }
         }
