@@ -94,11 +94,11 @@ pub fn full_golub_kahan(mut a: NdArray) -> (NdArray, NdArray, NdArray) {
         // U(I - bvv')' = U(I - bvv')
         for i in 0..rows {
             sum = 0f32;
-            for k in o..rows {
+            for k in o..cols {
                 sum += u.data[i * rows + k] * proj.vector[k - o];
             }
             sum *= proj.beta;
-            for k in o..rows {
+            for k in o..cols {
                 u.data[i * rows + k] -= sum * proj.vector[k - o];
             }
         }

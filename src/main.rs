@@ -13,44 +13,72 @@ use stellar::algebra::ndmethods::{create_identity_matrix, matrix_mult, transpose
 use std::hint::black_box;
 const CONVERGENCE_CONDITION: f32 = 1e-4;
 
-// TODO: 
-// optimize householder instantiation
-// derive outer product derivation for cholesky
-// rank 1 lu updates for lp
-// golub kahan, remove the w[i]
-// perhaps redefine householder to borrow
-// compilation for simd optimization in like simd matrix mult
+struct HouseholderMatrix {
+    card: usize,
+    projs: Vec<f32>, // 2d storage
+    betas: Vec<f32>,
+}
+impl HouseholderMatrix {
+    fn new(card:usize) -> Self {
+        Self {
+            card,
+            projs:vec![0_f32; card * card + card],
+            betas:vec![0_f32; card],
+        }
+    }
+    fn householder_params(&mut self, u: &[f32], k:usize) {
+        let row_offset = self.card * k;
+        let n = self.card - k;
+        let v = &mut self.projs[row_offset..row_offset + n];
+        v.copy_from_slice(u);
+        let mut max_element = 0f32;
+        for val in v.iter() {
+            max_element = max_element.max(val.abs());
+        }
+        let mut magnitude_squared = 0f32;
+        for j in v.into_iter() {
+            *j /= max_element;
+            magnitude_squared += *j * *j;
+        }
+        let norm = magnitude_squared.sqrt();
+        let sign = v[0].signum();
+        let tmp = v[0];
+        v[0] += sign * norm;
+        magnitude_squared += 2f32 * sign * tmp * norm + magnitude_squared;
+        self.betas[k] = 2f32 / magnitude_squared;
+    }
+}
 
-fn checking_qr(k:usize, mut matrix: NdArray) {
-        let n = matrix.dims[0];
-        let sketch = generate_random_matrix(n, k);
-        // might wish to inner product the resulting matrix
-        // n x k
-        let a_sketch = matrix_mult(&matrix, &sketch);
-        // implicit covariance
-        let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
-        // left ortho
-        let qrl = QrDecomposition::new(y);
-        qrl.left_apply_qt(&mut matrix);
-        let mut tiny_core = matrix.transpose();
-        let qrr = QrDecomposition::new(tiny_core.clone());
-        qrr.left_apply_qt(&mut tiny_core);
-        tiny_core.transpose_square();
+// Find a way to outer apply the matrix to make this j on the inside
+impl HouseholderMatrix {
+    pub fn apply_q_left(&self, target: &mut NdArray) {
+        // f(X) :: QX
+        // H[i]*X = X - Buu'X
+        // w = u'X
+        // debug_assert!(target.dims[0] == self.cols);
+        let rows = self.card;
+        let mut sum;
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        for p in (0..self.card-1).rev() {
+            let proj = &self.projs[self.card * p..self.card * (p + 1)];
+            let beta = self.betas[p];
+            for j in 0..tcols {
+                sum = 0f32;
+                for i in p..trows.min(self.card) {
+                    sum += proj[i - p] * target.data[i * tcols + j];
+                }
+                sum *= beta;
+                for i in p..trows.min(self.card) {
+                    target.data[i * tcols + j] -= sum * proj[i - p];
+                }
+            }
+        }
+        target.data.truncate(self.card * tcols);
+        target.dims[0] = self.card;
+    }
 }
 
 
-fn main() {
-    let n = 1000;
-    let mut x = generate_random_matrix(n, n);
-    // println!("x {x:?}");
-    let start = Instant::now();
-    for _ in 0..100 {
-        let ksvd = checking_qr(20, x.clone());
-        // let tiny = ksvd.approx();
-        // let big = ksvd.reconstruct();
-        black_box(ksvd);
-    }
-    let duration = start.elapsed();
-    println!("Pipeline took {:?}", duration / 100);
 
+fn main() {
 }
