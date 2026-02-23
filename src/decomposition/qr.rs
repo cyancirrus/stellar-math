@@ -212,7 +212,7 @@ impl QrDecomposition {
         // A ~ M[i,j] => Q ~ M[i,i]
         debug_assert!(data.len() == self.rows);
         // H[i+1]x = (I - buu')x  = x - b*u*(u'x)
-        let mut scalar ;
+        let mut scalar;
         for p in (0..self.card).rev() {
             scalar = 0_f32;
             let proj = &self.projections[p];
@@ -243,7 +243,6 @@ impl QrDecomposition {
 //         qrr.left_apply_qt(&mut tiny_core);
 //         tiny_core.transpose_square();
 // }
-
 
 // fn main() {
 //     let n = 1000;

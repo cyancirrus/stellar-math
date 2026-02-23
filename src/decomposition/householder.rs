@@ -14,7 +14,7 @@ impl HouseholderReflection {
     pub fn new(beta: f32, vector: Vec<f32>) -> Self {
         Self { beta, vector }
     }
-    pub fn instantiate(beta: f32, vector:Vec<f32>) -> Self {
+    pub fn instantiate(beta: f32, vector: Vec<f32>) -> Self {
         Self { beta, vector }
     }
 }
