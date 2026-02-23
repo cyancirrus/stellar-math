@@ -121,6 +121,7 @@ impl QrDecomp {
         let tcols = target.dims[0];
         let mut buffer = vec![0f32;tcols];
         for p in (0..self.card - 1).rev() {
+            println!("buffer {buffer:?}");
             let proj = &self.h.projs[self.card * p .. self.card * (p + 1)];
             let beta = self.h.betas[p];
             // w' = u'X
