@@ -178,7 +178,7 @@ impl QrDecomp {
         // debug_assert!(target.dims[0] == self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         let mut sum;
-        for p in 0..self.card {
+        for p in 0..self.card-1 {
             let proj = &self.h.projs[self.card * p..self.card * (p + 1)];
             let beta = self.h.betas[p];
             for i in 0..trows {
@@ -201,7 +201,7 @@ impl QrDecomp {
         // debug_assert!(target.dims[0] == self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         let mut sum;
-        for p in (0..self.card).rev() {
+        for p in (0..self.card-1).rev() {
             let proj = &self.h.projs[self.card * p..self.card * (p + 1)];
             let beta = self.h.betas[p];
             for i in 0..trows {
@@ -237,12 +237,12 @@ fn check_householder_matrix() {
     println!("X {x:?}");
     let qr_old = QrDecomposition::new(x.clone());
     let qr_new = QrDecomp::new(x.clone());
-    // let y = generate_random_matrix(n, n);
-    let y = x.clone();
+    let y = generate_random_matrix(n, n);
+    // let y = x.transpose();
     let mut y_expect= y.clone();
     let mut y_actual = y.clone();
-    qr_old.right_apply_qt(&mut y_expect);
-    qr_new.right_apply_qt(&mut y_actual);
+    qr_old.left_apply_qt(&mut y_expect);
+    qr_new.left_apply_qt(&mut y_actual);
 
     println!("Y_expected {y_expect:?}");
     println!("Y_actual {y_actual:?}");
