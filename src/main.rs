@@ -220,17 +220,6 @@ impl QrDecomp {
     }
 }
 
-// --------------------------
-// expect householder
-// expect householder HouseholderReflection { beta: 0.27894166, vector: [1.9721336, -1.4096823, -0.5417038, 1.0] }
-// expect householder HouseholderReflection { beta: 0.45298743, vector: [1.6344242, -0.8624333, 1.0] }
-// expect householder HouseholderReflection { beta: 0.00063547946, vector: [56.091263, 1.0] }
-// actual projs [1.9721336, -1.4096823, -0.5417038, 1.0, 1.6344242, -0.8624333, 1.0, 0.0, -inf, -inf, 0.0, 0.0]
-// actual betas [0.27894166, 0.45298743, 0.0]
-// ravenecho@Ravens-MacBook-Pro stellar-math % 
-
-
-
 fn check_householder_matrix() {
     let n = 5;
     let x = generate_random_matrix(n, n);
