@@ -118,51 +118,51 @@ impl QrDecomp {
         // H[i]*X = X - Buu'X
         // w = u'X
         debug_assert!(target.dims[0] == self.cols);
-        let tcols = target.dims[0];
+        let tcols = target.dims[1];
         let mut buffer = vec![0f32;tcols];
         for p in (0..self.card - 1).rev() {
-            println!("buffer {buffer:?}");
             let proj = &self.h.projs[self.card * p .. self.card * (p + 1)];
             let beta = self.h.betas[p];
             // w' = u'X
-            for i in p..self.card {
+            for i in p..self.rows {
                 let row_offset = i * tcols;
                 for j in 0..tcols {
-                    buffer[i] += proj[j] * target.data[ row_offset + j];
+                    buffer[j] += proj[i-p] * target.data[ row_offset + j];
                 }
             }
             // X -= B uw'
-            for i in p..self.card {
-                let scalar = beta * proj[i];
+            for i in p..self.rows {
+                let scalar = beta * proj[i - p];
                 let row_offset = i * tcols;
                 for j in 0..tcols {
-                    target.data[ row_offset + j] -= scalar * buffer[i];
+                    target.data[ row_offset + j] -= scalar * buffer[j];
                 }
             }
             buffer.fill(0f32);
         }
         target.resize_rows(self.card);
     }
-    pub fn left_apply_qt(&mut self, target: &mut NdArray) {
+    pub fn left_apply_qt(&self, target: &mut NdArray) {
         // f(X) :: QX
         // H[i]*X = X - Buu'X
         // w = u'X
         // debug_assert!(target.dims[0] == self.cols);
+        debug_assert!(target.dims[0] == self.cols);
         let tcols = target.dims[1];
         let mut buffer = vec![0f32;tcols];
         for p in 0..self.card - 1 {
             let proj = &self.h.projs[self.card * p .. self.card * (p + 1)];
             let beta = self.h.betas[p];
             // w' = u'X
-            for i in p..self.card {
+            for i in p..self.rows {
                 let row_offset = i * tcols;
                 for j in 0..tcols {
-                    buffer[j] += proj[i] * target.data[ row_offset + j];
+                    buffer[j] += proj[i-p] * target.data[ row_offset + j];
                 }
             }
             // X -= B uw'
-            for i in p..self.card {
-                let scalar = beta * proj[i];
+            for i in p..self.rows {
+                let scalar = beta * proj[i - p];
                 let row_offset = i * tcols;
                 for j in 0..tcols {
                     target.data[ row_offset + j] -= scalar * buffer[j];
@@ -232,29 +232,22 @@ impl QrDecomp {
 
 
 fn check_householder_matrix() {
-    let n = 4;
+    let n = 5;
     let x = generate_random_matrix(n, n);
     println!("X {x:?}");
     let qr_old = QrDecomposition::new(x.clone());
     let qr_new = QrDecomp::new(x.clone());
-
-    let mut y_expect= generate_random_matrix(n ,n );
-    let mut y_actual = generate_random_matrix(n ,n );
-    qr_old.left_apply_q(&mut y_expect);
-    qr_new.left_apply_q(&mut y_actual);
+    // let y = generate_random_matrix(n, n);
+    let y = x.clone();
+    let mut y_expect= y.clone();
+    let mut y_actual = y.clone();
+    qr_old.left_apply_qt(&mut y_expect);
+    qr_new.left_apply_qt(&mut y_actual);
 
     println!("Y_expected {y_expect:?}");
     println!("Y_actual {y_actual:?}");
 
-    println!("--------------------------");
-    println!("expect householder");
-    for h in qr_old.projections {
-        println!("expect householder {:?}", h);
-    }
-    println!("actual projs {:?}", qr_new.h.projs);
-    println!("actual betas {:?}", qr_new.h.betas);
 }
-
 fn main() {
     check_householder_matrix();
 }
