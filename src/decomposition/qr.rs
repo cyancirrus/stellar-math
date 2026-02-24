@@ -20,8 +20,7 @@ pub struct QrDecomposition {
 impl QrDecomposition {
     pub fn new(mut x: NdArray) -> Self {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        // let card = rows.min(cols) - (rows <= cols) as usize;
-        let card = rows.min(cols) - 1;
+        let card = rows.min(cols) - (rows <= cols) as usize;
         let mut projections = Vec::with_capacity(card);
         let mut w = vec![0_f32; rows];
         for o in 0..card {

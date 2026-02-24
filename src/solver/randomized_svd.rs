@@ -2,6 +2,7 @@ use crate::algebra::ndmethods::matrix_mult;
 use crate::decomposition::givens::{full_givens_iteration, givens_iteration, SingularValueDecomp};
 use crate::decomposition::lower_upper::LuPivotDecompose;
 use crate::decomposition::qr::QrDecomposition;
+use crate::decomposition::qr_matrix::QrDecomp;
 use crate::decomposition::svd::{full_golub_kahan, golub_kahan};
 use crate::random::generation::{generate_random_matrix, generate_random_symetric};
 use crate::structure::ndarray::NdArray;
@@ -11,8 +12,8 @@ const CONVERGENCE_CONDITION: f32 = 1e-4;
 pub struct RandomizedSvd {
     pub n: usize,
     pub k: usize,
-    pub qrl: QrDecomposition,
-    pub qrr: QrDecomposition,
+    pub qrl: QrDecomp,
+    pub qrr: QrDecomp,
     pub svd: SingularValueDecomp,
 }
 
@@ -34,7 +35,7 @@ impl RankKSvd {
         // implicit covariance
         let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
 
-        let qrl = QrDecomposition::new(y);
+        let qrl = QrDecomp::new(y);
         qrl.left_apply_qt(&mut matrix);
         let reference = golub_kahan(matrix);
         let singular = givens_iteration(reference);
@@ -51,12 +52,15 @@ impl RandomizedSvd {
         let a_sketch = matrix_mult(&matrix, &sketch);
         // implicit covariance
         let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
-        // left ortho
-        let qrl = QrDecomposition::new(y);
+        let qrl = QrDecomp::new(y);
+        // println!("apply left");
         qrl.left_apply_qt(&mut matrix);
+        matrix.resize_rows(k);
+        // no dimensionality reduction
         let mut tiny_core = matrix.transpose();
-        let qrr = QrDecomposition::new(tiny_core.clone());
+        let qrr = QrDecomp::new(tiny_core.clone());
         qrr.left_apply_qt(&mut tiny_core);
+        tiny_core.resize_rows(k);
         tiny_core.transpose_square();
         let (u, b, v) = full_golub_kahan(tiny_core);
         let svd = full_givens_iteration(u, b, v);
@@ -110,6 +114,8 @@ impl RandomizedSvd {
 }
 
 // #![allow(dead_code, unused_imports)]
+// use std::hint::black_box;
+// use std::time::Instant;
 // use stellar::algebra::ndmethods::tensor_mult;
 // use stellar::decomposition::givens::{givens_iteration, SingularValueDecomp};
 // use stellar::decomposition::lower_upper::LuPivotDecompose;
