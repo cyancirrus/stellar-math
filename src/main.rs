@@ -241,8 +241,8 @@ fn check_householder_matrix() {
     let y = x.clone();
     let mut y_expect= y.clone();
     let mut y_actual = y.clone();
-    qr_old.left_apply_qt(&mut y_expect);
-    qr_new.left_apply_qt(&mut y_actual);
+    qr_old.right_apply_qt(&mut y_expect);
+    qr_new.right_apply_qt(&mut y_actual);
 
     println!("Y_expected {y_expect:?}");
     println!("Y_actual {y_actual:?}");
