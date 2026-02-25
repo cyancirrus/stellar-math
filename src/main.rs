@@ -1,41 +1,38 @@
-#![allow(dead_code, unused_imports)]
-use std::hint::black_box;
-use std::time::Instant;
-use stellar::algebra::ndmethods::tensor_mult;
-use stellar::decomposition::givens::{givens_iteration, SingularValueDecomp};
-use stellar::decomposition::lower_upper::LuPivotDecompose;
-use stellar::decomposition::qr::QrDecomposition;
-use stellar::decomposition::qr_matrix::QrDecomp;
-use stellar::decomposition::svd::golub_kahan;
-use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
-use stellar::solver::randomized_svd::{RandomizedSvd, RankKSvd};
-use stellar::structure::ndarray::NdArray;
+use rand::Rng;
+use rand_distr::StandardNormal;
+use stellar::solver::multi_armed_bandit::{max_multi_bandit, Aggregate, Bandit};
 
-// use std::hint::black_box;
-// use std::time::Instant;
-// use stellar::algebra::ndmethods::tensor_mult;
-// use stellar::decomposition::givens::{givens_iteration, SingularValueDecomp};
-// use stellar::decomposition::lower_upper::LuPivotDecompose;
-// use stellar::decomposition::qr::QrDecomposition;
-// use stellar::decomposition::svd::golub_kahan;
-// use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
-// use stellar::structure::ndarray::NdArray;
-// use stellar::solver::randomized_svd::{RankKSvd, RandomizedSvd};
+fn sim() {
+    // interesting that as t increased ratio -> 1;
+    let n = 8;
+    let t = 128;
+    let sims = 12;
+    let mut rng = rand::rng();
+    let mut bandits = Vec::with_capacity(n);
+    let mut aggs = Vec::with_capacity(n);
+    for _ in 0..sims {
+        println!("---------------------------");
+        let mut best = f32::NEG_INFINITY;
+
+        for _ in 0..n {
+            let mean: f32 = rng.sample(StandardNormal);
+            let std_dev: f32 = rng.sample(StandardNormal);
+            best = best.max(mean);
+            bandits.push(Bandit::new(mean, std_dev));
+            aggs.push(Aggregate {
+                sum: 0f32,
+                square: 0f32,
+                count: 0f32,
+            });
+        }
+        let max = max_multi_bandit(&mut bandits, &mut aggs, t);
+        let poss = best * t as f32;
+        println!("achieved max {max:?}");
+        println!("possible mean {poss:?}");
+        println!("ratio {:?}", max / poss);
+    }
+}
 
 fn main() {
-    let n = 1000;
-    let x = generate_random_matrix(n, n);
-    // println!("x {x:?}");
-    let start = Instant::now();
-    for _ in 0..100 {
-        let ksvd = RandomizedSvd::new(20, x.clone());
-        let tiny = ksvd.approx();
-        let big = ksvd.reconstruct();
-        black_box(tiny);
-        black_box(big);
-        black_box(&x);
-        // let svalues = RankKSvd::new(4, x.clone());
-    }
-    let duration = start.elapsed();
-    println!("Pipeline took {:?}", duration / 100);
+    sim();
 }
