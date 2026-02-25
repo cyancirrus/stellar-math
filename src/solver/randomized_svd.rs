@@ -53,13 +53,14 @@ impl RandomizedSvd {
         // implicit covariance
         let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
         let qrl = QrDecomp::new(y);
-        // println!("apply left");
         qrl.left_apply_qt(&mut matrix);
         matrix.resize_rows(k);
         // no dimensionality reduction
-        let mut tiny_core = matrix.transpose();
-        let qrr = QrDecomp::new(tiny_core.clone());
-        qrr.left_apply_qt(&mut tiny_core);
+        let tiny_core = matrix.transpose();
+        // let qrr = QrDecomp::new(tiny_core.clone());
+        let qrr = QrDecomp::new(tiny_core);
+        let mut tiny_core = qrr.t.clone();
+        // qrr.left_apply_qt(&mut tiny_core);
         tiny_core.resize_rows(k);
         tiny_core.transpose_square();
         let (u, b, v) = full_golub_kahan(tiny_core);
@@ -75,8 +76,8 @@ impl RandomizedSvd {
     pub fn approx(&self) -> NdArray {
         let mut tiny = vec![0_f32; self.k * self.k];
         for i in 0..self.k {
-            for j in 0..self.k {
-                for k in 0..self.k {
+            for k in 0..self.k {
+                for j in 0..self.k {
                     tiny[i * self.k + j] += self.svd.u.data[i * self.k + k]
                         * self.svd.s.data[k * self.k + k]
                         * self.svd.v.data[j * self.k + k];
@@ -91,8 +92,8 @@ impl RandomizedSvd {
     fn approx_padded(&self) -> NdArray {
         let mut tiny = vec![0_f32; self.k * self.n];
         for i in 0..self.k {
-            for j in 0..self.k {
-                for k in 0..self.k {
+            for k in 0..self.k {
+                for j in 0..self.k {
                     tiny[i * self.n + j] += self.svd.u.data[i * self.k + k]
                         * self.svd.s.data[k * self.k + k]
                         * self.svd.v.data[j * self.k + k];

@@ -32,7 +32,7 @@ impl HouseholderMatrix {
     pub fn new(rows: usize, card: usize) -> Self {
         // println!(" rows {rows:?}, card {card:?}");
         Self {
-            projs: vec![0_f32; card * rows],
+            projs: vec![0_f32; rows * card],
             betas: vec![0_f32; card],
         }
     }
@@ -75,17 +75,17 @@ impl QrDecomp {
             // w' = u'T
             buffer.fill(0f32);
             for i in p..rows {
-                let row_offset = i * cols;
+                let target_row = &t.data[i * cols..(i + 1) * cols];
                 for j in 0..cols {
-                    buffer[j] += proj[i - p] * t.data[row_offset + j];
+                    buffer[j] += proj[i - p] * target_row[j];
                 }
             }
             // T -= B uw'
             for i in p..rows {
                 let scalar = beta * proj[i - p];
-                let row_offset = i * cols;
+                let target_row = &mut t.data[i * cols..(i+1) * cols];
                 for j in 0..cols {
-                    t.data[row_offset + j] -= scalar * buffer[j];
+                    target_row[j] -= scalar * buffer[j];
                 }
             }
         }
@@ -113,18 +113,17 @@ impl QrDecomp {
             let beta = self.h.betas[p];
             // w' = u'X
             for i in p..self.rows {
-                let row_offset = i * tcols;
+                let target_row = &target.data[i * tcols.. (i+1) * tcols];
                 for j in 0..tcols {
-                    buffer[j] += proj[i - p] * target.data[row_offset + j];
+                    buffer[j] += proj[i - p] * target_row[j];
                 }
             }
             // X -= B uw'
-            // for i in p..self.cols {
             for i in p..self.rows {
                 let scalar = beta * proj[i - p];
-                let row_offset = i * tcols;
+                let target_row = &mut target.data[i * tcols.. (i+1) * tcols];
                 for j in 0..tcols {
-                    target.data[row_offset + j] -= scalar * buffer[j];
+                    target_row[j] -= scalar * buffer[j];
                 }
             }
             buffer.fill(0f32);
@@ -143,18 +142,18 @@ impl QrDecomp {
             let beta = self.h.betas[p];
             // w' = u'X
             for i in p..self.rows {
-                let row_offset = i * tcols;
+                let target_row = &target.data[i * tcols.. (i+1) * tcols];
                 for j in 0..tcols {
-                    buffer[j] += proj[i - p] * target.data[row_offset + j];
+                    buffer[j] += proj[i - p] * target_row[j];
                 }
             }
             // X -= B uw'
             // for i in p..self.cols {
             for i in p..self.rows {
                 let scalar = beta * proj[i - p];
-                let row_offset = i * tcols;
+                let target_row = &mut target.data[i * tcols.. (i+1) * tcols];
                 for j in 0..tcols {
-                    target.data[row_offset + j] -= scalar * buffer[j];
+                    target_row[j] -= scalar * buffer[j];
                 }
             }
             buffer.fill(0f32);
@@ -172,13 +171,14 @@ impl QrDecomp {
             let beta = self.h.betas[p];
             for i in 0..trows {
                 sum = 0f32;
+                let target_row = &mut target.data[i * tcols..(i+1) * tcols];
                 // inner product of a[i][*] and u[p]
                 for j in p..tcols {
-                    sum += target.data[i * tcols + j] * proj[j - p];
+                    sum += target_row[j] * proj[j - p];
                 }
                 sum *= beta;
                 for j in p..tcols {
-                    target.data[i * tcols + j] -= sum * proj[j - p];
+                    target_row[j] -= sum * proj[j - p];
                 }
             }
         }
@@ -195,13 +195,14 @@ impl QrDecomp {
             let beta = self.h.betas[p];
             for i in 0..trows {
                 sum = 0f32;
+                let target_row = &mut target.data[i * tcols..(i+1) * tcols];
                 // inner product of a[i][*] and u[p]
                 for j in p..tcols {
-                    sum += target.data[i * tcols + j] * proj[j - p];
+                    sum += target_row[j] * proj[j - p];
                 }
                 sum *= beta;
                 for j in p..tcols {
-                    target.data[i * tcols + j] -= sum * proj[j - p];
+                    target_row[j] -= sum * proj[j - p];
                 }
             }
         }

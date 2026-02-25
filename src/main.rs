@@ -22,7 +22,6 @@ use stellar::structure::ndarray::NdArray;
 // use stellar::structure::ndarray::NdArray;
 // use stellar::solver::randomized_svd::{RankKSvd, RandomizedSvd};
 
-
 fn main() {
     let n = 1000;
     let x = generate_random_matrix(n, n);
@@ -39,5 +38,4 @@ fn main() {
     }
     let duration = start.elapsed();
     println!("Pipeline took {:?}", duration / 100);
-
 }
