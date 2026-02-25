@@ -1,4 +1,3 @@
-#![allow(dead_code, unused_imports)]
 use rand::Rng;
 use rand_distr::{Distribution, Normal, StandardNormal};
 use std::cmp::{Eq, Ordering, PartialEq};
@@ -107,18 +106,20 @@ pub fn max_multi_bandit(bandits: &[Bandit], aggs: &mut [Aggregate], t: usize) ->
 // fn sim() {
 //     // interesting that as t increased ratio -> 1;
 //     let n = 8;
-//     let t = 128;
-//     let sims = 12;
+//     let t = 124;
+//     let sims = 4;
 //     let mut rng = rand::rng();
-//     let mut bandits = Vec::with_capacity(n);
-//     let mut aggs = Vec::with_capacity(n);
 //     for _ in 0..sims {
+//         let mut bandits = Vec::with_capacity(n);
+//         let mut aggs = Vec::with_capacity(n);
 //         println!("---------------------------");
 //         let mut best = f32::NEG_INFINITY;
 
 //         for _ in 0..n {
 //             let mean: f32 = rng.sample(StandardNormal);
-//             let std_dev: f32 = rng.sample(StandardNormal);
+//             // let mut std_dev: f32 = rng.sample(StandardNormal);
+//             // std_dev = std_dev.abs();
+//             let std_dev = 0.5;
 //             best = best.max(mean);
 //             bandits.push(Bandit::new(mean, std_dev));
 //             aggs.push(Aggregate {
