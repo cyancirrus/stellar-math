@@ -1,5 +1,3 @@
-use crate::algebra::ndmethods::tensor_mult;
-use crate::random::generation::generate_random_matrix;
 use crate::structure::ndarray::NdArray;
 
 pub struct LuPivotDecompose {
@@ -161,7 +159,8 @@ impl LuPivotDecompose {
         // LA = Output
         debug_assert_eq!(target.dims[0], self.matrix.dims[1]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
-        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        // let (trows, tcols) = (target.dims[0], target.dims[1]);
+        let tcols = target.dims[1];
 
         for i in (1..rows).rev() {
             for j in 0..tcols {
@@ -177,7 +176,8 @@ impl LuPivotDecompose {
         // UA = Output
         debug_assert_eq!(target.dims[0], self.matrix.dims[1]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
-        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        // let (trows, tcols) = (target.dims[0], target.dims[1]);
+        let tcols = target.dims[1];
         for i in 0..rows {
             for j in 0..tcols {
                 target.data[i * tcols + j] *= self.matrix.data[i * cols + i];
@@ -254,7 +254,8 @@ impl LuPivotDecompose {
     pub fn right_apply_u_vec(&self, target: &mut [f32]) {
         //x'U
         debug_assert_eq!(self.matrix.dims[1], target.len());
-        let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+        // let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+        let cols = self.matrix.dims[1];
         for j in (0..cols).rev() {
             target[j] *= self.matrix.data[j * cols + j];
             for k in 0..j {
@@ -323,7 +324,8 @@ impl LuPivotDecompose {
         // transforms y -> z
         debug_assert_eq!(self.matrix.dims[1], y.dims[0]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
-        let (trows, tcols) = (y.dims[0], y.dims[1]);
+        // let (trows, tcols) = (y.dims[0], y.dims[1]);
+        let tcols = y.dims[1];
         for j in 0..tcols {
             for i in 0..rows {
                 for k in 0..i {
@@ -336,7 +338,8 @@ impl LuPivotDecompose {
         // transforms y -> z
         debug_assert_eq!(self.matrix.dims[1], z.dims[0]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
-        let (trows, tcols) = (z.dims[0], z.dims[1]);
+        // let (trows, tcols) = (z.dims[0], z.dims[1]);
+        let tcols = z.dims[1];
         for i in (0..rows).rev() {
             for k in i + 1..cols {
                 for j in 0..tcols {

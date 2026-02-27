@@ -1,7 +1,7 @@
 use crate::learning::decision_tree::{DecisionTree, DecisionTreeModel};
 pub struct GradientBoost {
-    trees: usize,
-    forest: Vec<DecisionTreeModel>,
+    pub trees: usize,
+    pub forest: Vec<DecisionTreeModel>,
 }
 impl GradientBoost {
     pub fn new(

@@ -1,8 +1,8 @@
 use plotters::prelude::*;
 use plotters::style::colors::full_palette::GREY_700;
-use rand::Rng;
+use rand::prelude::*;
 use rand_distr::StandardNormal;
-use stellar::learning::gaussian_mixture::{kmeans_gmm_pipeline, GaussianMixtureModel};
+use stellar::learning::gaussian_mixture::kmeans_gmm_pipeline;
 // TODO: implement the smarter sum for SSE via kahan summation
 // TODO: implement smarter givens bulge chasing which only updates bidiagonals
 // TODO: keep buffer for decision tree as it's reused a bit
@@ -180,7 +180,7 @@ fn plot_gmm_clusters_2d(
         let points: Vec<_> = data
             .iter()
             .zip(labels.iter())
-            .filter(|(_, &label)| label == k)
+            .filter(|(_, label)| **label == k)
             .map(|(p, _)| (p[0], p[1]))
             .collect();
         if !points.is_empty() {

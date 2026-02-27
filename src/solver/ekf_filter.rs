@@ -11,7 +11,7 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-struct MinNode {
+pub struct MinNode {
     id: usize,
     cost: f32,
 }
@@ -31,20 +31,20 @@ impl PartialOrd for MinNode {
         Some(self.cmp(other))
     }
 }
-struct Network {
+pub struct Network {
     web: HashMap<usize, Vec<usize>>,
     // contains cost for edges could flatten this
     edges: Vec<Vec<f32>>,
     // contains node_id -> (x,y)
-    nodes: Vec<(f32, f32)>,
+    pub nodes: Vec<(f32, f32)>,
     // contains (src, target) -> speed
-    speed: Vec<Vec<f32>>,
+    pub speed: Vec<Vec<f32>>,
     // contains number of nodes
     size: usize,
 }
 
 impl Network {
-    fn find_path(&self, start: usize, end: usize) -> Vec<usize> {
+    pub fn find_path(&self, start: usize, end: usize) -> Vec<usize> {
         let mut heap: BinaryHeap<MinNode> = BinaryHeap::new();
         let mut seen: Vec<bool> = vec![false; self.size];
         let mut prev: Vec<usize> = vec![usize::MAX; self.size];
@@ -83,7 +83,7 @@ impl Network {
     }
 }
 
-struct Kinematics {
+pub struct Kinematics {
     theta: f32,
     velocity: f32,
     x: f32,
@@ -101,24 +101,24 @@ impl State for Kinematics {
         Self::Reference { x: x[2], y: x[3] }
     }
 }
-struct GpsSignal {}
-struct VehicleSignal {}
+pub struct GpsSignal {}
+pub struct VehicleSignal {}
 
-struct Position {
-    x: f32,
-    y: f32,
+pub struct Position {
+    pub x: f32,
+    pub y: f32,
 }
-struct GpsData {
-    x: f32,
-    y: f32,
+pub struct GpsData {
+    pub x: f32,
+    pub y: f32,
 }
-struct VehicleData {
-    theta: f32,
-    velocity: f32,
+pub struct VehicleData {
+    pub theta: f32,
+    pub velocity: f32,
 }
 
 impl Position {
-    fn new(prediction: Vec<f32>) -> Self {
+    pub fn new(prediction: Vec<f32>) -> Self {
         Self {
             x: prediction[2],
             y: prediction[3],
@@ -135,7 +135,7 @@ impl Signal for GpsSignal {
         let w = (new.x - basis.x, new.y - basis.y); // (dx, dy)
         let theta = w.1.atan2(w.0); // theta based upon the changes
         let velocity = (w.0 * w.0 + w.1 * w.1).sqrt(); //magnitude of root(dx^2 + dy^2)
-                                                       // update the previous state
+        // update the previous state
         let dx = dt * velocity * theta.cos();
         let dy = dt * velocity * theta.sin();
         Self::State {
@@ -230,7 +230,8 @@ impl Signal for VehicleSignal {
     }
 }
 
-trait Signal {
+pub trait Signal {
+    const CONVERGENCE_CONDITION: f32 = 1e-4;
     type State;
     type Reference;
     type Data;
@@ -241,25 +242,25 @@ trait Signal {
     fn insight(state: &Self::State, data: &Self::Data) -> Vec<f32>;
 }
 
-trait State {
+pub trait State {
     type Reference;
     fn to_comp(&self) -> Vec<f32>;
     fn comp_to_ref(x: Vec<f32>) -> Self::Reference;
 }
 
-struct Ekf<R, S, F, H>
+pub struct Ekf<R, S, F, H>
 where
     F: Signal<State = S, Reference = R>,
     H: Signal<State = S, Reference = R>,
 {
-    basis: R,
+    pub basis: R,
     // Signal Variances
-    q_variance: NdArray,
-    r_variance: NdArray,
+    pub q_variance: NdArray,
+    pub r_variance: NdArray,
     // Computational Matrices
-    p: NdArray,
-    h: NdArray,
-    k: NdArray,
+    pub p: NdArray,
+    pub h: NdArray,
+    pub k: NdArray,
     // prediction and measurement
     _boo_f: PhantomData<F>,
     _boo_h: PhantomData<H>,
@@ -272,7 +273,7 @@ where
     F: Signal<State = S, Reference = R>,
     H: Signal<State = S, Reference = R>,
 {
-    fn update_p(&mut self, state: F::State) {
+    pub fn update_p(&mut self, state: F::State) {
         // takes in VehicleState
         // df/dx | x_{k|k-1};
         let f = F::jacobian(&state);
@@ -280,7 +281,7 @@ where
         self.p = tensor_mult(4, &result, &f.transpose());
         in_place_add(&mut self.p, &self.q_variance);
     }
-    fn derive_k(&mut self, state: H::State) {
+    pub fn derive_k(&mut self, state: H::State) {
         // takes in GpsState
         // requires p to be updated prior
         self.h = H::jacobian(&state);
@@ -292,17 +293,17 @@ where
         lu.solve_inplace(&mut k);
         self.k = k;
     }
-    fn finalize_p(&mut self) {
+    pub fn finalize_p(&mut self) {
         let mut update = tensor_mult(4, &self.k, &self.h);
         update = tensor_mult(4, &update, &self.p);
         in_place_sub(&mut self.p, &update);
     }
-    fn output(&mut self, prediction: &mut Vec<f32>, measurement: &Vec<f32>) {
+    pub fn output(&mut self, prediction: &mut Vec<f32>, measurement: &Vec<f32>) {
         debug_assert_eq!(prediction.len(), measurement.len());
         let y_star = mult_mat_vec(&self.k, measurement);
         vec_in_place_add(prediction, &y_star);
     }
-    fn predict_x(&mut self, basis: R, prediction: F::Data, measurement: H::Data) -> Vec<f32> {
+    pub fn predict_x(&mut self, basis: R, prediction: F::Data, measurement: H::Data) -> Vec<f32> {
         let vstate = F::derive(&basis, &prediction);
         let gstate = H::derive(&basis, &measurement);
         let mut prediction = F::representation(&vstate);

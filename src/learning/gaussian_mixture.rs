@@ -1,15 +1,12 @@
-#![allow(dead_code)]
 use crate::algebra::ndmethods::create_identity_matrix;
 use crate::algebra::vector::dot_product;
 use crate::decomposition::lower_upper::LuPivotDecompose;
 use crate::learning::kmeans::Kmeans;
-use crate::random::generation::{
-    generate_random_matrix, generate_random_vector, generate_zero_matrix,
-};
+use crate::random::generation::{generate_random_vector, generate_zero_matrix};
 use crate::structure::ndarray::NdArray;
 use rand::distr::StandardUniform;
+use rand::prelude::*;
 use rand::rngs::ThreadRng;
-use rand::Rng;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
 const EPSILON: f32 = 1e-3;
@@ -22,7 +19,12 @@ pub struct GaussianMixtureModel {
     pub variance: Vec<NdArray>,
 }
 
-fn gaussian(x_bar: &mut Vec<f32>, z_buf: &mut Vec<f32>, det: f32, lu: &LuPivotDecompose) -> f32 {
+pub fn gaussian(
+    x_bar: &mut Vec<f32>,
+    z_buf: &mut Vec<f32>,
+    det: f32,
+    lu: &LuPivotDecompose,
+) -> f32 {
     // xbar := x - mean;
     // we have x'Vx, where V := 1/ self.variance
     // solve sub problem LUx = z*; for z* and then <x, z*>
@@ -46,11 +48,9 @@ fn ln_gaussian(
     let card = x_bar.len();
     lu.solve_inplace_vec(z_buf);
     let scaling = dot_product(&z_buf, &x_bar) / 2_f32;
-    {
-        -(card as f32 / 2f32) * (2f32 * std::f32::consts::PI).ln() - 0.5f32 * ln_det - scaling
-    }
+    -(card as f32 / 2f32) * (2f32 * std::f32::consts::PI).ln() - 0.5f32 * ln_det - scaling
 }
-fn initialize_distribution(n: usize, rng: &mut ThreadRng) -> Vec<f32> {
+pub fn initialize_distribution(n: usize, rng: &mut ThreadRng) -> Vec<f32> {
     (0..n).map(|_| rng.sample(StandardUniform)).collect()
 }
 

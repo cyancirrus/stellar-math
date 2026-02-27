@@ -1,9 +1,7 @@
-use crate::structure::ndsignal::{Complex, NdSignal};
-use std::arch::x86_64::*;
-#[cfg(target_arch = "x86_64")]
+use crate::structure::ndsignal::Complex;
 use std::f32::consts::PI;
 
-fn twiddle(k: usize, n: usize) -> Complex {
+pub fn twiddle(k: usize, n: usize) -> Complex {
     // exp(-i *) = cos(*) - isin(*)
     let phase = -2_f32 * PI * k as f32 / n as f32;
     let a = Complex::new(phase.cos(), -phase.sin());

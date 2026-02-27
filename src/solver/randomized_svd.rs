@@ -1,13 +1,9 @@
-use crate::algebra::ndmethods::matrix_mult;
-use crate::decomposition::givens::{full_givens_iteration, givens_iteration, SingularValueDecomp};
-use crate::decomposition::lower_upper::LuPivotDecompose;
-use crate::decomposition::qr::QrDecomposition;
+use crate::algebra::ndmethods::{lt_matrix_mult, matrix_mult};
+use crate::decomposition::givens::{SingularValueDecomp, full_givens_iteration, givens_iteration};
 use crate::decomposition::qr_matrix::QrDecomp;
 use crate::decomposition::svd::{full_golub_kahan, golub_kahan};
-use crate::random::generation::{generate_random_matrix, generate_random_symetric};
+use crate::random::generation::generate_random_matrix;
 use crate::structure::ndarray::NdArray;
-
-const CONVERGENCE_CONDITION: f32 = 1e-4;
 
 pub struct RandomizedSvd {
     pub n: usize,
@@ -31,9 +27,11 @@ impl RankKSvd {
         let sketch = generate_random_matrix(n, k);
         // might wish to inner product the resulting matrix
         // n x k
-        let a_sketch = matrix_mult(&matrix, &sketch);
         // implicit covariance
-        let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
+        let y = matrix_mult(
+            &matrix,
+            &lt_matrix_mult(&matrix, &matrix_mult(&matrix, &sketch)),
+        );
 
         let qrl = QrDecomp::new(y);
         qrl.left_apply_qt(&mut matrix);
@@ -47,20 +45,17 @@ impl RandomizedSvd {
     pub fn new(k: usize, mut matrix: NdArray) -> Self {
         let n = matrix.dims[0];
         let sketch = generate_random_matrix(n, k);
-        // might wish to inner product the resulting matrix
-        // n x k
-        let a_sketch = matrix_mult(&matrix, &sketch);
         // implicit covariance
-        let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
+        let y = matrix_mult(
+            &matrix,
+            &lt_matrix_mult(&matrix, &matrix_mult(&matrix, &sketch)),
+        );
         let qrl = QrDecomp::new(y);
         qrl.left_apply_qt(&mut matrix);
         matrix.resize_rows(k);
-        // no dimensionality reduction
-        let tiny_core = matrix.transpose();
-        // let qrr = QrDecomp::new(tiny_core.clone());
-        let qrr = QrDecomp::new(tiny_core);
+        matrix.transpose_inplace();
+        let qrr = QrDecomp::new(matrix);
         let mut tiny_core = qrr.t.clone();
-        // qrr.left_apply_qt(&mut tiny_core);
         tiny_core.resize_rows(k);
         tiny_core.transpose_square();
         let (u, b, v) = full_golub_kahan(tiny_core);
@@ -93,10 +88,11 @@ impl RandomizedSvd {
         let mut tiny = vec![0_f32; self.k * self.n];
         for i in 0..self.k {
             for k in 0..self.k {
+                let lambda = self.svd.s.data[k * self.k + k];
+                let t_row = &mut tiny[i * self.n..(i + 1) * self.n];
+                let u_i = self.svd.u.data[i * self.k + k];
                 for j in 0..self.k {
-                    tiny[i * self.n + j] += self.svd.u.data[i * self.k + k]
-                        * self.svd.s.data[k * self.k + k]
-                        * self.svd.v.data[j * self.k + k];
+                    t_row[j] += u_i * lambda * self.svd.v.data[j * self.k + k];
                 }
             }
         }
@@ -114,7 +110,6 @@ impl RandomizedSvd {
     }
 }
 
-// #![allow(dead_code, unused_imports)]
 // use std::hint::black_box;
 // use std::time::Instant;
 // use stellar::algebra::ndmethods::tensor_mult;
@@ -125,8 +120,6 @@ impl RandomizedSvd {
 // use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
 // use stellar::structure::ndarray::NdArray;
 // use stellar::solver::randomized_svd::{RankKSvd, RandomizedSvd};
-
-// const CONVERGENCE_CONDITION: f32 = 1e-4;
 
 // fn main() {
 //     let n = 1000;

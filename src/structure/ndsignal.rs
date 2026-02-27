@@ -1,8 +1,3 @@
-use rayon::prelude::ParallelIterator;
-use rayon::prelude::*;
-#[cfg(target_arch = "x86_64")]
-use std::arch::x86_64::*;
-use std::f32::consts::PI;
 use std::fmt;
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 

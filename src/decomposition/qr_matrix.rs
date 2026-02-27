@@ -62,6 +62,13 @@ impl HouseholderMatrix {
 }
 
 impl QrDecomp {
+    pub fn _allow_params_(&self) {
+        // want these for different impls must be implemented
+        let _ = self.card;
+        let _ = self.rows;
+        let _ = self.cols;
+        assert!(false);
+    }
     pub fn new(mut t: NdArray) -> Self {
         let (rows, cols) = (t.dims[0], t.dims[1]);
         let card = rows.min(cols);
@@ -106,7 +113,8 @@ impl QrDecomp {
         // H[i]*X = X - Buu'X
         // w = u'X
         debug_assert!(target.dims[0] == self.rows);
-        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        // let (trows, tcols) = (target.dims[0], target.dims[1]);
+        let tcols = target.dims[1];
         let mut buffer = vec![0f32; tcols];
         for p in (0..self.card).rev() {
             let proj = &self.h.projs[self.rows * p..self.rows * (p + 1)];
@@ -135,7 +143,8 @@ impl QrDecomp {
         // H[i]*X = X - Buu'X
         // w = u'X
         debug_assert!(target.dims[0] == self.rows);
-        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        // let (trows, tcols) = (target.dims[0], target.dims[1]);
+        let tcols = target.dims[1];
         let mut buffer = vec![0f32; tcols];
         for p in 0..self.card {
             let proj = &self.h.projs[self.rows * p..self.rows * (p + 1)];

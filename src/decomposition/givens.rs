@@ -1,6 +1,4 @@
-#![allow(warnings)]
-use crate::algebra::ndmethods::{create_identity_matrix, matrix_mult, transpose};
-use crate::decomposition::qr;
+use crate::algebra::ndmethods::create_identity_matrix;
 use crate::structure::ndarray::NdArray;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
@@ -54,8 +52,6 @@ pub fn givens_iteration(mut s: NdArray) -> Vec<f32> {
     let k = m.min(n);
     let mut singular = Vec::with_capacity(n);
     // row-space, column-space
-    let mut u = create_identity_matrix(m);
-    let mut v = create_identity_matrix(n);
     let mut max_iteration = 1 << 8;
     // left work
     while offdiag_norm(&s) > CONVERGENCE_CONDITION && max_iteration > 0 {
@@ -77,7 +73,7 @@ pub fn givens_iteration(mut s: NdArray) -> Vec<f32> {
     singular
 }
 
-fn embed_givens(n: usize, i: usize, j: usize, c: f32, s: f32) -> NdArray {
+pub fn embed_givens(n: usize, i: usize, j: usize, c: f32, s: f32) -> NdArray {
     let mut array = create_identity_matrix(n);
     array.data[i * n + i] = c;
     array.data[i * n + j] = s;
@@ -143,7 +139,7 @@ fn apply_g_left(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
     }
 }
 
-fn apply_gt_left(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
+pub fn apply_gt_left(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
     // G' * A
     // transpose the negative sine
     // alpha, beta, gamma, delta,
@@ -159,7 +155,7 @@ fn apply_gt_left(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
     }
 }
 
-fn apply_g_right(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
+pub fn apply_g_right(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
     // A * G
     // alpha, beta, gamma, delta,
     // c, s, -s, c

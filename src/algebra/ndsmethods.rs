@@ -1,4 +1,4 @@
-use crate::algebra::fourier::{fft, ifft};
+use crate::algebra::fourier::fft;
 use crate::structure::ndsignal::{Complex, NdSignal};
 use std::f32::consts::PI;
 
@@ -21,8 +21,6 @@ pub fn complex_tensor_mult(a: NdSignal, b: NdSignal) -> NdSignal {
 pub fn create_dct_array(n: usize) -> NdSignal {
     let dims = vec![n; 2];
     let mut data: Vec<Complex> = Vec::with_capacity(n * n);
-    let mut row: usize;
-    let mut col: usize;
     let mut val: Complex;
     let mut phase: f32;
     // disableling for fft debugging

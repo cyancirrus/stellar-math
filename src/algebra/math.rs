@@ -1,7 +1,5 @@
-#![allow(warnings)]
 use rayon::prelude::ParallelIterator;
 use rayon::prelude::*;
-use std::cmp::min;
 
 pub fn sigmoid(x: f32) -> f32 {
     1.0 / (1.0 + (-x).exp())

@@ -1,6 +1,3 @@
-#![allow(warnings)]
-use crate::algebra::math;
-use rayon::prelude::*;
 use std::fmt;
 
 #[derive(Clone)]
@@ -95,7 +92,7 @@ impl NdArray {
     }
 }
 
-struct NdIterator<'a> {
+pub struct NdIterator<'a> {
     drow: usize,
     dcol: usize,
     row: usize,
@@ -119,7 +116,7 @@ impl<'a> Iterator for NdIterator<'a> {
 }
 
 impl NdArray {
-    fn iterate(&self, drow: usize, dcol: usize, row: usize, col: usize) -> NdIterator {
+    pub fn iterate(&self, drow: usize, dcol: usize, row: usize, col: usize) -> NdIterator<'_> {
         NdIterator {
             drow,
             dcol,
@@ -127,6 +124,18 @@ impl NdArray {
             col,
             ndarray: self,
         }
+    }
+    pub fn transpose(&self) -> NdArray {
+        let mut dims = self.dims.clone();
+        let mut data = Vec::with_capacity(self.card());
+        dims.swap(0, 1);
+        let (rows, cols) = (dims[0], dims[1]);
+        for i in 0..rows {
+            for j in 0..cols {
+                data.push(self.data[j * rows + i]);
+            }
+        }
+        NdArray { dims, data }
     }
     pub fn transpose_square(&mut self) {
         debug_assert_eq!(self.dims[0], self.dims[1]);
@@ -137,16 +146,32 @@ impl NdArray {
             }
         }
     }
-    pub fn transpose(&self) -> NdArray {
-        let mut dims = self.dims.clone();
-        let mut data = vec![0f32; self.card()];
+    pub fn transpose_inplace(self: &mut NdArray) {
+        let card = self.card();
+        let data = &mut self.data;
+        let dims = &mut self.dims;
         dims.swap(0, 1);
-        for i in 0..dims[0] {
-            for j in 0..dims[1] {
-                data[i * dims[1] + j] = self.data[j * dims[0] + i]
+        let (rows, cols) = (dims[0], dims[1]);
+        let mut visited = vec![false; card];
+        for idx in 0..card {
+            if visited[idx] {
+                continue;
+            }
+            let mut curr = idx;
+            let mut val = data[idx];
+            loop {
+                visited[curr] = true;
+                let next = (curr % rows) * cols + (curr / rows);
+                if next == idx {
+                    data[idx] = val;
+                    break;
+                }
+                let tmp = data[next];
+                data[next] = val;
+                val = tmp;
+                curr = next;
             }
         }
-        NdArray { dims, data }
     }
 }
 

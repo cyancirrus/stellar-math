@@ -1,10 +1,8 @@
 use rand::distr::StandardUniform;
+use rand::prelude::*;
 use rand::rngs::ThreadRng;
-use rand::Rng;
-// use rand_distr::StandardNormal;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
-const EPSILON: f32 = 1e-3;
 
 // TODO: Note for the distance measure can reuse
 // (x-u)'(x-u) = <x,x> + <u,u> - 2<u, x>;

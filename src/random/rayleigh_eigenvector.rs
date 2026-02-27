@@ -1,15 +1,11 @@
-use crate::algebra::ndmethods::create_identity_matrix;
-use crate::algebra::ndmethods::tensor_mult;
 use crate::decomposition::lower_upper::LuPivotDecompose;
 use crate::structure::ndarray::NdArray;
 
-use crate::random::generation::{
-    generate_random_matrix, generate_random_symetric, generate_random_vector,
-};
+use crate::random::generation::generate_random_vector;
 
 const CONVERGENCE_CONDITION: f32 = 1e-4;
 
-fn rayleigh_inverse_iteration(mut matrix: NdArray) -> Vec<f32> {
+pub fn rayleigh_inverse_iteration(mut matrix: NdArray) -> Vec<f32> {
     // (A - Iu)y = x;
     // x' = y/||y||;
     // let M := (A-Iu)
@@ -35,7 +31,7 @@ fn rayleigh_inverse_iteration(mut matrix: NdArray) -> Vec<f32> {
     current
 }
 
-fn vector_diff_norm(a: &[f32], b: &[f32]) -> f32 {
+pub fn vector_diff_norm(a: &[f32], b: &[f32]) -> f32 {
     // distance :: SS (sign*a[ij] - b[ij])^2
     // sign := a'b
     debug_assert!(a.len() == b.len());
@@ -61,7 +57,7 @@ fn normalize_vector(x: &mut [f32]) {
     }
 }
 
-fn frobenius_diff_norm(a: &NdArray, b: &NdArray) -> f32 {
+pub fn frobenius_diff_norm(a: &NdArray, b: &NdArray) -> f32 {
     // distance :: SS (sign*a[ij] - b[ij])^2
     // sign := a'b
     debug_assert!(a.dims == b.dims);
@@ -76,7 +72,7 @@ fn frobenius_diff_norm(a: &NdArray, b: &NdArray) -> f32 {
     error.sqrt()
 }
 
-fn estimate_eigenvalues(u: &mut f32, a: &mut NdArray, x: &[f32]) {
+pub fn estimate_eigenvalues(u: &mut f32, a: &mut NdArray, x: &[f32]) {
     // estimated via rayleigh quotient
     // x'Ax/x'x
     debug_assert_eq!(a.dims[0], a.dims[1]);

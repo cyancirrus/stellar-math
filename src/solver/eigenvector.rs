@@ -1,6 +1,4 @@
 use crate::decomposition::qr::QrDecomposition;
-use crate::decomposition::schur::real_schur;
-use crate::decomposition::svd::golub_kahan;
 use crate::structure::ndarray::NdArray;
 
 // Tihnov

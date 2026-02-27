@@ -1,6 +1,5 @@
-use crate::algebra::ndmethods::{create_identity_matrix, create_identity_rectangle};
-use crate::algebra::vector::dot_product;
-use crate::decomposition::householder::{householder_params, HouseholderReflection};
+use crate::algebra::ndmethods::create_identity_rectangle;
+use crate::decomposition::householder::{HouseholderReflection, householder_params};
 use crate::structure::ndarray::NdArray;
 
 #[derive(Debug)]
@@ -207,7 +206,7 @@ impl QrDecomposition {
         target.data.truncate(trows * self.rows);
         target.dims[1] = self.rows;
     }
-    fn multiply_vector(&self, mut data: Vec<f32>) -> Vec<f32> {
+    pub fn multiply_vector(&self, mut data: Vec<f32>) -> Vec<f32> {
         // A ~ M[i,j] => Q ~ M[i,i]
         debug_assert!(data.len() == self.rows);
         // H[i+1]x = (I - buu')x  = x - b*u*(u'x)
@@ -225,36 +224,3 @@ impl QrDecomposition {
         data
     }
 }
-
-// fn checking_qr(k:usize, mut matrix: NdArray) {
-//         let n = matrix.dims[0];
-//         let sketch = generate_random_matrix(n, k);
-//         // might wish to inner product the resulting matrix
-//         // n x k
-//         let a_sketch = matrix_mult(&matrix, &sketch);
-//         // implicit covariance
-//         let y = matrix_mult(&matrix, &matrix_mult(&matrix.transpose(), &a_sketch));
-//         // left ortho
-//         let qrl = QrDecomposition::new(y);
-//         qrl.left_apply_qt(&mut matrix);
-//         let mut tiny_core = matrix.transpose();
-//         let qrr = QrDecomposition::new(tiny_core.clone());
-//         qrr.left_apply_qt(&mut tiny_core);
-//         tiny_core.transpose_square();
-// }
-
-// fn main() {
-//     let n = 1000;
-//     let mut x = generate_random_matrix(n, n);
-//     // println!("x {x:?}");
-//     let start = Instant::now();
-//     for _ in 0..100 {
-//         let ksvd = checking_qr(20, x.clone());
-//         // let tiny = ksvd.approx();
-//         // let big = ksvd.reconstruct();
-//         black_box(ksvd);
-//     }
-//     let duration = start.elapsed();
-//     println!("Pipeline took {:?}", duration / 100);
-
-// }

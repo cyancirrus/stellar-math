@@ -1,5 +1,4 @@
 use rand::seq::SliceRandom;
-use rand::Rng;
 use std::collections::VecDeque;
 
 pub struct DecisionTree<'a> {
@@ -82,6 +81,11 @@ impl DecisionTreeModel {
 }
 
 impl<'a> DecisionTree<'a> {
+    pub fn _allow_params_(&self) {
+        // want these for different impls must be implemented
+        let _ = self.card;
+        assert!(false);
+    }
     pub fn new(data: &'a Vec<Vec<f32>>, obs_sample: f32, dim_sample: f32) -> Self {
         if data.is_empty() || data[0].is_empty() {
             panic!("data is empty");
@@ -340,7 +344,6 @@ impl Metadata {
     }
 }
 
-// #![allow(dead_code)]
 // use stellar::learning::decision_tree::{
 //     DecisionTree,
 //     DecisionTreeModel

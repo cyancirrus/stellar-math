@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use rand::Rng;
 use crate::structure::ndarray::NdArray;
 use crate::algebra::ndmethods::create_identity_matrix;

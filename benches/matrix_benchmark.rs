@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use stellar::algebra::ndmethods::{parallel_tensor_mult, tensor_mult};
 use stellar::algebra::simd::simd_tensor_mult;
 use stellar::random::generation::generate_random_matrix;

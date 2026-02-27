@@ -1,7 +1,6 @@
 use crate::algebra::vector::{distance_squared, dot_product};
 use rand::distr::StandardUniform;
 use rand::prelude::*;
-use rand::Rng;
 use rand_distr::StandardNormal;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -31,9 +30,9 @@ impl RandomProjection {
 type ProjHash = HashMap<i32, Vec<Arc<Vec<f32>>>>;
 
 pub struct LshKNearestNeighbors {
-    w: usize,
-    n: usize,
-    h: usize,
+    pub w: usize,
+    pub n: usize,
+    pub h: usize,
     // local sensitivity hashing
     proj: Vec<RandomProjection>,
     pmaps: Vec<ProjHash>,

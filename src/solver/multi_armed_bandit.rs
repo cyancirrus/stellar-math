@@ -1,5 +1,4 @@
-use rand::Rng;
-use rand_distr::{Distribution, Normal, StandardNormal};
+use rand_distr::{Distribution, Normal};
 use std::cmp::{Eq, Ordering, PartialEq};
 use std::collections::BinaryHeap;
 
@@ -13,8 +12,8 @@ pub struct Aggregate {
 }
 
 pub struct Bandit {
-    mean: f32,
-    std_dev: f32,
+    pub mean: f32,
+    pub std_dev: f32,
     distr: Normal<f32>,
 }
 

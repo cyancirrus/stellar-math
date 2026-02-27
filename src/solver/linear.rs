@@ -1,12 +1,11 @@
-use crate::algebra::ndmethods::create_identity_matrix;
 use crate::decomposition::lower_upper::LuPivotDecompose;
 use crate::structure::ndarray::NdArray;
 
 const EPSILON: f32 = 1e-6;
 
-struct DualLinear {}
+pub struct DualLinear {}
 impl DualLinear {
-    fn transform(a: NdArray) -> NdArray {
+    pub fn transform(a: NdArray) -> NdArray {
         debug_assert!(a.dims[0] >= a.dims[1], "m < n should not take dual");
         let (m, n) = (a.dims[0], a.dims[1]);
         let n_cols = 2 * m + 2 * n;
@@ -38,28 +37,28 @@ impl DualLinear {
 }
 
 // Ax = b; min sum(x); x[i] >= 0;
-struct LinearProgram {
-    class: ProgramClass,
+pub struct LinearProgram {
+    pub class: ProgramClass,
     // base matrix dimension
     m: usize,
     n: usize,
     // cost vector, target
     c: Vec<f32>,
     b: Vec<f32>,
-    x: Vec<f32>,
+    pub x: Vec<f32>,
     basis: Vec<usize>,
     // [A', -A', I_slack, I_artificial];
     // [m, m, n, n];
     constraint: NdArray,
 }
 
-enum ProgramClass {
+pub enum ProgramClass {
     Primal,
     Dual,
 }
 
 impl LinearProgram {
-    fn new(c: Vec<f32>, b: Vec<f32>, matrix: NdArray) -> Self {
+    pub fn new(c: Vec<f32>, b: Vec<f32>, matrix: NdArray) -> Self {
         let (m, n) = (matrix.dims[0], matrix.dims[1]);
         debug_assert!(m >= n, "Primal initializer not yet created");
         debug_assert_eq!(c.len(), n);
@@ -183,7 +182,8 @@ impl LinearProgram {
         let x_b = self.get_basic_solution();
         let mut min_ratio = f32::INFINITY;
         let mut idx_leaving = None;
-        for (i, &basis_idx) in self.basis.iter().enumerate() {
+        // for (i, &basis_idx) in self.basis.iter().enumerate() {
+        for (i, _) in self.basis.iter().enumerate() {
             if direction[i] > EPSILON {
                 let ratio = x_b[i] / direction[i];
                 if ratio < min_ratio {
@@ -195,8 +195,8 @@ impl LinearProgram {
         idx_leaving
     }
     fn get_basic_solution(&self) -> Vec<f32> {
-        let basis = self.get_basis_matrix();
-        let lu = LuPivotDecompose::new(basis.transpose());
+        // let basis = self.get_basis_matrix();
+        // let lu = LuPivotDecompose::new(basis.transpose());
         let x_basic = self.b.clone();
         let mut x = vec![0.0; self.n];
         for (i, &basis_idx) in self.basis.iter().enumerate() {
@@ -204,7 +204,7 @@ impl LinearProgram {
         }
         x
     }
-    fn run_phase_one(&mut self) -> Result<(), String> {
+    pub fn run_phase_one(&mut self) -> Result<(), String> {
         self.setup_phase_one();
         loop {
             let delta = self.compute_phase_one_delta_cost();
@@ -231,10 +231,8 @@ impl LinearProgram {
         }
         Ok(())
     }
-    fn run_phase_two(&mut self) -> Result<Vec<f32>, String> {
-        println!("what?");
+    pub fn run_phase_two(&mut self) -> Result<Vec<f32>, String> {
         loop {
-            println!("looping");
             let delta = self.compute_phase_two_delta_cost();
             let entering = match self.select_entering_variable(&delta) {
                 Some(idx) => idx,
@@ -251,7 +249,7 @@ impl LinearProgram {
     }
 }
 
-enum Phase {
+pub enum Phase {
     FindVertex,
     FindOptimum,
 }

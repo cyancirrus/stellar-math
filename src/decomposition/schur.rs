@@ -1,5 +1,4 @@
 use crate::algebra::ndmethods::create_identity_matrix;
-use crate::algebra::ndmethods::tensor_mult;
 use crate::decomposition::qr::QrDecomposition;
 use crate::structure::ndarray::NdArray;
 
