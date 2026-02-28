@@ -1,6 +1,7 @@
 use crate::structure::ndarray::NdArray;
 
 // TODO: change the max_element to be max absolute
+// TODO: implement QL ie row-major autumn decomp
 
 /// HouseholderMatrix
 ///

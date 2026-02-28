@@ -18,18 +18,18 @@ use rayon::prelude::*;
 //}
 
 pub fn create_identity_matrix(n: usize) -> NdArray {
-    let mut data = vec![0_f32; n * n];
+    let mut data = vec![0f32; n * n];
     let dims = vec![n; 2];
     for i in 0..n {
-        data[i * n + i] = 1_f32;
+        data[i * n + i] = 1f32;
     }
     NdArray { dims, data }
 }
 pub fn create_identity_rectangle(m: usize, n: usize) -> NdArray {
-    let mut data = vec![0_f32; m * n];
+    let mut data = vec![0f32; m * n];
     let dims = vec![m, n];
     for i in 0..m.min(n) {
-        data[i * n + i] = 1_f32;
+        data[i * n + i] = 1f32;
     }
     NdArray { dims, data }
 }
@@ -54,7 +54,7 @@ pub fn parallel_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArr
             (0..y_cols)
                 .step_by(blocksize)
                 .map(|j| {
-                    let mut result_block: Vec<f32> = vec![0_f32; x_rows * y_cols];
+                    let mut result_block: Vec<f32> = vec![0f32; x_rows * y_cols];
                     for k in 0..(x_cols + blocksize - 1) / blocksize {
                         for ii in 0..blocksize.min(x_rows - i) {
                             for jj in 0..blocksize.min(y_cols - j) {
@@ -72,7 +72,7 @@ pub fn parallel_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArr
                 .collect::<Vec<Vec<f32>>>()
         })
         .flatten()
-        .reduce(|| vec![0_f32; x_rows * y_cols], |a, b| vector_add(&a, &b));
+        .reduce(|| vec![0f32; x_rows * y_cols], |a, b| vector_add(&a, &b));
 
     NdArray::new(dims, new)
 }
@@ -86,7 +86,7 @@ pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     let x_cols = x.dims[1];
     // let y_rows = y.dims[0];
     let y_cols = y.dims[1];
-    let mut new: Vec<f32> = vec![0_f32; x_rows * y_cols];
+    let mut new: Vec<f32> = vec![0f32; x_rows * y_cols];
     let k_end = (x_cols + blocksize - 1) / blocksize;
     for i in (0..x_rows).step_by(blocksize) {
         let ii_end = blocksize.min(x_rows - i);
@@ -188,7 +188,7 @@ pub fn lt_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     let x_cols = x.dims[0];
     // let y_rows = y.dims[0];
     let y_cols = y.dims[1];
-    let mut new: Vec<f32> = vec![0_f32; x_rows * y_cols];
+    let mut new: Vec<f32> = vec![0f32; x_rows * y_cols];
     let k_end = (x_cols + blocksize - 1) / blocksize;
     for i in (0..x_rows).step_by(blocksize) {
         let ii_end = blocksize.min(x_rows - i);
@@ -280,7 +280,7 @@ pub fn lt_matrix_mult(x: &NdArray, y: &NdArray) -> NdArray {
 //     let x_cols = x.dims[1];
 //     // let y_rows = y.dims[0];
 //     let y_cols = y.dims[1];
-//     let mut new: Vec<f32> = vec![0_f32; x_rows * y_cols];
+//     let mut new: Vec<f32> = vec![0f32; x_rows * y_cols];
 //     for i in (0..x_rows).step_by(blocksize) {
 //         for j in (0..y_cols).step_by(blocksize) {
 //             for k in 0..(x_cols + blocksize - 1) / blocksize {

@@ -6,7 +6,7 @@ use stellar::solver::randomized_svd::RandomizedSvd;
 // use stellar::structure::ndarray::NdArray;
 
 fn main() {
-    let n = 1000;
+    let n = 20;
     let iterations = 100;
     let mut total = Duration::ZERO;
 

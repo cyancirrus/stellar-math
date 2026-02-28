@@ -102,6 +102,7 @@ impl RandomizedSvd {
         }
     }
     pub fn reconstruct(&self) -> NdArray {
+        // 7ms
         let mut output = self.approx_padded();
         self.qrr.right_apply_qt(&mut output);
         output.resize_rows(self.n);
