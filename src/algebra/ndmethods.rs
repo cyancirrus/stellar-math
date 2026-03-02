@@ -1,4 +1,3 @@
-use crate::algebra::vector::vector_add;
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
@@ -49,17 +48,17 @@ pub fn par_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
         .for_each( |(data_block, x_block)| {
             let ii_end = data_block.len() / y_cols;
             for k in (0..x_cols).step_by(blocksize) {
-                let kk_end = blocksize.min(x_cols - k);
+                let k_block = (k + blocksize).min(x_cols);
                 for j in (0..y_cols).step_by(blocksize) {
-                    let jj_end = blocksize.min(y_cols - j);
+                    let j_offset = (j + blocksize).min(y_cols);
                     for ii in 0..ii_end {
                         let local_x_row = ii * x_cols;
                         let local_out_row = ii * y_cols;
-                        for kk in 0..kk_end {
-                            let x_val = x_block[local_x_row + k + kk];
-                            let k_offset = (k + kk)  * y_cols;
-                            let out_row = &mut data_block[local_out_row + j..local_out_row + j + jj_end];
-                            let y_slice = &y.data[k_offset + j..k_offset + j + jj_end];
+                        for kk in k..k_block {
+                            let x_val = x_block[local_x_row + kk];
+                            let k_offset = kk  * y_cols;
+                            let out_row = &mut data_block[local_out_row + j..local_out_row + j_offset];
+                            let y_slice = &y.data[k_offset + j..k_offset + j_offset];
                             for (o, y) in out_row.iter_mut().zip(y_slice.iter()) {
                                 *o += x_val * y;
                             }
