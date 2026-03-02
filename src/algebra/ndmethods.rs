@@ -77,6 +77,45 @@ pub fn parallel_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArr
     NdArray::new(dims, new)
 }
 
+pub fn par_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
+    // should be good up until padding
+    debug_assert!(blocksize > 0);
+    debug_assert!(y.dims.len() > 1);
+    debug_assert_eq!(x.dims[1], y.dims[0], "dimension mismatch");
+    let x_rows = x.dims[0];
+    let x_cols = x.dims[1];
+    // let y_rows = y.dims[0];
+    let y_cols = y.dims[1];
+    let mut data: Vec<f32> = vec![0f32; x_rows * y_cols];
+    data.par_chunks_mut(blocksize * y_cols)
+        .enumerate()
+        .for_each( |(i_block_idx, data_block)| {
+            let i = i_block_idx * blocksize;
+            let ii_end = blocksize.min(x_rows - i);
+            for k_block in (0..y_cols).step_by(blocksize) {
+                let kk_end = blocksize.min(x_cols - k_block);
+                for j in (0..y_cols).step_by(blocksize) {
+                    let jj_end = blocksize.min(y_cols - j);
+                    for ii in 0..ii_end {
+                        let x_row = (i + ii) * x_cols;
+                        let local_out_row = (ii) * y_cols;
+                        for kk in 0..kk_end {
+                            let k_offset = (k_block + kk) * y_cols;
+                            let x_val = x.data[x_row + k_block + kk];
+                            for jj in 0..jj_end {
+                                data_block[local_out_row + jj + j] += x_val * y.data[k_offset + jj + j];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    );
+    let mut dims = x.dims.clone();
+    dims[1] = y.dims[1];
+    NdArray { dims, data }
+}
+
 pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     // should be good up until padding
     debug_assert!(blocksize > 0);
@@ -86,7 +125,7 @@ pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     let x_cols = x.dims[1];
     // let y_rows = y.dims[0];
     let y_cols = y.dims[1];
-    let mut new: Vec<f32> = vec![0f32; x_rows * y_cols];
+    let mut data: Vec<f32> = vec![0f32; x_rows * y_cols];
     let k_end = (x_cols + blocksize - 1) / blocksize;
     for i in (0..x_rows).step_by(blocksize) {
         let ii_end = blocksize.min(x_rows - i);
@@ -102,16 +141,14 @@ pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
                         let k_offset = (k_block + kk) * y_cols;
                         let x_val = x.data[x_row + k_block + kk];
                         for jj in 0..jj_end {
-                            new[out_row + jj + j] += x_val * y.data[k_offset + jj + j];
+                            data[out_row + jj + j] += x_val * y.data[k_offset + jj + j];
                         }
                     }
                 }
             }
         }
     }
-    let mut dims = x.dims.clone();
-    dims[1] = y.dims[1];
-    NdArray::new(dims, new)
+    NdArray{ dims: vec![x.dims[0], y.dims[1]], data }
 }
 
 pub fn basic_mult(x: &NdArray, y: &NdArray) -> NdArray {
@@ -148,7 +185,8 @@ pub fn matrix_mult(x: &NdArray, y: &NdArray) -> NdArray {
     if k <= 32 && j <= 32 {
         basic_mult(x, y)
     } else {
-        tensor_mult(32, x, y)
+        // tensor_mult(32, x, y)
+        par_tensor_mult(32, x, y)
     }
 }
 

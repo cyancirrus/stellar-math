@@ -112,31 +112,31 @@ impl RandomizedSvd {
 }
 
 // use std::hint::black_box;
-// use std::time::Instant;
-// use stellar::algebra::ndmethods::tensor_mult;
-// use stellar::decomposition::givens::{givens_iteration, SingularValueDecomp};
-// use stellar::decomposition::lower_upper::LuPivotDecompose;
-// use stellar::decomposition::qr::QrDecomposition;
-// use stellar::decomposition::svd::golub_kahan;
-// use stellar::random::generation::{generate_random_matrix, generate_random_symetric};
-// use stellar::structure::ndarray::NdArray;
-// use stellar::solver::randomized_svd::{RankKSvd, RandomizedSvd};
+// use std::time::{Duration, Instant};
+// use stellar::random::generation::generate_random_matrix;
+// use stellar::solver::randomized_svd::RandomizedSvd;
 
 // fn main() {
 //     let n = 1000;
-//     let mut x = generate_random_matrix(n, n);
-//     // println!("x {x:?}");
-//     let start = Instant::now();
-//     for _ in 0..100 {
-//         let ksvd = RandomizedSvd::new(20, x.clone());
+//     let k = 20;
+//     let iterations = 100;
+//     let mut total = Duration::ZERO;
+
+//     for _ in 0..iterations {
+//         let x = generate_random_matrix(n, n);
+//         let x_for_svd = x.clone();
+
+//         let start = Instant::now();
+
+//         let ksvd = RandomizedSvd::new(k, x_for_svd);
 //         let tiny = ksvd.approx();
 //         let big = ksvd.reconstruct();
+
+//         total += start.elapsed();
 //         black_box(tiny);
 //         black_box(big);
-//         black_box(&x);
-//         // let svalues = RankKSvd::new(4, x.clone());
+//         black_box(x);
 //     }
-//     let duration = start.elapsed();
-//     println!("Pipeline took {:?}", duration / 100);
 
+//     println!("Average Pipeline took: {:?}", total / iterations as u32);
 // }
