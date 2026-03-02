@@ -45,7 +45,7 @@ pub fn par_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     let mut data: Vec<f32> = vec![0f32; x_rows * y_cols];
     data.par_chunks_mut(blocksize * y_cols)
         .zip(x.data.par_chunks(blocksize * x_cols))
-        .for_each( |(data_block, x_block)| {
+        .for_each(|(data_block, x_block)| {
             let ii_end = data_block.len() / y_cols;
             for k in (0..x_cols).step_by(blocksize) {
                 let k_block = (k + blocksize).min(x_cols);
@@ -56,8 +56,9 @@ pub fn par_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
                         let local_out_row = ii * y_cols;
                         for kk in k..k_block {
                             let x_val = x_block[local_x_row + kk];
-                            let k_offset = kk  * y_cols;
-                            let out_row = &mut data_block[local_out_row + j..local_out_row + j_offset];
+                            let k_offset = kk * y_cols;
+                            let out_row =
+                                &mut data_block[local_out_row + j..local_out_row + j_offset];
                             let y_slice = &y.data[k_offset + j..k_offset + j_offset];
                             for (o, y) in out_row.iter_mut().zip(y_slice.iter()) {
                                 *o += x_val * y;
@@ -66,9 +67,11 @@ pub fn par_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
                     }
                 }
             }
-        }
-    );
-    NdArray { dims:vec![x.dims[0], y.dims[1]], data }
+        });
+    NdArray {
+        dims: vec![x.dims[0], y.dims[1]],
+        data,
+    }
 }
 
 pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
@@ -103,7 +106,10 @@ pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
             }
         }
     }
-    NdArray{ dims: vec![x.dims[0], y.dims[1]], data }
+    NdArray {
+        dims: vec![x.dims[0], y.dims[1]],
+        data,
+    }
 }
 
 pub fn basic_mult(x: &NdArray, y: &NdArray) -> NdArray {
@@ -135,6 +141,7 @@ pub fn basic_mult(x: &NdArray, y: &NdArray) -> NdArray {
     NdArray::new(vec![x_rows, y_cols], res)
 }
 
+// Might want to explicitly separate rayon threads and call
 pub fn matrix_mult(x: &NdArray, y: &NdArray) -> NdArray {
     let (k, j) = (x.dims[1], y.dims[1]);
     if k <= 32 && j <= 32 {

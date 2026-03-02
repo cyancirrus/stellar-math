@@ -4,7 +4,7 @@ pub struct Cholesky {
     pub l: NdArray,
 }
 
-const EPSILON:f32 = 1e-6;
+const EPSILON: f32 = 1e-6;
 
 impl Cholesky {
     pub fn new(a: NdArray) -> Self {
@@ -17,7 +17,7 @@ impl Cholesky {
         let (rows, cols) = (a.dims[0], a.dims[1]);
         debug_assert_eq!(rows, cols);
         let mut l = vec![0_f32; rows * cols];
-        let mut sum ;
+        let mut sum;
         for i in 0..rows {
             let i_row = i * cols;
             let a_row = &a.data[i_row..=i_row + i];
