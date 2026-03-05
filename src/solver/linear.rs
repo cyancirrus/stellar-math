@@ -1,7 +1,7 @@
 use crate::decomposition::lower_upper::LuPivotDecompose;
 use crate::structure::ndarray::NdArray;
 
-const EPSILON: f32 = 1e-6;
+const EPSILON: f32 = 1e-9;
 
 pub struct DualLinear {}
 impl DualLinear {
@@ -77,57 +77,71 @@ impl LinearProgram {
         }
     }
     fn setup_phase_one(&mut self) {
-        self.basis = (2 * self.m + self.n..2 * self.m + 2 * self.n).collect();
+        for (idx, val) in (2 * self.m + self.n..2 * self.m + 2 * self.n).enumerate() {
+            self.basis[idx] = val;
+        }
     }
-    fn get_basis_matrix(&self) -> NdArray {
-        let mut data = Vec::with_capacity(self.m * self.m);
-        for &col in &self.basis {
-            for row in 0..self.m {
-                data.push(self.constraint.data[row * self.n + col]);
+    pub fn get_basis_matrix(&self) -> NdArray {
+        let mut data = Vec::with_capacity(self.n * self.n);
+        let n_cols = 2 * self.m + 2 * self.n;
+        for row in 0..self.n {
+            for &col in &self.basis {
+                data.push(self.constraint.data[row * n_cols + col]);
             }
         }
         NdArray {
-            dims: vec![self.m, self.m],
+            dims: vec![self.n, self.n],
+            data,
+        }
+    }
+    pub fn get_basis_matrix_transpose(&self) -> NdArray {
+        let mut data = Vec::with_capacity(self.n * self.n);
+        let n_cols = 2 * self.m + 2 * self.n;
+        for &col in &self.basis {
+            for row in 0..self.n {
+                data.push(self.constraint.data[row * n_cols + col]);
+            }
+        }
+        NdArray {
+            dims: vec![self.n, self.n],
             data,
         }
     }
     fn pivot(&mut self, entering_idx: usize, leaving_idx: usize) {
+        println!("in pivot {entering_idx:?}, {leaving_idx:?}");
         self.basis[leaving_idx] = entering_idx;
     }
     fn compute_direction(&self, entering_idx: usize) -> Vec<f32> {
-        // Travels in the inverse of this vector
-        let b = self.get_basis_matrix();
-        let lu = LuPivotDecompose::new(b.transpose());
+        // travels in the inverse of this vector
+        let b_t = self.get_basis_matrix_transpose();
+        let lu = LuPivotDecompose::new(b_t);
         let n_cols = 2 * self.n + 2 * self.m;
 
         let mut a_j = vec![0.0; self.n];
         for i in 0..self.n {
             // column basis vector
+            // a_j[i] = self.constraint.data[i * n_cols + entering_idx];
             a_j[i] = self.constraint.data[i * n_cols + entering_idx];
         }
-        let mut direction = a_j;
-        lu.solve_inplace_vec(&mut direction);
-        direction
+        lu.solve_inplace_vec(&mut a_j);
+        a_j
     }
     fn select_entering_variable(&self, delta_costs: &[f32]) -> Option<usize> {
-        // Option returned in order to get terminating condition
-        println!("delta costs {delta_costs:?}");
+        // option returned in order to get terminating condition
         let mut best_idx = None;
-        let mut best_val = 0.0;
+        let mut best_val = EPSILON;
 
-        for i in 0..delta_costs.len() {
-            // More negative is better cost reduction
-            if delta_costs[i] < best_val {
-                best_val = delta_costs[i];
-                best_idx = Some(i);
+        for idx in 0..delta_costs.len() {
+            if delta_costs[idx] > best_val {
+                best_val = delta_costs[idx];
+                best_idx = Some(idx);
             }
         }
         best_idx
     }
     fn compute_phase_one_delta_cost(&self) -> Vec<f32> {
-        let b = self.get_basis_matrix();
-        let lu = LuPivotDecompose::new(b.transpose());
-        println!("lu {:?}", lu.matrix);
+        let b_t = self.get_basis_matrix_transpose();
+        let lu = LuPivotDecompose::new(b_t);
         let n_cols = 2 * self.m + 2 * self.n;
 
         let mut cost_b = vec![0.0; self.n];
@@ -136,35 +150,44 @@ impl LinearProgram {
                 cost_b[i] = 1.0;
             }
         }
-        let mut y = cost_b.clone();
-        lu.solve_inplace_vec(&mut y);
+        lu.solve_inplace_vec(&mut cost_b);
         let mut delta = vec![0.0; n_cols];
         for j in 0..n_cols {
             if self.basis.contains(&j) {
                 continue;
             }
             // penalize if in artificial
-            let c_j = if j > 2 * self.m + self.n { 1.0 } else { 0.0 };
+            let c_j = if j >= 2 * self.m + self.n { 1.0 } else { 0.0 };
             let mut y_dot_aj = 0.0;
             for i in 0..self.n {
-                y_dot_aj += y[i] * self.constraint.data[i * n_cols + j];
+                y_dot_aj += cost_b[i] * self.constraint.data[i * n_cols + j];
             }
-            delta[j] = c_j - y_dot_aj;
+            delta[j] = y_dot_aj - c_j;
+            // delta[j] = c_j - y_dot_aj;
         }
         delta
     }
     fn compute_phase_two_delta_cost(&self) -> Vec<f32> {
-        let b = self.get_basis_matrix();
-        let lu = LuPivotDecompose::new(b.transpose());
+        let b_t = self.get_basis_matrix_transpose();
+        let lu = LuPivotDecompose::new(b_t);
         let n_cols = 2 * self.m + 2 * self.n;
 
-        let mut cost_b = vec![0.0; self.n];
-        for (i, &basis_idx) in self.basis.iter().enumerate() {
-            cost_b[i] = self.c[basis_idx];
+        let mut dual_costs = vec![0.0; n_cols];
+        for i in 0..self.m {
+            dual_costs[i] = self.b[i];
+            dual_costs[i + self.m] = - self.b[i];
         }
-        let mut y = cost_b.clone();
+        let mut cost_b = vec![0.0;self.n];
+        for (idx, &basis_idx) in self.basis.iter().enumerate() {
+            cost_b[idx] = dual_costs[basis_idx];
+        }
+        let mut y = cost_b;
+        println!("y {y:?}");
         lu.solve_inplace_vec(&mut y);
         let mut delta = vec![0.0; n_cols];
+
+        println!("dual costs {dual_costs:?}");
+        println!("y {y:?}");
         for j in 0..n_cols {
             if self.basis.contains(&j) {
                 continue;
@@ -174,7 +197,8 @@ impl LinearProgram {
                 y_dot_ai += y[i] * self.constraint.data[i * n_cols + j];
             }
             // for maximization want positive delta
-            delta[j] = self.c[j] - y_dot_ai;
+            delta[j] = dual_costs[j] - y_dot_ai;
+            // delta[j] = y_dot_ai - dual_costs[j];
         }
         delta
     }
@@ -182,39 +206,36 @@ impl LinearProgram {
         let x_b = self.get_basic_solution();
         let mut min_ratio = f32::INFINITY;
         let mut idx_leaving = None;
-        // for (i, &basis_idx) in self.basis.iter().enumerate() {
-        for (i, _) in self.basis.iter().enumerate() {
-            if direction[i] > EPSILON {
-                let ratio = x_b[i] / direction[i];
+        println!("direction {direction:?}");
+        for idx in 0..x_b.len() {
+            if direction[idx] > EPSILON {
+                let ratio = x_b[idx] / direction[idx];
                 if ratio < min_ratio {
+                    println!("better");
                     min_ratio = ratio;
-                    idx_leaving = Some(i);
+                    idx_leaving = Some(idx);
                 }
             }
         }
         idx_leaving
     }
     fn get_basic_solution(&self) -> Vec<f32> {
-        // let basis = self.get_basis_matrix();
-        // let lu = LuPivotDecompose::new(basis.transpose());
-        let x_basic = self.b.clone();
-        let mut x = vec![0.0; self.n];
-        for (i, &basis_idx) in self.basis.iter().enumerate() {
-            x[basis_idx] = x_basic[i];
-        }
-        x
+        let b = self.get_basis_matrix();
+        let lu = LuPivotDecompose::new(b);
+        let mut rhs= self.c.clone();
+        lu.solve_inplace_vec(&mut rhs);
+        rhs
     }
     pub fn run_phase_one(&mut self) -> Result<(), String> {
         self.setup_phase_one();
         loop {
             let delta = self.compute_phase_one_delta_cost();
-            println!("hello");
             let entering = match self.select_entering_variable(&delta) {
                 Some(idx) => idx,
                 None => break,
             };
-            println!("world");
             let direction = self.compute_direction(entering);
+            println!("direction {direction:?}");
             let leaving = match self.ratio_test(&direction) {
                 Some(idx) => idx,
                 None => return Err(format!("Unbounded should not happen in phase 1").into()),
@@ -222,9 +243,9 @@ impl LinearProgram {
             self.pivot(entering, leaving)
         }
         let x = self.get_basic_solution();
-        for &basic_idx in &self.basis {
+        for (idx, &basic_idx) in self.basis.iter().enumerate() {
             if basic_idx >= 2 * self.m + self.n {
-                if x[basic_idx].abs() > EPSILON {
+                if x[idx].abs() > EPSILON {
                     return Err(format!("Infeasable Problem").into());
                 }
             }
@@ -232,17 +253,23 @@ impl LinearProgram {
         Ok(())
     }
     pub fn run_phase_two(&mut self) -> Result<Vec<f32>, String> {
+        println!("Basis indices at start of Phase 2: {:?}", self.basis);
+        let b = self.get_basis_matrix();
+        println!("B {b:?}");
         loop {
             let delta = self.compute_phase_two_delta_cost();
+            println!("delta");
             let entering = match self.select_entering_variable(&delta) {
                 Some(idx) => idx,
                 None => break,
             };
+            println!("entering");
             let direction = self.compute_direction(entering);
             let leaving = match self.ratio_test(&direction) {
                 Some(idx) => idx,
                 None => return Err(format!("Unbounded").into()),
             };
+            println!("pivot");
             self.pivot(entering, leaving);
         }
         Ok(self.get_basic_solution())
