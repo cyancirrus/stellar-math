@@ -1,5 +1,5 @@
 pub fn initialize_unit_vector(n: usize) -> Vec<f32> {
-    vec![1_f32 / (n as f32).sqrt(); n]
+    vec![1f32 / (n as f32).sqrt(); n]
 }
 
 pub fn vector_diff(x: &[f32], y: &[f32]) -> Vec<f32> {

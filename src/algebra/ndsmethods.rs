@@ -4,7 +4,7 @@ use std::f32::consts::PI;
 
 pub fn complex_tensor_mult(a: NdSignal, b: NdSignal) -> NdSignal {
     let mut dims = vec![0; 2];
-    let mut data = vec![Complex::new(0_f32, 0_f32); a.dims[0] * b.dims[1]];
+    let mut data = vec![Complex::new(0f32, 0f32); a.dims[0] * b.dims[1]];
     dims[0] = a.dims[0];
     dims[1] = b.dims[1];
 
@@ -24,8 +24,8 @@ pub fn create_dct_array(n: usize) -> NdSignal {
     let mut val: Complex;
     let mut phase: f32;
     // disableling for fft debugging
-    // let scalar = 1_f32 / (n as f32).sqrt();
-    let scalar = 1_f32;
+    // let scalar = 1f32 / (n as f32).sqrt();
+    let scalar = 1f32;
     for i in 0..n {
         for j in 0..n {
             phase = -2.0 * PI * (i as f32) * (j as f32) / (n as f32);

@@ -16,13 +16,13 @@ impl Cholesky {
         // a32 = l31 * l21 + l32 * l22
         let (rows, cols) = (a.dims[0], a.dims[1]);
         debug_assert_eq!(rows, cols);
-        let mut l = vec![0_f32; rows * cols];
+        let mut l = vec![0f32; rows * cols];
         let mut sum;
         for i in 0..rows {
             let i_row = i * cols;
             let a_row = &a.data[i_row..=i_row + i];
             for j in 0..=i {
-                sum = 0_f32;
+                sum = 0f32;
                 let j_row = j * cols;
                 for k in 0..j {
                     sum += l[i_row + k] * l[j_row + k];
@@ -55,13 +55,13 @@ impl Cholesky {
 //         // a32 = l31 * l21 + l32 * l22
 //         let (rows, cols) = (a.dims[0], a.dims[1]);
 //         debug_assert_eq!(rows, cols);
-//         let mut l = vec![0_f32; rows * cols];
+//         let mut l = vec![0f32; rows * cols];
 //         let mut sum ;
 //         for i in 0..rows {
 //             let i_row = i * cols;
 //             let a_row = &a.data[i_row..=i_row + i];
 //             for j in 0..=i {
-//                 sum = 0_f32;
+//                 sum = 0f32;
 //                 let j_row = j * cols;
 //                 for k in 0..j {
 //                     sum += l[i_row + k] * l[j_row + k];

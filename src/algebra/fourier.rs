@@ -3,14 +3,14 @@ use std::f32::consts::PI;
 
 pub fn twiddle(k: usize, n: usize) -> Complex {
     // exp(-i *) = cos(*) - isin(*)
-    let phase = -2_f32 * PI * k as f32 / n as f32;
+    let phase = -2f32 * PI * k as f32 / n as f32;
     let a = Complex::new(phase.cos(), -phase.sin());
     a
 }
 
 fn twiddle_first(n: f32) -> Complex {
     // exp(-i pi / m) = cos(1/m) - isin(1/m)
-    let phase = 2_f32 * PI / n as f32;
+    let phase = 2f32 * PI / n as f32;
     let a = Complex::new(phase.cos(), -phase.sin());
     a
 }
@@ -70,7 +70,7 @@ pub fn ifft(x: &mut [Complex]) {
         }
     }
     for i in 0..n {
-        let alpha = 1_f32 / n as f32;
+        let alpha = 1f32 / n as f32;
         x[i].scale(alpha);
     }
 }

@@ -31,8 +31,8 @@ pub fn gaussian(
     debug_assert_eq!(x_bar.to_vec(), z_buf.to_vec());
     let card = x_bar.len();
     lu.solve_inplace_vec(z_buf);
-    let scaling = -dot_product(&z_buf, &x_bar) / 2_f32;
-    scaling.exp() / (2_f32 * std::f32::consts::PI).powf(card as f32 / 2f32) * det.sqrt()
+    let scaling = -dot_product(&z_buf, &x_bar) / 2f32;
+    scaling.exp() / (2f32 * std::f32::consts::PI).powf(card as f32 / 2f32) * det.sqrt()
 }
 
 fn ln_gaussian(
@@ -47,7 +47,7 @@ fn ln_gaussian(
     debug_assert_eq!(x_bar.to_vec(), z_buf.to_vec());
     let card = x_bar.len();
     lu.solve_inplace_vec(z_buf);
-    let scaling = dot_product(&z_buf, &x_bar) / 2_f32;
+    let scaling = dot_product(&z_buf, &x_bar) / 2f32;
     -(card as f32 / 2f32) * (2f32 * std::f32::consts::PI).ln() - 0.5f32 * ln_det - scaling
 }
 pub fn initialize_distribution(n: usize, rng: &mut ThreadRng) -> Vec<f32> {
@@ -79,7 +79,7 @@ impl GaussianMixtureModel {
         Self {
             centroids,
             cardinality: cardinality,
-            mixtures: vec![1_f32 / centroids as f32; centroids],
+            mixtures: vec![1f32 / centroids as f32; centroids],
             means: (0..centroids)
                 .map(|_| generate_random_vector(cardinality))
                 .collect(),
@@ -90,17 +90,17 @@ impl GaussianMixtureModel {
         }
     }
     pub fn expectation_maximization(&mut self, data: &[Vec<f32>]) {
-        let mut sum_linear = vec![vec![0_f32; self.cardinality]; self.centroids];
+        let mut sum_linear = vec![vec![0f32; self.cardinality]; self.centroids];
         let mut sum_squares =
             vec![generate_zero_matrix(self.cardinality, self.cardinality); self.centroids];
 
         let n = data.len();
-        let mut x_bar = vec![0_f32; self.cardinality];
-        let mut nweighted = vec![0_f32; self.centroids];
-        let mut probs = vec![0_f32; self.centroids];
+        let mut x_bar = vec![0f32; self.cardinality];
+        let mut nweighted = vec![0f32; self.centroids];
+        let mut probs = vec![0f32; self.centroids];
         let mut lus = Vec::with_capacity(self.centroids);
         let mut dets = Vec::with_capacity(self.centroids);
-        let mut z_buf = vec![0_f32; self.cardinality];
+        let mut z_buf = vec![0f32; self.cardinality];
         for k in 0..self.centroids {
             let lu = LuPivotDecompose::new(self.variance[k].clone());
             dets.push(lu.log_determinant());
@@ -156,7 +156,7 @@ impl GaussianMixtureModel {
         self.variance = sum_squares;
     }
     fn delta(&self, prev: &[Vec<f32>], curr: &[Vec<f32>]) -> f32 {
-        let mut delta = 0_f32;
+        let mut delta = 0f32;
         for cidx in 0..self.centroids {
             for didx in 0..self.cardinality {
                 delta += (prev[cidx][didx] - curr[cidx][didx]).abs();
@@ -166,7 +166,7 @@ impl GaussianMixtureModel {
     }
     pub fn solve(&mut self, data: &[Vec<f32>]) {
         let mut prev = self.means.clone();
-        let mut delta = 1_f32;
+        let mut delta = 1f32;
         while delta > CONVERGENCE_CONDITION {
             self.expectation_maximization(data);
             delta = self.delta(&prev, &self.means);

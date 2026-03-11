@@ -15,8 +15,8 @@ pub fn rayleigh_inverse_iteration(mut matrix: NdArray) -> Vec<f32> {
     debug_assert!(matrix.dims[0] == matrix.dims[1]);
     let n = matrix.dims[0];
     let mut current = generate_random_vector(n);
-    let mut u = 0_f32;
-    let mut error = 1_f32;
+    let mut u = 0f32;
+    let mut error = 1f32;
     while CONVERGENCE_CONDITION < error {
         // transforms M' = (A - Iu + Iu - Iu')
         let previous = current.clone();
@@ -36,7 +36,7 @@ pub fn vector_diff_norm(a: &[f32], b: &[f32]) -> f32 {
     // sign := a'b
     debug_assert!(a.len() == b.len());
     let n = a.len();
-    let mut error = 0_f32;
+    let mut error = 0f32;
     for k in 0..n {
         let diff = a[k] - b[k];
         error += diff * diff;
@@ -47,7 +47,7 @@ pub fn vector_diff_norm(a: &[f32], b: &[f32]) -> f32 {
 
 fn normalize_vector(x: &mut [f32]) {
     let n = x.len();
-    let mut norm = 0_f32;
+    let mut norm = 0f32;
     for i in 0..n {
         norm += x[i] * x[i];
     }
@@ -62,7 +62,7 @@ pub fn frobenius_diff_norm(a: &NdArray, b: &NdArray) -> f32 {
     // sign := a'b
     debug_assert!(a.dims == b.dims);
     let (rows, cols) = (a.dims[0], a.dims[1]);
-    let mut error = 0_f32;
+    let mut error = 0f32;
     for j in 0..cols {
         for i in 0..rows {
             let diff = a.data[i * cols + j] - b.data[i * cols + j];
@@ -83,8 +83,8 @@ pub fn estimate_eigenvalues(u: &mut f32, a: &mut NdArray, x: &[f32]) {
     }
     // only desire the diagonal
     let mut w = vec![0f32; n];
-    let mut numerator = 0_f32;
-    let mut denominator = 0_f32;
+    let mut numerator = 0f32;
+    let mut denominator = 0f32;
     for i in 0..n {
         for k in 0..n {
             w[i] += a.data[i * n + k] * x[k];

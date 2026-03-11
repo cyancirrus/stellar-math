@@ -5,6 +5,8 @@ use crate::decomposition::svd::{full_golub_kahan, golub_kahan};
 use crate::random::generation::generate_random_matrix;
 use crate::structure::ndarray::NdArray;
 
+// NOTE: should be able to left apply only up to k
+
 pub struct RandomizedSvd {
     pub n: usize,
     pub k: usize,
@@ -69,7 +71,7 @@ impl RandomizedSvd {
         }
     }
     pub fn approx(&self) -> NdArray {
-        let mut tiny = vec![0_f32; self.k * self.k];
+        let mut tiny = vec![0f32; self.k * self.k];
         for i in 0..self.k {
             for k in 0..self.k {
                 for j in 0..self.k {
@@ -85,7 +87,7 @@ impl RandomizedSvd {
         }
     }
     fn approx_padded(&self) -> NdArray {
-        let mut tiny = vec![0_f32; self.k * self.n];
+        let mut tiny = vec![0f32; self.k * self.n];
         for i in 0..self.k {
             for k in 0..self.k {
                 let lambda = self.svd.s.data[k * self.k + k];

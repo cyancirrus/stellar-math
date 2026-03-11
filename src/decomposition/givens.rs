@@ -102,20 +102,20 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
     let c: f32;
     let r: f32;
 
-    if a == 0_f32 {
-        c = 0_f32;
-        s = 1_f32;
+    if a == 0f32 {
+        c = 0f32;
+        s = 1f32;
         r = b;
     } else if b.abs() > a.abs() {
         t = a / b;
-        tt = (1_f32 + t * t).sqrt();
-        s = 1_f32 / tt;
+        tt = (1f32 + t * t).sqrt();
+        s = 1f32 / tt;
         c = s * t;
         r = b * tt;
     } else {
         t = b / a;
-        tt = (1_f32 + t * t).sqrt();
-        c = 1_f32 / tt;
+        tt = (1f32 + t * t).sqrt();
+        c = 1f32 / tt;
         s = c * t;
         r = a * tt;
     }

@@ -10,7 +10,7 @@ use crate::structure::ndarray::NdArray;
 const EPSILON: f32 = 1e-6;
 
 fn scale_identity(n: usize, c: f32) -> NdArray {
-    let mut mat = vec![0_f32; n * n];
+    let mut mat = vec![0f32; n * n];
     for i in 0..n {
         mat[i * n + i] = c;
     }
@@ -43,7 +43,7 @@ fn row_swap(i: usize, j: usize, matrix: &mut NdArray) {
 }
 
 fn normalize(v: &mut Vec<f32>) {
-    let mut norm = 0_f32;
+    let mut norm = 0f32;
     for i in 0..v.len() {
         norm += v[i] * v[i];
     }
@@ -58,7 +58,7 @@ pub fn retrieve_eigen(eig: f32, mut matrix: NdArray) -> Vec<f32> {
     // debug_assert!(matrix.dims.len() == 2);
     // debug_assert!(matrix.dims[0] == matrix.dims[1]);
     let m = matrix.dims[0];
-    let mut evector = vec![0_f32; m];
+    let mut evector = vec![0f32; m];
     let lambda_i = scale_identity(m, eig);
     // (A - lambda I)v = 0
     // (A - lambda I) = L
@@ -76,9 +76,9 @@ pub fn retrieve_eigen(eig: f32, mut matrix: NdArray) -> Vec<f32> {
     for i in (0..m).rev() {
         let diag = qr.triangle.data[i * m + i];
         if diag.abs() < EPSILON {
-            evector[i] = 1_f32;
+            evector[i] = 1f32;
         } else {
-            let mut sum = 0_f32;
+            let mut sum = 0f32;
             for j in i + 1..m {
                 sum += qr.triangle.data[i * m + j] * evector[j];
             }

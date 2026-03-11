@@ -4,8 +4,8 @@ use std::f32::consts::PI;
 fn twiddle(k: f32, n: f32) -> Complex {
     // exp( (-2 * pi * i * k / n)
     // = cos(*) - isin(*)
-    // let phase= 2_f32 * PI * k / n;
-    let phase = 2_f32 * PI * k / n;
+    // let phase= 2f32 * PI * k / n;
+    let phase = 2f32 * PI * k / n;
     Complex::new(phase.cos(), -phase.sin())
 }
 
@@ -22,7 +22,7 @@ pub fn cooley_tukey(x: &mut [Complex], n: usize, s: usize) {
     if n > 1 {
         cooley_tukey(&mut x[..], n / 2, 2 * s);
         for k in 0..n / 2 - 1 {
-            // t = twiddle(k as f32 /2_f32, n as f32);
+            // t = twiddle(k as f32 /2f32, n as f32);
             // t = twiddle((s * 2) as f32 , n as f32);
             t = twiddle(s as f32, n as f32);
             // println!(" k:{}, s:{}, n:{}, t:{}\n", k, s, n, t);

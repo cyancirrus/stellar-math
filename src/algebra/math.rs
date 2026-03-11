@@ -25,7 +25,7 @@ pub fn cross_apply(
 ) -> Vec<Vec<f32>> {
     let rows = x.len();
     let cols = y.len();
-    let mut matrix = vec![vec![0_f32; cols]; rows];
+    let mut matrix = vec![vec![0f32; cols]; rows];
 
     for row in 0..rows {
         for col in 0..cols {
@@ -46,7 +46,7 @@ pub fn outer_product(x: Vec<f32>) -> Vec<f32> {
     // returns a a symetric matrix of length x length
     let length = x.len();
     assert!(length > 0, "needs to have non-zero length");
-    let mut new_data = vec![0_f32; length * length];
+    let mut new_data = vec![0f32; length * length];
     for i in 0..length {
         for j in 0..length {
             new_data[i * length + j] = x[i] * x[j];

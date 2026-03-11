@@ -1,43 +1,80 @@
-use stellar::solver::linear::LinearProgram;
+#![allow(unused)]
 use stellar::structure::ndarray::NdArray;
 
-fn main() {
-    // let thing = vec![vec![3], vec![1,3], vec![2], vec![2,3], vec![0,2], vec![0,1]];
-    let c = vec![1.0; 4];
-    let b = vec![3.0, 5.0, 4.0, 7.0];
-    let matrix = NdArray::new(
-        vec![4, 4],
-        vec![
-            1.0, 0.0, 0.0, 1.0,
-            0.0, 1.0, 0.0, 1.0,
-            0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 1.0, 1.0,
-        ],
-    );
-    println!("matrix {matrix:?}");
-    let mut lp = LinearProgram::new(c, b, matrix);
-    println!("phase one");
-    let res_one = lp.run_phase_one();
-    println!("phase two");
-    let res_two = lp.run_phase_two();
-    match (res_one, res_two) {
-        (Ok(r1), Ok(r2)) => {
-            println!("Successful run of both!");
-            println!("Result {r2:?}");
+struct HhMatrixRowMajor {}
+
+///  Row major optimization form of LQ
+struct AutumnDecomp {
+    pub h: NdArray,
+    card: usize,
+    cols: usize,
+    rows: usize,
+}
+
+impl HhMatrixRowMajor {
+    fn params(v: &mut [f32], card: usize, rows: usize, p: usize) {
+        let mut max_element = f32::NEG_INFINITY;
+        let mut magnitude_squared = 0f32;
+        for val in v.iter() {
+            max_element = max_element.max(val.abs());
         }
-        (Err(e1), Err(e2)) => {
-            println!("Unsucessful\ne1: {e1:?}\ne2: {e2:?}");
+        let inv_max_element = 1f32 / max_element;
+        for val in v.into_iter() {
+            *val *= inv_max_element;
+            magnitude_squared += *val * *val;
         }
-        (Err(e1), Ok(_)) => {
-            println!("Unsucessful\ne1: {e1:?}");
+        let g = v[0].signum() * magnitude_squared.sqrt();
+        let scale = v[0] + g;
+        let inv_scale = 1f32 / scale;
+        for val in v.into_iter().skip(1) {
+            *val *= inv_scale;
         }
-        (Ok(_), Err(e2)) => {
-            println!("Unsucessful\ne2: {e2:?}");
+        v[0] = scale / g;
+    }
+}
+
+impl AutumnDecomp {
+    fn new(mut h: NdArray) -> Self {
+        debug_assert!(h.dims[0] <= h.dims[1]);
+        let (rows, cols) = (h.dims[0], h.dims[1]);
+        let card = rows.min(cols);
+        let mut buffer = vec![0f32; rows];
+        let mut split_range= rows;
+        for p in 0..card {
+            split_range -= 1;
+            let (projection, target) = h.data.split_at_mut((p + 1) * cols);
+            let projection = &mut projection[p * cols + p..];
+            HhMatrixRowMajor::params(projection, card, rows, p);
+            // w' = v'H
+            for i in 0..split_range {
+                // target indexed at below active row
+                let target_row = &target[i * cols..(i + 1) * cols];
+                let mut wi = target_row[p];
+
+                for j in p+1..cols {
+                    wi += target_row[j] * projection[j - p];
+                }
+                buffer[i] = wi;
+            }
+            let tau = projection[0];
+            // H -= T vw'
+            // already indexed into rows below the householder
+            for i in 0..split_range {
+                let scalar = tau * buffer[i];
+                let target_row = &mut target[i * cols..(i + 1) * cols];
+                target_row[p] -= scalar;
+                for j in p+1..cols {
+                    target_row[j] -= scalar * projection[j - p];
+                }
+            }
+        }
+        Self {
+            h,
+            rows,
+            cols,
+            card,
         }
     }
-    // // test_gmm_3d_kmeans_gmm();
-    // // test_gmm_3d();
-    // if let Err(e) = test_kmeans_gmm_visual() {
-    //     eprintln!("Error: {}", e);
-    // }
 }
+
+fn main() {}

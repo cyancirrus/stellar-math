@@ -70,7 +70,7 @@ impl DecisionTreeModel {
     pub fn analyze_variance(&self) -> Vec<f32> {
         let total_sse = self.metadata[0].sse();
         let gains = self.analyze_gains();
-        let mut cumulative = 0_f32;
+        let mut cumulative = 0f32;
 
         for g in &gains {
             cumulative += g;
@@ -90,7 +90,7 @@ impl<'a> DecisionTree<'a> {
         if data.is_empty() || data[0].is_empty() {
             panic!("data is empty");
         }
-        if obs_sample > 1_f32 || obs_sample < 0_f32 || dim_sample > 1_f32 || dim_sample < 0_f32 {
+        if obs_sample > 1f32 || obs_sample < 0f32 || dim_sample > 1f32 || dim_sample < 0f32 {
             panic!("cannot subsample range");
         }
         let label = data.len();
@@ -99,7 +99,7 @@ impl<'a> DecisionTree<'a> {
         let mut rng = rand::rng();
         let mut buffer: Vec<usize> = (0..n_rows).collect();
         let sample = (
-            (obs_sample * n_rows as f32 + 1_f32) as usize,
+            (obs_sample * n_rows as f32 + 1f32) as usize,
             (dim_sample * dims as f32 + 1f32) as usize,
         );
         buffer.shuffle(&mut rng);
@@ -279,18 +279,18 @@ impl Metadata {
             dim: dim,
             offset: offset,
             card: 0,
-            sum_linear: 0_f32,  // Sum y
-            sum_squares: 0_f32, // Sum y * y;
+            sum_linear: 0f32,  // Sum y
+            sum_squares: 0f32, // Sum y * y;
         }
     }
     fn reset(&mut self) {
         self.card = 0;
-        self.sum_linear = 0_f32;
-        self.sum_squares = 0_f32;
+        self.sum_linear = 0f32;
+        self.sum_squares = 0f32;
     }
     fn delta(&self, running: &Self) -> f32 {
         if self.card == 0 || running.card == 0 || self.card == running.card {
-            return 0_f32;
+            return 0f32;
         };
         let (card, l_card, r_card) = (
             self.card as f32,
@@ -316,7 +316,7 @@ impl Metadata {
         }
         let label = data.len() - 1;
         let card = include.len();
-        let (mut sum_linear, mut sum_squares) = (0_f32, 0_f32);
+        let (mut sum_linear, mut sum_squares) = (0f32, 0f32);
         for &idx in include {
             let val = data[label][idx];
             sum_linear += val;
@@ -396,7 +396,7 @@ impl Metadata {
 //     let mut dt = DecisionTree::new(&data, 0.8, 0.8);
 //     let model = dt.train(8);
 //     let len = data.len();
-//     let mut test = vec![0_f32; len];
+//     let mut test = vec![0f32; len];
 //     let idx = 32;
 //     for i in 0..len {
 //         test[i] = data[i][idx];

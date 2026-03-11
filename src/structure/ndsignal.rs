@@ -89,10 +89,10 @@ impl Complex {
         //e(-ix) = cos(x) - isin(x)
         //e((a + bi)) = exp(a)(cos(x) - i sin(x))
         //isin(x) = (exp(x) - exp(-x)) / 2
-        x.r.exp() * (x.i.exp() - (-x.i).exp()) / 2_f32
+        x.r.exp() * (x.i.exp() - (-x.i).exp()) / 2f32
     }
     pub fn zero() -> Complex {
-        Complex::new(0_f32, 0_f32)
+        Complex::new(0f32, 0f32)
     }
 }
 

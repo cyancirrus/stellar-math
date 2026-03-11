@@ -21,7 +21,7 @@ impl RandomForest {
         Self { trees, forest }
     }
     pub fn predict(&self, data: &[f32]) -> f32 {
-        let mut cumulative = 0_f32;
+        let mut cumulative = 0f32;
         for tree in &self.forest {
             cumulative += tree.predict(data);
         }

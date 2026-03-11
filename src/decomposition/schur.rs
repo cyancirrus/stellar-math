@@ -27,7 +27,7 @@ fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
 fn real_schur_threshold(kernel: &NdArray) -> f32 {
     let rows = kernel.dims[0];
     let cols = kernel.dims[1];
-    let mut off_diagonal = 0_f32;
+    let mut off_diagonal = 0f32;
 
     for j in 0..cols {
         for i in j + 1..rows {

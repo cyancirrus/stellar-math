@@ -21,7 +21,7 @@ impl QrDecomposition {
         let (rows, cols) = (x.dims[0], x.dims[1]);
         let card = rows.min(cols) - (rows <= cols) as usize;
         let mut projections = Vec::with_capacity(card);
-        let mut w = vec![0_f32; rows];
+        let mut w = vec![0f32; rows];
         for o in 0..card {
             let column_vector = (o..rows)
                 .map(|r| x.data[r * cols + o])
@@ -36,7 +36,7 @@ impl QrDecomposition {
                 for i in o..rows {
                     x.data[i * cols + j] -= proj.vector[i - o] * w[j];
                 }
-                w[j] = 0_f32;
+                w[j] = 0f32;
             }
             projections.push(proj);
         }
@@ -47,12 +47,12 @@ impl QrDecomposition {
         for i in 1..=card {
             // for j in 0..i.min(cols) {
             for j in 0..i {
-                x.data[i * cols + j] = 0_f32
+                x.data[i * cols + j] = 0f32
             }
         }
         // If wanted positive elements for thetriangular matrix diagonal
         // for i in 0..card {
-        //     if x.data[i*cols + i] < 0_f32 {
+        //     if x.data[i*cols + i] < 0f32 {
         //         for e in &mut projections[i].vector {
         //             *e = - *e;
         //         }
@@ -77,7 +77,7 @@ impl QrDecomposition {
 
         let card = self.card;
         let mut matrix = create_identity_rectangle(self.rows, self.cols);
-        let mut w: Vec<f32> = vec![0_f32; self.rows];
+        let mut w: Vec<f32> = vec![0f32; self.rows];
         // Justification for using rows as column when we are using column major form
         // A ~ Matrix[i, j]
         // QR(A) -> (Q, R)
@@ -92,7 +92,7 @@ impl QrDecomposition {
                 for j in p..self.cols {
                     matrix.data[i * self.cols + j] -= w[i] * proj.vector[j - p];
                 }
-                w[i] = 0_f32;
+                w[i] = 0f32;
             }
         }
         matrix
@@ -212,7 +212,7 @@ impl QrDecomposition {
         // H[i+1]x = (I - buu')x  = x - b*u*(u'x)
         let mut scalar;
         for p in (0..self.card).rev() {
-            scalar = 0_f32;
+            scalar = 0f32;
             let proj = &self.projections[p];
             for i in p..self.rows {
                 scalar += data[i] * proj.vector[i - p];

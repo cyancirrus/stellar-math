@@ -17,12 +17,12 @@ impl HouseholderReflection {
 pub fn householder_params(mut u: Vec<f32>) -> HouseholderReflection {
     let length = u.len();
     let mut max_element = f32::NEG_INFINITY;
-    let mut magnitude_squared = 0_f32;
+    let mut magnitude_squared = 0f32;
     for i in 0..length {
         max_element = max_element.max(u[i]);
     }
     // if max_element.abs() < EPSILON {
-    //     return HouseholderReflection::new(0_f32, vec![0_f32]);
+    //     return HouseholderReflection::new(0f32, vec![0f32]);
     // }
     for i in 0..length {
         u[i] /= max_element;
@@ -31,19 +31,19 @@ pub fn householder_params(mut u: Vec<f32>) -> HouseholderReflection {
     let sign = u[0].signum();
     let tmp = u[0];
     u[0] += sign * magnitude_squared.sqrt();
-    magnitude_squared += 2_f32 * sign * tmp * magnitude_squared.sqrt() + magnitude_squared;
-    HouseholderReflection::instantiate(2_f32 / magnitude_squared, u)
+    magnitude_squared += 2f32 * sign * tmp * magnitude_squared.sqrt() + magnitude_squared;
+    HouseholderReflection::instantiate(2f32 / magnitude_squared, u)
 }
 
 pub fn householder_inplace(u: &mut [f32]) -> f32 {
     let length = u.len();
     let mut max_element = f32::NEG_INFINITY;
-    let mut magnitude_squared = 0_f32;
+    let mut magnitude_squared = 0f32;
     for i in 0..length {
         max_element = max_element.max(u[i]);
     }
     // if max_element.abs() < EPSILON {
-    //     return HouseholderReflection::new(0_f32, vec![0_f32]);
+    //     return HouseholderReflection::new(0f32, vec![0f32]);
     // }
     for i in 0..length {
         u[i] /= max_element;
@@ -52,6 +52,6 @@ pub fn householder_inplace(u: &mut [f32]) -> f32 {
     let sign = u[0].signum();
     let tmp = u[0];
     u[0] += sign * magnitude_squared.sqrt();
-    magnitude_squared += 2_f32 * sign * tmp * magnitude_squared.sqrt() + magnitude_squared;
-    2_f32 / magnitude_squared
+    magnitude_squared += 2f32 * sign * tmp * magnitude_squared.sqrt() + magnitude_squared;
+    2f32 / magnitude_squared
 }

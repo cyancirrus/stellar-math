@@ -14,7 +14,7 @@ pub fn supports_sse4() -> bool {
 pub fn simd_vector_add(x: &[f32], y: &[f32]) -> Vec<f32> {
     assert_eq!(x.len(), y.len());
     let length = x.len();
-    let mut result = vec![0_f32; length];
+    let mut result = vec![0f32; length];
     let chunks = length / 8;
     let remainder = length % 8;
 
@@ -39,7 +39,7 @@ pub fn simd_vector_add(x: &[f32], y: &[f32]) -> Vec<f32> {
 pub fn simd_vector_diff(x: &[f32], y: &[f32]) -> Vec<f32> {
     assert_eq!(x.len(), y.len());
     let length = x.len();
-    let mut result = vec![0_f32; length];
+    let mut result = vec![0f32; length];
     let chunks = length / 8;
     let remainder = length % 8;
 
@@ -64,7 +64,7 @@ pub fn simd_vector_diff(x: &[f32], y: &[f32]) -> Vec<f32> {
 pub fn simd_vector_product(x: &[f32], y: &[f32]) -> Vec<f32> {
     assert_eq!(x.len(), y.len());
     let length = x.len();
-    let mut result = vec![0_f32; length];
+    let mut result = vec![0f32; length];
     let blocks = length / 8;
     let remainder = length % 8;
 
@@ -124,7 +124,7 @@ pub fn simd_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     let x_rows = x.dims[0];
     let x_cols = x.dims[1];
     let y_cols = y.dims[1];
-    let mut new: Vec<f32> = vec![0_f32; x_rows * y_cols];
+    let mut new: Vec<f32> = vec![0f32; x_rows * y_cols];
 
     // Loop over blocks
     for i in (0..x_rows).step_by(blocksize) {

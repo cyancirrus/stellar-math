@@ -20,7 +20,7 @@ fn initialize_distribution(n: usize, rng: &mut ThreadRng) -> Vec<f32> {
 
 fn squared_distance(x: &[f32], z: &[f32]) -> f32 {
     // assymptotically equal when S := I
-    let mut squares = 0_f32;
+    let mut squares = 0f32;
     for i in 0..x.len() {
         squares += (x[i] - z[i]) * (x[i] - z[i]);
     }
@@ -33,7 +33,7 @@ impl Kmeans {
         let means = (0..centroids)
             .map(|_| initialize_distribution(cardinality, &mut rng))
             .collect();
-        let mixtures = vec![1_f32 / centroids as f32; centroids];
+        let mixtures = vec![1f32 / centroids as f32; centroids];
         Self {
             centroids,
             cardinality,
@@ -42,7 +42,7 @@ impl Kmeans {
         }
     }
     fn maximization(&mut self, data: &[Vec<f32>]) {
-        let mut sum_linear = vec![vec![0_f32; self.cardinality]; self.centroids];
+        let mut sum_linear = vec![vec![0f32; self.cardinality]; self.centroids];
         let mut cluster_ns = vec![0; self.centroids];
         let n = data.len();
         for i in 0..n {
@@ -69,7 +69,7 @@ impl Kmeans {
         self.means = sum_linear;
     }
     fn delta(&self, prev: &[Vec<f32>], curr: &[Vec<f32>]) -> f32 {
-        let mut delta = 0_f32;
+        let mut delta = 0f32;
         for cidx in 0..self.centroids {
             for didx in 0..self.cardinality {
                 delta += (prev[cidx][didx] - curr[cidx][didx]).abs();
@@ -79,7 +79,7 @@ impl Kmeans {
     }
     pub fn solve(&mut self, data: &[Vec<f32>]) {
         let mut prev = self.means.clone();
-        let mut delta = 1_f32;
+        let mut delta = 1f32;
         while delta > CONVERGENCE_CONDITION {
             self.maximization(data);
             delta = self.delta(&prev, &self.means);

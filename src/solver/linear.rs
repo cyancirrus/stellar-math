@@ -175,9 +175,9 @@ impl LinearProgram {
         let mut dual_costs = vec![0.0; n_cols];
         for i in 0..self.m {
             dual_costs[i] = self.b[i];
-            dual_costs[i + self.m] = - self.b[i];
+            dual_costs[i + self.m] = -self.b[i];
         }
-        let mut cost_b = vec![0.0;self.n];
+        let mut cost_b = vec![0.0; self.n];
         for (idx, &basis_idx) in self.basis.iter().enumerate() {
             cost_b[idx] = dual_costs[basis_idx];
         }
@@ -222,7 +222,7 @@ impl LinearProgram {
     fn get_basic_solution(&self) -> Vec<f32> {
         let b = self.get_basis_matrix();
         let lu = LuPivotDecompose::new(b);
-        let mut rhs= self.c.clone();
+        let mut rhs = self.c.clone();
         lu.solve_inplace_vec(&mut rhs);
         rhs
     }

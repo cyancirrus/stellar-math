@@ -89,7 +89,7 @@ impl LuPivotDecompose {
         }
     }
     pub fn reconstruct(&self) -> NdArray {
-        let mut data = vec![0_f32; self.n * self.n];
+        let mut data = vec![0f32; self.n * self.n];
         let dims = vec![self.n; 2];
         for i in 0..self.n {
             for j in 0..self.n {
@@ -125,7 +125,7 @@ impl LuPivotDecompose {
         det
     }
     pub fn condition(&self) -> f32 {
-        let (mut max, mut min) = (0_f32, f32::MAX);
+        let (mut max, mut min) = (0f32, f32::MAX);
         for k in 0..self.n {
             let v = self.matrix.data[k * self.n + k].abs();
             max = max.max(v);

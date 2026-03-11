@@ -33,8 +33,8 @@ impl HouseholderMatrix {
     pub fn new(rows: usize, card: usize) -> Self {
         // println!(" rows {rows:?}, card {card:?}");
         Self {
-            projs: vec![0_f32; rows * card],
-            betas: vec![0_f32; card],
+            projs: vec![0f32; rows * card],
+            betas: vec![0f32; card],
         }
     }
     fn params(&mut self, u: &[f32], card: usize, rows: usize, p: usize) -> (&[f32], &f32) {
