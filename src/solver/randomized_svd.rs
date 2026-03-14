@@ -6,6 +6,8 @@ use crate::random::generation::generate_random_matrix;
 use crate::structure::ndarray::NdArray;
 
 // NOTE: should be able to left apply only up to k
+// split at mut to do better memory management
+// matrix view where it indexes well but jumps by column
 
 pub struct RandomizedSvd {
     pub n: usize,
@@ -71,6 +73,7 @@ impl RandomizedSvd {
         }
     }
     pub fn approx(&self) -> NdArray {
+        // TODO: transition to ijk it's much better
         let mut tiny = vec![0f32; self.k * self.k];
         for i in 0..self.k {
             for k in 0..self.k {
@@ -87,6 +90,7 @@ impl RandomizedSvd {
         }
     }
     fn approx_padded(&self) -> NdArray {
+        // TODO: transition to ijk it's much better
         let mut tiny = vec![0f32; self.k * self.n];
         for i in 0..self.k {
             for k in 0..self.k {

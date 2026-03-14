@@ -70,6 +70,7 @@ impl QrDecomp {
         let _ = self.cols;
         assert!(false);
     }
+    // TODO: grab a block ie several columns and load into buffer for cache line
     pub fn new(mut t: NdArray) -> Self {
         let (rows, cols) = (t.dims[0], t.dims[1]);
         let card = rows.min(cols);
@@ -84,8 +85,10 @@ impl QrDecomp {
             buffer.fill(0f32);
             for i in p..rows {
                 let target_row = &t.data[i * cols..(i + 1) * cols];
+                let scalar = proj[i - p];
                 for j in 0..cols {
-                    buffer[j] += proj[i - p] * target_row[j];
+                    // buffer[j] += proj[i - p] * target_row[j];
+                    buffer[j] += scalar * target_row[j];
                 }
             }
             // T -= B uw'

@@ -69,6 +69,8 @@ pub fn full_golub_kahan_old(mut a: NdArray) -> (NdArray, NdArray, NdArray) {
     let mut proj: HouseholderReflection;
     let mut sum: f32;
     for o in 0..card {
+        // TODO: turn this into buffer and then reuse the projection
+        //  can also LQ this
         proj = householder_params(
             // column vector
             (o..rows).map(|r| a.data[r * cols + o]).collect(),

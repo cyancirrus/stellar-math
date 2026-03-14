@@ -34,6 +34,19 @@ impl NdArray {
 }
 
 impl NdArray {
+    // TODO: check if is quicker
+    // fn test_truncate_cols(&mut self, rows: usize, cols: usize, ncols: usize) {
+    //    self.dims[1] = ncols;
+    //    let mut data = &mut self.data;
+    //    let mut src_start = 0;
+    //    let mut dst_start = 0;
+    //    for _ in 1..rows {
+    //        src_start += cols;
+    //        dst_start += ncols;
+    //        data.copy_within(src_start..src_start + ncols, dst_start);
+    //    }
+    //    data.truncate(dst_start + ncols);
+    // }
     pub fn resize(&mut self, nrows: usize, ncols: usize) {
         debug_assert_eq!(self.dims.len(), 2);
         let (rows, cols) = (self.dims[0], self.dims[1]);
