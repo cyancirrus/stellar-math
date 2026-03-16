@@ -1,5 +1,6 @@
 #![allow(unused)]
 use stellar::structure::ndarray::NdArray;
+use stellar::algebra::ndmethods::create_identity_matrix;
 
 struct HhMatrixRowMajor {}
 
@@ -103,7 +104,6 @@ impl AutumnDecomp {
 }
 
 impl AutumnDecomp {
-    //TODO: pass in buffer for workspace
     #[inline(never)]
     pub fn right_apply_q(&self, target: &mut NdArray) {
         // A * Q'
@@ -114,7 +114,6 @@ impl AutumnDecomp {
         let h = &self.h.data;
         let t = &mut target.data;
         let n = &self.t;
-        let mut buffer = vec![0f32; trows];
         let mut offset = rows * cols;
         for p in (0..rows).rev() {
             offset -= cols;
@@ -124,32 +123,22 @@ impl AutumnDecomp {
             for i in 0..trows {
                 let roffset = i * tcols;
                 let mut wi = t[roffset + p];
-                let mut targ_suffix = &t[roffset + p + 1..roffset + tcols];
-                targ_suffix = &targ_suffix[..split_range];
-                for j in 0..split_range {
-                    wi += h_suffix[j] * targ_suffix[j];
+                { 
+                    let mut targ_suffix = &t[roffset + p + 1..roffset + tcols];
+                    for j in 0..split_range {
+                        wi += h_suffix[j] * targ_suffix[j];
+                    }
+                    wi = wi * tau;
                 }
-                buffer[i] = wi * tau;
-                // for (h, t) in h_suffix.iter().zip(targ_suffix.iter()) {
-                //     wi += h * t;
-                // }
-                // buffer[i] = wi * tau;
-            }
-            for i in 0..trows {
-                let roffset = i * tcols;
-                let scalar = buffer[i];
-                t[roffset + p] -= scalar;
+                t[roffset + p] -= wi;
                 let mut targ_suffix = &mut t[roffset + p + 1..roffset + tcols];
-                targ_suffix = &mut targ_suffix[..split_range];
                 for j in 0..split_range {
-                    targ_suffix[j] -= scalar * h_suffix[j];
+                    targ_suffix[j] -= wi * h_suffix[j];
                 }
-                // for (t, h) in targ_suffix.iter_mut().zip(h_suffix.iter()) {
-                //     *t -= scalar * h;
-                // }
             }
         }
     }
+    //TODO: pass in buffer for workspace
     fn right_apply_qt(&self, target: &mut NdArray) {
         // A * Q'
         debug_assert_eq!(self.h.dims[0], target.dims[1]);
@@ -177,11 +166,12 @@ impl AutumnDecomp {
             }
             for i in 0..trows {
                 let roffset = i * tcols;
-                t[roffset + p] -= buffer[i];
+                let scalar = buffer[i];
+                t[roffset + p] -= scalar;
                 let mut targ_suffix = &mut t[roffset + p + 1..roffset + tcols];
                 targ_suffix = &mut targ_suffix[..split_range];
                 for j in 0..split_range {
-                    targ_suffix[j] -= buffer[i] * h_suffix[j];
+                    targ_suffix[j] -= scalar * h_suffix[j];
                 }
             }
             offset += cols;
@@ -210,6 +200,35 @@ impl AutumnDecomp {
             t[toffset..toffset + tcols].copy_from_slice(&buffer);
         }
     }
+    fn right_apply_l(&self, target:&mut NdArray) {
+        debug_assert_eq!(self.h.dims[1], target.dims[1]);
+        let (rows, cols) = (self.rows, self.cols);
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        let h = &self.h.data;
+        if cols > tcols {
+            target.resize_cols(cols);
+        }
+        let t = &mut target.data;
+        let mut buffer = vec![0f32;cols];
+        for i in 0..rows {
+            let offset = i * cols;
+            let t_suffix = &mut t[offset..offset + tcols];
+            buffer.fill(0f32);
+            for k in (0..tcols) {
+                let roffset = k * cols;
+                let outer_suffix = &h[roffset..=roffset + i];
+                let scalar = t_suffix[k];
+                for j in 0..=i {
+                    t_suffix[j] += scalar * outer_suffix[j];
+                }
+            }
+            let toffset = i * tcols;
+            t[toffset..toffset + tcols].copy_from_slice(&buffer);
+        }
+        if tcols < cols {
+            target.resize_cols(cols);
+        }
+    }
 }
 
 // TODO: test this
@@ -230,9 +249,12 @@ impl AutumnDecomp {
 
 
 fn main() {
-    let mut a = NdArray::new(vec![2, 2], vec![0f32,1f32,2f32,3f32]);
-    let mut b = NdArray::new(vec![2, 2], vec![0f32,1f32,2f32,3f32]);
-    let autumn = AutumnDecomp::new(a);
-    autumn.right_apply_q(&mut b);
-    println!("0 signum {:?}", -1f32.signum());
+    let mut a = NdArray::new(vec![2, 2], vec![4f32,1f32,2f32,3f32]);
+    let mut workspace = vec![0f32;2];
+    let autumn = AutumnDecomp::new(a.clone());
+    let mut i = create_identity_matrix(2);
+    println!("input {a:?}");
+    autumn.right_apply_l(&mut i);
+    autumn.right_apply_q(&mut i);
+    println!("output {a:?}");
 }
