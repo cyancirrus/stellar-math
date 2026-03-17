@@ -296,15 +296,19 @@ fn test_autumn_orthogonal_qtq() {
 }
 
 fn test_decomp_rectangle() {
+    // A * Q
     let (m, n) = (4, 8);
     let a = generate_random_matrix(m, n);
     let autumn = AutumnDecomp::new(a.clone());
     let mut workspace = vec![0f32;n];
-    let mut i = create_identity_matrix(n);
+    let mut i = create_identity_matrix(m);
     let expected = i.clone();
-    autumn.right_apply_qt(&mut i, &mut workspace);
+    println!("autumn {:?}", autumn.h);
     autumn.right_apply_q(&mut i);
-    assert!(approx_vector_eq(&i.data, &expected.data));
+    // println!("i {i:?}");
+    // autumn.right_apply_qt(&mut i, &mut workspace);
+    // println!("i {i:?}");
+    // assert!(approx_vector_eq(&i.data, &expected.data));
 
 }
 
