@@ -34,19 +34,6 @@ impl NdArray {
 }
 
 impl NdArray {
-    // TODO: check if is quicker
-    // fn test_truncate_cols(&mut self, rows: usize, cols: usize, ncols: usize) {
-    //    self.dims[1] = ncols;
-    //    let mut data = &mut self.data;
-    //    let mut src_start = 0;
-    //    let mut dst_start = 0;
-    //    for _ in 1..rows {
-    //        src_start += cols;
-    //        dst_start += ncols;
-    //        data.copy_within(src_start..src_start + ncols, dst_start);
-    //    }
-    //    data.truncate(dst_start + ncols);
-    // }
     pub fn resize(&mut self, nrows: usize, ncols: usize) {
         debug_assert_eq!(self.dims.len(), 2);
         let (rows, cols) = (self.dims[0], self.dims[1]);
@@ -81,27 +68,35 @@ impl NdArray {
         self.data.truncate(cols * nrows);
         self.dims[0] = nrows;
     }
-    fn truncate_cols(&mut self, rows: usize, cols: usize, ncols: usize) {
-        for i in 1..rows {
-            for j in 0..ncols {
-                self.data.swap(i * cols + j, i * ncols + j);
-            }
-        }
-        self.data.truncate(ncols * rows);
-        self.dims[1] = ncols;
-    }
     fn extend_rows(&mut self, cols: usize, nrows: usize) {
         self.data.resize(nrows * cols, 0f32);
         self.dims[0] = nrows;
     }
-    fn extend_cols(&mut self, rows: usize, cols: usize, ncols: usize) {
-        self.data.resize(ncols * rows, 0f32);
-        for i in (1..rows).rev() {
-            for j in (0..cols).rev() {
-                self.data.swap(i * cols + j, i * ncols + j);
-            }
-        }
+    fn truncate_cols(self: &mut NdArray, rows: usize, cols: usize, ncols: usize) {
         self.dims[1] = ncols;
+        let data = &mut self.data;
+        let mut src_start = 0;
+        let mut tgt_start = 0;
+        for _ in 1..rows {
+            src_start += cols;
+            tgt_start += ncols;
+            data.copy_within(src_start..src_start + ncols, tgt_start);
+        }
+        data.truncate(tgt_start + ncols);
+    }
+    fn extend_cols(self: &mut NdArray, rows: usize, cols: usize, ncols: usize) {
+        self.dims[1] = ncols;
+        let data = &mut self.data;
+        data.resize(ncols * rows, 0f32);
+        let mut src_start = rows * cols;
+        let mut tgt_start = rows * ncols;
+        for _ in (1..rows).rev() {
+            src_start -= cols;
+            tgt_start -= ncols;
+            data.copy_within(src_start..src_start + cols, tgt_start);
+            data[tgt_start + cols..tgt_start + ncols].fill(0f32);
+        }
+        data[cols..ncols].fill(0f32);
     }
 }
 
