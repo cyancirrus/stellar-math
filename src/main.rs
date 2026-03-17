@@ -295,11 +295,25 @@ fn test_autumn_orthogonal_qtq() {
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
 
+fn test_decomp_rectangle() {
+    let (m, n) = (4, 8);
+    let a = generate_random_matrix(m, n);
+    let autumn = AutumnDecomp::new(a.clone());
+    let mut workspace = vec![0f32;n];
+    let mut i = create_identity_matrix(n);
+    let expected = i.clone();
+    autumn.right_apply_qt(&mut i, &mut workspace);
+    autumn.right_apply_q(&mut i);
+    assert!(approx_vector_eq(&i.data, &expected.data));
+
+}
+
 
 fn main() {
     test_autumn_reconstruct();
     test_autumn_orthogonal_qqt();
     test_autumn_orthogonal_qtq();
+    test_decomp_rectangle();
     // // let mut a = NdArray::new(vec![2, 2], vec![4f32,1f32,2f32,3f32]);
     // let n = 3;
     // let a = generate_random_matrix(n, n);
