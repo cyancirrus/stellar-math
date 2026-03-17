@@ -1,8 +1,8 @@
 #![allow(unused)]
 use stellar::algebra::ndmethods::create_identity_matrix;
-use stellar::random::generation::{generate_random_matrix};
-use stellar::structure::ndarray::NdArray;
 use stellar::equality::approximate::approx_vector_eq;
+use stellar::random::generation::generate_random_matrix;
+use stellar::structure::ndarray::NdArray;
 
 struct HhMatrixRowMajor {}
 
@@ -21,7 +21,6 @@ pub struct AutumnDecomp {
     cols: usize,
     rows: usize,
 }
-
 
 impl HhMatrixRowMajor {
     fn params(v: &mut [f32], card: usize, rows: usize, p: usize) -> f32 {
@@ -48,17 +47,17 @@ impl HhMatrixRowMajor {
         for val in v[1..].iter_mut() {
             *val *= inv_scale;
         }
-        v[0] = - g * max_element;
+        v[0] = -g * max_element;
         scale / g
     }
 }
 
 impl AutumnDecomp {
-    fn new(mut h: NdArray) -> Self {
+    fn new(mut h: NdArray, workspace: &mut [f32]) -> Self {
         debug_assert!(h.dims[0] <= h.dims[1]);
         let (rows, cols) = (h.dims[0], h.dims[1]);
         let card = rows.min(cols);
-        let mut buffer = vec![0f32; rows];
+        debug_assert!(workspace.len() >= rows);
         let mut t = vec![0f32; rows];
         let mut active_range = rows;
         for p in 0..card {
@@ -79,12 +78,12 @@ impl AutumnDecomp {
                 for j in 0..split_range {
                     wi += targ_suffix[j] * proj_suffix[j];
                 }
-                buffer[i] = wi;
+                workspace[i] = wi;
             }
             // H -= T vw'
             for i in 0..active_range {
                 let roffset = i * cols;
-                let scalar = *tau * buffer[i];
+                let scalar = *tau * workspace[i];
                 target[roffset + p] -= scalar;
                 let mut targ_suffix = &mut target[roffset + p + 1..roffset + cols];
                 targ_suffix = &mut targ_suffix[..split_range];
@@ -174,52 +173,52 @@ impl AutumnDecomp {
             offset += cols;
         }
     }
-    pub fn left_apply_l(&self, target: &mut NdArray) {
+    pub fn left_apply_l(&self, target: &mut NdArray, workspace: &mut [f32]) {
         debug_assert_eq!(self.h.dims[1], target.dims[1]);
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         let h = &self.h.data;
         let t = &mut target.data;
-        let mut buffer = vec![0f32; tcols];
+        debug_assert!(workspace.len() >= tcols);
         for p in (0..rows).rev() {
             let offset = p * cols;
             let h_suffix = &h[offset..=offset + p];
-            buffer.fill(0f32);
+            workspace.fill(0f32);
             for i in (0..=p) {
                 let roffset = i * tcols;
                 let outer_suffix = &t[roffset..roffset + tcols];
                 let scalar = h_suffix[i];
                 for j in 0..tcols {
-                    buffer[j] += scalar * outer_suffix[j];
+                    workspace[j] += scalar * outer_suffix[j];
                 }
             }
             let toffset = p * tcols;
-            t[toffset..toffset + tcols].copy_from_slice(&buffer);
+            t[toffset..toffset + tcols].copy_from_slice(&workspace);
         }
     }
-    pub fn right_apply_l(&self, target: &mut NdArray) {
-        debug_assert_eq!(target.dims[1], self.h.dims[0]);
+    pub fn right_apply_l(&self, target: &mut NdArray, workspace: &mut [f32]) {
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
+        debug_assert_eq!(target.dims[1], self.h.dims[0]);
+        debug_assert!(workspace.len() >= cols);
         let h = &self.h.data;
         if cols > tcols {
             target.resize_cols(cols);
         }
         let t = &mut target.data;
-        let mut buffer = vec![0f32; cols];
         for i in 0..rows {
             let offset = i * tcols;
             let t_suffix = &mut t[offset..offset + tcols];
-            buffer.fill(0f32);
+            workspace.fill(0f32);
             for k in (0..tcols) {
                 let roffset = k * cols;
                 let outer_suffix = &h[roffset..=roffset + i];
                 let scalar = t_suffix[k];
                 for j in 0..=i {
-                    buffer[j] += scalar * outer_suffix[j];
+                    workspace[j] += scalar * outer_suffix[j];
                 }
             }
-            t_suffix.copy_from_slice(&buffer);
+            t_suffix.copy_from_slice(&workspace);
         }
         if cols < tcols {
             target.resize_cols(cols);
@@ -265,10 +264,10 @@ fn test_autumn_reconstruct() {
     let n = 4;
     let a = generate_random_matrix(n, n);
     let expected = a.clone();
-    let mut workspace = vec![0f32;n];
-    let autumn = AutumnDecomp::new(a.clone());
+    let mut workspace = vec![0f32; n];
+    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
     let mut i = create_identity_matrix(n);
-    autumn.right_apply_l(&mut i);
+    autumn.right_apply_l(&mut i, &mut workspace);
     autumn.right_apply_q(&mut i);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
@@ -276,8 +275,8 @@ fn test_autumn_reconstruct() {
 fn test_autumn_orthogonal_qqt() {
     let n = 4;
     let a = generate_random_matrix(n, n);
-    let mut workspace = vec![0f32;n];
-    let autumn = AutumnDecomp::new(a.clone());
+    let mut workspace = vec![0f32; n];
+    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
     let mut i = create_identity_matrix(n);
     let expected = i.clone();
     autumn.right_apply_q(&mut i);
@@ -288,8 +287,8 @@ fn test_autumn_orthogonal_qqt() {
 fn test_autumn_orthogonal_qtq() {
     let n = 4;
     let a = generate_random_matrix(n, n);
-    let mut workspace = vec![0f32;n];
-    let autumn = AutumnDecomp::new(a.clone());
+    let mut workspace = vec![0f32; n];
+    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
     let mut i = create_identity_matrix(n);
     let expected = i.clone();
     autumn.right_apply_qt(&mut i, &mut workspace);
@@ -301,15 +300,15 @@ fn test_decomp_rectangle() {
     // A * Q
     let (m, n) = (4, 8);
     let a = generate_random_matrix(m, n);
-    let autumn = AutumnDecomp::new(a.clone());
-    let mut workspace = vec![0f32;n];
+    let mut workspace = vec![0f32; n];
+    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
+    let mut workspace = vec![0f32; n];
     let mut i = create_identity_matrix(n);
     let expected = i.clone();
     autumn.right_apply_q(&mut i);
     autumn.right_apply_qt(&mut i, &mut workspace);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
-
 
 fn main() {
     test_autumn_reconstruct();
@@ -328,7 +327,7 @@ fn main() {
     // let mut i = create_identity_matrix(n);
     // autumn.left_apply_lt(&mut i);
     // println!("left apply lt {i:?}");
-    
+
     // let mut a = NdArray::new(vec![2, 2], vec![1f32, 0f32, 0f32, 1f32]);
     // let mut workspace = vec![0f32;2];
     // let autumn = AutumnDecomp::new(a.clone());
@@ -340,7 +339,7 @@ fn main() {
     // println!("midstep {i:?}");
     // autumn.right_apply_q(&mut i);
     // println!("output {i:?}");
-    
+
     // let mut a = NdArray::new(vec![1, 1], vec![4f32]);
     // let mut workspace = vec![0f32;1];
     // let autumn = AutumnDecomp::new(a.clone());
