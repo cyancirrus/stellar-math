@@ -301,7 +301,7 @@ fn test_decomp_rectangle() {
     let a = generate_random_matrix(m, n);
     let autumn = AutumnDecomp::new(a.clone());
     let mut workspace = vec![0f32;n];
-    let mut i = create_identity_matrix(m);
+    let mut i = create_identity_matrix(n);
     let expected = i.clone();
     println!("autumn {:?}", autumn.h);
     autumn.right_apply_q(&mut i);
