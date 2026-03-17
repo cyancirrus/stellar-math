@@ -108,7 +108,8 @@ impl AutumnDecomp {
         // A * Q
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        debug_assert_eq!(tcols, rows);
+        // implied dimension of q ~ cols x cols
+        debug_assert_eq!(tcols, cols);
         let h = &self.h.data;
         let t = &mut target.data;
         let n = &self.t;
@@ -139,7 +140,8 @@ impl AutumnDecomp {
         // A * Q'
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        debug_assert_eq!(tcols, rows);
+        // implied dimension of q' ~ cols x cols
+        debug_assert_eq!(tcols, cols);
         debug_assert!(workspace.len() >= trows);
         let h = &self.h.data;
         let t = &mut target.data;
@@ -305,18 +307,17 @@ fn test_decomp_rectangle() {
     let expected = i.clone();
     println!("autumn {:?}", autumn.h);
     autumn.right_apply_q(&mut i);
-    // println!("i {i:?}");
-    // autumn.right_apply_qt(&mut i, &mut workspace);
-    // println!("i {i:?}");
-    // assert!(approx_vector_eq(&i.data, &expected.data));
-
+    println!("i {i:?}");
+    autumn.right_apply_qt(&mut i, &mut workspace);
+    println!("i {i:?}");
+    assert!(approx_vector_eq(&i.data, &expected.data));
 }
 
 
 fn main() {
-    test_autumn_reconstruct();
-    test_autumn_orthogonal_qqt();
-    test_autumn_orthogonal_qtq();
+    // test_autumn_reconstruct();
+    // test_autumn_orthogonal_qqt();
+    // test_autumn_orthogonal_qtq();
     test_decomp_rectangle();
     // // let mut a = NdArray::new(vec![2, 2], vec![4f32,1f32,2f32,3f32]);
     // let n = 3;
@@ -355,13 +356,13 @@ fn main() {
     // autumn.right_apply_q(&mut i);
     // println!("output {i:?}");
 
-    let mut a = NdArray::new(vec![2, 2], vec![4f32,1f32,2f32,3f32]);
-    let mut workspace = vec![0f32;2];
-    let autumn = AutumnDecomp::new(a.clone());
-    println!("lq_decomp {:?}", autumn.h);
-    let mut i = create_identity_matrix(2);
-    println!("input {a:?}");
-    autumn.right_apply_l(&mut i);
-    autumn.right_apply_q(&mut i);
-    println!("output {i:?}");
+    // let mut a = NdArray::new(vec![2, 2], vec![4f32,1f32,2f32,3f32]);
+    // let mut workspace = vec![0f32;2];
+    // let autumn = AutumnDecomp::new(a.clone());
+    // println!("lq_decomp {:?}", autumn.h);
+    // let mut i = create_identity_matrix(2);
+    // println!("input {a:?}");
+    // autumn.right_apply_l(&mut i);
+    // autumn.right_apply_q(&mut i);
+    // println!("output {i:?}");
 }
