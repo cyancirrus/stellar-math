@@ -82,12 +82,7 @@ impl AutumnDecomp {
                 target[roffset + p] -= wi;
             }
         }
-        Self {
-            h,
-            t,
-            rows,
-            cols,
-        }
+        Self { h, t, rows, cols }
     }
 }
 
@@ -326,18 +321,20 @@ impl AutumnDecomp {
             let toffset = i * tcols;
             outer_row.copy_from_slice(&t[toffset..toffset + tcols]);
             let h_suffix = &h[offset..offset + cols];
-            for k in (0..=i) {
+            for k in (0..i) {
                 let scalar = h_suffix[k];
                 let woffset = k * tcols;
                 let w_suffix = &mut t[woffset..woffset + tcols];
-                if k != i {
-                    for j in 0..tcols {
-                        w_suffix[j] += scalar * outer_row[j];
-                    }
-                } else {
-                    for j in 0..tcols {
-                        w_suffix[j] *= scalar;
-                    }
+                for j in 0..tcols {
+                    w_suffix[j] += scalar * outer_row[j];
+                }
+            }
+            {
+                let scalar = h_suffix[i];
+                let woffset = i * tcols;
+                let w_suffix = &mut t[woffset..woffset + tcols];
+                for j in 0..tcols {
+                    w_suffix[j] *= scalar;
                 }
             }
         }
@@ -345,6 +342,40 @@ impl AutumnDecomp {
             target.resize_rows(cols);
         }
     }
+    // pub fn left_apply_lt(&self, target: &mut NdArray) {
+    //     debug_assert_eq!(target.dims[0], self.h.dims[0]);
+    //     let (rows, cols) = (self.rows, self.cols);
+    //     let (trows, tcols) = (target.dims[0], target.dims[1]);
+    //     let h = &self.h.data;
+    //     if cols > trows {
+    //         target.resize_rows(cols);
+    //     }
+    //     let t = &mut target.data;
+    //     let mut outer_row = vec![0f32; cols];
+    //     for i in 0..rows {
+    //         let offset = i * cols;
+    //         let toffset = i * tcols;
+    //         outer_row.copy_from_slice(&t[toffset..toffset + tcols]);
+    //         let h_suffix = &h[offset..offset + cols];
+    //         for k in (0..=i) {
+    //             let scalar = h_suffix[k];
+    //             let woffset = k * tcols;
+    //             let w_suffix = &mut t[woffset..woffset + tcols];
+    //             if k != i {
+    //                 for j in 0..tcols {
+    //                     w_suffix[j] += scalar * outer_row[j];
+    //                 }
+    //             } else {
+    //                 for j in 0..tcols {
+    //                     w_suffix[j] *= scalar;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     if cols < trows {
+    //         target.resize_rows(cols);
+    //     }
+    // }
     // TODO: Test this fn
     pub fn right_apply_lt(&self, target: &mut NdArray, workspace: &mut [f32]) {
         let (rows, cols) = (self.rows, self.cols);
