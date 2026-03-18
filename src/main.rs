@@ -252,16 +252,12 @@ impl AutumnDecomp {
                 for j in 0..split_range {
                     wi += h_suffix[j] * targ_suffix[j];
                 }
-                workspace[i] = wi * tau;
-            }
-            for i in 0..trows {
-                let roffset = i * tcols;
-                let scalar = workspace[i];
-                t[roffset + p] -= scalar;
+                wi *= tau;
+                t[roffset + p] -= wi;
                 let mut targ_suffix = &mut t[roffset + p + 1..roffset + tcols];
                 targ_suffix = &mut targ_suffix[..split_range];
                 for j in 0..split_range {
-                    targ_suffix[j] -= scalar * h_suffix[j];
+                    targ_suffix[j] -= wi * h_suffix[j];
                 }
             }
             offset += cols;
