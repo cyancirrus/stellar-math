@@ -87,7 +87,6 @@ impl QrDecomp {
                 let target_row = &t.data[i * cols..(i + 1) * cols];
                 let scalar = proj[i - p];
                 for j in 0..cols {
-                    // buffer[j] += proj[i - p] * target_row[j];
                     buffer[j] += scalar * target_row[j];
                 }
             }

@@ -13,7 +13,7 @@ struct HhMatrixRowMajor {}
 /// * t: tau vector with cardinality
 /// * rows: number of rows in the original matrix A
 /// * cols: number of cols in the original matrix A
-/// * card: rows.min(j) number of household transforms
+/// * card: TODO: need this for rank-k
 pub struct AutumnDecomp {
     pub h: NdArray,
     pub t: Vec<f32>,
@@ -258,8 +258,14 @@ impl AutumnDecomp {
         for p in (0..rows).rev() {
             let offset = p * cols;
             let h_suffix = &h[offset..=offset + p];
-            workspace.fill(0f32);
-            for i in (0..=p) {
+            {
+                let outer_suffix = &t[..tcols];
+                let scalar = h_suffix[0];
+                for j in 0..tcols {
+                    workspace[j] = scalar * outer_suffix[j];
+                }
+            }
+            for i in (1..=p) {
                 let roffset = i * tcols;
                 let outer_suffix = &t[roffset..roffset + tcols];
                 let scalar = h_suffix[i];
