@@ -17,12 +17,11 @@ struct HhMatrixRowMajor {}
 pub struct AutumnDecomp {
     pub h: NdArray,
     pub t: Vec<f32>,
-    card: usize,
     cols: usize,
     rows: usize,
 }
 
-fn params(v: &mut [f32], card: usize, rows: usize, p: usize) -> f32 {
+fn params(v: &mut [f32], rows: usize, p: usize) -> f32 {
     let mut max_element = 0f32;
     for val in v.iter() {
         let v = val.abs();
@@ -54,17 +53,16 @@ impl AutumnDecomp {
     fn new(mut h: NdArray, workspace: &mut [f32]) -> Self {
         debug_assert!(h.dims[0] <= h.dims[1]);
         let (rows, cols) = (h.dims[0], h.dims[1]);
-        let card = rows.min(cols);
         debug_assert!(workspace.len() >= rows);
         let mut t = vec![0f32; rows];
         let mut active_range = rows;
-        for p in 0..card {
+        for p in 0..rows {
             active_range -= 1;
             let tau = &mut t[p];
             let offset = p * cols;
             let (projection, target) = h.data.split_at_mut(offset + cols);
             let projection = &mut projection[offset + p..offset + cols];
-            *tau = params(projection, card, rows, p);
+            *tau = params(projection, rows, p);
             let proj_suffix = &projection[1..];
             let mut split_range = proj_suffix.len();
             for i in 0..active_range {
@@ -89,7 +87,6 @@ impl AutumnDecomp {
             t,
             rows,
             cols,
-            card,
         }
     }
 }
