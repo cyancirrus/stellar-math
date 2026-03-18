@@ -103,7 +103,6 @@ impl AutumnDecomp {
 }
 
 impl AutumnDecomp {
-    // TODO: need to test
     pub fn left_apply_q(&self, target: &mut NdArray, workspace: &mut [f32]) {
         // Q * A 
         let (rows, cols) = (self.rows, self.cols);
@@ -119,32 +118,34 @@ impl AutumnDecomp {
         for p in 0..rows {
             let tau = n[p];
             let h_suffix = &h[offset + p + 1..offset + cols];
-            for i in p..trows {
-                let toffset = i * tcols;
+            {
+                let toffset = p * tcols;
                 let t_suffix = &t[toffset..toffset + tcols]; 
-                if i == p {
-                    for j in 0..tcols {
-                        workspace[j] = t_suffix[j];
-                    }
-                } else {
-                    let scalar = h_suffix[i - p - 1];
-                    for j in 0..tcols {
-                        workspace[j] += scalar * t_suffix[j];
-                    }
+                for j in 0..tcols {
+                    workspace[j] = t_suffix[j];
                 }
             }
-            for i in p..trows {
+            for i in p+1..trows {
+                let toffset = i * tcols;
+                let t_suffix = &t[toffset..toffset + tcols]; 
+                let scalar = h_suffix[i - p - 1];
+                for j in 0..tcols {
+                    workspace[j] += scalar * t_suffix[j];
+                }
+            }
+            {
+                let toffset = p * tcols;
+                let t_suffix = &mut t[toffset..toffset + tcols]; 
+                for j in 0..tcols {
+                    t_suffix[j] -= tau * workspace[j];
+                }
+            }
+            for i in p+1..trows {
                 let toffset = i * tcols;
                 let t_suffix = &mut t[toffset..toffset + tcols]; 
-                if i == p {
-                    for j in 0..tcols {
-                        t_suffix[j] -= tau * workspace[j];
-                    }
-                } else {
-                    let scalar = tau * h_suffix[i - p - 1];
-                    for j in 0..tcols {
-                        t_suffix[j] -= scalar * workspace[j];
-                    }
+                let scalar = tau * h_suffix[i - p - 1];
+                for j in 0..tcols {
+                    t_suffix[j] -= scalar * workspace[j];
                 }
             }
             offset += cols;
@@ -167,32 +168,34 @@ impl AutumnDecomp {
             let tau = n[p];
             offset -= cols;
             let h_suffix = &h[offset + p + 1..offset + cols];
-            for i in p..trows {
-                let toffset = i * tcols;
+            {
+                let toffset = p * tcols;
                 let t_suffix = &t[toffset..toffset + tcols]; 
-                if i == p {
-                    for j in 0..tcols {
-                        workspace[j] = t_suffix[j];
-                    }
-                } else {
-                    let scalar = h_suffix[i - p - 1];
-                    for j in 0..tcols {
-                        workspace[j] += scalar * t_suffix[j];
-                    }
+                for j in 0..tcols {
+                    workspace[j] = t_suffix[j];
                 }
             }
-            for i in p..trows {
+            for i in p+1..trows {
+                let toffset = i * tcols;
+                let t_suffix = &t[toffset..toffset + tcols]; 
+                let scalar = h_suffix[i - p - 1];
+                for j in 0..tcols {
+                    workspace[j] += scalar * t_suffix[j];
+                }
+            }
+            {
+                let toffset = p * tcols;
+                let t_suffix = &mut t[toffset..toffset + tcols]; 
+                for j in 0..tcols {
+                    t_suffix[j] -= tau * workspace[j];
+                }
+            }
+            for i in p+1..trows {
                 let toffset = i * tcols;
                 let t_suffix = &mut t[toffset..toffset + tcols]; 
-                if i == p {
-                    for j in 0..tcols {
-                        t_suffix[j] -= tau * workspace[j];
-                    }
-                } else {
-                    let scalar = tau * h_suffix[i - p - 1];
-                    for j in 0..tcols {
-                        t_suffix[j] -= scalar * workspace[j];
-                    }
+                let scalar = tau * h_suffix[i - p - 1];
+                for j in 0..tcols {
+                    t_suffix[j] -= scalar * workspace[j];
                 }
             }
         }
