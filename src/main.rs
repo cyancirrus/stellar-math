@@ -22,34 +22,32 @@ pub struct AutumnDecomp {
     rows: usize,
 }
 
-impl HhMatrixRowMajor {
-    fn params(v: &mut [f32], card: usize, rows: usize, p: usize) -> f32 {
-        let mut max_element = 0f32;
-        for val in v.iter() {
-            let v = val.abs();
-            if v > max_element {
-                max_element = v
-            };
-        }
-        if max_element == 0f32 {
-            return max_element;
-        }
-        let mut magnitude_squared = 0f32;
-        let inv_max_element = 1f32 / max_element;
-        for val in v.iter_mut() {
-            *val *= inv_max_element;
-            magnitude_squared += *val * *val;
-        }
-        // let g = v[0].signum() * magnitude_squared.sqrt();
-        let g = -v[0].signum() * magnitude_squared.sqrt();
-        let scale = v[0] + g;
-        let inv_scale = 1f32 / scale;
-        for val in v[1..].iter_mut() {
-            *val *= inv_scale;
-        }
-        v[0] = -g * max_element;
-        scale / g
+fn params(v: &mut [f32], card: usize, rows: usize, p: usize) -> f32 {
+    let mut max_element = 0f32;
+    for val in v.iter() {
+        let v = val.abs();
+        if v > max_element {
+            max_element = v
+        };
     }
+    if max_element == 0f32 {
+        return max_element;
+    }
+    let mut magnitude_squared = 0f32;
+    let inv_max_element = 1f32 / max_element;
+    for val in v.iter_mut() {
+        *val *= inv_max_element;
+        magnitude_squared += *val * *val;
+    }
+    // let g = v[0].signum() * magnitude_squared.sqrt();
+    let g = -v[0].signum() * magnitude_squared.sqrt();
+    let scale = v[0] + g;
+    let inv_scale = 1f32 / scale;
+    for val in v[1..].iter_mut() {
+        *val *= inv_scale;
+    }
+    v[0] = -g * max_element;
+    scale / g
 }
 
 impl AutumnDecomp {
@@ -66,30 +64,24 @@ impl AutumnDecomp {
             let offset = p * cols;
             let (projection, target) = h.data.split_at_mut(offset + cols);
             let projection = &mut projection[offset + p..offset + cols];
-            *tau = HhMatrixRowMajor::params(projection, card, rows, p);
+            *tau = params(projection, card, rows, p);
             let proj_suffix = &projection[1..];
             let mut split_range = proj_suffix.len();
-            // w' = v'H
             for i in 0..active_range {
                 let roffset = i * cols;
                 let mut wi = target[roffset + p];
-                let mut targ_suffix = &target[roffset + p + 1..roffset + cols];
-                targ_suffix = &targ_suffix[..split_range];
-                for j in 0..split_range {
-                    wi += targ_suffix[j] * proj_suffix[j];
+                {
+                    let mut targ_suffix = &mut target[roffset + p + 1..roffset + cols];
+                    targ_suffix = &mut targ_suffix[..split_range];
+                    for j in 0..split_range {
+                        wi += targ_suffix[j] * proj_suffix[j];
+                    }
+                    wi *= *tau;
+                    for j in 0..split_range {
+                        targ_suffix[j] -= wi * proj_suffix[j];
+                    }
                 }
-                workspace[i] = wi;
-            }
-            // H -= T vw'
-            for i in 0..active_range {
-                let roffset = i * cols;
-                let scalar = *tau * workspace[i];
-                target[roffset + p] -= scalar;
-                let mut targ_suffix = &mut target[roffset + p + 1..roffset + cols];
-                targ_suffix = &mut targ_suffix[..split_range];
-                for j in 0..split_range {
-                    targ_suffix[j] -= scalar * proj_suffix[j];
-                }
+                target[roffset + p] -= wi;
             }
         }
         Self {
@@ -104,11 +96,11 @@ impl AutumnDecomp {
 
 impl AutumnDecomp {
     pub fn left_apply_q(&self, target: &mut NdArray, workspace: &mut [f32]) {
-        // Q * A 
+        // Q * A
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         // implied dimension of q ~ cols x cols
-        debug_assert_eq!(tcols, cols);
+        debug_assert_eq!(cols, trows);
         debug_assert!(workspace.len() >= tcols);
         let h = &self.h.data;
         let t = &mut target.data;
@@ -120,14 +112,11 @@ impl AutumnDecomp {
             let h_suffix = &h[offset + p + 1..offset + cols];
             {
                 let toffset = p * tcols;
-                let t_suffix = &t[toffset..toffset + tcols]; 
-                for j in 0..tcols {
-                    workspace[j] = t_suffix[j];
-                }
+                workspace.copy_from_slice(&t[toffset..toffset + tcols]);
             }
-            for i in p+1..trows {
+            for i in p + 1..trows {
                 let toffset = i * tcols;
-                let t_suffix = &t[toffset..toffset + tcols]; 
+                let t_suffix = &t[toffset..toffset + tcols];
                 let scalar = h_suffix[i - p - 1];
                 for j in 0..tcols {
                     workspace[j] += scalar * t_suffix[j];
@@ -135,14 +124,14 @@ impl AutumnDecomp {
             }
             {
                 let toffset = p * tcols;
-                let t_suffix = &mut t[toffset..toffset + tcols]; 
+                let t_suffix = &mut t[toffset..toffset + tcols];
                 for j in 0..tcols {
                     t_suffix[j] -= tau * workspace[j];
                 }
             }
-            for i in p+1..trows {
+            for i in p + 1..trows {
                 let toffset = i * tcols;
-                let t_suffix = &mut t[toffset..toffset + tcols]; 
+                let t_suffix = &mut t[toffset..toffset + tcols];
                 let scalar = tau * h_suffix[i - p - 1];
                 for j in 0..tcols {
                     t_suffix[j] -= scalar * workspace[j];
@@ -151,13 +140,12 @@ impl AutumnDecomp {
             offset += cols;
         }
     }
-    // TODO: need to test
     pub fn left_apply_qt(&self, target: &mut NdArray, workspace: &mut [f32]) {
-        // Q * A 
+        // Q * A
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         // implied dimension of q ~ cols x cols
-        debug_assert_eq!(tcols, cols);
+        debug_assert_eq!(cols, trows);
         debug_assert!(workspace.len() >= tcols);
         let h = &self.h.data;
         let t = &mut target.data;
@@ -170,14 +158,11 @@ impl AutumnDecomp {
             let h_suffix = &h[offset + p + 1..offset + cols];
             {
                 let toffset = p * tcols;
-                let t_suffix = &t[toffset..toffset + tcols]; 
-                for j in 0..tcols {
-                    workspace[j] = t_suffix[j];
-                }
+                workspace.copy_from_slice(&t[toffset..toffset + tcols]);
             }
-            for i in p+1..trows {
+            for i in p + 1..trows {
                 let toffset = i * tcols;
-                let t_suffix = &t[toffset..toffset + tcols]; 
+                let t_suffix = &t[toffset..toffset + tcols];
                 let scalar = h_suffix[i - p - 1];
                 for j in 0..tcols {
                     workspace[j] += scalar * t_suffix[j];
@@ -185,14 +170,14 @@ impl AutumnDecomp {
             }
             {
                 let toffset = p * tcols;
-                let t_suffix = &mut t[toffset..toffset + tcols]; 
+                let t_suffix = &mut t[toffset..toffset + tcols];
                 for j in 0..tcols {
                     t_suffix[j] -= tau * workspace[j];
                 }
             }
-            for i in p+1..trows {
+            for i in p + 1..trows {
                 let toffset = i * tcols;
-                let t_suffix = &mut t[toffset..toffset + tcols]; 
+                let t_suffix = &mut t[toffset..toffset + tcols];
                 let scalar = tau * h_suffix[i - p - 1];
                 for j in 0..tcols {
                     t_suffix[j] -= scalar * workspace[j];
@@ -351,6 +336,7 @@ impl AutumnDecomp {
             target.resize_rows(cols);
         }
     }
+    // TODO: Test this fn
     pub fn right_apply_lt(&self, target: &mut NdArray, workspace: &mut [f32]) {
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
@@ -452,7 +438,6 @@ fn test_autumn_orthogonal_left_qqt() {
     autumn.left_apply_qt(&mut i, &mut workspace);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
-
 
 fn main() {
     test_autumn_reconstruct();
