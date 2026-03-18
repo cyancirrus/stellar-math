@@ -290,8 +290,14 @@ impl AutumnDecomp {
         for i in 0..rows {
             let offset = i * tcols;
             let t_suffix = &mut t[offset..offset + tcols];
-            workspace.fill(0f32);
-            for k in (0..tcols) {
+            {
+                let outer_suffix = &h[..=i];
+                let scalar = t_suffix[0];
+                for j in 0..=i {
+                    workspace[j] = scalar * outer_suffix[j];
+                }
+            }
+            for k in (1..tcols) {
                 let roffset = k * cols;
                 let outer_suffix = &h[roffset..=roffset + i];
                 let scalar = t_suffix[k];
