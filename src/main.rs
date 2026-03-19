@@ -292,7 +292,7 @@ impl AutumnDecomp {
         let t = &mut target.data;
         for i in 0..rows {
             let offset = i * tcols;
-            let t_suffix = &mut t[offset..offset + tcols];
+            let t_suffix = &mut t[offset..=offset + i];
             {
                 let outer_suffix = &h[..=i];
                 let scalar = t_suffix[0];
@@ -300,7 +300,7 @@ impl AutumnDecomp {
                     workspace[j] = scalar * outer_suffix[j];
                 }
             }
-            for k in (1..tcols) {
+            for k in (1..=i) {
                 let roffset = k * cols;
                 let outer_suffix = &h[roffset..=roffset + i];
                 let scalar = t_suffix[k];
@@ -308,7 +308,7 @@ impl AutumnDecomp {
                     workspace[j] += scalar * outer_suffix[j];
                 }
             }
-            t_suffix.copy_from_slice(&workspace);
+            t_suffix.copy_from_slice(&workspace[..=i]);
         }
         if cols < tcols {
             target.resize_cols(cols);
@@ -349,7 +349,6 @@ impl AutumnDecomp {
             target.resize_rows(cols);
         }
     }
-    // TODO: Test this fn
     pub fn right_apply_lt(&self, target: &mut NdArray, workspace: &mut [f32]) {
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
@@ -378,10 +377,13 @@ impl AutumnDecomp {
         }
     }
 }
-
-#[test]
 fn test_autumn_reconstruct() {
-    let n = 4;
+    let dims = [1, 2, 3, 8, 16];
+    for n in dims {
+        test_n_autumn_reconstruct(n);
+    }
+}
+fn test_n_autumn_reconstruct(n: usize) {
     let a = generate_random_matrix(n, n);
     let expected = a.clone();
     let mut workspace = vec![0f32; n];
@@ -390,9 +392,25 @@ fn test_autumn_reconstruct() {
     autumn.right_apply_l(&mut i, &mut workspace);
     autumn.right_apply_q(&mut i);
     assert!(approx_vector_eq(&i.data, &expected.data));
+    let mut i = create_identity_matrix(n);
+    autumn.left_apply_q(&mut i, &mut workspace);
+    autumn.left_apply_l(&mut i, &mut workspace);
+    assert!(approx_vector_eq(&i.data, &expected.data));
+    let mut i = create_identity_matrix(n);
+    autumn.left_apply_l(&mut i, &mut workspace);
+    autumn.right_apply_q(&mut i);
+    assert!(approx_vector_eq(&i.data, &expected.data));
+    let mut i = create_identity_matrix(n);
+    autumn.left_apply_lt(&mut i, &mut workspace);
+    autumn.left_apply_qt(&mut i, &mut workspace);
+    i.transpose_square();
+    assert!(approx_vector_eq(&i.data, &expected.data));
+    let mut i = create_identity_matrix(n);
+    autumn.right_apply_qt(&mut i, &mut workspace);
+    autumn.right_apply_lt(&mut i, &mut workspace);
+    i.transpose_square();
+    assert!(approx_vector_eq(&i.data, &expected.data));
 }
-
-#[test]
 fn test_autumn_orthogonal_qqt() {
     let n = 4;
     let a = generate_random_matrix(n, n);
@@ -404,8 +422,6 @@ fn test_autumn_orthogonal_qqt() {
     autumn.right_apply_qt(&mut i, &mut workspace);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
-
-#[test]
 fn test_autumn_orthogonal_qtq() {
     let n = 4;
     let a = generate_random_matrix(n, n);
@@ -417,8 +433,6 @@ fn test_autumn_orthogonal_qtq() {
     autumn.right_apply_q(&mut i);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
-
-#[test]
 fn test_decomp_rectangle() {
     // A * Q
     let (m, n) = (4, 8);
@@ -430,10 +444,10 @@ fn test_decomp_rectangle() {
     let expected = i.clone();
     autumn.right_apply_q(&mut i);
     autumn.right_apply_qt(&mut i, &mut workspace);
+    autumn.right_apply_qt(&mut i, &mut workspace);
+    autumn.right_apply_q(&mut i);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
-
-#[test]
 fn test_autumn_orthogonal_left_qtq() {
     let n = 4;
     let a = generate_random_matrix(n, n);
@@ -443,10 +457,10 @@ fn test_autumn_orthogonal_left_qtq() {
     let expected = i.clone();
     autumn.left_apply_qt(&mut i, &mut workspace);
     autumn.left_apply_q(&mut i, &mut workspace);
+    autumn.left_apply_q(&mut i, &mut workspace);
+    autumn.left_apply_qt(&mut i, &mut workspace);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
-
-#[test]
 fn test_autumn_orthogonal_left_qqt() {
     let n = 4;
     let a = generate_random_matrix(n, n);
@@ -458,8 +472,6 @@ fn test_autumn_orthogonal_left_qqt() {
     autumn.left_apply_qt(&mut i, &mut workspace);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
-
-#[test]
 fn test_autumn_q_transpose_consistency() {
     let (m, n) = (4, 4);
     let a = generate_random_matrix(m, n);
@@ -474,10 +486,11 @@ fn test_autumn_q_transpose_consistency() {
     let mut right_qt = create_identity_matrix(n);
     autumn.right_apply_qt(&mut right_qt, &mut workspace);
 
-    assert!(approx_vector_eq(&left_q_t.data, &right_qt.data), "Q left vs QT right failed");
+    assert!(
+        approx_vector_eq(&left_q_t.data, &right_qt.data),
+        "Q left vs QT right failed"
+    );
 }
-
-#[test]
 fn test_autumn_qt_transpose_consistency() {
     let (m, n) = (4, 4);
     let a = generate_random_matrix(m, n);
@@ -492,10 +505,11 @@ fn test_autumn_qt_transpose_consistency() {
     let mut right_q = create_identity_matrix(n);
     autumn.right_apply_q(&mut right_q);
 
-    assert!(approx_vector_eq(&left_qt_t.data, &right_q.data), "QT left vs Q right failed");
+    assert!(
+        approx_vector_eq(&left_qt_t.data, &right_q.data),
+        "QT left vs Q right failed"
+    );
 }
-
-#[test]
 fn test_autumn_l_transpose_consistency() {
     let n = 4;
     let a = generate_random_matrix(n, n);
@@ -509,28 +523,27 @@ fn test_autumn_l_transpose_consistency() {
     let left_l_t = left_l.transpose();
 
     let mut right_lt = create_identity_matrix(n);
-    // Note: right_apply_lt is currently marked as TODO in your code
     autumn.right_apply_lt(&mut right_lt, &mut workspace);
 
-    assert!(approx_vector_eq(&left_l_t.data, &right_lt.data), "L left vs LT right failed");
+    assert!(
+        approx_vector_eq(&left_l_t.data, &right_lt.data),
+        "L left vs LT right failed"
+    );
 }
-
-#[test]
 fn test_autumn_lt_transpose_consistency() {
-    let n = 4;
+    let n = 3;
     let a = generate_random_matrix(n, n);
     let mut workspace = vec![0f32; n];
     let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
-
-    // Test: (L^T * I)^T == I^T * L
     let mut left_lt = create_identity_matrix(n);
     autumn.left_apply_lt(&mut left_lt, &mut workspace);
     let left_lt_t = left_lt.transpose();
-
     let mut right_l = create_identity_matrix(n);
     autumn.right_apply_l(&mut right_l, &mut workspace);
-
-    assert!(approx_vector_eq(&left_lt_t.data, &right_l.data), "LT left vs L right failed");
+    assert!(
+        approx_vector_eq(&left_lt_t.data, &right_l.data),
+        "LT left vs L right failed"
+    );
 }
 
 fn main() {
@@ -540,50 +553,8 @@ fn main() {
     test_decomp_rectangle();
     test_autumn_orthogonal_left_qtq();
     test_autumn_orthogonal_left_qqt();
-    // // let mut a = NdArray::new(vec![2, 2], vec![4f32,1f32,2f32,3f32]);
-    // let n = 3;
-    // let a = generate_random_matrix(n, n);
-    // let mut workspace = vec![0f32;n];
-    // let autumn = AutumnDecomp::new(a.clone());
-    // println!("lq_decomp {:?}", autumn.h);
-    // let mut i = create_identity_matrix(n);
-    // autumn.left_apply_l(&mut i);
-    // println!("left apply l {i:?}");
-    // let mut i = create_identity_matrix(n);
-    // autumn.left_apply_lt(&mut i);
-    // println!("left apply lt {i:?}");
-
-    // let mut a = NdArray::new(vec![2, 2], vec![1f32, 0f32, 0f32, 1f32]);
-    // let mut workspace = vec![0f32;2];
-    // let autumn = AutumnDecomp::new(a.clone());
-    // println!("lq_decomp {:?}", autumn.h);
-    // println!("lq_tau {:?}", autumn.t);
-    // let mut i = create_identity_matrix(2);
-    // println!("input {a:?}");
-    // autumn.right_apply_l(&mut i);
-    // println!("midstep {i:?}");
-    // autumn.right_apply_q(&mut i);
-    // println!("output {i:?}");
-
-    // let mut a = NdArray::new(vec![1, 1], vec![4f32]);
-    // let mut workspace = vec![0f32;1];
-    // let autumn = AutumnDecomp::new(a.clone());
-    // println!("lq_decomp {:?}", autumn.h);
-    // println!("lq_tau {:?}", autumn.t);
-    // let mut i = create_identity_matrix(1);
-    // println!("input {a:?}");
-    // autumn.right_apply_l(&mut i);
-    // println!("midstep {i:?}");
-    // autumn.right_apply_q(&mut i);
-    // println!("output {i:?}");
-
-    // let mut a = NdArray::new(vec![2, 2], vec![4f32,1f32,2f32,3f32]);
-    // let mut workspace = vec![0f32;2];
-    // let autumn = AutumnDecomp::new(a.clone());
-    // println!("lq_decomp {:?}", autumn.h);
-    // let mut i = create_identity_matrix(2);
-    // println!("input {a:?}");
-    // autumn.right_apply_l(&mut i);
-    // autumn.right_apply_q(&mut i);
-    // println!("output {i:?}");
+    test_autumn_qt_transpose_consistency();
+    test_autumn_lt_transpose_consistency();
+    test_autumn_l_transpose_consistency();
+    test_autumn_q_transpose_consistency();
 }

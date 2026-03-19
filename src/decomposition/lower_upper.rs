@@ -6,6 +6,7 @@ pub struct LuPivotDecompose {
     pivots: Vec<usize>,
     pub matrix: NdArray,
 }
+//  TODO: copy from slice not whatever this is
 impl LuPivotDecompose {
     pub fn new(mut matrix: NdArray) -> Self {
         // Croute
@@ -320,6 +321,7 @@ impl LuPivotDecompose {
             }
         }
     }
+    // TODO: migrate to ikj, j is inner most loop this iteration doesn't make sense
     pub fn forward_solve_inplace(&self, y: &mut NdArray) {
         // transforms y -> z
         debug_assert_eq!(self.matrix.dims[1], y.dims[0]);
