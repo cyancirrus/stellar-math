@@ -1,6 +1,5 @@
 use crate::structure::ndarray::NdArray;
 
-
 ///  AutumnDecomp
 /// QrDecomp
 ///
@@ -72,7 +71,7 @@ impl AutumnDecomp {
                 target[roffset + p] -= wi;
             }
         }
-        Self { h, t}
+        Self { h, t }
     }
 }
 
@@ -397,12 +396,12 @@ impl AutumnDecomp {
 
 #[cfg(test)]
 mod test_lq {
+    use super::*;
     use crate::algebra::ndmethods::create_identity_matrix;
     use crate::algebra::ndmethods::matrix_mult;
     use crate::equality::approximate::approx_vector_eq;
     use crate::random::generation::generate_random_matrix;
     use crate::structure::ndarray::NdArray;
-    use super::*;
 
     fn test_retrieve_l(a: &AutumnDecomp) -> NdArray {
         let mut h = a.h.clone();
@@ -450,7 +449,7 @@ mod test_lq {
             test_lower_rectangle_applys(i, k, j);
         }
     }
-    fn test_n_dim_rectangle(i:usize, k:usize, j:usize) {
+    fn test_n_dim_rectangle(i: usize, k: usize, j: usize) {
         let mut workspace = vec![f32::NAN; 20];
         let matrix = generate_random_matrix(i, k);
         let rq = generate_random_matrix(j, k);
@@ -497,7 +496,7 @@ mod test_lq {
         autumn.right_apply_lt(&mut result);
         assert!(approx_vector_eq(&expected.data, &result.data));
     }
-    fn test_lower_rectangle_applys(i:usize, k:usize, j:usize) {
+    fn test_lower_rectangle_applys(i: usize, k: usize, j: usize) {
         let a = generate_random_matrix(i, k);
         let b_lt = generate_random_matrix(i, j);
         // let b_rt = generate_random_matrix(j, i);
@@ -661,5 +660,4 @@ mod test_lq {
             "LT left vs L right failed"
         );
     }
-
 }

@@ -1,5 +1,5 @@
 use rand::seq::SliceRandom;
-use stellar::learning::decision_tree::{DecisionTree};
+use stellar::learning::decision_tree::DecisionTree;
 use stellar::learning::gradient_boost::GradientBoost;
 use stellar::learning::random_forest::RandomForest;
 
