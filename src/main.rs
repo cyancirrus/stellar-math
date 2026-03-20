@@ -89,11 +89,14 @@ impl AutumnDecomp {
 impl AutumnDecomp {
     pub fn left_apply_q(&self, target: &mut NdArray, workspace: &mut [f32]) {
         // Q * A
+        // implied dimension of q ~ cols x cols
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        // implied dimension of q ~ cols x cols
         debug_assert_eq!(cols, trows);
         debug_assert!(workspace.len() >= tcols);
+        if cols > trows {
+            target.resize_rows(cols);
+        }
         let h = &self.h.data;
         let t = &mut target.data;
         let n = &self.t;
@@ -133,14 +136,20 @@ impl AutumnDecomp {
             }
             offset += cols;
         }
+        if cols < trows {
+            target.resize_rows(cols);
+        }
     }
     pub fn left_apply_qt(&self, target: &mut NdArray, workspace: &mut [f32]) {
         // Q * A
+        // implied dimension of q ~ cols x cols
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        // implied dimension of q ~ cols x cols
         debug_assert_eq!(cols, trows);
         debug_assert!(workspace.len() >= tcols);
+        if cols > trows {
+            target.resize_rows(cols);
+        }
         let h = &self.h.data;
         let t = &mut target.data;
         let n = &self.t;
@@ -184,13 +193,18 @@ impl AutumnDecomp {
                 }
             }
         }
+        if cols < trows {
+            target.resize_rows(cols);
+        }
     }
     pub fn right_apply_q(&self, target: &mut NdArray) {
         // A * Q
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        // implied dimension of q ~ cols x cols
         debug_assert_eq!(tcols, cols);
+        if cols > tcols {
+            target.resize_cols(cols);
+        }
         let h = &self.h.data;
         let t = &mut target.data;
         let n = &self.t;
@@ -216,13 +230,18 @@ impl AutumnDecomp {
                 t[roffset + p] -= wi;
             }
         }
+        if cols < tcols {
+            target.resize_cols(cols);
+        }
     }
     pub fn right_apply_qt(&self, target: &mut NdArray) {
         // A * Q'
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        // implied dimension of q' ~ cols x cols
         debug_assert_eq!(tcols, cols);
+        if cols > tcols {
+            target.resize_cols(cols);
+        }
         let h = &self.h.data;
         let t = &mut target.data;
         let n = &self.t;
@@ -248,6 +267,9 @@ impl AutumnDecomp {
                 t[roffset + p] -= wi;
             }
             offset += cols;
+        }
+        if cols < tcols {
+            target.resize_cols(cols);
         }
     }
     pub fn left_apply_l(&self, target: &mut NdArray, workspace: &mut [f32]) {
@@ -355,6 +377,9 @@ impl AutumnDecomp {
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(tcols, rows);
+        if rows > tcols {
+            target.resize_cols(rows);
+        }
         let mut t = &mut target.data;
         let mut h = &self.h.data;
         let mut dij;
@@ -373,6 +398,9 @@ impl AutumnDecomp {
                 t_suffix[j] = dij;
             }
             toffset += tcols;
+        }
+        if rows < tcols {
+            target.resize_cols(rows);
         }
     }
 }
