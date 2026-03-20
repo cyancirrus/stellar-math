@@ -291,6 +291,7 @@ impl AutumnDecomp {
             target.resize_cols(cols);
         }
         let t = &mut target.data;
+        let mut workspace = &mut workspace[..tcols];
         let mut offset = 0;
         let mut roffset;
         for i in 0..trows {
