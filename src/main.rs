@@ -312,12 +312,12 @@ impl AutumnDecomp {
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(rows, trows);
-        let h = &self.h.data;
+        debug_assert!(workspace.len() >= tcols);
         if rows > trows {
             target.resize_rows(rows);
         }
+        let h = &self.h.data;
         let t = &mut target.data;
-        debug_assert!(workspace.len() >= cols);
         let mut workspace = &mut workspace[..tcols];
         for i in 0..rows {
             let offset = i * cols;
@@ -416,7 +416,6 @@ fn test_retrieve_l(a: &AutumnDecomp) -> NdArray {
     h.resize_cols(rows);
     h
 }
-
 fn test_autumn_reconstruct() {
     let dims = [1, 2, 3, 8, 16];
     for n in dims {
@@ -430,7 +429,6 @@ fn test_autumn_orthogonal() {
         test_n_autumn_orthogonal_right(n);
     }
 }
-
 fn test_dim_rectangle() {
     // cols >= rows
     let ikj = [
@@ -450,7 +448,6 @@ fn test_dim_rectangle() {
         test_lower_rectangle_applys(i, k, j);
     }
 }
-
 fn test_n_dim_rectangle(i:usize, k:usize, j:usize) {
     let mut workspace = vec![f32::INFINITY; 20];
     let matrix = generate_random_matrix(i, k);
@@ -469,7 +466,6 @@ fn test_n_dim_rectangle(i:usize, k:usize, j:usize) {
     autumn.left_apply_q(&mut lq.clone(), &mut workspace);
     autumn.left_apply_qt(&mut lq.clone(), &mut workspace);
 }
-
 fn test_lower_applys() {
     let n = 4;
     let a = generate_random_matrix(n, n);
@@ -498,7 +494,6 @@ fn test_lower_applys() {
     autumn.right_apply_lt(&mut result);
     assert!(approx_vector_eq(&expected.data, &result.data));
 }
-
 fn test_lower_rectangle_applys(i:usize, k:usize, j:usize) {
     let a = generate_random_matrix(i, k);
     let b_lt = generate_random_matrix(i, j);
