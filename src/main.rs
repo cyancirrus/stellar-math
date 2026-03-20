@@ -18,8 +18,6 @@ struct HhMatrixRowMajor {}
 pub struct AutumnDecomp {
     pub h: NdArray,
     pub t: Vec<f32>,
-    cols: usize,
-    rows: usize,
 }
 
 fn params(v: &mut [f32], rows: usize, p: usize) -> f32 {
@@ -82,7 +80,7 @@ impl AutumnDecomp {
                 target[roffset + p] -= wi;
             }
         }
-        Self { h, t, rows, cols }
+        Self { h, t}
     }
 }
 
@@ -90,7 +88,7 @@ impl AutumnDecomp {
     pub fn left_apply_q(&self, target: &mut NdArray, workspace: &mut [f32]) {
         // Q * A
         // implied dimension of q ~ cols x cols
-        let (rows, cols) = (self.rows, self.cols);
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(cols, trows);
         debug_assert!(workspace.len() >= tcols);
@@ -143,7 +141,7 @@ impl AutumnDecomp {
     pub fn left_apply_qt(&self, target: &mut NdArray, workspace: &mut [f32]) {
         // Q * A
         // implied dimension of q ~ cols x cols
-        let (rows, cols) = (self.rows, self.cols);
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(cols, trows);
         debug_assert!(workspace.len() >= tcols);
@@ -199,7 +197,7 @@ impl AutumnDecomp {
     }
     pub fn right_apply_q(&self, target: &mut NdArray) {
         // A * Q
-        let (rows, cols) = (self.rows, self.cols);
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(tcols, cols);
         if cols > tcols {
@@ -236,7 +234,7 @@ impl AutumnDecomp {
     }
     pub fn right_apply_qt(&self, target: &mut NdArray) {
         // A * Q'
-        let (rows, cols) = (self.rows, self.cols);
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(tcols, cols);
         if cols > tcols {
@@ -273,7 +271,7 @@ impl AutumnDecomp {
         }
     }
     pub fn left_apply_l(&self, target: &mut NdArray, workspace: &mut [f32]) {
-        let (rows, cols) = (self.rows, self.cols);
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(rows, trows);
         debug_assert!(workspace.len() >= tcols);
@@ -309,7 +307,7 @@ impl AutumnDecomp {
         }
     }
     pub fn left_apply_lt(&self, target: &mut NdArray, workspace: &mut [f32]) {
-        let (rows, cols) = (self.rows, self.cols);
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(rows, trows);
         debug_assert!(workspace.len() >= tcols);
@@ -345,7 +343,7 @@ impl AutumnDecomp {
         }
     }
     pub fn right_apply_l(&self, target: &mut NdArray) {
-        let (rows, cols) = (self.rows, self.cols);
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(tcols, rows);
         if rows > tcols {
@@ -374,7 +372,7 @@ impl AutumnDecomp {
         }
     }
     pub fn right_apply_lt(&self, target: &mut NdArray) {
-        let (rows, cols) = (self.rows, self.cols);
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(tcols, rows);
         if rows > tcols {
