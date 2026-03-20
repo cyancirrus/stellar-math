@@ -218,13 +218,12 @@ impl AutumnDecomp {
             }
         }
     }
-    pub fn right_apply_qt(&self, target: &mut NdArray, workspace: &mut [f32]) {
+    pub fn right_apply_qt(&self, target: &mut NdArray) {
         // A * Q'
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         // implied dimension of q' ~ cols x cols
         debug_assert_eq!(tcols, cols);
-        debug_assert!(workspace.len() >= trows);
         let h = &self.h.data;
         let t = &mut target.data;
         let n = &self.t;
@@ -447,7 +446,7 @@ fn test_n_autumn_reconstruct(n: usize) {
     i.transpose_square();
     assert!(approx_vector_eq(&i.data, &expected.data));
     let mut i = create_identity_matrix(n);
-    autumn.right_apply_qt(&mut i, &mut workspace);
+    autumn.right_apply_qt(&mut i);
     autumn.right_apply_lt(&mut i);
     i.transpose_square();
     assert!(approx_vector_eq(&i.data, &expected.data));
@@ -459,9 +458,9 @@ fn test_n_autumn_orthogonal_right(n: usize) {
     let mut i = create_identity_matrix(n);
     let expected = i.clone();
     autumn.right_apply_q(&mut i);
-    autumn.right_apply_qt(&mut i, &mut workspace);
+    autumn.right_apply_qt(&mut i);
     assert!(approx_vector_eq(&i.data, &expected.data));
-    autumn.right_apply_qt(&mut i, &mut workspace);
+    autumn.right_apply_qt(&mut i);
     autumn.right_apply_q(&mut i);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
@@ -488,9 +487,9 @@ fn test_decomp_rectangle() {
     let mut i = create_identity_matrix(n);
     let expected = i.clone();
     autumn.right_apply_q(&mut i);
-    autumn.right_apply_qt(&mut i, &mut workspace);
+    autumn.right_apply_qt(&mut i);
     assert!(approx_vector_eq(&i.data, &expected.data));
-    autumn.right_apply_qt(&mut i, &mut workspace);
+    autumn.right_apply_qt(&mut i);
     autumn.right_apply_q(&mut i);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
@@ -506,7 +505,7 @@ fn test_autumn_q_transpose_consistency() {
     let left_q_t = left_q.transpose();
 
     let mut right_qt = create_identity_matrix(n);
-    autumn.right_apply_qt(&mut right_qt, &mut workspace);
+    autumn.right_apply_qt(&mut right_qt);
 
     assert!(
         approx_vector_eq(&left_q_t.data, &right_qt.data),
