@@ -280,35 +280,6 @@ impl AutumnDecomp {
             t[toffset..toffset + tcols].copy_from_slice(&workspace);
         }
     }
-    pub fn right_apply_l(&self, target: &mut NdArray) {
-        let (rows, cols) = (self.rows, self.cols);
-        let (trows, tcols) = (target.dims[0], target.dims[1]);
-        debug_assert_eq!(target.dims[1], self.h.dims[0]);
-        if cols > tcols {
-            target.resize_cols(cols);
-        }
-        let t = &mut target.data;
-        let h = &self.h.data;
-        let mut offset = 0;
-        let mut roffset;
-        for i in 0..trows {
-            roffset = 0;
-            let t_suffix = &mut t[offset..offset + tcols];
-            for k in 0..rows {
-                let outer_suffix = &h[roffset..=roffset + k];
-                let scalar = t_suffix[k];
-                for j in 0..k {
-                    t_suffix[j] += scalar * outer_suffix[j];
-                }
-                t_suffix[k] = scalar * outer_suffix[k];
-                roffset += cols;
-            }
-            offset += tcols;
-        }
-        if cols < tcols {
-            target.resize_cols(cols);
-        }
-    }
     pub fn left_apply_lt(&self, target: &mut NdArray, workspace: &mut [f32]) {
         debug_assert_eq!(target.dims[0], self.h.dims[0]);
         let (rows, cols) = (self.rows, self.cols);
@@ -342,6 +313,35 @@ impl AutumnDecomp {
         }
         if cols < trows {
             target.resize_rows(cols);
+        }
+    }
+    pub fn right_apply_l(&self, target: &mut NdArray) {
+        let (rows, cols) = (self.rows, self.cols);
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        debug_assert_eq!(target.dims[1], self.h.dims[0]);
+        if cols > tcols {
+            target.resize_cols(cols);
+        }
+        let t = &mut target.data;
+        let h = &self.h.data;
+        let mut offset = 0;
+        let mut roffset;
+        for i in 0..trows {
+            roffset = 0;
+            let t_suffix = &mut t[offset..offset + tcols];
+            for k in 0..rows {
+                let outer_suffix = &h[roffset..=roffset + k];
+                let scalar = t_suffix[k];
+                for j in 0..k {
+                    t_suffix[j] += scalar * outer_suffix[j];
+                }
+                t_suffix[k] = scalar * outer_suffix[k];
+                roffset += cols;
+            }
+            offset += tcols;
+        }
+        if cols < tcols {
+            target.resize_cols(cols);
         }
     }
     pub fn right_apply_lt(&self, target: &mut NdArray) {
