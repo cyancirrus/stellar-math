@@ -1,6 +1,6 @@
 #![allow(unused)]
-use stellar::algebra::ndmethods::{lt_matrix_mult, matrix_mult};
 use stellar::algebra::ndmethods::create_identity_matrix;
+use stellar::algebra::ndmethods::{lt_matrix_mult, matrix_mult};
 use stellar::equality::approximate::approx_vector_eq;
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
@@ -378,7 +378,7 @@ fn test_retrieve_l(a: &AutumnDecomp) -> NdArray {
     let mut h = a.h.clone();
     let (rows, cols) = (h.dims[0], h.dims[1]);
     for i in 0..rows {
-        for j in i+1..cols {
+        for j in i + 1..cols {
             h.data[i * cols + j] = 0f32;
         }
     }
@@ -396,18 +396,18 @@ fn test_lower_applys() {
     let mut result = b.clone();
     autumn.left_apply_l(&mut result, &mut workspace);
     assert!(approx_vector_eq(&expected.data, &result.data));
-    
+
     let expected = matrix_mult(&b, &l);
     let mut result = b.clone();
     autumn.right_apply_l(&mut result);
     assert!(approx_vector_eq(&expected.data, &result.data));
-    
+
     let lt = l.transpose();
     let expected = matrix_mult(&lt, &b);
     let mut result = b.clone();
     autumn.left_apply_lt(&mut result, &mut workspace);
     assert!(approx_vector_eq(&expected.data, &result.data));
-    
+
     let expected = matrix_mult(&b, &lt);
     let mut result = b.clone();
     autumn.right_apply_lt(&mut result, &mut workspace);
@@ -426,7 +426,6 @@ fn test_autumn_orthogonal() {
         test_n_autumn_orthogonal_left(n);
         test_n_autumn_orthogonal_right(n);
     }
-
 }
 fn test_n_autumn_reconstruct(n: usize) {
     let a = generate_random_matrix(n, n);
@@ -456,7 +455,7 @@ fn test_n_autumn_reconstruct(n: usize) {
     i.transpose_square();
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
-fn test_n_autumn_orthogonal_right(n:usize) {
+fn test_n_autumn_orthogonal_right(n: usize) {
     let a = generate_random_matrix(n, n);
     let mut workspace = vec![0f32; n];
     let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
@@ -469,7 +468,7 @@ fn test_n_autumn_orthogonal_right(n:usize) {
     autumn.right_apply_q(&mut i);
     assert!(approx_vector_eq(&i.data, &expected.data));
 }
-fn test_n_autumn_orthogonal_left(n:usize) {
+fn test_n_autumn_orthogonal_left(n: usize) {
     let a = generate_random_matrix(n, n);
     let mut workspace = vec![0f32; n];
     let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
