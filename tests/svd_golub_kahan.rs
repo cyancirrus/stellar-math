@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod svd_golub_kahan {
     use stellar::decomposition::svd::golub_kahan;
-    use stellar::equality::approximate::{approx_scalar_eq, approx_vector_eq};
+    use stellar::equality::approximate::approx_scalar_eq;
     use stellar::random::generation::generate_random_matrix;
     use stellar::structure::ndarray::NdArray;
 

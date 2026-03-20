@@ -3,6 +3,7 @@ pub mod givens;
 pub mod householder;
 pub mod lower_upper;
 pub mod qr;
+pub mod lq;
 pub mod qr_matrix;
 pub mod schur;
 pub mod svd;

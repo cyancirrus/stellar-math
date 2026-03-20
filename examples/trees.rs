@@ -1,6 +1,5 @@
-#![allow(dead_code)]
 use rand::seq::SliceRandom;
-use stellar::learning::decision_tree::{DecisionTree, DecisionTreeModel};
+use stellar::learning::decision_tree::{DecisionTree};
 use stellar::learning::gradient_boost::GradientBoost;
 use stellar::learning::random_forest::RandomForest;
 
@@ -175,5 +174,5 @@ fn main() {
     for i in 0..3 {
         results[i].sort_by(|a, b| a.partial_cmp(b).unwrap());
     }
-    let output = plot_results(&results);
+    let _output = plot_results(&results);
 }

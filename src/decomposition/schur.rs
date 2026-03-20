@@ -14,6 +14,7 @@ impl SchurDecomp {
         Self { rotation, kernel }
     }
 }
+
 fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
     let mut qr = QrDecomposition::new(schur.kernel);
     // Apply Q to a matrix X ie (QR) -> Qx
@@ -23,7 +24,6 @@ fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
     schur.kernel = qr.triangle;
     schur
 }
-
 fn real_schur_threshold(kernel: &NdArray) -> f32 {
     let rows = kernel.dims[0];
     let cols = kernel.dims[1];
@@ -36,7 +36,6 @@ fn real_schur_threshold(kernel: &NdArray) -> f32 {
     }
     off_diagonal
 }
-
 pub fn real_schur(kernel: NdArray) -> SchurDecomp {
     let rows = kernel.dims[0];
     let identity = create_identity_matrix(rows);
