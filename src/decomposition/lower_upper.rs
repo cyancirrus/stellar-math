@@ -203,39 +203,73 @@ impl LuPivotDecompose {
             }
         }
     }
-    pub fn left_apply_u(&self, target: &mut NdArray, workspace: &mut [f32]) {
+    pub fn left_apply_u(&self, target: &mut NdArray) {
         // UA = Output
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(cols, trows);
-        let workspace = &mut workspace[..tcols];
         let m = &self.matrix.data;
         let t = &mut target.data;
         let mut moffset = 0;
         let mut toffset = 0;
         for i in 0..rows {
             let m_suffix = &m[moffset..moffset + cols];
-            let mut koffset = toffset;
+            let (tgt_upper, tgt_lower) = t.split_at_mut(toffset + tcols);
+            let tgt_suffix = &mut tgt_upper[toffset..toffset + tcols];
             {
                 let scalar = m_suffix[i];
-                let t_suffix = &t[koffset..koffset + tcols];
                 for j in 0..tcols {
-                    workspace[j] = scalar * t_suffix[j];
+                    tgt_suffix[j] *= scalar ;
                 }
             }
-            for k in i + 1..cols {
-                koffset += tcols;
-                let t_suffix = &t[koffset..koffset + tcols];
-                let scalar = m_suffix[k];
-                for j in 0..tcols {
-                    workspace[j] += scalar * t_suffix[j];
+            {
+                let mut koffset = 0;
+                for k in i + 1..cols {
+                    let t_suffix = &tgt_lower[koffset..koffset + tcols];
+                    let scalar = m_suffix[k];
+                    for j in 0..tcols {
+                        tgt_suffix[j] += scalar * t_suffix[j];
+                    }
+                    koffset += tcols;
                 }
             }
-            t[toffset..toffset + tcols].copy_from_slice(workspace);
-            moffset += cols;
             toffset += tcols;
+            moffset += cols;
         }
     }
+    // pub fn left_apply_u(&self, target: &mut NdArray, workspace: &mut [f32]) {
+    //     // UA = Output
+    //     let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+    //     let (trows, tcols) = (target.dims[0], target.dims[1]);
+    //     debug_assert_eq!(cols, trows);
+    //     let workspace = &mut workspace[..tcols];
+    //     let m = &self.matrix.data;
+    //     let t = &mut target.data;
+    //     let mut moffset = 0;
+    //     let mut toffset = 0;
+    //     for i in 0..rows {
+    //         let m_suffix = &m[moffset..moffset + cols];
+    //         let mut koffset = toffset;
+    //         {
+    //             let scalar = m_suffix[i];
+    //             let t_suffix = &t[koffset..koffset + tcols];
+    //             for j in 0..tcols {
+    //                 workspace[j] = scalar * t_suffix[j];
+    //             }
+    //         }
+    //         for k in i + 1..cols {
+    //             koffset += tcols;
+    //             let t_suffix = &t[koffset..koffset + tcols];
+    //             let scalar = m_suffix[k];
+    //             for j in 0..tcols {
+    //                 workspace[j] += scalar * t_suffix[j];
+    //             }
+    //         }
+    //         t[toffset..toffset + tcols].copy_from_slice(workspace);
+    //         moffset += cols;
+    //         toffset += tcols;
+    //     }
+    // }
     pub fn right_apply_l(&self, target: &mut NdArray) {
         // AL = Output
         debug_assert_eq!(target.dims[1], self.matrix.dims[0]);
