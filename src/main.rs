@@ -51,10 +51,9 @@ fn params(v: &mut [f32], rows: usize, p: usize) -> f32 {
 }
 
 impl AutumnDecomp {
-    fn new(mut h: NdArray, workspace: &mut [f32]) -> Self {
+    fn new(mut h: NdArray) -> Self {
         debug_assert!(h.dims[0] <= h.dims[1]);
         let (rows, cols) = (h.dims[0], h.dims[1]);
-        debug_assert!(workspace.len() >= rows);
         let mut t = vec![0f32; rows];
         let mut active_range = rows;
         for p in 0..rows {
@@ -386,7 +385,7 @@ fn test_lower_applys() {
     let a = generate_random_matrix(n, n);
     let b = generate_random_matrix(n, n);
     let mut workspace = vec![0f32; n];
-    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
+    let autumn = AutumnDecomp::new(a.clone());
     let l = test_retrieve_l(&autumn);
     let expected = matrix_mult(&l, &b);
     let mut result = b.clone();
@@ -427,7 +426,7 @@ fn test_n_autumn_reconstruct(n: usize) {
     let a = generate_random_matrix(n, n);
     let expected = a.clone();
     let mut workspace = vec![0f32; n];
-    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
+    let autumn = AutumnDecomp::new(a.clone());
     let mut i = create_identity_matrix(n);
     autumn.right_apply_l(&mut i);
     autumn.right_apply_q(&mut i);
@@ -454,7 +453,7 @@ fn test_n_autumn_reconstruct(n: usize) {
 fn test_n_autumn_orthogonal_right(n: usize) {
     let a = generate_random_matrix(n, n);
     let mut workspace = vec![0f32; n];
-    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
+    let autumn = AutumnDecomp::new(a.clone());
     let mut i = create_identity_matrix(n);
     let expected = i.clone();
     autumn.right_apply_q(&mut i);
@@ -467,7 +466,7 @@ fn test_n_autumn_orthogonal_right(n: usize) {
 fn test_n_autumn_orthogonal_left(n: usize) {
     let a = generate_random_matrix(n, n);
     let mut workspace = vec![0f32; n];
-    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
+    let autumn = AutumnDecomp::new(a.clone());
     let mut i = create_identity_matrix(n);
     let expected = i.clone();
     autumn.left_apply_qt(&mut i, &mut workspace);
@@ -482,7 +481,7 @@ fn test_decomp_rectangle() {
     let (m, n) = (4, 8);
     let a = generate_random_matrix(m, n);
     let mut workspace = vec![0f32; n];
-    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
+    let autumn = AutumnDecomp::new(a.clone());
     let mut workspace = vec![0f32; n];
     let mut i = create_identity_matrix(n);
     let expected = i.clone();
@@ -497,7 +496,7 @@ fn test_autumn_q_transpose_consistency() {
     let (m, n) = (4, 4);
     let a = generate_random_matrix(m, n);
     let mut workspace = vec![0f32; n];
-    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
+    let autumn = AutumnDecomp::new(a.clone());
 
     // Test: (Q * I)^T == I^T * Q^T
     let mut left_q = create_identity_matrix(n);
@@ -516,7 +515,7 @@ fn test_autumn_qt_transpose_consistency() {
     let (m, n) = (4, 4);
     let a = generate_random_matrix(m, n);
     let mut workspace = vec![0f32; n];
-    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
+    let autumn = AutumnDecomp::new(a.clone());
 
     // Test: (Q^T * I)^T == I^T * Q
     let mut left_qt = create_identity_matrix(n);
@@ -535,7 +534,7 @@ fn test_autumn_l_transpose_consistency() {
     let n = 4;
     let a = generate_random_matrix(n, n);
     let mut workspace = vec![0f32; n];
-    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
+    let autumn = AutumnDecomp::new(a.clone());
 
     // Test: (L * I)^T == I^T * L^T
     // Since Autumn stores L in the lower triangle of H
@@ -555,7 +554,7 @@ fn test_autumn_lt_transpose_consistency() {
     let n = 3;
     let a = generate_random_matrix(n, n);
     let mut workspace = vec![0f32; n];
-    let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
+    let autumn = AutumnDecomp::new(a.clone());
     let mut left_lt = create_identity_matrix(n);
     autumn.left_apply_lt(&mut left_lt, &mut workspace);
     let left_lt_t = left_lt.transpose();
