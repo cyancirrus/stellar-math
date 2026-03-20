@@ -111,10 +111,10 @@ impl LinearProgram {
         println!("in pivot {entering_idx:?}, {leaving_idx:?}");
         self.basis[leaving_idx] = entering_idx;
     }
-    fn compute_direction(&self, entering_idx: usize) -> Vec<f32> {
+    fn compute_direction(&self, entering_idx: usize, workspace: &mut [f32]) -> Vec<f32> {
         // travels in the inverse of this vector
         let b_t = self.get_basis_matrix_transpose();
-        let lu = LuPivotDecompose::new(b_t);
+        let lu = LuPivotDecompose::new(b_t, workspace);
         let n_cols = 2 * self.n + 2 * self.m;
 
         let mut a_j = vec![0.0; self.n];
@@ -139,9 +139,9 @@ impl LinearProgram {
         }
         best_idx
     }
-    fn compute_phase_one_delta_cost(&self) -> Vec<f32> {
+    fn compute_phase_one_delta_cost(&self, workspace: &mut [f32]) -> Vec<f32> {
         let b_t = self.get_basis_matrix_transpose();
-        let lu = LuPivotDecompose::new(b_t);
+        let lu = LuPivotDecompose::new(b_t, workspace);
         let n_cols = 2 * self.m + 2 * self.n;
 
         let mut cost_b = vec![0.0; self.n];
@@ -167,9 +167,9 @@ impl LinearProgram {
         }
         delta
     }
-    fn compute_phase_two_delta_cost(&self) -> Vec<f32> {
+    fn compute_phase_two_delta_cost(&self, workspace: &mut [f32]) -> Vec<f32> {
         let b_t = self.get_basis_matrix_transpose();
-        let lu = LuPivotDecompose::new(b_t);
+        let lu = LuPivotDecompose::new(b_t, workspace);
         let n_cols = 2 * self.m + 2 * self.n;
 
         let mut dual_costs = vec![0.0; n_cols];
@@ -202,8 +202,8 @@ impl LinearProgram {
         }
         delta
     }
-    fn ratio_test(&self, direction: &[f32]) -> Option<usize> {
-        let x_b = self.get_basic_solution();
+    fn ratio_test(&self, direction: &[f32], workspace: &mut [f32]) -> Option<usize> {
+        let x_b = self.get_basic_solution(workspace);
         let mut min_ratio = f32::INFINITY;
         let mut idx_leaving = None;
         println!("direction {direction:?}");
@@ -219,30 +219,30 @@ impl LinearProgram {
         }
         idx_leaving
     }
-    fn get_basic_solution(&self) -> Vec<f32> {
+    fn get_basic_solution(&self, workspace: &mut [f32]) -> Vec<f32> {
         let b = self.get_basis_matrix();
-        let lu = LuPivotDecompose::new(b);
+        let lu = LuPivotDecompose::new(b, workspace);
         let mut rhs = self.c.clone();
         lu.solve_inplace_vec(&mut rhs);
         rhs
     }
-    pub fn run_phase_one(&mut self) -> Result<(), String> {
+    pub fn run_phase_one(&mut self, workspace: &mut [f32]) -> Result<(), String> {
         self.setup_phase_one();
         loop {
-            let delta = self.compute_phase_one_delta_cost();
+            let delta = self.compute_phase_one_delta_cost(workspace);
             let entering = match self.select_entering_variable(&delta) {
                 Some(idx) => idx,
                 None => break,
             };
-            let direction = self.compute_direction(entering);
+            let direction = self.compute_direction(entering, workspace);
             println!("direction {direction:?}");
-            let leaving = match self.ratio_test(&direction) {
+            let leaving = match self.ratio_test(&direction, workspace) {
                 Some(idx) => idx,
                 None => return Err(format!("Unbounded should not happen in phase 1").into()),
             };
             self.pivot(entering, leaving)
         }
-        let x = self.get_basic_solution();
+        let x = self.get_basic_solution(workspace);
         for (idx, &basic_idx) in self.basis.iter().enumerate() {
             if basic_idx >= 2 * self.m + self.n {
                 if x[idx].abs() > EPSILON {
@@ -253,26 +253,27 @@ impl LinearProgram {
         Ok(())
     }
     pub fn run_phase_two(&mut self) -> Result<Vec<f32>, String> {
+        let mut workspace = vec![0f32; 64];
         println!("Basis indices at start of Phase 2: {:?}", self.basis);
         let b = self.get_basis_matrix();
         println!("B {b:?}");
         loop {
-            let delta = self.compute_phase_two_delta_cost();
+            let delta = self.compute_phase_two_delta_cost(&mut workspace);
             println!("delta");
             let entering = match self.select_entering_variable(&delta) {
                 Some(idx) => idx,
                 None => break,
             };
             println!("entering");
-            let direction = self.compute_direction(entering);
-            let leaving = match self.ratio_test(&direction) {
+            let direction = self.compute_direction(entering, &mut workspace);
+            let leaving = match self.ratio_test(&direction, &mut workspace) {
                 Some(idx) => idx,
                 None => return Err(format!("Unbounded").into()),
             };
             println!("pivot");
             self.pivot(entering, leaving);
         }
-        Ok(self.get_basic_solution())
+        Ok(self.get_basic_solution(&mut workspace))
     }
 }
 

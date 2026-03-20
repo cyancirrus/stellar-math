@@ -21,7 +21,7 @@ pub fn rayleigh_inverse_iteration(mut matrix: NdArray) -> Vec<f32> {
         // transforms M' = (A - Iu + Iu - Iu')
         let previous = current.clone();
         estimate_eigenvalues(&mut u, &mut matrix, &current);
-        let lu = LuPivotDecompose::new(matrix.clone());
+        let lu = LuPivotDecompose::new_dl(matrix.clone());
         // eigen is now y
         lu.solve_inplace_vec(&mut current);
         normalize_vector(&mut current);

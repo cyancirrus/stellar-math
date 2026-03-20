@@ -289,7 +289,7 @@ where
         s_k = tensor_mult(4, &s_k, &self.h.transpose());
         in_place_add(&mut s_k, &self.r_variance);
         let mut k = tensor_mult(4, &self.p, &self.h);
-        let lu = LuPivotDecompose::new(s_k);
+        let lu = LuPivotDecompose::new_dl(s_k);
         lu.solve_inplace(&mut k);
         self.k = k;
     }

@@ -102,7 +102,7 @@ impl GaussianMixtureModel {
         let mut dets = Vec::with_capacity(self.centroids);
         let mut z_buf = vec![0f32; self.cardinality];
         for k in 0..self.centroids {
-            let lu = LuPivotDecompose::new(self.variance[k].clone());
+            let lu = LuPivotDecompose::new_dl(self.variance[k].clone());
             dets.push(lu.log_determinant());
             lus.push(lu);
         }

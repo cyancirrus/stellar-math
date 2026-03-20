@@ -1,5 +1,7 @@
 use crate::structure::ndarray::NdArray;
 
+const EPSILON:f32 = 1e-8;
+
 pub struct LuPivotDecompose {
     n: usize,
     swaps: usize,
@@ -8,47 +10,50 @@ pub struct LuPivotDecompose {
 }
 //  TODO: copy from slice not whatever this is
 impl LuPivotDecompose {
-    pub fn new(mut matrix: NdArray) -> Self {
-        // Croute
-        // A[j, *] = c *A[i, *]
-        // => c = A[i,j] / A[j,j]
+    pub fn new(mut matrix: NdArray, workspace:&mut [f32]) -> Self {
+        // Doolittle
         debug_assert_eq!(matrix.dims[0], matrix.dims[1]);
         let n = matrix.dims[0];
-        let mut pivots: Vec<usize> = (0..n).collect();
+        let m = &mut matrix.data;
+        let mut pivots: Vec<usize> = Vec::with_capacity(n);
         let mut swaps = 0;
-
-        // for lij, we need knowledge of ujj due to formula
-        // this means that we need u[0..i.min(j)] upper triangular calculated
-        for i in 0..n {
-            let mut val = matrix.data[i * n + i].abs();
-            for k in i + 1..n {
-                let mag = matrix.data[k * n + i].abs();
-                if mag > val {
-                    pivots[i] = k;
-                    val = mag;
+        let workspace = &mut workspace[..n];
+        for k in 0..n {
+            let krow = k * n;
+            let mut p = k;
+            let mut scl = m[krow + k];
+            {
+                let mut irow = krow;
+                for i in k+1..n {
+                    irow += n;
+                    let cur_s = m[irow + k];
+                    if cur_s.abs() > scl.abs() {
+                        p = i;
+                        scl = cur_s;
+                    }
                 }
             }
-            if pivots[i] != i {
+            pivots.push(p);
+            if p != k {
                 swaps += 1;
-                for k in 0..n {
-                    matrix.data.swap(i * n + k, pivots[i] * n + k);
-                }
+                let prow = p * n;
+                workspace.copy_from_slice(&mut m[krow..krow + n]);
+                m.copy_within(prow.. prow + n, krow);
+                m[prow..prow + n].copy_from_slice(&workspace);
             }
-            for j in 0..n {
-                for k in 0..i.min(j) {
-                    matrix.data[i * n + j] -= matrix.data[i * n + k] * matrix.data[k * n + j]
-                }
-                if i > j {
-                    matrix.data[i * n + j] /= matrix.data[j * n + j];
+            if scl.abs() > EPSILON {
+                let mut irow = krow;
+                for _ in k + 1..n {
+                    irow += n;
+                    let v = m[irow + k] / scl;
+                    m[irow + k] = v;
+                    for j in k + 1..n {
+                        m[irow + j] -= v * m[krow + j];
+                    }
                 }
             }
         }
-        Self {
-            n,
-            swaps,
-            pivots,
-            matrix,
-        }
+        Self { n, swaps, pivots, matrix, }
     }
     pub fn new_dl(mut matrix: NdArray) -> Self {
         // Doolittle
@@ -60,7 +65,7 @@ impl LuPivotDecompose {
         let mut val;
         for k in 0..n {
             val = 0.0;
-            for i in k + 1..n {
+            for i in k..n {
                 let mag = matrix.data[i * n + k].abs();
                 if mag >= val {
                     pivots[k] = i;
@@ -155,20 +160,32 @@ impl LuPivotDecompose {
     // }
 }
 impl LuPivotDecompose {
-    // for matrices
     pub fn left_apply_l(&self, target: &mut NdArray) {
         // LA = Output
-        debug_assert_eq!(target.dims[0], self.matrix.dims[1]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
-        // let (trows, tcols) = (target.dims[0], target.dims[1]);
-        let tcols = target.dims[1];
-
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        debug_assert_eq!(cols, trows);
+        let m = &self.matrix.data;
+        let mut mrow = rows * cols;
+        let mut trow = trows * tcols;
+        // lii == 1 => l[0,0] = 1
         for i in (1..rows).rev() {
-            for j in 0..tcols {
-                // lii == 1
+            trow -= tcols;
+            mrow -= cols;
+            let m_suffix = &m[mrow..mrow + cols];
+            let (tgt_upper, mut tgt_suffix) = target.data.split_at_mut(trow);
+            tgt_suffix = &mut tgt_suffix[..tcols];
+            {
+                let mut krow = 0;
                 for k in 0..i {
-                    target.data[i * tcols + j] +=
-                        self.matrix.data[i * cols + k] * target.data[k * tcols + j];
+                    let scalar = m_suffix[k];
+                    if scalar.abs() < EPSILON { continue; }
+                    let cur_suffix = &tgt_upper[krow..krow + tcols];
+                    // cur_suffix = &cur_suffix[..tcols];
+                    for j in 0..tcols {
+                        tgt_suffix[j] += scalar * cur_suffix[j];
+                    }
+                    krow += tcols;
                 }
             }
         }
@@ -189,6 +206,22 @@ impl LuPivotDecompose {
             }
         }
     }
+    // pub fn left_apply_u(&self, target: &mut NdArray) {
+    //     // UA = Output
+    //     debug_assert_eq!(target.dims[0], self.matrix.dims[1]);
+    //     let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+    //     // let (trows, tcols) = (target.dims[0], target.dims[1]);
+    //     let tcols = target.dims[1];
+    //     for i in 0..rows {
+    //         for j in 0..tcols {
+    //             target.data[i * tcols + j] *= self.matrix.data[i * cols + i];
+    //             for k in i + 1..cols {
+    //                 target.data[i * tcols + j] +=
+    //                     self.matrix.data[i * cols + k] * target.data[k * tcols + j];
+    //             }
+    //         }
+    //     }
+    // }
     pub fn right_apply_l(&self, target: &mut NdArray) {
         // AL = Output
         debug_assert_eq!(target.dims[1], self.matrix.dims[0]);

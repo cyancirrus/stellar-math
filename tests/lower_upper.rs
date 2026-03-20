@@ -5,21 +5,22 @@ mod lower_upper {
     use stellar::equality::approximate::{approx_condition_eq, approx_vector_eq};
     use stellar::random::generation::{generate_random_matrix, generate_random_vector};
     use stellar::structure::ndarray::NdArray;
+    const N:usize = 64;
 
     // functions
-    fn reconstruction(x: NdArray) {
+    fn reconstruction(x: NdArray, workspace: &mut [f32]) {
         let expected = x.clone();
-        let lu = LuPivotDecompose::new(x);
+        let lu = LuPivotDecompose::new(x, workspace);
         let result = lu.reconstruct();
         assert!(approx_vector_eq(&result.data, &expected.data))
     }
-    fn solve_inplace_vec_ax_y(a: NdArray, y: &mut [f32]) -> bool {
+    fn solve_inplace_vec_ax_y(a: NdArray, y: &mut [f32], workspace: &mut [f32]) -> bool {
         // PA = LUx
         // Ax = y;
         // PAx = Py
         // LUx = Py;
         // => P'Py; when applying the compare
-        let lu = LuPivotDecompose::new(a);
+        let lu = LuPivotDecompose::new(a, workspace);
         let expected = y.to_vec();
         let result = y;
         let condition = lu.condition();
@@ -29,18 +30,18 @@ mod lower_upper {
         lu.unpivot_inplace_vec(result);
         approx_condition_eq(&expected, &result, &condition)
     }
-    fn random_solve_inplace_vec_ax_y(dim: usize) -> bool {
+    fn random_solve_inplace_vec_ax_y(dim: usize, workspace: &mut [f32]) -> bool {
         let x = generate_random_matrix(dim, dim);
         let mut y = generate_random_vector(dim);
-        solve_inplace_vec_ax_y(x, &mut y)
+        solve_inplace_vec_ax_y(x, &mut y, workspace)
     }
-    fn solve_inplace_ax_y(a: NdArray, y: &mut NdArray) -> bool {
+    fn solve_inplace_ax_y(a: NdArray, y: &mut NdArray, workspace: &mut [f32]) -> bool {
         // PA = LUx
         // Ax = y;
         // PAx = Py
         // LUx = Py;
         // => P'Py; when applying the compare
-        let lu = LuPivotDecompose::new(a);
+        let lu = LuPivotDecompose::new(a, workspace);
         let condition = lu.condition();
         let expected = y.data.clone();
         lu.solve_inplace(y);
@@ -49,15 +50,15 @@ mod lower_upper {
         lu.unpivot_inplace(y);
         approx_condition_eq(&expected, &y.data, &condition)
     }
-    fn random_solve_inplace_ax_y(dim: usize) -> bool {
+    fn random_solve_inplace_ax_y(dim: usize, workspace: &mut [f32]) -> bool {
         let x = generate_random_matrix(dim, dim);
         let mut y = generate_random_matrix(dim, dim);
-        solve_inplace_ax_y(x, &mut y)
+        solve_inplace_ax_y(x, &mut y, workspace)
     }
     // matrix applications
-    fn left_apply_l(x: NdArray, y: NdArray) {
+    fn left_apply_l(x: NdArray, y: NdArray, workspace: &mut [f32]) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        let lu = LuPivotDecompose::new(x);
+        let lu = LuPivotDecompose::new(x, workspace);
         let mut l = lu.matrix.clone();
         let mut result = y.clone();
         for i in 0..rows {
@@ -70,9 +71,9 @@ mod lower_upper {
         lu.left_apply_l(&mut result);
         assert!(approx_vector_eq(&result.data, &expected.data))
     }
-    fn left_apply_u(x: NdArray, y: NdArray) {
+    fn left_apply_u(x: NdArray, y: NdArray, workspace:&mut [f32]) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        let lu = LuPivotDecompose::new(x);
+        let lu = LuPivotDecompose::new(x, workspace);
         let mut u = lu.matrix.clone();
         let mut result = y.clone();
         for i in 1..rows {
@@ -84,9 +85,9 @@ mod lower_upper {
         lu.left_apply_u(&mut result);
         assert!(approx_vector_eq(&result.data, &expected.data))
     }
-    fn right_apply_l(x: NdArray, y: NdArray) {
+    fn right_apply_l(x: NdArray, y: NdArray, workspace:&mut [f32]) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        let lu = LuPivotDecompose::new(x);
+        let lu = LuPivotDecompose::new(x, workspace);
         let mut l = lu.matrix.clone();
         let mut result = y.clone();
         for i in 0..rows {
@@ -99,9 +100,9 @@ mod lower_upper {
         lu.right_apply_l(&mut result);
         assert!(approx_vector_eq(&result.data, &expected.data))
     }
-    fn right_apply_u(x: NdArray, y: NdArray) {
+    fn right_apply_u(x: NdArray, y: NdArray, workspace: &mut [f32]) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        let lu = LuPivotDecompose::new(x);
+        let lu = LuPivotDecompose::new(x, workspace);
         let mut u = lu.matrix.clone();
         let mut result = y.clone();
         for i in 1..rows {
@@ -113,9 +114,9 @@ mod lower_upper {
         lu.right_apply_u(&mut result);
         assert!(approx_vector_eq(&result.data, &expected.data))
     }
-    fn left_apply_l_vec(x: NdArray, y: Vec<f32>) {
+    fn left_apply_l_vec(x: NdArray, y: Vec<f32>, workspace: &mut [f32]) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        let lu = LuPivotDecompose::new(x);
+        let lu = LuPivotDecompose::new(x, workspace);
         let mut l = lu.matrix.clone();
         let y_matrix = NdArray {
             dims: vec![cols, 1],
@@ -134,9 +135,9 @@ mod lower_upper {
     }
 
     // vector applications
-    fn left_apply_u_vec(x: NdArray, y: Vec<f32>) {
+    fn left_apply_u_vec(x: NdArray, y: Vec<f32>, workspace: &mut [f32]) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        let lu = LuPivotDecompose::new(x);
+        let lu = LuPivotDecompose::new(x, workspace);
         let mut u = lu.matrix.clone();
         let y_matrix = NdArray {
             dims: vec![cols, 1],
@@ -153,9 +154,9 @@ mod lower_upper {
         assert!(approx_vector_eq(&result, &expected.data))
     }
 
-    fn right_apply_l_vec(x: NdArray, y: Vec<f32>) {
+    fn right_apply_l_vec(x: NdArray, y: Vec<f32>, workspace: &mut [f32]) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        let lu = LuPivotDecompose::new(x);
+        let lu = LuPivotDecompose::new(x, workspace);
         let mut l = lu.matrix.clone();
         let y_matrix = NdArray {
             dims: vec![1, rows],
@@ -172,9 +173,9 @@ mod lower_upper {
         lu.right_apply_l_vec(&mut result);
         assert!(approx_vector_eq(&result, &expected.data))
     }
-    fn right_apply_u_vec(x: NdArray, y: Vec<f32>) {
+    fn right_apply_u_vec(x: NdArray, y: Vec<f32>, workspace: &mut [f32]) {
         let (rows, cols) = (x.dims[0], x.dims[1]);
-        let lu = LuPivotDecompose::new(x);
+        let lu = LuPivotDecompose::new(x, workspace);
         let mut u = lu.matrix.clone();
         let y_matrix = NdArray {
             dims: vec![1, rows],
@@ -194,101 +195,113 @@ mod lower_upper {
     // sample 2x2
     #[test]
     fn reconstruction_2x2() {
+        let mut workspace = vec![f32::NAN; N];
         let x = NdArray {
             dims: vec![2, 2],
             data: vec![-1.0, 0.0, 5.0, 2.0],
         };
-        reconstruction(x)
+        reconstruction(x, &mut workspace)
     }
     #[test]
     fn reconstruction_3x3() {
+        let mut workspace = vec![f32::NAN; N];
         let x = NdArray {
             dims: vec![3, 3],
             data: vec![-1.0, 0.0, 3.0, 5.0, 2.0, 4.0, -3.0, 0.7, 1.2],
         };
-        reconstruction(x)
+        reconstruction(x, &mut workspace)
     }
     #[test]
     fn reconstruction_random_nxn() {
+        let mut workspace = vec![f32::NAN; N];
         let dimensions = vec![1, 2, 5, 7, 23];
         for n in dimensions {
-            reconstruction(generate_random_matrix(n, n))
+            reconstruction(generate_random_matrix(n, n), &mut workspace)
         }
     }
     #[test]
     fn random_left_apply_l_nxn_nxa() {
+        let mut workspace = vec![f32::NAN; N];
         let dimensions = vec![(1, 5), (2, 3), (7, 7), (23, 4)];
         for (n, a) in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_matrix(n, a);
-            left_apply_l(x, y)
+            left_apply_l(x, y, &mut workspace)
         }
     }
     #[test]
     fn random_left_apply_u_nxn_nxa() {
+        let mut workspace = vec![f32::NAN; N];
         let dimensions = vec![(1, 5), (2, 3), (7, 7), (23, 4)];
         for (n, a) in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_matrix(n, a);
-            left_apply_u(x, y)
+            left_apply_u(x, y, &mut workspace)
         }
     }
     #[test]
     fn random_right_apply_l_axn_nxn() {
+        let mut workspace = vec![f32::NAN; N];
         let dimensions = vec![(1, 5), (2, 3), (7, 7), (23, 4)];
         for (n, a) in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_matrix(a, n);
-            right_apply_l(x, y)
+            right_apply_l(x, y, &mut workspace)
         }
     }
     #[test]
     fn random_right_apply_u_nxn_nxa() {
+        let mut workspace = vec![f32::NAN; N];
         let dimensions = vec![(1, 5), (2, 3), (7, 7), (23, 4)];
         for (n, a) in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_matrix(a, n);
-            right_apply_u(x, y)
+            right_apply_u(x, y, &mut workspace)
         }
     }
     #[test]
     fn random_left_apply_l_vec() {
+        let mut workspace = vec![f32::NAN;N];
         let dimensions = vec![2, 3, 4, 7, 23];
         for n in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_vector(n);
-            left_apply_l_vec(x, y)
+            left_apply_l_vec(x, y, &mut workspace)
         }
     }
     #[test]
     fn random_left_apply_u_vec() {
+        let mut workspace = vec![f32::NAN;N];
         let dimensions = vec![2, 3, 4, 7, 23];
         for n in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_vector(n);
-            left_apply_u_vec(x, y)
+            left_apply_u_vec(x, y, &mut workspace)
         }
     }
     #[test]
     fn random_right_apply_l_vec() {
+        let mut workspace = vec![f32::NAN;N];
         let dimensions = vec![2, 3, 4, 7, 23];
         for n in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_vector(n);
-            right_apply_l_vec(x, y)
+            right_apply_l_vec(x, y, &mut workspace)
         }
     }
     #[test]
     fn random_right_apply_u_vec() {
+        let mut workspace = vec![f32::NAN;N];
         let dimensions = vec![2, 3, 4, 7, 23];
         for n in dimensions {
             let x = generate_random_matrix(n, n);
             let y = generate_random_vector(n);
-            right_apply_u_vec(x, y)
+            right_apply_u_vec(x, y, &mut workspace)
         }
     }
     #[test]
     fn test_vector_solve_accuracy() {
+        let mut workspace = vec![f32::NAN;N];
         let dims = vec![2, 3, 4, 7, 23];
         let k = dims.len();
         let n = 200;
@@ -296,7 +309,7 @@ mod lower_upper {
         let mut num = 0;
         for d in dims {
             for _ in 0..n {
-                num += random_solve_inplace_vec_ax_y(d) as usize;
+                num += random_solve_inplace_vec_ax_y(d, &mut workspace) as usize;
             }
         }
         // condition number is approximate
@@ -304,6 +317,7 @@ mod lower_upper {
     }
     #[test]
     fn test_matrix_solve_accuracy() {
+        let mut workspace = vec![f32::NAN;N];
         let dims = vec![2, 3, 4, 7, 23];
         let k = dims.len();
         let n = 200;
@@ -311,7 +325,7 @@ mod lower_upper {
         let mut num = 0;
         for d in dims {
             for _ in 0..n {
-                num += random_solve_inplace_ax_y(d) as usize;
+                num += random_solve_inplace_ax_y(d, &mut workspace) as usize;
             }
         }
         // condition number is approximate
