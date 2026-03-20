@@ -286,11 +286,11 @@ impl AutumnDecomp {
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(target.dims[1], self.h.dims[0]);
         debug_assert!(workspace.len() >= cols);
-        let h = &self.h.data;
         if cols > tcols {
             target.resize_cols(cols);
         }
         let t = &mut target.data;
+        let h = &self.h.data;
         let mut workspace = &mut workspace[..tcols];
         let mut offset = 0;
         let mut roffset;
