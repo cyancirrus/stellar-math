@@ -1,6 +1,13 @@
 use crate::structure::ndarray::NdArray;
 
-const EPSILON:f32 = 1e-8;
+const EPSILON: f32 = 1e-8;
+
+/// LuPivotDecompose
+///
+/// * n: cardinality
+/// * swaps: determines sign of determinant
+/// * pivots: how to get back information
+/// * matrix: what information is stored
 
 pub struct LuPivotDecompose {
     n: usize,
@@ -8,9 +15,8 @@ pub struct LuPivotDecompose {
     pivots: Vec<usize>,
     pub matrix: NdArray,
 }
-//  TODO: copy from slice not whatever this is
 impl LuPivotDecompose {
-    pub fn new(mut matrix: NdArray, workspace:&mut [f32]) -> Self {
+    pub fn new(mut matrix: NdArray, workspace: &mut [f32]) -> Self {
         // Doolittle
         debug_assert_eq!(matrix.dims[0], matrix.dims[1]);
         let n = matrix.dims[0];
@@ -24,7 +30,7 @@ impl LuPivotDecompose {
             let mut scl = m[krow + k];
             {
                 let mut irow = krow;
-                for i in k+1..n {
+                for i in k + 1..n {
                     irow += n;
                     let cur_s = m[irow + k];
                     if cur_s.abs() > scl.abs() {
@@ -38,7 +44,7 @@ impl LuPivotDecompose {
                 swaps += 1;
                 let prow = p * n;
                 workspace.copy_from_slice(&mut m[krow..krow + n]);
-                m.copy_within(prow.. prow + n, krow);
+                m.copy_within(prow..prow + n, krow);
                 m[prow..prow + n].copy_from_slice(&workspace);
             }
             if scl.abs() > EPSILON {
@@ -53,7 +59,12 @@ impl LuPivotDecompose {
                 }
             }
         }
-        Self { n, swaps, pivots, matrix, }
+        Self {
+            n,
+            swaps,
+            pivots,
+            matrix,
+        }
     }
     pub fn new_dl(mut matrix: NdArray) -> Self {
         // Doolittle
@@ -179,7 +190,9 @@ impl LuPivotDecompose {
                 let mut krow = 0;
                 for k in 0..i {
                     let scalar = m_suffix[k];
-                    if scalar.abs() < EPSILON { continue; }
+                    if scalar.abs() < EPSILON {
+                        continue;
+                    }
                     let cur_suffix = &tgt_upper[krow..krow + tcols];
                     // cur_suffix = &cur_suffix[..tcols];
                     for j in 0..tcols {
@@ -190,38 +203,39 @@ impl LuPivotDecompose {
             }
         }
     }
-    pub fn left_apply_u(&self, target: &mut NdArray) {
+    pub fn left_apply_u(&self, target: &mut NdArray, workspace: &mut [f32]) {
         // UA = Output
-        debug_assert_eq!(target.dims[0], self.matrix.dims[1]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
-        // let (trows, tcols) = (target.dims[0], target.dims[1]);
-        let tcols = target.dims[1];
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        debug_assert_eq!(cols, trows);
+        let workspace = &mut workspace[..tcols];
+        let m = &self.matrix.data;
+        let t = &mut target.data;
+        let mut moffset = 0;
+        let mut toffset = 0;
         for i in 0..rows {
-            for j in 0..tcols {
-                target.data[i * tcols + j] *= self.matrix.data[i * cols + i];
-                for k in i + 1..cols {
-                    target.data[i * tcols + j] +=
-                        self.matrix.data[i * cols + k] * target.data[k * tcols + j];
+            let m_suffix = &m[moffset..moffset + cols];
+            let mut koffset = toffset;
+            {
+                let scalar = m_suffix[i];
+                let t_suffix = &t[koffset..koffset + tcols];
+                for j in 0..tcols {
+                    workspace[j] = scalar * t_suffix[j];
                 }
             }
+            for k in i + 1..cols {
+                koffset += tcols;
+                let t_suffix = &t[koffset..koffset + tcols];
+                let scalar = m_suffix[k];
+                for j in 0..tcols {
+                    workspace[j] += scalar * t_suffix[j];
+                }
+            }
+            t[toffset..toffset + tcols].copy_from_slice(workspace);
+            moffset += cols;
+            toffset += tcols;
         }
     }
-    // pub fn left_apply_u(&self, target: &mut NdArray) {
-    //     // UA = Output
-    //     debug_assert_eq!(target.dims[0], self.matrix.dims[1]);
-    //     let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
-    //     // let (trows, tcols) = (target.dims[0], target.dims[1]);
-    //     let tcols = target.dims[1];
-    //     for i in 0..rows {
-    //         for j in 0..tcols {
-    //             target.data[i * tcols + j] *= self.matrix.data[i * cols + i];
-    //             for k in i + 1..cols {
-    //                 target.data[i * tcols + j] +=
-    //                     self.matrix.data[i * cols + k] * target.data[k * tcols + j];
-    //             }
-    //         }
-    //     }
-    // }
     pub fn right_apply_l(&self, target: &mut NdArray) {
         // AL = Output
         debug_assert_eq!(target.dims[1], self.matrix.dims[0]);
