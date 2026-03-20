@@ -150,25 +150,25 @@ impl LuPivotDecompose {
         }
         max / min
     }
-    // pub fn condition(&self) -> f32 {
-    //     let mut max_col_sum:f32 = 0.0;
-    //     let mut min_uii:f32 = f32::MAX;
-    //     for j in 0..self.n {
-    //         let mut col_sum:f32 = 0.0;
-    //         for i in 0..self.n {
-    //             let v = self.matrix.data[i * self.n + j].abs();
-    //             col_sum += v;
-    //             if i == j {
-    //                 min_uii = min_uii.min(v);
-    //             }
-    //         }
-    //         max_col_sum = max_col_sum.max(col_sum);
-    //     }
-    //     if min_uii == 0.0 {
-    //         return f32::INFINITY
-    //     }
-    //     max_col_sum / min_uii
-    // }
+    pub fn lower_bound_condition(&self) -> f32 {
+        let mut max_col_sum:f32 = 0.0;
+        let mut min_uii:f32 = f32::MAX;
+        for j in 0..self.n {
+            let mut col_sum:f32 = 0.0;
+            for i in 0..self.n {
+                let v = self.matrix.data[i * self.n + j].abs();
+                col_sum += v;
+                if i == j {
+                    min_uii = min_uii.min(v);
+                }
+            }
+            max_col_sum = max_col_sum.max(col_sum);
+        }
+        if min_uii == 0.0 {
+            return f32::INFINITY
+        }
+        max_col_sum / min_uii
+    }
 }
 impl LuPivotDecompose {
     pub fn left_apply_l(&self, target: &mut NdArray) {
@@ -237,49 +237,32 @@ impl LuPivotDecompose {
             moffset += cols;
         }
     }
-    // pub fn left_apply_u(&self, target: &mut NdArray, workspace: &mut [f32]) {
-    //     // UA = Output
+    // pub fn right_apply_l(&self, target: &mut NdArray) {
+    //     // AL = Output
+    //     debug_assert_eq!(target.dims[1], self.matrix.dims[0]);
     //     let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
     //     let (trows, tcols) = (target.dims[0], target.dims[1]);
-    //     debug_assert_eq!(cols, trows);
-    //     let workspace = &mut workspace[..tcols];
-    //     let m = &self.matrix.data;
-    //     let t = &mut target.data;
-    //     let mut moffset = 0;
-    //     let mut toffset = 0;
-    //     for i in 0..rows {
-    //         let m_suffix = &m[moffset..moffset + cols];
-    //         let mut koffset = toffset;
-    //         {
-    //             let scalar = m_suffix[i];
-    //             let t_suffix = &t[koffset..koffset + tcols];
-    //             for j in 0..tcols {
-    //                 workspace[j] = scalar * t_suffix[j];
+    //     for i in 0..trows {
+    //         for j in 0..rows {
+    //             for k in j + 1..rows {
+    //                 target.data[i * tcols + j] +=
+    //                     target.data[i * tcols + k] * self.matrix.data[k * cols + j];
     //             }
     //         }
-    //         for k in i + 1..cols {
-    //             koffset += tcols;
-    //             let t_suffix = &t[koffset..koffset + tcols];
-    //             let scalar = m_suffix[k];
-    //             for j in 0..tcols {
-    //                 workspace[j] += scalar * t_suffix[j];
-    //             }
-    //         }
-    //         t[toffset..toffset + tcols].copy_from_slice(workspace);
-    //         moffset += cols;
-    //         toffset += tcols;
     //     }
     // }
     pub fn right_apply_l(&self, target: &mut NdArray) {
         // AL = Output
-        debug_assert_eq!(target.dims[1], self.matrix.dims[0]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
+        debug_assert_eq!(tcols, rows);
+        let t = &mut target.data;
+        let m = &self.matrix.data;
         for i in 0..trows {
             for j in 0..rows {
                 for k in j + 1..rows {
-                    target.data[i * tcols + j] +=
-                        target.data[i * tcols + k] * self.matrix.data[k * cols + j];
+                    t[i * tcols + j] +=
+                        t[i * tcols + k] * m[k * cols + j];
                 }
             }
         }
