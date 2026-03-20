@@ -151,10 +151,10 @@ impl LuPivotDecompose {
         max / min
     }
     pub fn lower_bound_condition(&self) -> f32 {
-        let mut max_col_sum:f32 = 0.0;
-        let mut min_uii:f32 = f32::MAX;
+        let mut max_col_sum: f32 = 0.0;
+        let mut min_uii: f32 = f32::MAX;
         for j in 0..self.n {
-            let mut col_sum:f32 = 0.0;
+            let mut col_sum: f32 = 0.0;
             for i in 0..self.n {
                 let v = self.matrix.data[i * self.n + j].abs();
                 col_sum += v;
@@ -165,7 +165,7 @@ impl LuPivotDecompose {
             max_col_sum = max_col_sum.max(col_sum);
         }
         if min_uii == 0.0 {
-            return f32::INFINITY
+            return f32::INFINITY;
         }
         max_col_sum / min_uii
     }
@@ -219,7 +219,7 @@ impl LuPivotDecompose {
             {
                 let scalar = m_suffix[i];
                 for j in 0..tcols {
-                    tgt_suffix[j] *= scalar ;
+                    tgt_suffix[j] *= scalar;
                 }
             }
             {
