@@ -237,32 +237,37 @@ impl LuPivotDecompose {
             moffset += cols;
         }
     }
-    // pub fn right_apply_l(&self, target: &mut NdArray) {
+    // pub fn right_apply_l(&self, target: &mut NdArray, workspace: &mut [f32]) {
     //     // AL = Output
-    //     debug_assert_eq!(target.dims[1], self.matrix.dims[0]);
     //     let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
     //     let (trows, tcols) = (target.dims[0], target.dims[1]);
+    //     debug_assert_eq!(tcols, rows);
+    //     let workspace = &mut workspace[..tcols];
+    //     let t = &mut target.data;
+    //     let m = &self.matrix.data;
     //     for i in 0..trows {
-    //         for j in 0..rows {
-    //             for k in j + 1..rows {
-    //                 target.data[i * tcols + j] +=
-    //                     target.data[i * tcols + k] * self.matrix.data[k * cols + j];
+    //         let outer_suffix = &mut t[i * tcols.. i * tcols + tcols];
+    //         for k in 0..rows {
+    //             workspace[k] = t[i * tcols + k];
+    //             let m_suffix = &m[k * cols.. k * cols + cols];
+    //             let scalar = outer_suffix[k];
+    //             for j in 0..k {
+    //                 workspace[j] += scalar * m_suffix[j];
     //             }
     //         }
+    //         outer_suffix.copy_from_slice(workspace);
     //     }
     // }
     pub fn right_apply_l(&self, target: &mut NdArray) {
         // AL = Output
+        debug_assert_eq!(target.dims[1], self.matrix.dims[0]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
-        debug_assert_eq!(tcols, rows);
-        let t = &mut target.data;
-        let m = &self.matrix.data;
         for i in 0..trows {
             for j in 0..rows {
                 for k in j + 1..rows {
-                    t[i * tcols + j] +=
-                        t[i * tcols + k] * m[k * cols + j];
+                    target.data[i * tcols + j] +=
+                        target.data[i * tcols + k] * self.matrix.data[k * cols + j];
                 }
             }
         }
