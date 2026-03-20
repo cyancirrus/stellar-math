@@ -254,10 +254,13 @@ impl AutumnDecomp {
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(rows, trows);
-        let h = &self.h.data;
-        let t = &mut target.data;
         debug_assert!(workspace.len() >= tcols);
+        if rows > trows {
+            target.resize_rows(rows);
+        }
+        let h = &self.h.data;
         let mut workspace = &mut workspace[..tcols];
+        let t = &mut target.data;
         for p in (0..rows).rev() {
             let offset = p * cols;
             let h_suffix = &h[offset..=offset + p];
@@ -279,14 +282,17 @@ impl AutumnDecomp {
             let toffset = p * tcols;
             t[toffset..toffset + tcols].copy_from_slice(&workspace);
         }
+        if rows < trows {
+            target.resize_rows(rows);
+        }
     }
     pub fn left_apply_lt(&self, target: &mut NdArray, workspace: &mut [f32]) {
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(rows, trows);
         let h = &self.h.data;
-        if cols > trows {
-            target.resize_rows(cols);
+        if rows > trows {
+            target.resize_rows(rows);
         }
         let t = &mut target.data;
         debug_assert!(workspace.len() >= cols);
@@ -312,8 +318,8 @@ impl AutumnDecomp {
                 }
             }
         }
-        if cols < trows {
-            target.resize_rows(cols);
+        if rows < trows {
+            target.resize_rows(rows);
         }
     }
     pub fn right_apply_l(&self, target: &mut NdArray) {
