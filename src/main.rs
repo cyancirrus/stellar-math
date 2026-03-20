@@ -281,17 +281,15 @@ impl AutumnDecomp {
             t[toffset..toffset + tcols].copy_from_slice(&workspace);
         }
     }
-    pub fn right_apply_l(&self, target: &mut NdArray, workspace: &mut [f32]) {
+    pub fn right_apply_l(&self, target: &mut NdArray) {
         let (rows, cols) = (self.rows, self.cols);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(target.dims[1], self.h.dims[0]);
-        debug_assert!(workspace.len() >= cols);
         if cols > tcols {
             target.resize_cols(cols);
         }
         let t = &mut target.data;
         let h = &self.h.data;
-        let mut workspace = &mut workspace[..tcols];
         let mut offset = 0;
         let mut roffset;
         for i in 0..trows {
@@ -301,12 +299,11 @@ impl AutumnDecomp {
                 let outer_suffix = &h[roffset..=roffset + k];
                 let scalar = t_suffix[k];
                 for j in 0..k {
-                    workspace[j] += scalar * outer_suffix[j];
+                    t_suffix[j] += scalar * outer_suffix[j];
                 }
-                workspace[k] = scalar * outer_suffix[k];
+                t_suffix[k] = scalar * outer_suffix[k];
                 roffset += cols;
             }
-            t_suffix.copy_from_slice(&workspace);
             offset += tcols;
         }
         if cols < tcols {
@@ -402,7 +399,7 @@ fn test_lower_applys() {
     
     let expected = matrix_mult(&b, &l);
     let mut result = b.clone();
-    autumn.right_apply_l(&mut result, &mut workspace);
+    autumn.right_apply_l(&mut result);
     assert!(approx_vector_eq(&expected.data, &result.data));
     
     let lt = l.transpose();
@@ -437,7 +434,7 @@ fn test_n_autumn_reconstruct(n: usize) {
     let mut workspace = vec![0f32; n];
     let autumn = AutumnDecomp::new(a.clone(), &mut workspace);
     let mut i = create_identity_matrix(n);
-    autumn.right_apply_l(&mut i, &mut workspace);
+    autumn.right_apply_l(&mut i);
     autumn.right_apply_q(&mut i);
     assert!(approx_vector_eq(&i.data, &expected.data));
     let mut i = create_identity_matrix(n);
@@ -568,7 +565,7 @@ fn test_autumn_lt_transpose_consistency() {
     autumn.left_apply_lt(&mut left_lt, &mut workspace);
     let left_lt_t = left_lt.transpose();
     let mut right_l = create_identity_matrix(n);
-    autumn.right_apply_l(&mut right_l, &mut workspace);
+    autumn.right_apply_l(&mut right_l);
     assert!(
         approx_vector_eq(&left_lt_t.data, &right_l.data),
         "LT left vs L right failed"
