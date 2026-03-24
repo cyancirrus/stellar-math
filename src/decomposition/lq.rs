@@ -243,8 +243,7 @@ impl AutumnDecomp {
                 let roffset = i * tcols;
                 let mut wi = t[roffset + p];
                 {
-                    let mut targ_suffix = &mut t[roffset + p + 1..roffset + tcols];
-                    targ_suffix = &mut targ_suffix[..split_range];
+                    let targ_suffix = &mut t[roffset + p + 1..roffset + tcols];
                     for j in 0..split_range {
                         wi += h_suffix[j] * targ_suffix[j];
                     }
