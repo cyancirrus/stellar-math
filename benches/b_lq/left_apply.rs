@@ -19,10 +19,10 @@ pub fn bench_apply_comparisons(c: &mut Criterion) {
                 || {
                     let decomp = AutumnDecomp::new(generate_random_matrix(n, n));
                     let target = generate_random_matrix(n, n);
-                    let workspace = vec![0.0f32; n];
-                    (decomp, target, workspace)
+                    (decomp, target, n)
                 },
-                |(decomp, mut target, mut workspace)| {
+                |(decomp, mut target, n)| {
+                    let mut workspace = vec![0.0f32; n];
                     black_box(decomp.left_apply_q(&mut target, &mut workspace))
                 },
             );
@@ -54,15 +54,15 @@ group.bench_with_input(BenchmarkId::new("Faer_Left_Apply_Q", n), &n, |b, &n| {
                 stack,
                 Default::default(),
             );
-
-            (mat_faer, householder_factors, target_faer)
-        },
-        |(mat_faer, householder_factors, mut target_faer)| {
             // Q application lives in householder module — look for apply_block_householder_sequence_*
             let req = householder::apply_block_householder_sequence_on_the_left_in_place_scratch::<f32>(
                 n, householder_factors.nrows(), n,
             );
-            let mut mem = MemBuffer::new(req);
+            let mem = MemBuffer::new(req);
+
+            (mat_faer, householder_factors, target_faer, mem)
+        },
+        |(mat_faer, householder_factors, mut target_faer, mut mem)| {
             let stack = MemStack::new(&mut mem);
 
             householder::apply_block_householder_sequence_on_the_left_in_place_with_conj(
