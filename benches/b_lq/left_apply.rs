@@ -2,6 +2,11 @@ use stellar::decomposition::lq::AutumnDecomp;
 use stellar::random::generation::generate_random_matrix;
 use criterion::{BenchmarkId, Criterion, black_box};
 use faer::Mat;
+use faer::prelude::*;
+use faer::{Par, Conj};
+use faer::linalg::qr::no_pivoting::{factor, reconstruct};
+use faer::linalg::householder;
+use faer::dyn_stack::{MemBuffer, MemStack};
 
 
 pub fn bench_apply_comparisons(c: &mut Criterion) {
@@ -31,20 +36,44 @@ group.bench_with_input(BenchmarkId::new("Faer_Left_Apply_Q", n), &n, |b, &n| {
             let random_a = generate_random_matrix(n, n);
             let random_b = generate_random_matrix(n, n);
 
-            let mat_faer = Mat::<f32>::from_fn(n, n, |i, j| random_a.data[i * n + j]);
+            let mut mat_faer = Mat::<f32>::from_fn(n, n, |i, j| random_a.data[i * n + j]);
             let target_faer = Mat::<f32>::from_fn(n, n, |i, j| random_b.data[i * n + j]);
 
-            // qr() returns a high-level Qr type
-            let qr = mat_faer.qr();
+            // Check what's actually in `factor` — it'll be something like:
+            let blocksize = factor::recommended_block_size::<f32>(n, n);
+            let mut householder_factors = Mat::<f32>::zeros(blocksize, n);
 
-            (qr, target_faer)
+            let req = factor::qr_in_place_scratch::<f32>(n, n, blocksize, Par::Seq, Default::default());
+            let mut mem = MemBuffer::new(req);
+            let stack = MemStack::new(&mut mem);
+
+            factor::qr_in_place(
+                mat_faer.as_mut(),
+                householder_factors.as_mut(),
+                Par::Seq,
+                stack,
+                Default::default(),
+            );
+
+            (mat_faer, householder_factors, target_faer)
         },
-        |(qr, target_faer)| {
-            // The actual Q matrix — this is the explicit form
-            // compute_thin_q() or just multiplying by the stored factors
-            let q = qr.compute_thin_Q();
-            // Q * target: left-apply Q to target
-            black_box(q * target_faer)
+        |(mat_faer, householder_factors, mut target_faer)| {
+            // Q application lives in householder module — look for apply_block_householder_sequence_*
+            let req = householder::apply_block_householder_sequence_on_the_left_in_place_scratch::<f32>(
+                n, householder_factors.nrows(), n,
+            );
+            let mut mem = MemBuffer::new(req);
+            let stack = MemStack::new(&mut mem);
+
+            householder::apply_block_householder_sequence_on_the_left_in_place_with_conj(
+                mat_faer.as_ref(),
+                householder_factors.as_ref(),
+                Conj::No,
+                target_faer.as_mut(),
+                Par::Seq,
+                stack,
+            );
+            black_box(target_faer)
         },
     );
 });
