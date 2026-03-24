@@ -9,10 +9,6 @@ itertools = "0.14.0"
 rand = "0.10.0"
 rand_distr = "0.6.0"
 rayon = "1.10.0"
-# blas-src = { version = "0.8", features = ["openblas"] }
-# blas-src = { version = "0.8", features = ["accelerate"] }
-# ndarray = "0.17.2"
-# ndarray = "0.17.2"
 
 [dev-dependencies]
 criterion = "0.5"
@@ -23,12 +19,12 @@ faer-ext = { version = "0.7.1", features = ["ndarray"] }
 
 [[bench]]
 name = "lq"
-sample_size = 10
+sample_size = 4
 harness = false
 
 [[bench]]
 name = "matrix_benchmark"
-sample_size = 10
+sample_size = 4
 harness = false
 
 [profile.release]
