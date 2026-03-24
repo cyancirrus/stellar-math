@@ -186,7 +186,7 @@ impl AutumnDecomp {
             target.resize_rows(cols);
         }
     }
-    pub fn right_apply_q(&self, target: &mut NdArray) {
+    pub fn right_apply_q(&self, target: &mut NdArray, workspace: &mut [f32]) {
         // A * Q
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         let (trows, tcols) = (target.dims[0], target.dims[1]);
@@ -198,31 +198,83 @@ impl AutumnDecomp {
         let t = &mut target.data;
         let n = &self.t;
         let mut offset = rows * cols;
+        let mut roffset;
         for p in (0..rows).rev() {
+            roffset = 0;
             offset -= cols;
             let tau = n[p];
             let h_suffix = &h[offset + p + 1..offset + cols];
-            let split_range = h_suffix.len();
+            // let split_range = h_suffix.len();
             for i in 0..trows {
-                let roffset = i * tcols;
                 let mut wi = t[roffset + p];
                 {
                     let targ_suffix = &mut t[roffset + p + 1..roffset + tcols];
-                    for j in 0..split_range {
-                        wi += h_suffix[j] * targ_suffix[j];
+                    for (h, t) in h_suffix.iter().zip(targ_suffix.iter()) {
+                        wi += h * t;
                     }
-                    wi *= tau;
-                    for j in 0..split_range {
-                        targ_suffix[j] -= wi * h_suffix[j];
-                    }
+                    // for j in 0..split_range {
+                    //     wi += h_suffix[j] * targ_suffix[j];
+                    // }
                 }
+                wi *= tau;
                 t[roffset + p] -= wi;
+                workspace[i] = wi;
+                roffset += tcols;
+            }
+            roffset = 0;
+            for i in 0..trows {
+                let wi = workspace[i];
+                let targ_suffix = &mut t[roffset + p + 1..roffset + tcols];
+                // for j in 0..split_range {
+                //     targ_suffix[j] -= wi * h_suffix[j];
+                // }
+                for (t, h) in targ_suffix.iter_mut().zip(h_suffix.iter()) {
+                    *t -= wi * h;
+                }
+                roffset += tcols;
             }
         }
         if cols < tcols {
             target.resize_cols(cols);
         }
     }
+    // pub fn right_apply_q(&self, target: &mut NdArray) {
+    //     // A * Q
+    //     let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+    //     let (trows, tcols) = (target.dims[0], target.dims[1]);
+    //     debug_assert_eq!(tcols, cols);
+    //     if cols > tcols {
+    //         target.resize_cols(cols);
+    //     }
+    //     let h = &self.h.data;
+    //     let t = &mut target.data;
+    //     let n = &self.t;
+    //     let mut offset = rows * cols;
+    //     for p in (0..rows).rev() {
+    //         offset -= cols;
+    //         let tau = n[p];
+    //         let h_suffix = &h[offset + p + 1..offset + cols];
+    //         let split_range = h_suffix.len();
+    //         for i in 0..trows {
+    //             let roffset = i * tcols;
+    //             let mut wi = t[roffset + p];
+    //             {
+    //                 let targ_suffix = &mut t[roffset + p + 1..roffset + tcols];
+    //                 for j in 0..split_range {
+    //                     wi += h_suffix[j] * targ_suffix[j];
+    //                 }
+    //                 wi *= tau;
+    //                 for j in 0..split_range {
+    //                     targ_suffix[j] -= wi * h_suffix[j];
+    //                 }
+    //             }
+    //             t[roffset + p] -= wi;
+    //         }
+    //     }
+    //     if cols < tcols {
+    //         target.resize_cols(cols);
+    //     }
+    // }
     pub fn right_apply_qt(&self, target: &mut NdArray) {
         // A * Q'
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
@@ -423,9 +475,10 @@ mod test_lq {
     #[test]
     fn test_autumn_orthogonal() {
         let dims = [1, 4];
+        let mut workspace = vec![f32::NAN; 4];
         for n in dims {
             test_n_autumn_orthogonal_left(n);
-            test_n_autumn_orthogonal_right(n);
+            test_n_autumn_orthogonal_right(n, &mut workspace);
         }
     }
     #[test]
@@ -458,7 +511,7 @@ mod test_lq {
         let autumn = AutumnDecomp::new(matrix);
         autumn.right_apply_l(&mut rt.clone());
         autumn.right_apply_lt(&mut rt.clone());
-        autumn.right_apply_q(&mut rq.clone());
+        autumn.right_apply_q(&mut rq.clone(), &mut workspace);
         autumn.right_apply_qt(&mut rq.clone());
 
         autumn.left_apply_l(&mut lt.clone(), &mut workspace);
@@ -532,7 +585,7 @@ mod test_lq {
         let autumn = AutumnDecomp::new(a.clone());
         let mut i = create_identity_matrix(n);
         autumn.right_apply_l(&mut i);
-        autumn.right_apply_q(&mut i);
+        autumn.right_apply_q(&mut i, &mut workspace);
         assert!(approx_vector_eq(&i.data, &expected.data));
         let mut i = create_identity_matrix(n);
         autumn.left_apply_q(&mut i, &mut workspace);
@@ -540,7 +593,7 @@ mod test_lq {
         assert!(approx_vector_eq(&i.data, &expected.data));
         let mut i = create_identity_matrix(n);
         autumn.left_apply_l(&mut i, &mut workspace);
-        autumn.right_apply_q(&mut i);
+        autumn.right_apply_q(&mut i, &mut workspace);
         assert!(approx_vector_eq(&i.data, &expected.data));
         let mut i = create_identity_matrix(n);
         autumn.left_apply_lt(&mut i, &mut workspace);
@@ -553,16 +606,16 @@ mod test_lq {
         i.transpose_square();
         assert!(approx_vector_eq(&i.data, &expected.data));
     }
-    fn test_n_autumn_orthogonal_right(n: usize) {
+    fn test_n_autumn_orthogonal_right(n: usize, workspace: &mut [f32]) {
         let a = generate_random_matrix(n, n);
         let autumn = AutumnDecomp::new(a.clone());
         let mut i = create_identity_matrix(n);
         let expected = i.clone();
-        autumn.right_apply_q(&mut i);
+        autumn.right_apply_q(&mut i, workspace);
         autumn.right_apply_qt(&mut i);
         assert!(approx_vector_eq(&i.data, &expected.data));
         autumn.right_apply_qt(&mut i);
-        autumn.right_apply_q(&mut i);
+        autumn.right_apply_q(&mut i, workspace);
         assert!(approx_vector_eq(&i.data, &expected.data));
     }
     fn test_n_autumn_orthogonal_left(n: usize) {
@@ -586,11 +639,12 @@ mod test_lq {
         let autumn = AutumnDecomp::new(a.clone());
         let mut i = create_identity_matrix(n);
         let expected = i.clone();
-        autumn.right_apply_q(&mut i);
+        let mut workspace = vec![f32::NAN; n];
+        autumn.right_apply_q(&mut i, &mut workspace);
         autumn.right_apply_qt(&mut i);
         assert!(approx_vector_eq(&i.data, &expected.data));
         autumn.right_apply_qt(&mut i);
-        autumn.right_apply_q(&mut i);
+        autumn.right_apply_q(&mut i, &mut workspace);
         assert!(approx_vector_eq(&i.data, &expected.data));
     }
     #[test]
@@ -621,7 +675,7 @@ mod test_lq {
         autumn.left_apply_qt(&mut left_qt, &mut workspace);
         let left_qt_t = left_qt.transpose();
         let mut right_q = create_identity_matrix(n);
-        autumn.right_apply_q(&mut right_q);
+        autumn.right_apply_q(&mut right_q, &mut workspace);
         assert!(
             approx_vector_eq(&left_qt_t.data, &right_q.data),
             "QT left vs Q right failed"

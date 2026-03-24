@@ -19,9 +19,10 @@ pub fn bench_apply_right_q(c: &mut Criterion) {
                 || {
                     let decomp = AutumnDecomp::new(generate_random_matrix(n, n));
                     let target = generate_random_matrix(n, n);
-                    (decomp, target)
+                    let workspace = vec![f32::NAN;n];
+                    (decomp, target, workspace)
                 },
-                |(decomp, mut target)| black_box(decomp.right_apply_q(&mut target)),
+                |(decomp, mut target, mut workspace)| black_box(decomp.right_apply_q(&mut target, &mut workspace)),
             );
         });
 
