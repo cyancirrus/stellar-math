@@ -1,3 +1,7 @@
+[build]
+rustflags = ["-C", "target-cpu=native"]
+
+
 [package]
 name = "stellar"
 version = "0.1.0"
@@ -29,6 +33,7 @@ harness = false
 
 [profile.release]
 strip = true
+codegen-units = 1
 lto = true
 
 [profile.bench]
