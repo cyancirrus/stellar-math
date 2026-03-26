@@ -204,41 +204,35 @@ impl AutumnDecomp {
         let n_ptr = n.as_ptr();
         let w_ptr = workspace.as_mut_ptr();
 
-        for p in (0..rows).rev() {
-            roffset = 0;
-            offset -= cols;
-            let tau = unsafe { *n_ptr.add(p) };
-            let h_suffix_ptr = unsafe { h_ptr.add(offset + p + 1) };
-            let split_range = cols - p - 1;
+        unsafe {
+            for p in (0..rows).rev() {
+                roffset = 0;
+                offset -= cols;
+                let tau = *n_ptr.add(p);
+                let h_suffix_ptr = h_ptr.add(offset + p + 1);
+                let split_range = cols - p - 1;
 
-            for i in 0..trows {
-                let mut wi = unsafe { *t_ptr.add(roffset + p) };
-                unsafe {
+                for i in 0..trows {
+                    let mut wi = *t_ptr.add(roffset + p);
+                    let dst = t_ptr.add(roffset + p + 1);
                     for j in 0..split_range {
-                        wi += *h_suffix_ptr.add(j) * *t_ptr.add(roffset + p + 1 + j);
+                        wi += *h_suffix_ptr.add(j) * *dst.add(j);
                     }
-                }
-                wi *= tau;
-                unsafe {
-                    *t_ptr.add(roffset + p) -= wi;
                     *w_ptr.add(i) = wi;
+                    roffset += tcols;
                 }
-                roffset += tcols;
-            }
-
-            roffset = 0;
-            for i in 0..trows {
-                let wi = unsafe { *w_ptr.add(i) };
-                unsafe {
+                roffset = 0;
+                for i in 0..trows {
+                    let wi = tau * *w_ptr.add(i);
+                    *t_ptr.add(roffset + p) -= wi;
+                    let dst = t_ptr.add(roffset + p + 1);
                     for j in 0..split_range {
-                        let dst = t_ptr.add(roffset + p + 1 + j);
-                        *dst -= wi * *h_suffix_ptr.add(j);
+                        *dst.add(j) -= wi * *h_suffix_ptr.add(j);
                     }
+                    roffset += tcols;
                 }
-                roffset += tcols;
             }
         }
-
         if cols < tcols {
             target.resize_cols(cols);
         }
