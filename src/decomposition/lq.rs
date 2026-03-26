@@ -187,62 +187,62 @@ impl AutumnDecomp {
         }
     }
     pub fn right_apply_q(&self, target: &mut NdArray, workspace: &mut [f32]) {
-    let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
-    let (trows, tcols) = (target.dims[0], target.dims[1]);
-    debug_assert_eq!(tcols, cols);
-    if cols > tcols {
-        target.resize_cols(cols);
-    }
-    let h = &self.h.data;
-    let t = &mut target.data;
-    let n = &self.t;
-    let mut offset = rows * cols;
-    let mut roffset;
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        debug_assert_eq!(tcols, cols);
+        if cols > tcols {
+            target.resize_cols(cols);
+        }
+        let h = &self.h.data;
+        let t = &mut target.data;
+        let n = &self.t;
+        let mut offset = rows * cols;
+        let mut roffset;
 
-    let t_ptr = t.as_mut_ptr();
-    let h_ptr = h.as_ptr();
-    let n_ptr = n.as_ptr();
-    let w_ptr = workspace.as_mut_ptr();
+        let t_ptr = t.as_mut_ptr();
+        let h_ptr = h.as_ptr();
+        let n_ptr = n.as_ptr();
+        let w_ptr = workspace.as_mut_ptr();
 
-    for p in (0..rows).rev() {
-        roffset = 0;
-        offset -= cols;
-        let tau = unsafe { *n_ptr.add(p) };
-        let h_suffix_ptr = unsafe { h_ptr.add(offset + p + 1) };
-        let split_range = cols - p - 1;
+        for p in (0..rows).rev() {
+            roffset = 0;
+            offset -= cols;
+            let tau = unsafe { *n_ptr.add(p) };
+            let h_suffix_ptr = unsafe { h_ptr.add(offset + p + 1) };
+            let split_range = cols - p - 1;
 
-        for i in 0..trows {
-            let mut wi = unsafe { *t_ptr.add(roffset + p) };
-            unsafe {
-                for j in 0..split_range {
-                    wi += *h_suffix_ptr.add(j) * *t_ptr.add(roffset + p + 1 + j);
+            for i in 0..trows {
+                let mut wi = unsafe { *t_ptr.add(roffset + p) };
+                unsafe {
+                    for j in 0..split_range {
+                        wi += *h_suffix_ptr.add(j) * *t_ptr.add(roffset + p + 1 + j);
+                    }
                 }
+                wi *= tau;
+                unsafe {
+                    *t_ptr.add(roffset + p) -= wi;
+                    *w_ptr.add(i) = wi;
+                }
+                roffset += tcols;
             }
-            wi *= tau;
-            unsafe {
-                *t_ptr.add(roffset + p) -= wi;
-                *w_ptr.add(i) = wi;
+
+            roffset = 0;
+            for i in 0..trows {
+                let wi = unsafe { *w_ptr.add(i) };
+                unsafe {
+                    for j in 0..split_range {
+                        let dst = t_ptr.add(roffset + p + 1 + j);
+                        *dst -= wi * *h_suffix_ptr.add(j);
+                    }
+                }
+                roffset += tcols;
             }
-            roffset += tcols;
         }
 
-        roffset = 0;
-        for i in 0..trows {
-            let wi = unsafe { *w_ptr.add(i) };
-            unsafe {
-                for j in 0..split_range {
-                    let dst = t_ptr.add(roffset + p + 1 + j);
-                    *dst -= wi * *h_suffix_ptr.add(j);
-                }
-            }
-            roffset += tcols;
+        if cols < tcols {
+            target.resize_cols(cols);
         }
     }
-
-    if cols < tcols {
-        target.resize_cols(cols);
-    }
-}
     // pub fn right_apply_q(&self, target: &mut NdArray) {
     //     // A * Q
     //     let (rows, cols) = (self.h.dims[0], self.h.dims[1]);

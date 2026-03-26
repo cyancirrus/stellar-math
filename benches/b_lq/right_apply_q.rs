@@ -1,3 +1,4 @@
+use crate::sizes::LQ_SIZES;
 use criterion::{BenchmarkId, Criterion, black_box};
 use faer::Mat;
 use faer::dyn_stack::{MemBuffer, MemStack};
@@ -6,8 +7,6 @@ use faer::linalg::qr::no_pivoting::factor;
 use faer::{Conj, Par};
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::random::generation::generate_random_matrix;
-use crate::sizes::LQ_SIZES;
-
 
 pub fn bench_apply_right_q(c: &mut Criterion) {
     let mut group = c.benchmark_group("Apply_Operations");
@@ -19,10 +18,12 @@ pub fn bench_apply_right_q(c: &mut Criterion) {
                 || {
                     let decomp = AutumnDecomp::new(generate_random_matrix(n, n));
                     let target = generate_random_matrix(n, n);
-                    let workspace = vec![f32::NAN;n];
+                    let workspace = vec![f32::NAN; n];
                     (decomp, target, workspace)
                 },
-                |(decomp, mut target, mut workspace)| black_box(decomp.right_apply_q(&mut target, &mut workspace)),
+                |(decomp, mut target, mut workspace)| {
+                    black_box(decomp.right_apply_q(&mut target, &mut workspace))
+                },
             );
         });
 

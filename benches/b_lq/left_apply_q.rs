@@ -1,3 +1,4 @@
+use crate::sizes::LQ_SIZES;
 use criterion::{BenchmarkId, Criterion, black_box};
 use faer::Mat;
 use faer::dyn_stack::{MemBuffer, MemStack};
@@ -6,7 +7,6 @@ use faer::linalg::qr::no_pivoting::factor;
 use faer::{Conj, Par};
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::random::generation::generate_random_matrix;
-use crate::sizes::LQ_SIZES;
 
 pub fn bench_apply_left_q(c: &mut Criterion) {
     let mut group = c.benchmark_group("Apply_Operations");

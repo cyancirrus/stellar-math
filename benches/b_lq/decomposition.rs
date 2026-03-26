@@ -1,10 +1,10 @@
+use crate::sizes::LQ_SIZES;
 use criterion::{BenchmarkId, Criterion, black_box};
 use faer::dyn_stack::{MemBuffer, MemStack};
 use faer::linalg::qr::no_pivoting::factor;
 use faer::{Mat, Par};
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::random::generation::generate_random_matrix;
-use crate::sizes::LQ_SIZES;
 
 pub fn bench_decomposition(c: &mut Criterion) {
     let mut group = c.benchmark_group("Apply_Decomposition");

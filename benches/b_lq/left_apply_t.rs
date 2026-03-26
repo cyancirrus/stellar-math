@@ -1,9 +1,9 @@
+use crate::sizes::LQ_SIZES;
 use criterion::{BenchmarkId, Criterion, black_box};
 use faer::linalg::matmul::triangular::{self, BlockStructure};
 use faer::{Accum, Mat, Par};
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::random::generation::generate_random_matrix;
-use crate::sizes::LQ_SIZES;
 
 pub fn bench_apply_left_t(c: &mut Criterion) {
     let mut group = c.benchmark_group("Apply_Operations");
