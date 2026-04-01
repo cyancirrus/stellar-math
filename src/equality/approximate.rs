@@ -8,6 +8,9 @@ pub fn approx_vector_eq(a: &[f32], b: &[f32]) -> bool {
     let n = a.len();
     let mut error = 0f32;
     for i in 0..n {
+        if a[i].is_nan() || b[i].is_nan() {
+            return false;
+        }
         error += (a[i] - b[i]).abs();
     }
     error / (n as f32).sqrt() < TOLERANCE

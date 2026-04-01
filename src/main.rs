@@ -14,7 +14,6 @@ fn tensor_mult_cache(
     work_y: &mut [f32],
     block: usize,
 ) {
-    // should be good up until padding
     let bsize = block * block;
     let work_x = &mut work_x[..bsize];
     let work_y = &mut work_y[..bsize];
@@ -24,7 +23,8 @@ fn tensor_mult_cache(
     debug_assert!(work_y.len() >= bsize);
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     // will reuse allocation if available
-    target.resize(x_rows, y_cols);
+    target.resize_dirty(x_rows, y_cols);
+    target.data.fill(0f32);
     let x_d = &x.data;
     let y_d = &y.data;
     let t_d = &mut target.data;
@@ -141,9 +141,9 @@ fn tmat_mult_left_lower(
 fn test_equivalence() {
     // cols >= rows
     let ikj = [
-        // (1, 1, 1),
-        // (8, 1, 1),
-        // (1, 8, 1),
+        (1, 1, 1),
+        (8, 1, 1),
+        (1, 8, 1),
         (1, 1, 8),
         (6, 4, 8),
         (6, 8, 4),
@@ -156,7 +156,6 @@ fn test_equivalence() {
     let mut work_x = vec![f32::NAN; block * block];
     let mut work_y = vec![f32::NAN; block * block];
     for (i, k, j) in ikj {
-        println!("i: {i:}, k: {k:}, j: {j:}");
         test_equivalence_mkn(block, i, k, j, &mut work_x, &mut work_y);
     }
 }
@@ -170,7 +169,7 @@ fn test_equivalence_mkn(block:usize, m:usize, k:usize, n:usize, work_x:&mut [f32
         data: vec![f32::NAN; m * n],
     };
     tensor_mult_cache(&x, &y, &mut result, work_x, work_y, block);
-    approx_vector_eq(&expected.data, &result.data);
+    assert!(approx_vector_eq(&expected.data, &result.data));
 }
 
 

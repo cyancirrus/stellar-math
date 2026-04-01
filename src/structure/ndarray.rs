@@ -48,6 +48,20 @@ impl NdArray {
             self.extend_rows(ncols, nrows);
         }
     }
+    pub fn resize_dirty(&mut self, nrows: usize, ncols: usize) {
+        debug_assert_eq!(self.dims.len(), 2);
+        let ncard = nrows * ncols;
+        let (rows, cols) = (self.dims[0], self.dims[1]);
+        let card = rows * cols;
+        if ncard > card {
+            self.data.resize(ncard, f32::NAN);
+        } else if ncard < card {
+            self.data.truncate(ncard);
+        }
+        self.dims[0] = nrows;
+        self.dims[1] = ncols;
+
+    }
     pub fn resize_cols(&mut self, ncols: usize) {
         let (rows, cols) = (self.dims[0], self.dims[1]);
         if ncols < cols {
