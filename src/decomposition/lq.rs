@@ -192,44 +192,46 @@ impl AutumnDecomp {
 
     // #[target_feature(enable = "avx2,fma")]
     unsafe fn right_apply_q_impl(&self, target: &mut NdArray, workspace: &mut [f32]) {
-        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
-        let (trows, tcols) = (target.dims[0], target.dims[1]);
-        let h = &self.h.data;
-        let t = &mut target.data;
-        let n = &self.t;
-        let mut offset = rows * cols;
-        assert!(workspace.len() >= trows);
-        assert_eq!(tcols, cols);
-        assert_eq!(rows * cols, h.len());
-        assert_eq!(trows * tcols, t.len());
-        let mut t_ptr;
-        let h_ptr = h.as_ptr();
-        let n_ptr = n.as_ptr();
-        let w_ptr = workspace.as_mut_ptr();
-        for p in (0..rows).rev() {
-            offset -= cols;
-            let h_suffix_ptr = h_ptr.add(offset + p + 1);
-            let split_range = cols - p - 1;
-            t_ptr = t.as_mut_ptr();
-            for i in 0..trows {
-                let mut wi = *t_ptr.add(p);
-                let dst = t_ptr.add(p + 1);
-                for j in 0..split_range {
-                    wi += *h_suffix_ptr.add(j) * *dst.add(j);
+        unsafe {
+            let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+            let (trows, tcols) = (target.dims[0], target.dims[1]);
+            let h = &self.h.data;
+            let t = &mut target.data;
+            let n = &self.t;
+            let mut offset = rows * cols;
+            assert!(workspace.len() >= trows);
+            assert_eq!(tcols, cols);
+            assert_eq!(rows * cols, h.len());
+            assert_eq!(trows * tcols, t.len());
+            let mut t_ptr;
+            let h_ptr = h.as_ptr();
+            let n_ptr = n.as_ptr();
+            let w_ptr = workspace.as_mut_ptr();
+            for p in (0..rows).rev() {
+                offset -= cols;
+                let h_suffix_ptr = h_ptr.add(offset + p + 1);
+                let split_range = cols - p - 1;
+                t_ptr = t.as_mut_ptr();
+                for i in 0..trows {
+                    let mut wi = *t_ptr.add(p);
+                    let dst = t_ptr.add(p + 1);
+                    for j in 0..split_range {
+                        wi += *h_suffix_ptr.add(j) * *dst.add(j);
+                    }
+                    *w_ptr.add(i) = wi;
+                    t_ptr = t_ptr.add(tcols);
                 }
-                *w_ptr.add(i) = wi;
-                t_ptr = t_ptr.add(tcols);
-            }
-            t_ptr = t.as_mut_ptr();
-            let tau = *n_ptr.add(p);
-            for i in 0..trows {
-                let wi = tau * *w_ptr.add(i);
-                *t_ptr.add(p) -= wi;
-                let dst = t_ptr.add(p + 1);
-                for j in 0..split_range {
-                    *dst.add(j) -= wi * *h_suffix_ptr.add(j);
+                t_ptr = t.as_mut_ptr();
+                let tau = *n_ptr.add(p);
+                for i in 0..trows {
+                    let wi = tau * *w_ptr.add(i);
+                    *t_ptr.add(p) -= wi;
+                    let dst = t_ptr.add(p + 1);
+                    for j in 0..split_range {
+                        *dst.add(j) -= wi * *h_suffix_ptr.add(j);
+                    }
+                    t_ptr = t_ptr.add(tcols);
                 }
-                t_ptr = t_ptr.add(tcols);
             }
         }
     }
