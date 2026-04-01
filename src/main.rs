@@ -6,20 +6,19 @@ use stellar::equality::approximate::approx_vector_eq;
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 
-
 /// LqBlockDecomp
 ///
 /// takes in a basis and mutates the original matrix
 /// to contain L on the lower triangle part and
-/// Lower ~ L 
-/// Householder ~ Y' 
+/// Lower ~ L
+/// Householder ~ Y'
 /// Triangular ~ T;
-/// * h: ~ [ L \ Y' ] 
+/// * h: ~ [ L \ Y' ]
 /// * t:  T
-/// 
+///
 /// Matrix decomp has form
 /// A = LQ;
-/// A = L * (I - YTY'); 
+/// A = L * (I - YTY');
 pub struct LqBlockDecomp {
     pub h: NdArray,
     pub t: NdArray,
@@ -65,7 +64,7 @@ fn params(v: &mut [f32]) -> f32 {
 /// builds the kth row of the triangle matrix
 ///
 /// * h: householder data stored in upper right matrix
-/// * r: householder rotation for iteration k 
+/// * r: householder rotation for iteration k
 /// * t: lower block traingular matrix growing row by row
 /// * h_dim: col x col in original matrix space
 /// * t_dim: row x row in original matrix space
@@ -127,7 +126,7 @@ impl LqBlockDecomp {
             active_range -= 1;
             let (done_rows, todo_rows) = l_yt.data.split_at_mut(offset);
             let (curr_row, trail_rows) = todo_rows.split_at_mut(cols);
-            
+
             let v_active = &mut curr_row[k..];
             let tau = params(v_active);
             // implicit 1f32 on the diagonal -> increment index and handle explicitly
@@ -154,10 +153,71 @@ impl LqBlockDecomp {
             }
             offset += cols;
         }
-        Self {
-            h: l_yt,
-            t: t_mat,
-        }
+        Self { h: l_yt, t: t_mat }
     }
 }
+
+impl LqBlockDecomp {}
+fn tmat_mult_left_lower(
+    x: &NdArray,
+    y: &NdArray,
+    work_x: &mut [f32],
+    work_y: &mut [f32],
+    blocksize: usize,
+) -> NdArray {
+    // should be good up until padding
+    debug_assert!(blocksize > 0);
+    debug_assert!(y.dims.len() > 1);
+    debug_assert!(work_x.len() > blocksize * blocksize);
+    debug_assert!(work_y.len() > blocksize * blocksize);
+    debug_assert_eq!(x.dims[1], y.dims[0], "dimension mismatch");
+    let block = blocksize;
+    let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
+    let y_cols = y.dims[1];
+    let mut data: Vec<f32> = vec![0f32; x_rows * y_cols];
+    let x_d = &x.data;
+    let y_d = &y.data;
+    for i in (0..x_rows).step_by(block) {
+        // upper threshold as i is zero indexed
+        let k_end = (i + block) / block;
+        let ii_end = block.min(x_rows - i);
+        for k in 0..k_end {
+            let k_block = k * block;
+            let kk_end = block.min(i + 1 - k_block);
+            let mut woffset = 0;
+            let mut xoffset = i * x_cols + k_block;
+            for i_w in 0..block {
+                work_x[woffset..woffset + block].copy_from_slice(&x_d[xoffset..xoffset + kk_end]);
+                woffset += block;
+                xoffset += x_cols;
+            }
+            for j in (0..y_cols).step_by(block) {
+                let jj_end = block.min(y_cols - j);
+                let mut woffset = 0;
+                let mut yoffset = k_block * y_cols + j;
+                for i_w in 0..block {
+                    work_y[woffset..woffset + jj_end].copy_from_slice(&y_d[yoffset..yoffset + jj_end]);
+                    woffset += block;
+                    yoffset += y_cols;
+                }
+                for ii in 0..ii_end {
+                    let x_row = ii * block;
+                    let out_row = (i + ii) * y_cols;
+                    for kk in 0..kk_end {
+                        let k_offset = kk * block;
+                        let x_val = work_x[x_row + kk];
+                        for jj in 0..jj_end {
+                            data[out_row + jj + j] += x_val * work_y[k_offset + jj];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    NdArray {
+        dims: vec![x.dims[0], y.dims[1]],
+        data,
+    }
+}
+
 fn main() {}
