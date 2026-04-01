@@ -1,5 +1,5 @@
 #![allow(unused)]
-use stellar::algebra::ndmethods::create_identity_matrix;
+use stellar::algebra::ndmethods::{basic_mult, create_identity_matrix, tensor_mult};
 use stellar::algebra::ndmethods::{lt_matrix_mult, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::equality::approximate::approx_vector_eq;
@@ -15,13 +15,14 @@ fn tensor_mult_cache(
     block: usize,
 ) {
     // should be good up until padding
-    debug_assert!(block > 0);
-    debug_assert!(y.dims.len() > 1);
-    debug_assert!(work_x.len() > block * block);
-    debug_assert!(work_y.len() > block * block);
-    debug_assert_eq!(x.dims[1], y.dims[0], "dimension mismatch");
+    let bsize = block * block;
+    let work_x = &mut work_x[..bsize];
+    let work_y = &mut work_y[..bsize];
     let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
     let y_cols = y.dims[1];
+    debug_assert!(work_x.len() >= bsize);
+    debug_assert!(work_y.len() >= bsize);
+    debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     // will reuse allocation if available
     target.resize(x_rows, y_cols);
     let x_d = &x.data;
@@ -33,11 +34,12 @@ fn tensor_mult_cache(
         let ii_end = block.min(x_rows - i);
         for k_block in 0..k_end {
             let k = k_block * block;
+            // let kk_end = block.min(x_cols - k);
             let kk_end = block.min(x_cols - k);
             let mut woffset = 0;
             let mut xoffset = i * x_cols + k;
-            for _ in 0..block {
-                work_x[woffset..woffset + block].copy_from_slice(&x_d[xoffset..xoffset + kk_end]);
+            for _ in 0..ii_end {
+                work_x[woffset..woffset + kk_end].copy_from_slice(&x_d[xoffset..xoffset + kk_end]);
                 woffset += block;
                 xoffset += x_cols;
             }
@@ -45,7 +47,7 @@ fn tensor_mult_cache(
                 let jj_end = block.min(y_cols - j);
                 let mut woffset = 0;
                 let mut yoffset = k * y_cols + j;
-                for _ in 0..block {
+                for _ in 0..kk_end {
                     work_y[woffset..woffset + jj_end]
                         .copy_from_slice(&y_d[yoffset..yoffset + jj_end]);
                     woffset += block;
@@ -136,25 +138,42 @@ fn tmat_mult_left_lower(
     }
 }
 
-fn test() {
+fn test_equivalence() {
+    // cols >= rows
+    let ikj = [
+        // (1, 1, 1),
+        // (8, 1, 1),
+        // (1, 8, 1),
+        (1, 1, 8),
+        (6, 4, 8),
+        (6, 8, 4),
+        (4, 6, 8),
+        (4, 8, 6),
+        (8, 4, 6),
+        (8, 6, 4),
+    ];
     let block = 4;
-    let (m, k, n ) = (8, 8, 8);
+    let mut work_x = vec![f32::NAN; block * block];
+    let mut work_y = vec![f32::NAN; block * block];
+    for (i, k, j) in ikj {
+        println!("i: {i:}, k: {k:}, j: {j:}");
+        test_equivalence_mkn(block, i, k, j, &mut work_x, &mut work_y);
+    }
+}
+fn test_equivalence_mkn(block:usize, m:usize, k:usize, n:usize, work_x:&mut [f32], work_y:&mut [f32]) {
     let x = generate_random_matrix(m, k);
     let y = generate_random_matrix(k, n);
     
-    let expected = matrix_mult(&x, &y);
-
-    let mut work_x = vec![f32::NAN];
-    let mut work_y = vec![f32::NAN];
+    let expected = basic_mult( &x, &y);
     let mut result = NdArray {
         dims: vec![m, n],
         data: vec![f32::NAN; m * n],
     };
-    tensor_mult_cache(&x, &y, &mut result, &mut work_x, &mut work_y, block);
+    tensor_mult_cache(&x, &y, &mut result, work_x, work_y, block);
     approx_vector_eq(&expected.data, &result.data);
 }
 
 
 fn main() {
-    test();
+    test_equivalence();
 }
