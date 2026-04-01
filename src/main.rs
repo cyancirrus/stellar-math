@@ -62,8 +62,10 @@ fn params(v: &mut [f32]) -> f32 {
 ///
 /// triangle iteration for WY decomposition of Q
 /// LQ implementation which makes T ~ lower triangle
+/// builds the kth row of the triangle matrix
 ///
 /// * h: householder data stored in upper right matrix
+/// * r: householder rotation for iteration k 
 /// * t: lower block traingular matrix growing row by row
 /// * h_dim: col x col in original matrix space
 /// * t_dim: row x row in original matrix space
@@ -72,6 +74,7 @@ fn params(v: &mut [f32]) -> f32 {
 fn triangle_iteration(
     h: &mut [f32],
     t: &mut [f32],
+    r: &[f32],
     workspace: &mut [f32],
     h_dim: usize,
     t_dim: usize,
@@ -84,7 +87,8 @@ fn triangle_iteration(
     let mut hoffset = 0;
     // h'Y :: Y
     let koffset = k * h_dim;
-    let h_k_tail = &h[koffset + k + 1..koffset + h_dim];
+    let h_k_tail = r;
+    // let h_k_tail = &h[koffset + k + 1..koffset + h_dim];
     for l in 0..k {
         // initial element of householder vector is 1
         let mut dot = h[hoffset + k];
@@ -111,45 +115,48 @@ fn triangle_iteration(
     t[koffset + k] = tau;
 }
 impl LqBlockDecomp {
-    pub fn new(mut basis: NdArray, mut triangle: NdArray, workspace: &mut [f32]) -> Self {
-        let (rows, cols) = (basis.dims[0], basis.dims[1]);
+    pub fn new(mut l_yt: NdArray, mut t_mat: NdArray, workspace: &mut [f32]) -> Self {
+        let (rows, cols) = (l_yt.dims[0], l_yt.dims[1]);
         debug_assert!(rows <= cols);
-        let h = &mut basis.data;
-        let t = &mut triangle.data;
+        let h = &mut l_yt.data;
+        let t = &mut t_mat.data;
         t.fill(0f32);
         let mut active_range = rows;
+        let mut offset = 0;
         for k in 0..rows {
             active_range -= 1;
-            let offset = k * cols;
-            let (projection, target) = basis.data.split_at_mut(offset + cols);
-            let projection = &mut projection[offset + k..offset + cols];
+            let (done_rows, todo_rows) = l_yt.data.split_at_mut(offset);
+            let (curr_row, trail_rows) = todo_rows.split_at_mut(cols);
+            
+            let v_active = &mut curr_row[k..];
+            let tau = params(v_active);
+            // implicit 1f32 on the diagonal -> increment index and handle explicitly
+            let v_tail = &v_active[1..];
+            triangle_iteration(done_rows, t, v_tail, workspace, cols, rows, k, tau);
 
-            let tau = params(projection);
-            triangle_iteration(projection, t, workspace, cols, rows, k, tau);
-
-            let proj_suffix = &projection[1..];
-            let split_range = proj_suffix.len();
+            let split_range = v_tail.len();
             let mut roffset = 0;
             for i in 0..active_range {
-                let mut wi = target[roffset + k];
+                let mut wi = trail_rows[roffset + k];
                 {
-                    let mut targ_suffix = &mut target[roffset + k + 1..roffset + cols];
+                    let mut targ_suffix = &mut trail_rows[roffset + k + 1..roffset + cols];
                     targ_suffix = &mut targ_suffix[..split_range];
                     for j in 0..split_range {
-                        wi += targ_suffix[j] * proj_suffix[j];
+                        wi += targ_suffix[j] * v_tail[j];
                     }
                     wi *= tau;
                     for j in 0..split_range {
-                        targ_suffix[j] -= wi * proj_suffix[j];
+                        targ_suffix[j] -= wi * v_tail[j];
                     }
                 }
-                target[roffset + k] -= wi;
+                trail_rows[roffset + k] -= wi;
                 roffset += cols;
             }
+            offset += cols;
         }
         Self {
-            h: basis,
-            t: triangle,
+            h: l_yt,
+            t: t_mat,
         }
     }
 }
