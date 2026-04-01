@@ -7,3 +7,4 @@ pub mod qr;
 pub mod qr_matrix;
 pub mod schur;
 pub mod svd;
+pub mod wy;

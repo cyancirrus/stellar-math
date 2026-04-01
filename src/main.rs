@@ -6,187 +6,37 @@ use stellar::equality::approximate::approx_vector_eq;
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 
-/// LqBlockDecomp
-///
-/// takes in a basis and mutates the original matrix
-/// to contain L on the lower triangle part and
-/// Lower ~ L
-/// Householder ~ Y'
-/// Triangular ~ T;
-/// * h: ~ [ L \ Y' ]
-/// * t:  T
-///
-/// Matrix decomp has form
-/// A = LQ;
-/// A = L * (I - YTY');
-pub struct LqBlockDecomp {
-    pub h: NdArray,
-    pub t: NdArray,
-}
-
-// params
-//
-// takes in a slice, where we find the rotation vector
-// in order when multiplied by the original matrix returns
-// a zero'd matrix
-fn params(v: &mut [f32]) -> f32 {
-    let mut max_element = 0f32;
-    for val in v.iter() {
-        let v = val.abs();
-        if v > max_element {
-            max_element = v
-        };
-    }
-    if max_element == 0f32 {
-        return max_element;
-    }
-    let mut magnitude_squared = 0f32;
-    let inv_max_element = 1f32 / max_element;
-    for val in v.iter_mut() {
-        *val *= inv_max_element;
-        magnitude_squared += *val * *val;
-    }
-    // let g = v[0].signum() * magnitude_squared.sqrt();
-    let g = -v[0].signum() * magnitude_squared.sqrt();
-    let scale = v[0] + g;
-    let inv_scale = 1f32 / scale;
-    for val in v[1..].iter_mut() {
-        *val *= inv_scale;
-    }
-    v[0] = -g * max_element;
-    scale / g
-}
-
-/// triangle iteration
-///
-/// triangle iteration for WY decomposition of Q
-/// LQ implementation which makes T ~ lower triangle
-/// builds the kth row of the triangle matrix
-///
-/// * h: householder data stored in upper right matrix
-/// * r: householder rotation for iteration k
-/// * t: lower block traingular matrix growing row by row
-/// * h_dim: col x col in original matrix space
-/// * t_dim: row x row in original matrix space
-/// * tau: scalar of similarity of the household reflection
-/// * k: iteration index
-fn triangle_iteration(
-    h: &mut [f32],
-    t: &mut [f32],
-    r: &[f32],
-    workspace: &mut [f32],
-    h_dim: usize,
-    t_dim: usize,
-    k: usize,
-    tau: f32,
-) {
-    // T[k] = ((T, 0), (-tau[k]* h[k]' Y[k-1]T[k-1], tau));
-    // diagonal element stores the L[ii] element not householder
-    let mut hoffset = 0;
-    // h'Y :: Y
-    let koffset = k * h_dim;
-    let h_k_tail = r;
-    // let h_k_tail = &h[koffset + k + 1..koffset + h_dim];
-    for l in 0..k {
-        // initial element of householder vector is 1
-        let mut dot = h[hoffset + k];
-        let h_i_tail = &h[hoffset + k + 1..hoffset + h_dim];
-        for j in 0..h_k_tail.len() {
-            dot += h_i_tail[j] * h_k_tail[j];
-        }
-        workspace[l] = dot;
-        hoffset += h_dim;
-    }
-    let mut toffset = 0;
-    let (t_upper, t_target) = t.split_at_mut(koffset);
-
-    // h'T :: T ~ bottom-left triangular
-    for l in 0..k {
-        // outer product iteration style
-        let outer = -workspace[l] * tau;
-        let t_tail = &t_upper[toffset..=toffset + l];
-        for j in 0..=l {
-            t_target[j] += outer * t_tail[j];
-        }
-        toffset += h_dim;
-    }
-    t[koffset + k] = tau;
-}
-impl LqBlockDecomp {
-    pub fn new(mut l_yt: NdArray, mut t_mat: NdArray, workspace: &mut [f32]) -> Self {
-        let (rows, cols) = (l_yt.dims[0], l_yt.dims[1]);
-        debug_assert!(rows <= cols);
-        debug_assert!(rows <= workspace.len());
-        let h = &mut l_yt.data;
-        let t = &mut t_mat.data;
-        t.fill(0f32);
-        let mut active_range = rows;
-        let mut offset = 0;
-        for k in 0..rows {
-            active_range -= 1;
-            let (done_rows, todo_rows) = l_yt.data.split_at_mut(offset);
-            let (curr_row, trail_rows) = todo_rows.split_at_mut(cols);
-
-            let v_active = &mut curr_row[k..];
-            let tau = params(v_active);
-            // implicit 1f32 on the diagonal -> increment index and handle explicitly
-            let v_tail = &v_active[1..];
-            triangle_iteration(done_rows, t, v_tail, workspace, cols, rows, k, tau);
-
-            let split_range = v_tail.len();
-            let mut roffset = 0;
-            for i in 0..active_range {
-                let mut wi = trail_rows[roffset + k];
-                {
-                    let mut targ_suffix = &mut trail_rows[roffset + k + 1..roffset + cols];
-                    targ_suffix = &mut targ_suffix[..split_range];
-                    for j in 0..split_range {
-                        wi += targ_suffix[j] * v_tail[j];
-                    }
-                    wi *= tau;
-                    for j in 0..split_range {
-                        targ_suffix[j] -= wi * v_tail[j];
-                    }
-                }
-                trail_rows[roffset + k] -= wi;
-                roffset += cols;
-            }
-            offset += cols;
-        }
-        Self { h: l_yt, t: t_mat }
-    }
-}
-
-impl LqBlockDecomp {}
-fn tmat_mult_left_lower(
+fn tensor_mult_cache(
     x: &NdArray,
     y: &NdArray,
+    target: &mut NdArray,
     work_x: &mut [f32],
     work_y: &mut [f32],
-    blocksize: usize,
-) -> NdArray {
+    block: usize,
+) {
     // should be good up until padding
-    debug_assert!(blocksize > 0);
+    debug_assert!(block > 0);
     debug_assert!(y.dims.len() > 1);
-    debug_assert!(work_x.len() > blocksize * blocksize);
-    debug_assert!(work_y.len() > blocksize * blocksize);
+    debug_assert!(work_x.len() > block * block);
+    debug_assert!(work_y.len() > block * block);
     debug_assert_eq!(x.dims[1], y.dims[0], "dimension mismatch");
-    let block = blocksize;
     let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
     let y_cols = y.dims[1];
-    let mut data: Vec<f32> = vec![0f32; x_rows * y_cols];
+    // will reuse allocation if available
+    target.resize(x_rows, y_cols);
     let x_d = &x.data;
     let y_d = &y.data;
+    let t_d = &mut target.data;
+    let k_end = (x_cols + block - 1) / block;
     for i in (0..x_rows).step_by(block) {
         // upper threshold as i is zero indexed
-        let k_end = (i + block) / block;
         let ii_end = block.min(x_rows - i);
-        for k in 0..k_end {
-            let k_block = k * block;
-            let kk_end = block.min(i + 1 - k_block);
+        for k_block in 0..k_end {
+            let k = k_block * block;
+            let kk_end = block.min(x_cols - k);
             let mut woffset = 0;
-            let mut xoffset = i * x_cols + k_block;
-            for i_w in 0..block {
+            let mut xoffset = i * x_cols + k;
+            for _ in 0..block {
                 work_x[woffset..woffset + block].copy_from_slice(&x_d[xoffset..xoffset + kk_end]);
                 woffset += block;
                 xoffset += x_cols;
@@ -194,9 +44,10 @@ fn tmat_mult_left_lower(
             for j in (0..y_cols).step_by(block) {
                 let jj_end = block.min(y_cols - j);
                 let mut woffset = 0;
-                let mut yoffset = k_block * y_cols + j;
-                for i_w in 0..block {
-                    work_y[woffset..woffset + jj_end].copy_from_slice(&y_d[yoffset..yoffset + jj_end]);
+                let mut yoffset = k * y_cols + j;
+                for _ in 0..block {
+                    work_y[woffset..woffset + jj_end]
+                        .copy_from_slice(&y_d[yoffset..yoffset + jj_end]);
                     woffset += block;
                     yoffset += y_cols;
                 }
@@ -207,17 +58,103 @@ fn tmat_mult_left_lower(
                         let k_offset = kk * block;
                         let x_val = work_x[x_row + kk];
                         for jj in 0..jj_end {
-                            data[out_row + jj + j] += x_val * work_y[k_offset + jj];
+                            t_d[out_row + jj + j] += x_val * work_y[k_offset + jj];
                         }
                     }
                 }
             }
         }
     }
-    NdArray {
-        dims: vec![x.dims[0], y.dims[1]],
-        data,
+}
+fn tmat_mult_left_lower(
+    x: &NdArray,
+    y: &NdArray,
+    target:&mut NdArray,
+    work_x: &mut [f32],
+    work_y: &mut [f32],
+    block: usize,
+) {
+    // should be good up until padding
+    debug_assert!(block > 0);
+    debug_assert!(y.dims.len() > 1);
+    debug_assert!(work_x.len() > block * block);
+    debug_assert!(work_y.len() > block * block);
+    debug_assert_eq!(x.dims[1], y.dims[0], "dimension mismatch");
+    let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
+    let y_cols = y.dims[1];
+    // will reuse allocation if available
+    target.resize(x_rows, y_cols);
+    let t = &mut target.data;
+    let x_d = &x.data;
+    let y_d = &y.data;
+    for i in (0..x_rows).step_by(block) {
+        // upper threshold as i is zero indexed
+        let k_end = (i + block) / block;
+        let ii_end = block.min(x_rows - i);
+        for k_block in 0..k_end {
+            let k = k_block * block;
+            let kk_end = block.min(x_cols - k);
+            let mut woffset = 0;
+            let mut xoffset = i * x_cols + k;
+            for _ in 0..block {
+                work_x[woffset..woffset + block].copy_from_slice(&x_d[xoffset..xoffset + kk_end]);
+                woffset += block;
+                xoffset += x_cols;
+            }
+            if i == k {
+                let mut doffset = 0;
+                // handle the case when blocks are on the diagonal
+                for d in 1..block {
+                    // fills to the right of the diagonal
+                    work_x[doffset + d..doffset + block].fill(0f32);
+                    doffset += block;
+                }
+            }
+            for j in (0..y_cols).step_by(block) {
+                let jj_end = block.min(y_cols - j);
+                let mut woffset = 0;
+                let mut yoffset = k * y_cols + j;
+                for _ in 0..block {
+                    work_y[woffset..woffset + jj_end]
+                        .copy_from_slice(&y_d[yoffset..yoffset + jj_end]);
+                    woffset += block;
+                    yoffset += y_cols;
+                }
+                for ii in 0..ii_end {
+                    let x_row = ii * block;
+                    let out_row = (i + ii) * y_cols;
+                    for kk in 0..kk_end {
+                        let k_offset = kk * block;
+                        let x_val = work_x[x_row + kk];
+                        for jj in 0..jj_end {
+                            t[out_row + jj + j] += x_val * work_y[k_offset + jj];
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
-fn main() {}
+fn test() {
+    let block = 4;
+    let (m, k, n ) = (8, 8, 8);
+    let x = generate_random_matrix(m, k);
+    let y = generate_random_matrix(k, n);
+    
+    let expected = matrix_mult(&x, &y);
+
+    let mut work_x = vec![f32::NAN];
+    let mut work_y = vec![f32::NAN];
+    let mut result = NdArray {
+        dims: vec![m, n],
+        data: vec![f32::NAN; m * n],
+    };
+    tensor_mult_cache(&x, &y, &mut result, &mut work_x, &mut work_y, block);
+    approx_vector_eq(&expected.data, &result.data);
+}
+
+
+fn main() {
+    test();
+}
