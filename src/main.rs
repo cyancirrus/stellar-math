@@ -83,7 +83,6 @@ fn triangle_iteration(
 ) {
     // T[k] = ((T, 0), (-tau[k]* h[k]' Y[k-1]T[k-1], tau));
     // diagonal element stores the L[ii] element not householder
-    debug_assert!(k < workspace.len());
     let mut hoffset = 0;
     // h'Y :: Y
     let koffset = k * h_dim;
@@ -118,6 +117,7 @@ impl LqBlockDecomp {
     pub fn new(mut l_yt: NdArray, mut t_mat: NdArray, workspace: &mut [f32]) -> Self {
         let (rows, cols) = (l_yt.dims[0], l_yt.dims[1]);
         debug_assert!(rows <= cols);
+        debug_assert!(rows <= workspace.len());
         let h = &mut l_yt.data;
         let t = &mut t_mat.data;
         t.fill(0f32);
