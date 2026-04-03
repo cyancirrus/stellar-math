@@ -9,7 +9,7 @@ use stellar::structure::ndarray::NdArray;
 fn tensor_mult_cache(
     x: &NdArray,
     y: &NdArray,
-    target: &mut NdArray,
+    target: &mut [f32],
     work_x: &mut [f32],
     work_y: &mut [f32],
     block: usize,
@@ -23,11 +23,10 @@ fn tensor_mult_cache(
     debug_assert!(work_y.len() >= bsize);
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     // will reuse allocation if available
-    target.resize_dirty(x_rows, y_cols);
-    target.data.fill(0f32);
+    let target = &mut target[..x_rows * y_cols];
+    target.fill(0f32);
     let x_d = &x.data;
     let y_d = &y.data;
-    let t_d = &mut target.data;
     let k_end = (x_cols + block - 1) / block;
     for i in (0..x_rows).step_by(block) {
         // upper threshold as i is zero indexed
@@ -60,7 +59,7 @@ fn tensor_mult_cache(
                         let k_offset = kk * block;
                         let x_val = work_x[x_row + kk];
                         for jj in 0..jj_end {
-                            t_d[out_row + jj + j] += x_val * work_y[k_offset + jj];
+                            target[out_row + jj + j] += x_val * work_y[k_offset + jj];
                         }
                     }
                 }
@@ -155,21 +154,19 @@ fn test_equivalence() {
     let block = 4;
     let mut work_x = vec![f32::NAN; block * block];
     let mut work_y = vec![f32::NAN; block * block];
+    let mut result = vec![f32::NAN; 8 * 8];
     for (i, k, j) in ikj {
-        test_equivalence_mkn(block, i, k, j, &mut work_x, &mut work_y);
+        test_equivalence_mkn(block, i, k, j, &mut work_x, &mut work_y, &mut result);
     }
 }
-fn test_equivalence_mkn(block:usize, m:usize, k:usize, n:usize, work_x:&mut [f32], work_y:&mut [f32]) {
+fn test_equivalence_mkn(block:usize, m:usize, k:usize, n:usize, work_x:&mut [f32], work_y:&mut [f32], result: &mut [f32]) {
     let x = generate_random_matrix(m, k);
     let y = generate_random_matrix(k, n);
     
     let expected = basic_mult( &x, &y);
-    let mut result = NdArray {
-        dims: vec![m, n],
-        data: vec![f32::NAN; m * n],
-    };
-    tensor_mult_cache(&x, &y, &mut result, work_x, work_y, block);
-    assert!(approx_vector_eq(&expected.data, &result.data));
+    tensor_mult_cache(&x, &y, result, work_x, work_y, block);
+    println!("result {result:?}");
+    assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 
 
