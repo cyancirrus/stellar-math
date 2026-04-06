@@ -1,4 +1,4 @@
-use crate::sizes::LQ_SIZES;
+use crate::sharedvars::LQ_SIZES;
 use criterion::{BenchmarkId, Criterion, black_box};
 use faer::linalg::matmul::triangular::{self, BlockStructure};
 use faer::{Accum, Mat, Par};

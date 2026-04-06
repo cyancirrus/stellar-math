@@ -1,4 +1,4 @@
-use crate::sizes::LQ_SIZES;
+use crate::sharedvars::LQ_SIZES;
 use criterion::{BenchmarkId, Criterion, black_box};
 use faer::dyn_stack::{MemBuffer, MemStack};
 use faer::linalg::qr::no_pivoting::factor;

@@ -27,7 +27,7 @@ sample_size = 4
 harness = false
 
 [[bench]]
-name = "matrix_benchmark"
+name = "matrix"
 sample_size = 4
 harness = false
 

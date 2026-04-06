@@ -8,6 +8,4 @@ use stellar::equality::approximate::approx_vector_eq;
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 
-
-fn main() {
-}
+fn main() {}
