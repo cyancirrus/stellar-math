@@ -85,7 +85,8 @@ fn triangle_iteration(
         // initial element of householder vector is 1
         let mut dot = h[hoffset + k];
         let h_i_tail = &h[hoffset + k + 1..hoffset + h_dim];
-        for j in 0..h_k_tail.len() { dot += h_i_tail[j] * h_k_tail[j];
+        for j in 0..h_k_tail.len() {
+            dot += h_i_tail[j] * h_k_tail[j];
         }
         workspace[l] = dot;
         hoffset += h_dim;

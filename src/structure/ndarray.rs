@@ -60,7 +60,6 @@ impl NdArray {
         }
         self.dims[0] = nrows;
         self.dims[1] = ncols;
-
     }
     pub fn resize_cols(&mut self, ncols: usize) {
         let (rows, cols) = (self.dims[0], self.dims[1]);
