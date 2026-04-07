@@ -55,10 +55,17 @@ pub fn tensor_mult_cache(
                     let x_row = ii * block;
                     let out_row = (i + ii) * y_cols;
                     for kk in 0..kk_end {
+                        // let k_offset = kk * block;
+                        // let x_val = work_x[x_row + kk];
+                        // for jj in 0..jj_end {
+                        //     target[out_row + jj + j] += x_val * work_y[k_offset + jj];
+                        // }
                         let k_offset = kk * block;
                         let x_val = work_x[x_row + kk];
-                        for jj in 0..jj_end {
-                            target[out_row + jj + j] += x_val * work_y[k_offset + jj];
+                        let t_select = &mut target[out_row + j..out_row + j + jj_end];
+                        let y_select = &work_y[k_offset..k_offset + jj_end];
+                        for (t, y) in t_select.iter_mut().zip(y_select.iter()) {
+                            *t += x_val * y;
                         }
                     }
                 }
