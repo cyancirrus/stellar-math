@@ -124,8 +124,8 @@ pub fn par_tensor_mult_cache(
                         // index into the work_x
                         let mut koffset = 0;
                         let mut x_idx = x_row;
-                        let x_val = work_x[x_idx];
                         for _ in 0..kk_end {
+                            let x_val = work_x[x_idx];
                             let t_slice = &mut t_block_row[out_row + j..out_row + j + jj_end];
                             let y_slice = &work_y[koffset..koffset + jj_end];
                             // for (t, y) in t_slice.iter_mut().zip(y_slice.iter()) {
