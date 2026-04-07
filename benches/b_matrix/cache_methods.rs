@@ -1,9 +1,9 @@
 use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_DIMS};
+use criterion::{AxisScale, PlotConfiguration};
 use criterion::{BenchmarkId, Criterion, Throughput, black_box};
 use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_mult_cache};
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::random::generation::generate_random_matrix;
-use criterion::{PlotConfiguration, AxisScale};
 
 const BLOCK: usize = 4;
 
@@ -13,7 +13,7 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
         // NOTE: would need an external library
         // let plot_config = PlotConfiguration::default()
         // .summary_scale(AxisScale::Logarithmic);
-    // group.plot_config(plot_config);
+        // group.plot_config(plot_config);
         group.sampling_mode(criterion::SamplingMode::Auto);
         for &(i, k, j) in dims {
             let parameter = format!("{}x{}x{}", i, k, j);
