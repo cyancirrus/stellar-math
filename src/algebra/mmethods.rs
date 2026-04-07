@@ -72,19 +72,18 @@ thread_local! {
     static WORK_Y: RefCell<Vec<f32>> = RefCell::new(Vec::new());
 }
 
-pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], block: usize) {
+pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], workspace:&mut [f32], block: usize) {
     let bsize = block * block;
     let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
     let y_cols = y.dims[1];
-    debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     // will reuse allocation if available
     let t_d = &mut target[..x_rows * y_cols];
     t_d.fill(0f32);
     let x_d = &x.data;
     let y_d = &y.data;
     let k_end = (x_cols + block - 1) / block;
-    let num_threads = rayon::current_num_threads();
-    let mut workspace = vec![0f32; bsize * 2 * num_threads];
+    // debug_assert!(workspace.len() >= bsize * 2 * num_threads);
+    debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     t_d.par_chunks_mut(block * y_cols)
         .zip(x_d.par_chunks(block * x_cols))
         .zip(workspace.par_chunks_mut(bsize * 2))
@@ -183,9 +182,11 @@ mod test_cached_matrix_methods {
     fn test_par_equivalence_mkn(block: usize, m: usize, k: usize, n: usize, result: &mut [f32]) {
         let x = generate_random_matrix(m, k);
         let y = generate_random_matrix(k, n);
+        let num_threads = rayon::current_num_threads();
+        let mut workspace = vec![0f32; block * block * 2 * num_threads];
 
         let expected = basic_mult(&x, &y);
-        par_tensor_mult_cache(&x, &y, result, block);
+        par_tensor_mult_cache(&x, &y, result, &mut workspace, block);
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
     }
     fn test_equivalence_mkn(
