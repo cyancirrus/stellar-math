@@ -104,6 +104,7 @@ pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], works
                     woffset += block;
                     xoffset += x_cols;
                 }
+                let mut yoffset = k * y_cols;
                 for j in (0..y_cols).step_by(block) {
                     let jj_end = block.min(y_cols - j);
                     let mut woffset = 0;
@@ -120,11 +121,6 @@ pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], works
                         let out_row = ii * y_cols;
                         let mut koffset = 0;
                         for kk in 0..kk_end {
-                            // let k_offset = kk * block;
-                            // let x_val = work_x[x_row + kk];
-                            // for jj in 0..jj_end {
-                            //     t_block_row[out_row + jj + j] += x_val * work_y[k_offset + jj];
-                            // }
                             let x_val = work_x[x_row + kk];
                             let t_select = &mut t_block_row[out_row + j..out_row + j + jj_end];
                             let y_select = &work_y[koffset..koffset + jj_end];
@@ -134,6 +130,7 @@ pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], works
                             koffset += block;
                         }
                     }
+                    yoffset += block;
                 }
             }
         });
