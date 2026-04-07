@@ -114,10 +114,12 @@ pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], works
                         woffset += block;
                         yoffset += y_cols;
                     }
-                    for ii in 0..ii_end {
+                    let mut x_row = 0;
+                    let mut out_row = 0;
+                    // let x_row = ii * block;
+                    // let out_row = ii * y_cols;
+                    for _ in 0..ii_end {
                         // index into the work_x
-                        let x_row = ii * block;
-                        let out_row = ii * y_cols;
                         let mut koffset = 0;
                         for kk in 0..kk_end {
                             let x_val = work_x[x_row + kk];
@@ -128,6 +130,8 @@ pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], works
                             }
                             koffset += block;
                         }
+                        x_row += block;
+                        out_row += y_cols;
                     }
                 }
             }

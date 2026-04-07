@@ -116,32 +116,32 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
             //         );
             //     },
             // );
-            group.bench_with_input(
-                BenchmarkId::new("cache", &parameter),
-                &(i, j, k),
-                |b, &(i, j, k)| {
-                    b.iter_with_setup(
-                        || {
-                            let x = generate_random_matrix(i, k);
-                            let y = generate_random_matrix(k, j);
-                            let work_x = vec![f32::NAN; BLOCK_CACHE * BLOCK_CACHE];
-                            let work_y = vec![f32::NAN; BLOCK_CACHE * BLOCK_CACHE];
-                            let target = vec![f32::NAN; i * j];
-                            (x, y, target, work_x, work_y)
-                        },
-                        |(x, y, mut target, mut work_x, mut work_y)| {
-                            black_box(tensor_mult_cache(
-                                &x,
-                                &y,
-                                &mut target,
-                                &mut work_x,
-                                &mut work_y,
-                                BLOCK_CACHE,
-                            ))
-                        },
-                    );
-                },
-            );
+            // group.bench_with_input(
+            //     BenchmarkId::new("cache", &parameter),
+            //     &(i, j, k),
+            //     |b, &(i, j, k)| {
+            //         b.iter_with_setup(
+            //             || {
+            //                 let x = generate_random_matrix(i, k);
+            //                 let y = generate_random_matrix(k, j);
+            //                 let work_x = vec![f32::NAN; BLOCK_CACHE * BLOCK_CACHE];
+            //                 let work_y = vec![f32::NAN; BLOCK_CACHE * BLOCK_CACHE];
+            //                 let target = vec![f32::NAN; i * j];
+            //                 (x, y, target, work_x, work_y)
+            //             },
+            //             |(x, y, mut target, mut work_x, mut work_y)| {
+            //                 black_box(tensor_mult_cache(
+            //                     &x,
+            //                     &y,
+            //                     &mut target,
+            //                     &mut work_x,
+            //                     &mut work_y,
+            //                     BLOCK_CACHE,
+            //                 ))
+            //             },
+            //         );
+            //     },
+            // );
         }
         group.finish();
     };
