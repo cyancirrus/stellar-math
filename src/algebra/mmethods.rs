@@ -1,6 +1,9 @@
 use crate::structure::ndarray::NdArray;
+use std::cell::RefCell;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
+
+
 
 pub fn tensor_mult_cache(
     x: &NdArray,
@@ -64,6 +67,11 @@ pub fn tensor_mult_cache(
     }
 }
 
+thread_local! {
+    static WORK_X: RefCell<Vec<f32>> = RefCell::new(Vec::new());
+    static WORK_Y: RefCell<Vec<f32>> = RefCell::new(Vec::new());
+}
+
 pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], block: usize) {
     let bsize = block * block;
     let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
@@ -75,11 +83,13 @@ pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], block
     let x_d = &x.data;
     let y_d = &y.data;
     let k_end = (x_cols + block - 1) / block;
+    let num_threads = rayon::current_num_threads();
+    let mut workspace = vec![0f32; bsize * 2 * num_threads];
     t_d.par_chunks_mut(block * y_cols)
         .zip(x_d.par_chunks(block * x_cols))
-        .for_each(|(t_block_row, x_block_row)| {
-            let mut work_x = vec![0f32; bsize];
-            let mut work_y = vec![0f32; bsize];
+        .zip(workspace.par_chunks_mut(bsize * 2))
+        .for_each(|((t_block_row, x_block_row), work)| {
+            let (work_x, work_y) = work.split_at_mut(bsize);
             // upper threshold as i is zero indexed
             let ii_end = x_block_row.len() / x_cols;
             for k_block in 0..k_end {
