@@ -5,8 +5,6 @@ use criterion::{criterion_group, criterion_main};
 
 criterion_group!(
     benches_performance,
-    cache_methods::bench_small_matmul,
-    cache_methods::bench_medium_matmul,
-    // cache_methods::bench_large_matmul,
+    cache_methods::bench_matmul_scaling,
 );
 criterion_main!(benches_performance);
