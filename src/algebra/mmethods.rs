@@ -1,9 +1,7 @@
 use crate::structure::ndarray::NdArray;
-use std::cell::RefCell;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
-
-
+use std::cell::RefCell;
 
 pub fn tensor_mult_cache(
     x: &NdArray,
@@ -74,7 +72,13 @@ pub fn tensor_mult_cache(
     }
 }
 
-pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], workspace:&mut [f32], block: usize) {
+pub fn par_tensor_mult_cache(
+    x: &NdArray,
+    y: &NdArray,
+    target: &mut [f32],
+    workspace: &mut [f32],
+    block: usize,
+) {
     let bsize = block * block;
     let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
     let y_cols = y.dims[1];
@@ -120,12 +124,18 @@ pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], works
                         // index into the work_x
                         let mut koffset = 0;
                         let mut x_idx = x_row;
+                        let x_val = work_x[x_idx];
                         for _ in 0..kk_end {
-                            let x_val = work_x[x_idx];
-                            let t_select = &mut t_block_row[out_row + j..out_row + j + jj_end];
-                            let y_select = &work_y[koffset..koffset + jj_end];
-                            for (t, y) in t_select.iter_mut().zip(y_select.iter()) {
-                                *t += x_val * y;
+                            let t_slice = &mut t_block_row[out_row + j..out_row + j + jj_end];
+                            let y_slice = &work_y[koffset..koffset + jj_end];
+                            // for (t, y) in t_slice.iter_mut().zip(y_slice.iter()) {
+                            //     *t += x_val * y;
+                            // }
+                            unsafe {
+                                for idx in 0..jj_end {
+                                    *t_slice.get_unchecked_mut(idx) +=
+                                        x_val * *y_slice.get_unchecked(idx);
+                                }
                             }
                             koffset += block;
                             x_idx += 1;
