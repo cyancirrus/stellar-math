@@ -19,7 +19,7 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
         group.sampling_mode(criterion::SamplingMode::Auto);
         for &(i, k, j) in dims {
             let parameter = format!("{}x{}x{}", i, k, j);
-            group.throughput(Throughput::Elements((i * k * j) as u64));
+            group.throughput(Throughput::Elements((2 * i * k * j) as u64));
             // group.bench_with_input(
             //     BenchmarkId::new("naive", &parameter),
             //     &(i, j, k),
@@ -34,20 +34,20 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
             //         );
             //     },
             // );
-            group.bench_with_input(
-                BenchmarkId::new("block", &parameter),
-                &(i, j, k),
-                |b, &(i, j, k)| {
-                    b.iter_with_setup(
-                        || {
-                            let x = generate_random_matrix(i, k);
-                            let y = generate_random_matrix(k, j);
-                            (x, y)
-                        },
-                        |(x, y)| black_box(tensor_mult(BLOCK_ITER, &x, &y)),
-                    );
-                },
-            );
+            // group.bench_with_input(
+            //     BenchmarkId::new("block", &parameter),
+            //     &(i, j, k),
+            //     |b, &(i, j, k)| {
+            //         b.iter_with_setup(
+            //             || {
+            //                 let x = generate_random_matrix(i, k);
+            //                 let y = generate_random_matrix(k, j);
+            //                 (x, y)
+            //             },
+            //             |(x, y)| black_box(tensor_mult(BLOCK_ITER, &x, &y)),
+            //         );
+            //     },
+            // );
             group.bench_with_input(
                 BenchmarkId::new("cache", &parameter),
                 &(i, j, k),
