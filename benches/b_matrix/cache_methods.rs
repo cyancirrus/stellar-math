@@ -7,7 +7,7 @@ use stellar::random::generation::generate_random_matrix;
 
 const BLOCK_ITER: usize = 64;
 const BLOCK_CACHE: usize = 64;
-const BLOCK_CACHE_PAR: usize = 4;
+const BLOCK_CACHE_PAR: usize = 8;
 
 pub fn bench_matmul_scaling(c: &mut Criterion) {
     let mut run_bench = |group_name: &str, dims: &[(usize, usize, usize)]| {
