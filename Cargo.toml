@@ -23,7 +23,7 @@ faer-ext = { version = "0.7.1", features = ["ndarray"] }
 
 [[bench]]
 name = "lq"
-sample_size = 4
+sample_size = 1
 harness = false
 
 [[bench]]
