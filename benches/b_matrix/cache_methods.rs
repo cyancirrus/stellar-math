@@ -5,7 +5,9 @@ use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_mult_cache};
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::random::generation::generate_random_matrix;
 
-const BLOCK: usize = 4;
+const BLOCK_ITER: usize = 64;
+const BLOCK_CACHE: usize = 64;
+const BLOCK_CACHE_PAR: usize = 4;
 
 pub fn bench_matmul_scaling(c: &mut Criterion) {
     let mut run_bench = |group_name: &str, dims: &[(usize, usize, usize)]| {
@@ -28,7 +30,7 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                             let y = generate_random_matrix(k, j);
                             (x, y)
                         },
-                        |(x, y)| black_box(tensor_mult(BLOCK, &x, &y)),
+                        |(x, y)| black_box(basic_mult(&x, &y)),
                     );
                 },
             );
@@ -42,7 +44,7 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                             let y = generate_random_matrix(k, j);
                             (x, y)
                         },
-                        |(x, y)| black_box(basic_mult(&x, &y)),
+                        |(x, y)| black_box(tensor_mult(BLOCK_ITER, &x, &y)),
                     );
                 },
             );
@@ -54,8 +56,8 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                         || {
                             let x = generate_random_matrix(i, k);
                             let y = generate_random_matrix(k, j);
-                            let work_x = vec![f32::NAN; BLOCK * BLOCK];
-                            let work_y = vec![f32::NAN; BLOCK * BLOCK];
+                            let work_x = vec![f32::NAN; BLOCK_CACHE * BLOCK_CACHE];
+                            let work_y = vec![f32::NAN; BLOCK_CACHE * BLOCK_CACHE];
                             let target = vec![f32::NAN; i * j];
                             (x, y, target, work_x, work_y)
                         },
@@ -66,7 +68,7 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                                 &mut target,
                                 &mut work_x,
                                 &mut work_y,
-                                BLOCK,
+                                BLOCK_CACHE,
                             ))
                         },
                     );
@@ -79,14 +81,14 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                     b.iter_with_setup(
                         || {
                             let num_threads = rayon::current_num_threads();
-                            let workspace = vec![0f32; BLOCK * BLOCK * 2 * num_threads];
+                            let workspace = vec![0f32; BLOCK_CACHE_PAR * BLOCK_CACHE_PAR * 2 * num_threads];
                             let x = generate_random_matrix(i, k);
                             let y = generate_random_matrix(k, j);
                             let target = vec![f32::NAN; i * j];
                             (x, y, target, workspace)
                         },
                         |(x, y, mut target, mut workspace)| {
-                            black_box(par_tensor_mult_cache(&x, &y, &mut target, &mut workspace, BLOCK))
+                            black_box(par_tensor_mult_cache(&x, &y, &mut target, &mut workspace, BLOCK_CACHE_PAR))
                         },
                     )
                 },
