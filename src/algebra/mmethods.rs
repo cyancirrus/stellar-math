@@ -116,19 +116,19 @@ pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], works
                     }
                     let mut x_row = 0;
                     let mut out_row = 0;
-                    // let x_row = ii * block;
-                    // let out_row = ii * y_cols;
                     for _ in 0..ii_end {
                         // index into the work_x
                         let mut koffset = 0;
-                        for kk in 0..kk_end {
-                            let x_val = work_x[x_row + kk];
+                        let mut x_idx = x_row;
+                        for _ in 0..kk_end {
+                            let x_val = work_x[x_idx];
                             let t_select = &mut t_block_row[out_row + j..out_row + j + jj_end];
                             let y_select = &work_y[koffset..koffset + jj_end];
                             for (t, y) in t_select.iter_mut().zip(y_select.iter()) {
                                 *t += x_val * y;
                             }
                             koffset += block;
+                            x_idx += 1;
                         }
                         x_row += block;
                         out_row += y_cols;
