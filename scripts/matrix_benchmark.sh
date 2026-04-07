@@ -2,4 +2,4 @@
 echo "Running Matrix Benchmark"
 cd "$(dirname "$0")/.."
 
-cargo criterion --bench matrix
+RAYON_NUM_THREADS=4 cargo criterion --bench matrix
