@@ -1,9 +1,9 @@
 use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_DIMS};
-use criterion::{AxisScale, PlotConfiguration};
 use criterion::{BenchmarkId, Criterion, Throughput, black_box};
 use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_mult_cache};
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::random::generation::generate_random_matrix;
+// use criterion::{AxisScale, PlotConfiguration};
 
 const BLOCK_ITER: usize = 64;
 const BLOCK_CACHE: usize = 64;
@@ -20,20 +20,20 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
         for &(i, k, j) in dims {
             let parameter = format!("{}x{}x{}", i, k, j);
             group.throughput(Throughput::Elements((i * k * j) as u64));
-            group.bench_with_input(
-                BenchmarkId::new("naive", &parameter),
-                &(i, j, k),
-                |b, &(i, j, k)| {
-                    b.iter_with_setup(
-                        || {
-                            let x = generate_random_matrix(i, k);
-                            let y = generate_random_matrix(k, j);
-                            (x, y)
-                        },
-                        |(x, y)| black_box(basic_mult(&x, &y)),
-                    );
-                },
-            );
+            // group.bench_with_input(
+            //     BenchmarkId::new("naive", &parameter),
+            //     &(i, j, k),
+            //     |b, &(i, j, k)| {
+            //         b.iter_with_setup(
+            //             || {
+            //                 let x = generate_random_matrix(i, k);
+            //                 let y = generate_random_matrix(k, j);
+            //                 (x, y)
+            //             },
+            //             |(x, y)| black_box(basic_mult(&x, &y)),
+            //         );
+            //     },
+            // );
             group.bench_with_input(
                 BenchmarkId::new("block", &parameter),
                 &(i, j, k),
@@ -96,7 +96,7 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
         }
         group.finish();
     };
-    run_bench("MatMul - Small", &S_MATRIX_DIMS);
-    run_bench("MatMul - Medium", &M_MATRIX_DIMS);
-    // run_bench("MatMul - Large", &L_MATRIX_DIMS);
+    // run_bench("MatMul - Small", &S_MATRIX_DIMS);
+    // run_bench("MatMul - Medium", &M_MATRIX_DIMS);
+    run_bench("MatMul - Large", &L_MATRIX_DIMS);
 }

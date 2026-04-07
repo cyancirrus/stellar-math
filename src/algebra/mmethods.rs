@@ -67,11 +67,6 @@ pub fn tensor_mult_cache(
     }
 }
 
-thread_local! {
-    static WORK_X: RefCell<Vec<f32>> = RefCell::new(Vec::new());
-    static WORK_Y: RefCell<Vec<f32>> = RefCell::new(Vec::new());
-}
-
 pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], workspace:&mut [f32], block: usize) {
     let bsize = block * block;
     let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
@@ -123,6 +118,13 @@ pub fn par_tensor_mult_cache(x: &NdArray, y: &NdArray, target: &mut [f32], works
                             for jj in 0..jj_end {
                                 t_block_row[out_row + jj + j] += x_val * work_y[k_offset + jj];
                             }
+                            // let k_offset = kk * block;
+                            // let x_val = work_x[x_row + kk];
+                            // let t_select = &mut t_block_row[out_row..out_row + jj_end];
+                            // let y_select = &work_y[k_offset..k_offset + jj_end];
+                            // for (t, y) in t_select.iter_mut().zip(y_select.iter()) {
+                            //     *t += x_val * y;
+                            // }
                         }
                     }
                 }
