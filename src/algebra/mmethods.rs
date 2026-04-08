@@ -37,7 +37,7 @@ pub fn tensor_kernel(
                 let kk_end = block.min(x_cols - k);
                 let mut woffset = 0;
                 let mut xoffset = k;
-                work_x.fill(0f32);
+                // kernel methods where need 0 are handled with iterator
                 for _ in 0..ii_end {
                     work_x[woffset..woffset + kk_end]
                         .copy_from_slice(&x_block_row[xoffset..xoffset + kk_end]);
@@ -45,7 +45,6 @@ pub fn tensor_kernel(
                     xoffset += x_cols;
                 }
                 for j in (0..y_cols).step_by(block) {
-                    work_y.fill(0f32);
                     let jj_end = block.min(y_cols - j);
                     let mut woffset = 0;
                     let mut yoffset = k * y_cols + j;
@@ -235,9 +234,10 @@ mod test_cached_matrix_methods {
             (4, 8, 6),
             (8, 4, 6),
             (8, 6, 4),
+            (16, 8, 16),
         ];
         let block = 8;
-        let mut result = vec![f32::NAN; 8 * 8];
+        let mut result = vec![f32::NAN; 16 * 16];
         for (i, k, j) in ikj {
             test_kernel_equivalence_mkn(block, i, k, j, &mut result);
         }

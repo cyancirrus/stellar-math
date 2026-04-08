@@ -42,7 +42,6 @@ pub fn kernel_mult_avx(
     stride: usize,
     offset: usize,
 ) {
-    println!("in avx!");
     unsafe {
         let aptr = a.as_ptr();
         let bptr = b.as_ptr();
