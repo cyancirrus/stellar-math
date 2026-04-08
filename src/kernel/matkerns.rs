@@ -34,15 +34,15 @@ pub fn kernel_mult_avx(a: &[f32], b: &[f32], c: &mut [f32], stride: usize, offse
     unsafe {
         let aptr = a.as_ptr();
         let bptr = b.as_ptr();
-        let cptr = c.as_mut_ptr().add(offset);
+        let cptr = c.as_mut_ptr();
         let i_row = _mm256_loadu_ps(bptr);
         let ii_row = _mm256_loadu_ps(bptr.add(8));
         let iii_row = _mm256_loadu_ps(bptr.add(16));
         let iv_row = _mm256_loadu_ps(bptr.add(24));
-        let v_row = _mm256_loadu_ps(bptr.add(36));
-        let vi_row = _mm256_loadu_ps(bptr.add(42));
+        let v_row = _mm256_loadu_ps(bptr.add(32));
+        let vi_row = _mm256_loadu_ps(bptr.add(40));
         let vii_row = _mm256_loadu_ps(bptr.add(48));
-        let viii_row = _mm256_loadu_ps(bptr.add(48));
+        let viii_row = _mm256_loadu_ps(bptr.add(56));
 
         let mut aoffset = 0;
         let mut coffset = offset;
@@ -51,6 +51,8 @@ pub fn kernel_mult_avx(a: &[f32], b: &[f32], c: &mut [f32], stride: usize, offse
             // let coffset = k * stride + offset;
             let arow = aptr.add(aoffset);
             let c_row = cptr.add(coffset);
+            // let arow = aptr.add(i * 8);
+            // let c_row = cptr.add(offset * i + stride);
             let mut acc = _mm256_loadu_ps(c_row);
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(0)), i_row, acc);
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(1)), ii_row, acc);
@@ -60,7 +62,7 @@ pub fn kernel_mult_avx(a: &[f32], b: &[f32], c: &mut [f32], stride: usize, offse
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(5)), vi_row, acc);
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(6)), vii_row, acc);
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(7)), viii_row, acc);
-            _mm256_store_ps(c_row, acc);
+            _mm256_storeu_ps(c_row, acc);
             aoffset += 8;
             coffset += stride;
         }
