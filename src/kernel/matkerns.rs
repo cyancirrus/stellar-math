@@ -29,7 +29,7 @@ pub fn kernel_mult(
 /// * block : size of block rows which is equal to block cols
 /// * stride : the number of cols in the output matrix c
 /// * offset : the outer k which will determine where we need to write
-
+#[target_feature(enable = "avx,fma")]
 pub fn kernel_mult_avx(a: &[f32], b: &[f32], c: &mut [f32], stride: usize, offset: usize) {
     unsafe {
         let aptr = a.as_ptr();
