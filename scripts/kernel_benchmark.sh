@@ -2,4 +2,4 @@
 echo "Running Kernel Benchmark"
 cd "$(dirname "$0")/.."
 
-cargo criterion --bench kernel
+RUSTFLAGS="-C target-cpu=native" cargo criterion --bench kernel

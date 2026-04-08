@@ -125,7 +125,7 @@ pub fn kernel_mult_scalar(
         let a_row = &a[aoffset..aoffset + block_k];
         for k in 0..block_k {
             let scalar = a_row[k];
-            let b_row = &b[boffset..boffset + block_k];
+            let b_row = &b[boffset..boffset + block_j];
             let c_row = &mut c[coffset..coffset + block_j];
             for (c, b) in c_row.iter_mut().zip(b_row.iter()) {
                 *c += scalar * b;
