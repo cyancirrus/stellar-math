@@ -31,6 +31,11 @@ name = "matrix"
 sample_size = 4
 harness = false
 
+[[bench]]
+name = "kernel"
+sample_size = 1
+harness = false
+
 [profile.release]
 strip = true
 codegen-units = 1

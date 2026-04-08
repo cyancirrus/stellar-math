@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use stellar::kernel::matkerns::{kernel_mult_avx, kernel_mult_scalar};
 
 pub fn benchmark_kernels(c: &mut Criterion) {
@@ -16,7 +16,6 @@ pub fn benchmark_kernels(c: &mut Criterion) {
                 black_box(&a),
                 black_box(&b),
                 black_box(&mut c_out),
-                block,
                 stride,
                 0,
             )

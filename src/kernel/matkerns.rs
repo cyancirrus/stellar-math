@@ -1,10 +1,5 @@
-
-
-
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
-
-#[cfg(target_arch = "x86_64")]
 const BLOCK_KERNEL: usize = 8;
 
 pub fn kernel_mult(
@@ -19,17 +14,12 @@ pub fn kernel_mult(
 ) {
     #[cfg(target_arch = "x86_64")]
     unsafe {
-        let block = block_i;
-        kernel_mult_avx( a, b, c, block, stride, offset);
+        return kernel_mult_avx(a, b, c, stride, offset);
     }
 
-    #[cfg(not(target_arch = "x86_64"))]
-    kernel_mult_scalar( a, b, c, block_i, block_k, block_j, stride, offset);
-
+    kernel_mult_scalar(a, b, c, block_i, block_k, block_j, stride, offset);
 }
 
-
-#[inline(always)]
 /// kernel_mult
 /// a * b -> c
 ///
@@ -39,49 +29,79 @@ pub fn kernel_mult(
 /// * block : size of block rows which is equal to block cols
 /// * stride : the number of cols in the output matrix c
 /// * offset : the outer k which will determine where we need to write
-pub unsafe fn kernel_mult_avx(
-    a: &[f32],
-    b: &[f32],
-    c: &mut [f32],
-    block:usize,
-    stride: usize,
-    offset: usize,
-) {
-    unsafe {
-    let mut aoffset = 0;
-    let aptr  = a.as_ptr();
-    let bptr= b.as_ptr();
-    let cptr = c.as_mut_ptr().add(offset);
-    let i_row = _mm256_loadu_ps( bptr);
-    let ii_row = _mm256_loadu_ps( bptr.add( 8));
-    let iii_row = _mm256_loadu_ps( bptr.add( 16));
-    let iv_row = _mm256_loadu_ps( bptr.add( 24));
-    let v_row = _mm256_loadu_ps( bptr.add( 36));
-    let vi_row = _mm256_loadu_ps( bptr.add( 42));
-    let vii_row = _mm256_loadu_ps( bptr.add( 48));
-    let viii_row = _mm256_loadu_ps( bptr.add( 48));
 
-    let mut aoffset = 0;
-    let mut coffset = offset;
-    for i in 0..block  {
-        let scalar = 13f32;
-        let arow = aptr.add(aoffset);
-        let c_row = cptr.add(coffset);
-        let mut acc = _mm256_loadu_ps(c_row);
-        acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(0)), i_row, acc);
-        acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(1)), ii_row, acc);
-        acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add( 2 )), iii_row, acc);
-        acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add( 3 )), iv_row, acc);
-        acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add( 4 )), v_row, acc);
-        acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add( 5 )), vi_row, acc);
-        acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add( 6 )), vii_row, acc);
-        acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add( 7 )), viii_row, acc);
-        _mm256_store_ps(c_row, acc);
-        aoffset += 8;
-        coffset += stride;
-    }
+pub fn kernel_mult_avx(a: &[f32], b: &[f32], c: &mut [f32], stride: usize, offset: usize) {
+    unsafe {
+        let aptr = a.as_ptr();
+        let bptr = b.as_ptr();
+        let cptr = c.as_mut_ptr().add(offset);
+        let i_row = _mm256_loadu_ps(bptr);
+        let ii_row = _mm256_loadu_ps(bptr.add(8));
+        let iii_row = _mm256_loadu_ps(bptr.add(16));
+        let iv_row = _mm256_loadu_ps(bptr.add(24));
+        let v_row = _mm256_loadu_ps(bptr.add(36));
+        let vi_row = _mm256_loadu_ps(bptr.add(42));
+        let vii_row = _mm256_loadu_ps(bptr.add(48));
+        let viii_row = _mm256_loadu_ps(bptr.add(48));
+
+        let mut aoffset = 0;
+        let mut coffset = offset;
+        for _ in 0..BLOCK_KERNEL {
+            // let aoffset = k * 8;
+            // let coffset = k * stride + offset;
+            let arow = aptr.add(aoffset);
+            let c_row = cptr.add(coffset);
+            let mut acc = _mm256_loadu_ps(c_row);
+            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(0)), i_row, acc);
+            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(1)), ii_row, acc);
+            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(2)), iii_row, acc);
+            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(3)), iv_row, acc);
+            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(4)), v_row, acc);
+            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(5)), vi_row, acc);
+            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(6)), vii_row, acc);
+            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(7)), viii_row, acc);
+            _mm256_store_ps(c_row, acc);
+            aoffset += 8;
+            coffset += stride;
+        }
     }
 }
+// pub fn kernel_mult_avx(a: &[f32], b: &[f32], c: &mut [f32], stride: usize, offset: usize) {
+//     unsafe {
+//         let aptr = a.as_ptr();
+//         let bptr = b.as_ptr();
+//         let cptr = c.as_mut_ptr().add(offset);
+//         let i_row = _mm256_loadu_ps(bptr);
+//         let ii_row = _mm256_loadu_ps(bptr.add(8));
+//         let iii_row = _mm256_loadu_ps(bptr.add(16));
+//         let iv_row = _mm256_loadu_ps(bptr.add(24));
+//         let v_row = _mm256_loadu_ps(bptr.add(36));
+//         let vi_row = _mm256_loadu_ps(bptr.add(42));
+//         let vii_row = _mm256_loadu_ps(bptr.add(48));
+//         let viii_row = _mm256_loadu_ps(bptr.add(48));
+
+//         let mut aoffset = 0;
+//         let mut coffset = offset;
+//         for _ in 0..BLOCK_KERNEL {
+//             // let aoffset = k * 8;
+//             // let coffset = k * stride + offset;
+//             let arow = aptr.add(aoffset);
+//             let c_row = cptr.add(coffset);
+//             let mut acc = _mm256_loadu_ps(c_row);
+//             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(0)), i_row, acc);
+//             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(1)), ii_row, acc);
+//             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(2)), iii_row, acc);
+//             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(3)), iv_row, acc);
+//             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(4)), v_row, acc);
+//             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(5)), vi_row, acc);
+//             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(6)), vii_row, acc);
+//             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(7)), viii_row, acc);
+//             _mm256_store_ps(c_row, acc);
+//             aoffset += 8;
+//             coffset += stride;
+//         }
+//     }
+// }
 #[inline(always)]
 pub fn kernel_mult_scalar(
     a: &[f32],
@@ -114,4 +134,3 @@ pub fn kernel_mult_scalar(
         coffset += stride;
     }
 }
-

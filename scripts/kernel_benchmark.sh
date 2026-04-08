@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Running Matrix Benchmark"
+echo "Running Kernel Benchmark"
 cd "$(dirname "$0")/.."
 
-RAYON_NUM_THREADS=4 cargo criterion --bench matrix
+cargo criterion --bench kernel
