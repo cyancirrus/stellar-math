@@ -1,7 +1,6 @@
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
-use std::cell::RefCell;
 
 pub fn tensor_mult_cache(
     x: &NdArray,

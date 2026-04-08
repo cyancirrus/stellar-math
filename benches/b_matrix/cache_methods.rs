@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_DIMS};
 use criterion::{BenchmarkId, Criterion, Throughput, black_box};
 use faer::linalg::matmul::matmul;
