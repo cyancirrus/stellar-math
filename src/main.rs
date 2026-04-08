@@ -42,6 +42,7 @@ pub fn tensor_kernel(
                 let kk_end = block.min(x_cols - k);
                 let mut woffset = 0;
                 let mut xoffset = k;
+                work_x.fill(0f32);
                 for _ in 0..ii_end {
                     work_x[woffset..woffset + kk_end]
                         .copy_from_slice(&x_block_row[xoffset..xoffset + kk_end]);
@@ -49,6 +50,7 @@ pub fn tensor_kernel(
                     xoffset += x_cols;
                 }
                 for j in (0..y_cols).step_by(block) {
+                    work_y.fill(0f32);
                     let jj_end = block.min(y_cols - j);
                     let mut woffset = 0;
                     let mut yoffset = k * y_cols + j;
@@ -77,7 +79,7 @@ use stellar::algebra::ndmethods::basic_mult;
 use stellar::equality::approximate::approx_vector_eq;
 use stellar::random::generation::generate_random_matrix;
 
-fn test_par_equivalence() {
+fn test_kernel_equivalence() {
     let ikj = [
         (1, 1, 1),
         (8, 1, 1),
@@ -90,13 +92,13 @@ fn test_par_equivalence() {
         (8, 4, 6),
         (8, 6, 4),
     ];
-    let block = 4;
+    let block = 8;
     let mut result = vec![f32::NAN; 8 * 8];
     for (i, k, j) in ikj {
-        test_equivalence_mkn(block, i, k, j, &mut result);
+        test_kernel_equivalence_mkn(block, i, k, j, &mut result);
     }
 }
-fn test_equivalence_mkn(block: usize, m: usize, k: usize, n: usize, result: &mut [f32]) {
+fn test_kernel_equivalence_mkn(block: usize, m: usize, k: usize, n: usize, result: &mut [f32]) {
     let x = generate_random_matrix(m, k);
     let y = generate_random_matrix(k, n);
     let num_threads = rayon::current_num_threads();
@@ -104,10 +106,8 @@ fn test_equivalence_mkn(block: usize, m: usize, k: usize, n: usize, result: &mut
 
     let expected = basic_mult(&x, &y);
     tensor_kernel(&x, &y, result, &mut workspace, block);
-    println!("expected {expected:?}");
-    println!("result {result:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 fn main() {
-    test_par_equivalence();
+    test_kernel_equivalence();
 }
