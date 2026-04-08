@@ -16,6 +16,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
                 black_box(&a),
                 black_box(&b),
                 black_box(&mut c_out),
+                block,
                 stride,
                 0,
             )

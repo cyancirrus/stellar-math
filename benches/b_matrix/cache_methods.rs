@@ -3,9 +3,8 @@ use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_DIMS};
 use criterion::{BenchmarkId, Criterion, Throughput, black_box};
 use faer::linalg::matmul::matmul;
 use faer::prelude::*;
-use faer::prelude::*;
 use ndarray::Array2;
-use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_mult_cache};
+use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_kernel, tensor_mult_cache};
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::random::generation::generate_random_matrix;
 // use criterion::{AxisScale, PlotConfiguration};
@@ -68,6 +67,32 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                         },
                         |(x, y, mut target, mut workspace)| {
                             black_box(par_tensor_mult_cache(
+                                &x,
+                                &y,
+                                &mut target,
+                                &mut workspace,
+                                BLOCK_CACHE_PAR,
+                            ))
+                        },
+                    )
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new("tensor_kernel", &parameter),
+                &(i, j, k),
+                |b, &(i, j, k)| {
+                    b.iter_with_setup(
+                        || {
+                            let num_threads = rayon::current_num_threads();
+                            let workspace =
+                                vec![0f32; BLOCK_CACHE_PAR * BLOCK_CACHE_PAR * 2 * num_threads];
+                            let x = generate_random_matrix(i, k);
+                            let y = generate_random_matrix(k, j);
+                            let target = vec![f32::NAN; i * j];
+                            (x, y, target, workspace)
+                        },
+                        |(x, y, mut target, mut workspace)| {
+                            black_box(tensor_kernel(
                                 &x,
                                 &y,
                                 &mut target,

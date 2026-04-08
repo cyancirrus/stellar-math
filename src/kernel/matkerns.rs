@@ -14,7 +14,11 @@ pub fn kernel_mult(
 ) {
     #[cfg(target_arch = "x86_64")]
     unsafe {
-        return kernel_mult_avx(a, b, c, stride, offset);
+        if BLOCK_KERNEL == block_j && block_j == block_k {
+            if is_x86_feature_detected!("avx") && is_x86_feature_detected!("fma") {
+                return kernel_mult_avx(a, b, c, block_i, stride, offset);
+            }
+        }
     }
 
     kernel_mult_scalar(a, b, c, block_i, block_k, block_j, stride, offset);
@@ -30,7 +34,14 @@ pub fn kernel_mult(
 /// * stride : the number of cols in the output matrix c
 /// * offset : the outer k which will determine where we need to write
 #[target_feature(enable = "avx,fma")]
-pub fn kernel_mult_avx(a: &[f32], b: &[f32], c: &mut [f32], stride: usize, offset: usize) {
+pub fn kernel_mult_avx(
+    a: &[f32],
+    b: &[f32],
+    c: &mut [f32],
+    block_v: usize,
+    stride: usize,
+    offset: usize,
+) {
     unsafe {
         let aptr = a.as_ptr();
         let bptr = b.as_ptr();
@@ -46,13 +57,9 @@ pub fn kernel_mult_avx(a: &[f32], b: &[f32], c: &mut [f32], stride: usize, offse
 
         let mut aoffset = 0;
         let mut coffset = offset;
-        for _ in 0..BLOCK_KERNEL {
-            // let aoffset = k * 8;
-            // let coffset = k * stride + offset;
+        for _ in 0..block_v {
             let arow = aptr.add(aoffset);
             let c_row = cptr.add(coffset);
-            // let arow = aptr.add(i * 8);
-            // let c_row = cptr.add(offset * i + stride);
             let mut acc = _mm256_loadu_ps(c_row);
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(0)), i_row, acc);
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(1)), ii_row, acc);
