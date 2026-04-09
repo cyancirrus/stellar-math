@@ -73,7 +73,7 @@ pub fn kernel_mult_avx(
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(6)), vii_row, acc);
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(7)), viii_row, acc);
             // _mm256_storeu_ps(c_row, acc);
-            _mm256_store_ps(c_row, acc);
+            _mm256_storeu_ps(c_row, acc);
             aoffset += 8;
             coffset += stride;
         }
