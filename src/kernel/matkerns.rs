@@ -20,6 +20,9 @@ pub fn kernel_mult(
             }
         }
     }
+    // TODO: change input of b to not be block and update the kernel mult avx
+    // if it is edge case then copy into workspace_y here, and pass that in as b;
+    // just make a fn which does this so this doesn't explode in defn
 
     kernel_mult_scalar(a, b, c, block_i, block_k, block_j, stride, offset);
 }
@@ -69,7 +72,8 @@ pub fn kernel_mult_avx(
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(5)), vi_row, acc);
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(6)), vii_row, acc);
             acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(7)), viii_row, acc);
-            _mm256_storeu_ps(c_row, acc);
+            // _mm256_storeu_ps(c_row, acc);
+            _mm256_store_ps(c_row, acc);
             aoffset += 8;
             coffset += stride;
         }

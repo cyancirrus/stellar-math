@@ -51,32 +51,32 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                     );
                 },
             );
-            group.bench_with_input(
-                BenchmarkId::new("parcache", &parameter),
-                &(i, j, k),
-                |b, &(i, j, k)| {
-                    b.iter_with_setup(
-                        || {
-                            let num_threads = rayon::current_num_threads();
-                            let workspace =
-                                vec![0f32; BLOCK_CACHE_PAR * BLOCK_CACHE_PAR * 2 * num_threads];
-                            let x = generate_random_matrix(i, k);
-                            let y = generate_random_matrix(k, j);
-                            let target = vec![f32::NAN; i * j];
-                            (x, y, target, workspace)
-                        },
-                        |(x, y, mut target, mut workspace)| {
-                            black_box(par_tensor_mult_cache(
-                                &x,
-                                &y,
-                                &mut target,
-                                &mut workspace,
-                                BLOCK_CACHE_PAR,
-                            ))
-                        },
-                    )
-                },
-            );
+            // group.bench_with_input(
+            //     BenchmarkId::new("parcache", &parameter),
+            //     &(i, j, k),
+            //     |b, &(i, j, k)| {
+            //         b.iter_with_setup(
+            //             || {
+            //                 let num_threads = rayon::current_num_threads();
+            //                 let workspace =
+            //                     vec![0f32; BLOCK_CACHE_PAR * BLOCK_CACHE_PAR * 2 * num_threads];
+            //                 let x = generate_random_matrix(i, k);
+            //                 let y = generate_random_matrix(k, j);
+            //                 let target = vec![f32::NAN; i * j];
+            //                 (x, y, target, workspace)
+            //             },
+            //             |(x, y, mut target, mut workspace)| {
+            //                 black_box(par_tensor_mult_cache(
+            //                     &x,
+            //                     &y,
+            //                     &mut target,
+            //                     &mut workspace,
+            //                     BLOCK_CACHE_PAR,
+            //                 ))
+            //             },
+            //         )
+            //     },
+            // );
             group.bench_with_input(
                 BenchmarkId::new("tensor_kernel", &parameter),
                 &(i, j, k),
