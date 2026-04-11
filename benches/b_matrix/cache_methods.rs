@@ -25,6 +25,33 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
             let parameter = format!("{}x{}x{}", i, k, j);
             group.throughput(Throughput::Elements((2 * i * k * j) as u64));
             group.bench_with_input(
+                BenchmarkId::new("tensor_kernel", &parameter),
+                &(i, j, k),
+                |b, &(i, j, k)| {
+                    b.iter_with_setup(
+                        || {
+                            let num_threads = rayon::current_num_threads();
+                            let workspace =
+                                vec![0f32; BLOCK_CACHE_PAR * BLOCK_CACHE_PAR * 2 * num_threads];
+                            let x = generate_random_matrix(i, k);
+                            let y = generate_random_matrix(k, j);
+                            let target = vec![f32::NAN; i * j];
+                            (x, y, target, workspace)
+                        },
+                        |(x, y, mut target, mut workspace)| {
+                            black_box(tensor_kernel(
+                                &x,
+                                &y,
+                                &mut target,
+                                &mut workspace,
+                                BLOCK_CACHE_PAR,
+                            ))
+                        },
+                    )
+                },
+            );
+            std::thread::sleep(std::time::Duration::from_secs(2));
+            group.bench_with_input(
                 BenchmarkId::new("faer", &parameter),
                 &(i, j, k),
                 |b, &(m, n, k)| {
@@ -38,13 +65,14 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                             (x, y, target)
                         },
                         |(x, y, mut target)| {
+                            let threads = rayon::current_num_threads();
                             matmul(
                                 target.as_mut(),
                                 faer::Accum::Replace,
                                 x.as_ref(),
                                 y.as_ref(),
                                 1.0f32,
-                                faer::Par::Rayon(std::num::NonZero::new(8).unwrap()),
+                                faer::Par::Rayon(std::num::NonZero::new(threads).unwrap()),
                             );
                             black_box(target)
                         },
@@ -77,32 +105,6 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
             //         )
             //     },
             // );
-            group.bench_with_input(
-                BenchmarkId::new("tensor_kernel", &parameter),
-                &(i, j, k),
-                |b, &(i, j, k)| {
-                    b.iter_with_setup(
-                        || {
-                            let num_threads = rayon::current_num_threads();
-                            let workspace =
-                                vec![0f32; BLOCK_CACHE_PAR * BLOCK_CACHE_PAR * 2 * num_threads];
-                            let x = generate_random_matrix(i, k);
-                            let y = generate_random_matrix(k, j);
-                            let target = vec![f32::NAN; i * j];
-                            (x, y, target, workspace)
-                        },
-                        |(x, y, mut target, mut workspace)| {
-                            black_box(tensor_kernel(
-                                &x,
-                                &y,
-                                &mut target,
-                                &mut workspace,
-                                BLOCK_CACHE_PAR,
-                            ))
-                        },
-                    )
-                },
-            );
             // group.bench_with_input(
             //     BenchmarkId::new("ndarray", &parameter),
             //     &(i, j, k),
