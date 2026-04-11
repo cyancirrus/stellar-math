@@ -48,15 +48,17 @@ pub fn tensor_kernel(
                     let jj_end = block.min(y_cols - j);
                     let mut woffset = 0;
                     let mut yoffset = k * y_cols + j;
-                    for _ in 0..kk_end {
-                        work_y[woffset..woffset + jj_end]
-                            .copy_from_slice(&y_d[yoffset..yoffset + jj_end]);
-                        woffset += block;
-                        yoffset += y_cols;
-                    }
+                    // for _ in 0..kk_end {
+                    //     work_y[woffset..woffset + jj_end]
+                    //         .copy_from_slice(&y_d[yoffset..yoffset + jj_end]);
+                    //     woffset += block;
+                    //     yoffset += y_cols;
+                    // }
+                    let y_thing = &y_d[yoffset.. yoffset + (kk_end - 1)* y_cols + jj_end];
                     kernel_mult(
                         &work_x,
-                        &work_y,
+                        // &work_y,
+                        &y_thing,
                         t_block_row,
                         ii_end,
                         kk_end,

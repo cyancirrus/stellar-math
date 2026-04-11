@@ -6,17 +6,17 @@ pub fn kernel_mult(
     a: &[f32],
     b: &[f32],
     c: &mut [f32],
-    block_i: usize,
+    block_m: usize,
     block_k: usize,
-    block_j: usize,
+    block_n: usize,
     stride: usize,
     offset: usize,
 ) {
     #[cfg(target_arch = "x86_64")]
     unsafe {
-        if BLOCK_KERNEL == block_j && block_j == block_k {
+        if BLOCK_KERNEL == block_n && block_n == block_k {
             // if is_x86_feature_detected!("avx") && is_x86_feature_detected!("fma") {
-                return kernel_mult_avx(a, b, c, block_i, stride, offset);
+                return kernel_mult_avx(a, b, c, block_m, stride, offset);
             // }
         }
     }
@@ -24,7 +24,7 @@ pub fn kernel_mult(
     // if it is edge case then copy into workspace_y here, and pass that in as b;
     // just make a fn which does this so this doesn't explode in defn
 
-    kernel_mult_scalar(a, b, c, block_i, block_k, block_j, stride, offset);
+    kernel_mult_scalar(a, b, c, block_m, block_k, block_n, stride, offset);
 }
 
 /// kernel_mult
@@ -51,13 +51,13 @@ pub fn kernel_mult_avx(
         let cptr = c.as_mut_ptr();
         // let i_row = _mm256_loadu_ps(bptr);
         let i_row = _mm256_loadu_ps(bptr);
-        let ii_row = _mm256_loadu_ps(bptr.add(8));
-        let iii_row = _mm256_loadu_ps(bptr.add(16));
-        let iv_row = _mm256_loadu_ps(bptr.add(24));
-        let v_row = _mm256_loadu_ps(bptr.add(32));
-        let vi_row = _mm256_loadu_ps(bptr.add(40));
-        let vii_row = _mm256_loadu_ps(bptr.add(48));
-        let viii_row = _mm256_loadu_ps(bptr.add(56));
+        let ii_row = _mm256_loadu_ps(bptr.add(stride));
+        let iii_row = _mm256_loadu_ps(bptr.add(stride * 2));
+        let iv_row = _mm256_loadu_ps(bptr.add(stride * 3));
+        let v_row = _mm256_loadu_ps(bptr.add(stride * 4));
+        let vi_row = _mm256_loadu_ps(bptr.add(stride * 5));
+        let vii_row = _mm256_loadu_ps(bptr.add(stride * 6));
+        let viii_row = _mm256_loadu_ps(bptr.add(stride * 7));
 
         let mut aoffset = 0;
         let mut coffset = offset;
@@ -85,9 +85,9 @@ pub fn kernel_mult_scalar(
     a: &[f32],
     b: &[f32],
     c: &mut [f32],
-    block_i: usize,
+    block_m: usize,
     block_k: usize,
-    block_j: usize,
+    block_n: usize,
     stride: usize,
     offset: usize,
 ) {
@@ -95,17 +95,19 @@ pub fn kernel_mult_scalar(
     let mut aoffset = 0;
     let mut coffset = offset;
     let mut boffset;
-    for _i in 0..block_i {
+    for _i in 0..block_m {
         boffset = 0;
         let a_row = &a[aoffset..aoffset + BLOCK_KERNEL];
         for k in 0..block_k {
             let scalar = a_row[k];
-            let b_row = &b[boffset..boffset + block_j];
-            let c_row = &mut c[coffset..coffset + block_j];
+            // let b_row = &b[boffset..boffset + block_n];
+            let b_row = &b[boffset..boffset + stride];
+            let c_row = &mut c[coffset..coffset + block_n];
             for (c, b) in c_row.iter_mut().zip(b_row.iter()) {
                 *c += scalar * b;
             }
-            boffset += BLOCK_KERNEL;
+            // boffset += BLOCK_KERNEL;
+            boffset += stride;
         }
         aoffset += BLOCK_KERNEL;
         coffset += stride;
