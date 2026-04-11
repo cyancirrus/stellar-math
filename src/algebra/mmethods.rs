@@ -29,7 +29,8 @@ pub fn tensor_kernel(
         .zip(x_d.par_chunks(block * x_cols))
         .zip(workspace.par_chunks_mut(bsize * 2))
         .for_each(|((t_block_row, x_block_row), work)| {
-            let (work_x, work_y) = work.split_at_mut(bsize);
+            // let (work_x, work_y) = work.split_at_mut(bsize);
+            let (work_x, _) = work.split_at_mut(bsize);
             // upper threshold as i is zero indexed
             let ii_end = x_block_row.len() / x_cols;
             for k_block in 0..k_end {
@@ -37,6 +38,7 @@ pub fn tensor_kernel(
                 let kk_end = block.min(x_cols - k);
                 let mut woffset = 0;
                 let mut xoffset = k;
+                let mut yoffset = k * y_cols;
                 // kernel methods where need 0 are handled with iterator
                 for _ in 0..ii_end {
                     work_x[woffset..woffset + kk_end]
@@ -46,8 +48,8 @@ pub fn tensor_kernel(
                 }
                 for j in (0..y_cols).step_by(block) {
                     let jj_end = block.min(y_cols - j);
-                    let mut woffset = 0;
-                    let mut yoffset = k * y_cols + j;
+                    // let mut woffset = 0;
+                    // let mut yoffset = k * y_cols + j;
                     // for _ in 0..kk_end {
                     //     work_y[woffset..woffset + jj_end]
                     //         .copy_from_slice(&y_d[yoffset..yoffset + jj_end]);
@@ -66,6 +68,7 @@ pub fn tensor_kernel(
                         y_cols,
                         j,
                     );
+                    yoffset += block;
                 }
             }
         });
