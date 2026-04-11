@@ -15,9 +15,9 @@ pub fn kernel_mult(
     #[cfg(target_arch = "x86_64")]
     unsafe {
         if BLOCK_KERNEL == block_j && block_j == block_k {
-            if is_x86_feature_detected!("avx") && is_x86_feature_detected!("fma") {
+            // if is_x86_feature_detected!("avx") && is_x86_feature_detected!("fma") {
                 return kernel_mult_avx(a, b, c, block_i, stride, offset);
-            }
+            // }
         }
     }
     // TODO: change input of b to not be block and update the kernel mult avx
@@ -75,7 +75,6 @@ pub fn kernel_mult_avx(
             acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(6)), vii_row, acc0);
             acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(7)), viii_row, acc1);
             _mm256_storeu_ps(c_row, _mm256_add_ps(acc0, acc1));
-            // _mm256_storeu_ps(c_row, acc);
             aoffset += 8;
             coffset += stride;
         }
