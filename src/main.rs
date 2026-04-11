@@ -20,5 +20,27 @@
 // value sanity start working on the LX async vision with the queue
 
 
+// 1. Animate demo        ← most legible to employers
+// 2. Blog redesign       ← makes everything else findable  
+// 3. Triangle kernel     ← 2hrs, unblocks LQ block
+// 4. AVX-512 blocksizes  ← 2hrs, great benchmark result
+// 5. Trait refactor      ← important but least urgent
+
+
+fn thing(
+    x: &[f32],
+    y: &[f32],
+    target: &mut [f32],
+    workspace: &mut [f32],
+    m:usize, k:usize, n:usize,
+    sx:usize, sy:usize,
+    block:usize,
+    xt:bool,
+    yt:bool,
+){
+
+}
+
+
 fn main() {
 }

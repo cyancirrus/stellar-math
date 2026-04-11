@@ -49,6 +49,7 @@ pub fn kernel_mult_avx(
         let aptr = a.as_ptr();
         let bptr = b.as_ptr();
         let cptr = c.as_mut_ptr();
+        // let i_row = _mm256_loadu_ps(bptr);
         let i_row = _mm256_loadu_ps(bptr);
         let ii_row = _mm256_loadu_ps(bptr.add(8));
         let iii_row = _mm256_loadu_ps(bptr.add(16));
