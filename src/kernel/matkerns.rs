@@ -70,10 +70,10 @@ pub fn kernel_mult_avx(
             acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(1)), ii_row, acc1);
             acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(2)), iii_row, acc0);
             acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(3)), iv_row, acc1);
-            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(4)), v_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(5)), vi_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(6)), vii_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(7)), viii_row, acc0);
+            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(4)), v_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(5)), vi_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(6)), vii_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(7)), viii_row, acc1);
             _mm256_storeu_ps(c_row, _mm256_add_ps(acc0, acc1));
             // _mm256_storeu_ps(c_row, acc);
             aoffset += 8;
