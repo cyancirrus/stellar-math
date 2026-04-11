@@ -64,17 +64,18 @@ pub fn kernel_mult_avx(
         for _ in 0..block_v {
             let arow = aptr.add(aoffset);
             let c_row = cptr.add(coffset);
-            let mut acc = _mm256_loadu_ps(c_row);
-            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(0)), i_row, acc);
-            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(1)), ii_row, acc);
-            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(2)), iii_row, acc);
-            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(3)), iv_row, acc);
-            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(4)), v_row, acc);
-            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(5)), vi_row, acc);
-            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(6)), vii_row, acc);
-            acc = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(7)), viii_row, acc);
+            let mut acc0 = _mm256_setzero_ps();
+            let mut acc1 = _mm256_loadu_ps(c_row);
+            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(0)), i_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(1)), ii_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(2)), iii_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(3)), iv_row, acc1);
+            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(4)), v_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(5)), vi_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(6)), vii_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*arow.add(7)), viii_row, acc0);
+            _mm256_storeu_ps(c_row, _mm256_add_ps(acc0, acc1));
             // _mm256_storeu_ps(c_row, acc);
-            _mm256_storeu_ps(c_row, acc);
             aoffset += 8;
             coffset += stride;
         }
