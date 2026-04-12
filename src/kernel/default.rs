@@ -24,7 +24,7 @@ pub unsafe fn kernel_mult_simd(
     let mut boffset;
     for _i in 0..block_v {
         boffset = 0;
-        let a_row = &a[aoffset..aoffset + s_x];
+        let a_row = &a[aoffset..aoffset + SIMD_WIDTH];
         for k in 0..SIMD_WIDTH {
             let scalar = a_row[k];
             let b_row = &b[boffset..boffset + SIMD_WIDTH];
@@ -34,7 +34,8 @@ pub unsafe fn kernel_mult_simd(
             }
             boffset += s_y;
         }
-        aoffset += SIMD_WIDTH;
+        // aoffset += SIMD_WIDTH;
+        aoffset += s_x;
         coffset += s_y;
     }
 }
@@ -56,7 +57,8 @@ pub fn kernel_mult_scalar(
     let mut boffset;
     for _i in 0..block_m {
         boffset = 0;
-        let a_row = &a[aoffset..aoffset + s_x];
+        // let a_row = &a[aoffset..aoffset + s_x];
+        let a_row = &a[aoffset..aoffset + block_k];
         for k in 0..block_k {
             let scalar = a_row[k];
             let b_row = &b[boffset..boffset + block_n];
@@ -66,7 +68,8 @@ pub fn kernel_mult_scalar(
             }
             boffset += s_y;
         }
-        aoffset += SIMD_WIDTH;
+        // aoffset += s_x;
+        aoffset += s_x;
         coffset += s_y;
     }
 }
