@@ -10,7 +10,7 @@ use crate::arch::SIMD_WIDTH;
 /// * stride : the number of cols in the output matrix c
 /// * offset : the outer k which will determine where we need to write
 #[inline(always)]
-pub fn kernel_mult_simd(
+pub unsafe fn kernel_mult_simd(
     a: &[f32],
     b: &[f32],
     c: &mut [f32],
@@ -18,6 +18,7 @@ pub fn kernel_mult_simd(
     s_x: usize,
     s_y: usize,
 ) {
+
     // simple method to handle edge cases
     let mut aoffset = 0;
     let mut coffset = 0;
