@@ -11,6 +11,7 @@ use crate::kernel::neon::kernel_mult_simd;
 
 use crate::kernel::default::kernel_mult_scalar;
 
+#[inline(always)]
 pub fn kernel_mult(
     x: &[f32],
     y: &[f32],
