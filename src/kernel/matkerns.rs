@@ -76,22 +76,15 @@ pub fn kernel_mult_scalar(
     s_x: usize,
     s_y: usize,
 ) {
-    println!("block sizes ({block_m:}, {block_k:}, {block_n:})");
-    println!("strides  ({s_x:}, {s_y:})");
     // simple method to handle edge cases
     let mut aoffset = 0;
     let mut coffset = 0;
     let mut boffset;
-    println!("a {a:?}");
-    println!("b {b:?}");
     for _i in 0..block_m {
         boffset = 0;
         let a_row = &a[aoffset..aoffset + s_x];
         for k in 0..block_k {
             let scalar = a_row[k];
-            println!("scalar {scalar:}");
-            // let b_row = &b[boffset..boffset + s_y];
-            // let c_row = &mut c[coffset..coffset + s_y];
             let b_row = &b[boffset..boffset + block_n];
             let c_row = &mut c[coffset..coffset + block_n];
             for (c, b) in c_row.iter_mut().zip(b_row.iter()) {
