@@ -1,30 +1,3 @@
-#![allow(unused)]
-// use stellar::algebra::ndmethods::{basic_mult, create_identity_matrix, tensor_mult};
-// use stellar::algebra::ndmethods::{lt_matrix_mult, matrix_mult};
-// use stellar::decomposition::lq::AutumnDecomp;
-// use stellar::equality::approximate::approx_vector_eq;
-use stellar::random::generation::generate_random_matrix;
-// use rayon::prelude::*;
-// use rayon::slice::ParallelSlice;
-// use stellar::kernel::matkerns::kernel_mult;
-
-// TODO:
-// then make the LX, async method
-// do the 16 x 16 instruction ie 512 for the tower
-// make the toml cfg to get cacheline size etc
-// do a small test
-// inspect the flamegraph to see if any hanging threads
-// ie suspect like communication jam in l1-> l2
-//
-// value sanity start working on the LX async vision with the queue
-
-// 1. Animate demo        ← most legible to employers
-// 2. Blog redesign       ← makes everything else findable
-// 3. Triangle kernel     ← 2hrs, unblocks LQ block
-// 4. AVX-512 blocksizes  ← 2hrs, great benchmark result
-// 5. Trait refactor      ← important but least urgent
-use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
-use stellar::equality::approximate::approx_vector_eq;
 use std::arch::x86_64::{
     _mm512_fmadd_ps, _mm512_loadu_ps, _mm512_set1_ps, _mm512_setzero_ps,
     _mm512_storeu_ps,_mm512_add_ps
@@ -40,7 +13,7 @@ pub fn kernel_mult_avx(
     block_v: usize,
     s_x: usize,
     s_y: usize,
-    offset: usize,
+    // offset: usize,
 ) {
     unsafe {
         let xptr = x.as_ptr();
@@ -93,29 +66,9 @@ pub fn kernel_mult_avx(
             acc3 = _mm512_fmadd_ps(_mm512_set1_ps(*xrow.add(15)), xvi_row, acc3);
 
             _mm512_storeu_ps(t_row, _mm512_add_ps(_mm512_add_ps(acc0, acc1), _mm512_add_ps(acc2, acc3)));
-            xoffset += BLOCK_AVX512;
+            // xoffset += BLOCK_AVX512;
+            xoffset += s_x;
             toffset += s_y;
         }
     }
-}
-
-
-
-fn main() {
-}
-
-fn thing(
-    x: &[f32],
-    y: &[f32],
-    target: &mut [f32],
-    workspace: &mut [f32],
-    m: usize,
-    k: usize,
-    n: usize,
-    sx: usize,
-    sy: usize,
-    block: usize,
-    xt: bool,
-    yt: bool,
-) {
 }

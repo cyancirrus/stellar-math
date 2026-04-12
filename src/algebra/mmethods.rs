@@ -6,7 +6,6 @@ use rayon::slice::ParallelSlice;
 // TODO:
 // then make the LX, async method
 
-
 pub fn tensor_kernel(
     x: &NdArray,
     y: &NdArray,
@@ -56,7 +55,7 @@ pub fn tensor_kernel(
                     //     woffset += block;
                     //     yoffset += y_cols;
                     // }
-                    let y_thing = &y_d[yoffset.. yoffset + (kk_end - 1)* y_cols + jj_end];
+                    let y_thing = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
                     kernel_mult(
                         &work_x,
                         // &work_y,
