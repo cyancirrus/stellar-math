@@ -28,8 +28,8 @@ pub fn tensor_kernel(
             let (work_x, _) = work.split_at_mut(bsize);
             // upper threshold as i is zero indexed
             let ii_end = x_block_row.len() / x_cols;
-            for k_block in 0..k_end {
-                let k = k_block * SIMD_WIDTH;
+            let mut k = 0;
+            for _ in 0..k_end {
                 let kk_end = SIMD_WIDTH.min(x_cols - k);
                 let mut woffset = 0;
                 let mut xoffset = k;
@@ -57,6 +57,7 @@ pub fn tensor_kernel(
                     );
                     yoffset += SIMD_WIDTH;
                 }
+                k += SIMD_WIDTH;
             }
         });
 }
