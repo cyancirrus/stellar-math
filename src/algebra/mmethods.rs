@@ -4,7 +4,7 @@ use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 
-pub fn tensor_kernel_in_progress(
+pub fn tensor_kernel(
     x: &NdArray,
     y: &NdArray,
     target: &mut [f32],
@@ -43,12 +43,11 @@ pub fn tensor_kernel_in_progress(
                 }
                 for j in (0..y_cols).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(y_cols - j);
-                    let y_thing = &y_d[yoffset + j..yoffset + (kk_end - 1) * y_cols + jj_end];
+                    let y_block = &y_d[yoffset + j..yoffset + (kk_end - 1) * y_cols + jj_end];
                     // let y_thing = &y_d[yoffset + j..yoffset + (kk_end - 1) * y_cols + jj_end];
                     kernel_mult_in_progress(
                         &work_x,
-                        // &work_y,
-                        &y_thing,
+                        &y_block,
                         t_block_row,
                         ii_end,
                         kk_end,
@@ -61,7 +60,7 @@ pub fn tensor_kernel_in_progress(
             }
         });
 }
-pub fn tensor_kernel(
+pub fn tensor_kernel_old(
     x: &NdArray,
     y: &NdArray,
     target: &mut [f32],
@@ -376,7 +375,7 @@ mod test_cached_matrix_methods {
         let mut workspace = vec![0f32; block * block * 2 * num_threads];
 
         let expected = basic_mult(&x, &y);
-        tensor_kernel(&x, &y, result, &mut workspace, block);
+        tensor_kernel(&x, &y, result, &mut workspace);
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
     }
 }

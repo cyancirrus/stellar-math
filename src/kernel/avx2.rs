@@ -143,6 +143,7 @@ mod test_avx2_kernels {
     use crate::equality::approximate::approx_vector_eq;
     use crate::random::generation::generate_random_matrix;
     use crate::structure::ndarray::NdArray;
+    const BLOCK_AVX2:usize = 8;
 
     fn filter_lower_triangle(a: &mut NdArray) {
         let (rows, cols) = (a.dims[0], a.dims[1]);
