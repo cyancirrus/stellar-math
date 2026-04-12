@@ -18,8 +18,7 @@ pub unsafe fn kernel_mult_simd(
     s_x: usize,
     s_y: usize,
 ) {
-
-    // simple method to handle edge cases
+    // default rust method
     let mut aoffset = 0;
     let mut coffset = 0;
     let mut boffset;

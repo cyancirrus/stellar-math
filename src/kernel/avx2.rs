@@ -111,7 +111,6 @@ pub fn kernel_lt_mult_simd(
         let aptr = a.as_ptr();
         let bptr = b.as_ptr();
         let cptr = c.as_mut_ptr();
-        // let i_row = _mm256_loadu_ps(bptr);
         let irows = [
             _mm256_loadu_ps(bptr),
             _mm256_loadu_ps(bptr.add(s_y)),

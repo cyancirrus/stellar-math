@@ -1,1 +1,1 @@
-pub mod full_block;
+pub mod all_kernels;

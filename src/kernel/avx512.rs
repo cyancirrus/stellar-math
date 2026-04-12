@@ -67,7 +67,6 @@ pub fn kernel_mult_simd(
                 t_row,
                 _mm512_add_ps(_mm512_add_ps(acc0, acc1), _mm512_add_ps(acc2, acc3)),
             );
-            // xoffset += BLOCK_AVX512;
             xoffset += s_x;
             toffset += s_y;
         }
