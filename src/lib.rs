@@ -1,4 +1,5 @@
 pub mod algebra;
+pub mod arch;
 pub mod decomposition;
 pub mod equality;
 pub mod kernel;

@@ -1,12 +1,10 @@
 use std::arch::x86_64::{
-    _mm512_fmadd_ps, _mm512_loadu_ps, _mm512_set1_ps, _mm512_setzero_ps,
-    _mm512_storeu_ps,_mm512_add_ps
+    _mm512_add_ps, _mm512_fmadd_ps, _mm512_loadu_ps, _mm512_set1_ps, _mm512_setzero_ps,
+    _mm512_storeu_ps,
 };
 
-const BLOCK_AVX512:usize = 16;
-
 #[target_feature(enable = "avx512f,fma")]
-pub fn kernel_mult_avx(
+pub fn kernel_mult_avx512(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
@@ -65,7 +63,10 @@ pub fn kernel_mult_avx(
             acc2 = _mm512_fmadd_ps(_mm512_set1_ps(*xrow.add(14)), xv_row, acc2);
             acc3 = _mm512_fmadd_ps(_mm512_set1_ps(*xrow.add(15)), xvi_row, acc3);
 
-            _mm512_storeu_ps(t_row, _mm512_add_ps(_mm512_add_ps(acc0, acc1), _mm512_add_ps(acc2, acc3)));
+            _mm512_storeu_ps(
+                t_row,
+                _mm512_add_ps(_mm512_add_ps(acc0, acc1), _mm512_add_ps(acc2, acc3)),
+            );
             // xoffset += BLOCK_AVX512;
             xoffset += s_x;
             toffset += s_y;

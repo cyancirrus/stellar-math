@@ -1,11 +1,66 @@
-use crate::kernel::matkerns::kernel_mult;
+use crate::arch::SIMD_WIDTH;
+use crate::kernel::matkerns::{kernel_mult, kernel_mult_in_progress};
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 
-// TODO:
-// then make the LX, async method
-
+pub fn tensor_kernel_in_progress(
+    x: &NdArray,
+    y: &NdArray,
+    target: &mut [f32],
+    workspace: &mut [f32],
+) {
+    let bsize = SIMD_WIDTH * SIMD_WIDTH;
+    let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
+    let y_cols = y.dims[1];
+    // will reuse allocation if available
+    let t_d = &mut target[..x_rows * y_cols];
+    t_d.fill(0f32);
+    let x_d = &x.data;
+    let y_d = &y.data;
+    let k_end = (x_cols + SIMD_WIDTH - 1) / SIMD_WIDTH;
+    // debug_assert!(workspace.len() >= bsize * 2 * num_threads);
+    debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
+    t_d.par_chunks_mut(SIMD_WIDTH * y_cols)
+        .zip(x_d.par_chunks(SIMD_WIDTH * x_cols))
+        .zip(workspace.par_chunks_mut(bsize * 2))
+        .for_each(|((t_block_row, x_block_row), work)| {
+            let (work_x, _) = work.split_at_mut(bsize);
+            // upper threshold as i is zero indexed
+            let ii_end = x_block_row.len() / x_cols;
+            for k_block in 0..k_end {
+                let k = k_block * SIMD_WIDTH;
+                let kk_end = SIMD_WIDTH.min(x_cols - k);
+                let mut woffset = 0;
+                let mut xoffset = k;
+                let mut yoffset = k * y_cols;
+                // kernel methods where need 0 are handled with iterator
+                for _ in 0..ii_end {
+                    work_x[woffset..woffset + kk_end]
+                        .copy_from_slice(&x_block_row[xoffset..xoffset + kk_end]);
+                    woffset += SIMD_WIDTH;
+                    xoffset += x_cols;
+                }
+                for j in (0..y_cols).step_by(SIMD_WIDTH) {
+                    let jj_end = SIMD_WIDTH.min(y_cols - j);
+                    let y_thing = &y_d[yoffset + j..yoffset + (kk_end - 1) * y_cols + jj_end];
+                    // let y_thing = &y_d[yoffset + j..yoffset + (kk_end - 1) * y_cols + jj_end];
+                    kernel_mult_in_progress(
+                        &work_x,
+                        // &work_y,
+                        &y_thing,
+                        t_block_row,
+                        ii_end,
+                        kk_end,
+                        jj_end,
+                        x_cols,
+                        y_cols,
+                    );
+                    yoffset += SIMD_WIDTH;
+                }
+            }
+        });
+}
 pub fn tensor_kernel(
     x: &NdArray,
     y: &NdArray,
