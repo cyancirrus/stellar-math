@@ -1,17 +1,19 @@
+#[cfg(all(feature = "avx512", target_arch = "x86_64"))]
 use std::arch::x86_64::{
     _mm512_add_ps, _mm512_fmadd_ps, _mm512_loadu_ps, _mm512_set1_ps, _mm512_setzero_ps,
     _mm512_storeu_ps,
 };
 
 #[target_feature(enable = "avx512f,fma")]
-pub fn kernel_mult_avx512(
+pub fn kernel_mult_simd(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
-    block_v: usize,
+    block_m: usize,
+    _block_k: usize,
+    _block_n: usize,
     s_x: usize,
     s_y: usize,
-    // offset: usize,
 ) {
     unsafe {
         let xptr = x.as_ptr();
@@ -36,7 +38,7 @@ pub fn kernel_mult_avx512(
 
         let mut xoffset = 0;
         let mut toffset = 0;
-        for _ in 0..block_v {
+        for _ in 0..block_m {
             let xrow = xptr.add(xoffset);
             let t_row = tptr.add(toffset);
             let mut acc0 = _mm512_setzero_ps();

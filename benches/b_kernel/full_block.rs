@@ -1,5 +1,6 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use stellar::kernel::matkerns::{kernel_mult_avx, kernel_mult_scalar};
+use stellar::kernel::avx2::kernel_mult_avx2;
+use stellar::kernel::matkerns::kernel_mult_scalar;
 
 pub fn benchmark_kernels(c: &mut Criterion) {
     let block = 8;
@@ -10,9 +11,9 @@ pub fn benchmark_kernels(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("Matrix Kernel");
 
-    group.bench_function("AVX Kernel", |b_inner| {
+    group.bench_function("AVX2 Kernel", |b_inner| {
         b_inner.iter(|| unsafe {
-            kernel_mult_avx(
+            kernel_mult_avx2(
                 black_box(&a),
                 black_box(&b),
                 black_box(&mut c_out),

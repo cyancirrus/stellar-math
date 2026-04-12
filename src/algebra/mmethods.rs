@@ -1,15 +1,10 @@
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::matkerns::{kernel_mult, kernel_mult_in_progress};
+use crate::kernel::matkerns::kernel_mult;
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 
-pub fn tensor_kernel(
-    x: &NdArray,
-    y: &NdArray,
-    target: &mut [f32],
-    workspace: &mut [f32],
-) {
+pub fn tensor_kernel(x: &NdArray, y: &NdArray, target: &mut [f32], workspace: &mut [f32]) {
     let bsize = SIMD_WIDTH * SIMD_WIDTH;
     let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
     let y_cols = y.dims[1];
@@ -45,15 +40,8 @@ pub fn tensor_kernel(
                     let jj_end = SIMD_WIDTH.min(y_cols - j);
                     let y_align = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
                     let t_align = &mut t_block_row[j..];
-                    kernel_mult_in_progress(
-                        &work_x,
-                        y_align,
-                        t_align,
-                        ii_end,
-                        kk_end,
-                        jj_end,
-                        SIMD_WIDTH,
-                        y_cols,
+                    kernel_mult(
+                        &work_x, y_align, t_align, ii_end, kk_end, jj_end, SIMD_WIDTH, y_cols,
                     );
                     yoffset += SIMD_WIDTH;
                 }
@@ -215,6 +203,7 @@ mod test_cached_matrix_methods {
     use crate::random::generation::generate_random_matrix;
 
     #[test]
+    #[cfg(feature = "avx2")]
     fn test_kernel_equivalence() {
         let ikj = [
             (1, 1, 1),
@@ -229,10 +218,9 @@ mod test_cached_matrix_methods {
             (8, 6, 4),
             (16, 8, 16),
         ];
-        let block = 8;
         let mut result = vec![f32::NAN; 16 * 16];
         for (i, k, j) in ikj {
-            test_kernel_equivalence_mkn(block, i, k, j, &mut result);
+            test_kernel_equivalence_mkn(SIMD_WIDTH, i, k, j, &mut result);
         }
     }
     #[test]

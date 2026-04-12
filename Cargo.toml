@@ -2,6 +2,7 @@
 default = []
 avx2 = []
 avx512 = []
+neon = []
 
 [package]
 name = "stellar"

@@ -6,6 +6,7 @@ use faer::prelude::*;
 use ndarray::Array2;
 use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_kernel, tensor_mult_cache};
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
+use stellar::arch::SIMD_WIDTH;
 use stellar::random::generation::generate_random_matrix;
 // use criterion::{AxisScale, PlotConfiguration};
 
@@ -31,21 +32,14 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                     b.iter_with_setup(
                         || {
                             let num_threads = rayon::current_num_threads();
-                            let workspace =
-                                vec![0f32; BLOCK_CACHE_PAR * BLOCK_CACHE_PAR * 2 * num_threads];
+                            let workspace = vec![0f32; SIMD_WIDTH * SIMD_WIDTH * 2 * num_threads];
                             let x = generate_random_matrix(i, k);
                             let y = generate_random_matrix(k, j);
                             let target = vec![f32::NAN; i * j];
                             (x, y, target, workspace)
                         },
                         |(x, y, mut target, mut workspace)| {
-                            black_box(tensor_kernel(
-                                &x,
-                                &y,
-                                &mut target,
-                                &mut workspace,
-                                BLOCK_CACHE_PAR,
-                            ))
+                            black_box(tensor_kernel(&x, &y, &mut target, &mut workspace))
                         },
                     )
                 },
