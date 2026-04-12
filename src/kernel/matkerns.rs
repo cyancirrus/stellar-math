@@ -9,7 +9,7 @@ use crate::kernel::default::kernel_mult_simd;
 #[cfg(all(feature = "neon", target_arch = "aarch64"))]
 use crate::kernel::neon::kernel_mult_simd;
 
-use crate::kernel::default::kernel_mult_simd as kernel_mult_scalar;
+use crate::kernel::default::kernel_mult_scalar;
 
 pub fn kernel_mult(
     x: &[f32],
@@ -23,7 +23,7 @@ pub fn kernel_mult(
 ) {
     unsafe {
         if SIMD_WIDTH == block_n && SIMD_WIDTH == block_k {
-            return kernel_mult_simd(x, y, t, block_m, block_k, block_n, s_x, s_y);
+            return kernel_mult_simd(x, y, t, block_m, s_x, s_y);
         }
     }
 

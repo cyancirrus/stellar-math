@@ -19,8 +19,6 @@ pub fn kernel_mult_simd(
     b: &[f32],
     c: &mut [f32],
     block_m: usize,
-    _block_k: usize,
-    _block_n: usize,
     s_x: usize,
     s_y: usize,
 ) {
