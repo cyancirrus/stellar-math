@@ -1,13 +1,4 @@
 #![allow(unused)]
-// use stellar::algebra::ndmethods::{basic_mult, create_identity_matrix, tensor_mult};
-// use stellar::algebra::ndmethods::{lt_matrix_mult, matrix_mult};
-// use stellar::decomposition::lq::AutumnDecomp;
-// use stellar::equality::approximate::approx_vector_eq;
-use stellar::random::generation::generate_random_matrix;
-// use rayon::prelude::*;
-// use rayon::slice::ParallelSlice;
-// use stellar::kernel::matkerns::kernel_mult;
-
 // TODO:
 // then make the LX, async method
 // do the 16 x 16 instruction ie 512 for the tower
@@ -23,26 +14,50 @@ use stellar::random::generation::generate_random_matrix;
 // 3. Triangle kernel     ← 2hrs, unblocks LQ block
 // 4. AVX-512 blocksizes  ← 2hrs, great benchmark result
 // 5. Trait refactor      ← important but least urgent
-use std::arch::x86_64::{
-    _mm512_add_ps, _mm512_fmadd_ps, _mm512_loadu_ps, _mm512_set1_ps, _mm512_setzero_ps,
-    _mm512_storeu_ps,
-};
-use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
+use stellar::arch::SIMD_WIDTH;
+use stellar::algebra::ndmethods::basic_mult;
 use stellar::equality::approximate::approx_vector_eq;
-fn thing(
-    x: &[f32],
-    y: &[f32],
-    target: &mut [f32],
-    workspace: &mut [f32],
-    m: usize,
-    k: usize,
-    n: usize,
-    sx: usize,
-    sy: usize,
-    block: usize,
-    xt: bool,
-    yt: bool,
-) {
+use stellar::random::generation::generate_random_matrix;
+use stellar::algebra::mmethods::tensor_kernel;
+
+fn test_kernel_equivalence() {
+    let ikj = [
+        (1, 1, 1),
+        (8, 1, 1),
+        (1, 8, 1),
+        (1, 1, 8),
+        (6, 4, 8),
+        (6, 8, 4),
+        (4, 6, 8),
+        (4, 8, 6),
+        (8, 4, 6),
+        (8, 6, 4),
+        (16, 8, 16),
+    ];
+    let block = 8;
+    let mut result = vec![f32::NAN; 16 * 16];
+    for (i, k, j) in ikj {
+        println!("---------------------------------------");
+        println!("(i: {i:}, k: {k:}, j: {j:})");
+        println!("---------------------------------------");
+        test_kernel_equivalence_mkn(block, i, k, j, &mut result);
+    }
+}
+fn test_kernel_equivalence_mkn(block: usize, m: usize, k: usize, n: usize, result: &mut [f32]) {
+    let x = generate_random_matrix(m, k);
+    let y = generate_random_matrix(k, n);
+    let num_threads = rayon::current_num_threads();
+    let mut workspace = vec![0f32; block * block * 2 * num_threads];
+
+    let expected = basic_mult(&x, &y);
+    tensor_kernel(&x, &y, result, &mut workspace);
+    println!("expected {expected:?}");
+    println!("result {:?}", &result[..m * n]);
+    assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 
-fn main() {}
+fn main() {
+    println!("Register width {SIMD_WIDTH:?}");
+    test_kernel_equivalence();
+
+}

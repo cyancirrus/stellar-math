@@ -43,16 +43,18 @@ pub fn tensor_kernel(
                 }
                 for j in (0..y_cols).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(y_cols - j);
-                    let y_block = &y_d[yoffset + j..yoffset + (kk_end - 1) * y_cols + jj_end];
+                    let y_block = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
+                    let t_align = &mut t_block_row[j..];
                     // let y_thing = &y_d[yoffset + j..yoffset + (kk_end - 1) * y_cols + jj_end];
                     kernel_mult_in_progress(
                         &work_x,
                         &y_block,
-                        t_block_row,
+                        // t_block_row,
+                        t_align,
                         ii_end,
                         kk_end,
                         jj_end,
-                        x_cols,
+                        SIMD_WIDTH,
                         y_cols,
                     );
                     yoffset += SIMD_WIDTH;
