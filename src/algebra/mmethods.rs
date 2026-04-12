@@ -43,13 +43,11 @@ pub fn tensor_kernel(
                 }
                 for j in (0..y_cols).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(y_cols - j);
-                    let y_block = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
+                    let y_align = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
                     let t_align = &mut t_block_row[j..];
-                    // let y_thing = &y_d[yoffset + j..yoffset + (kk_end - 1) * y_cols + jj_end];
                     kernel_mult_in_progress(
                         &work_x,
-                        &y_block,
-                        // t_block_row,
+                        y_align,
                         t_align,
                         ii_end,
                         kk_end,
@@ -58,72 +56,6 @@ pub fn tensor_kernel(
                         y_cols,
                     );
                     yoffset += SIMD_WIDTH;
-                }
-            }
-        });
-}
-pub fn tensor_kernel_old(
-    x: &NdArray,
-    y: &NdArray,
-    target: &mut [f32],
-    workspace: &mut [f32],
-    block: usize,
-) {
-    let bsize = block * block;
-    let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
-    let y_cols = y.dims[1];
-    // will reuse allocation if available
-    let t_d = &mut target[..x_rows * y_cols];
-    t_d.fill(0f32);
-    let x_d = &x.data;
-    let y_d = &y.data;
-    let k_end = (x_cols + block - 1) / block;
-    // debug_assert!(workspace.len() >= bsize * 2 * num_threads);
-    debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
-    t_d.par_chunks_mut(block * y_cols)
-        .zip(x_d.par_chunks(block * x_cols))
-        .zip(workspace.par_chunks_mut(bsize * 2))
-        .for_each(|((t_block_row, x_block_row), work)| {
-            // let (work_x, work_y) = work.split_at_mut(bsize);
-            let (work_x, _) = work.split_at_mut(bsize);
-            // upper threshold as i is zero indexed
-            let ii_end = x_block_row.len() / x_cols;
-            for k_block in 0..k_end {
-                let k = k_block * block;
-                let kk_end = block.min(x_cols - k);
-                let mut woffset = 0;
-                let mut xoffset = k;
-                let mut yoffset = k * y_cols;
-                // kernel methods where need 0 are handled with iterator
-                for _ in 0..ii_end {
-                    work_x[woffset..woffset + kk_end]
-                        .copy_from_slice(&x_block_row[xoffset..xoffset + kk_end]);
-                    woffset += block;
-                    xoffset += x_cols;
-                }
-                for j in (0..y_cols).step_by(block) {
-                    let jj_end = block.min(y_cols - j);
-                    // let mut woffset = 0;
-                    // let mut yoffset = k * y_cols + j;
-                    // for _ in 0..kk_end {
-                    //     work_y[woffset..woffset + jj_end]
-                    //         .copy_from_slice(&y_d[yoffset..yoffset + jj_end]);
-                    //     woffset += block;
-                    //     yoffset += y_cols;
-                    // }
-                    let y_thing = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
-                    kernel_mult(
-                        &work_x,
-                        // &work_y,
-                        &y_thing,
-                        t_block_row,
-                        ii_end,
-                        kk_end,
-                        jj_end,
-                        y_cols,
-                        j,
-                    );
-                    yoffset += block;
                 }
             }
         });
