@@ -136,7 +136,6 @@ pub fn kernel_lt_mult_simd(
     }
 }
 
-
 #[cfg(test)]
 mod test_avx2_kernels {
     use super::*;

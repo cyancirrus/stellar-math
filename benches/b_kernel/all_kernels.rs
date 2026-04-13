@@ -24,7 +24,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
             )
         });
     });
-    
+
     group.bench_function("Default Kernel", |b_inner| {
         b_inner.iter(|| unsafe {
             default::kernel_mult_simd(

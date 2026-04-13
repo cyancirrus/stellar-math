@@ -4,7 +4,7 @@ use criterion::{BenchmarkId, Criterion, Throughput, black_box};
 use faer::linalg::matmul::matmul;
 use faer::prelude::*;
 use ndarray::Array2;
-use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_kernel, tensor_mult_cache};
+use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_kernel, tensor_kernel_new, tensor_mult_cache};
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::arch::SIMD_WIDTH;
 use stellar::random::generation::generate_random_matrix;
@@ -31,17 +31,16 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                 |b, &(i, j, k)| {
                     b.iter_with_setup(
                         || {
-                            let num_threads = rayon::current_num_threads();
                             // let workspace = vec![0f32; SIMD_WIDTH * SIMD_WIDTH * 2 * num_threads];
-                            let workspace = vec![0.0f32; (j + SIMD_WIDTH - 1)  * num_threads * SIMD_WIDTH];
-                            // let workspace = vec![0.0f32; j *SIMD_WIDTH  * num_threads * SIMD_WIDTH];
+                            // let workspace = vec![0.0f32; (i + SIMD_WIDTH) * SIMD_WIDTH];
                             let x = generate_random_matrix(i, k);
                             let y = generate_random_matrix(k, j);
                             let target = vec![f32::NAN; i * j];
-                            (x, y, target, workspace)
+                            // (x, y, target, workspace)
+                            (x, y, target)
                         },
-                        |(x, y, mut target, mut workspace)| {
-                            black_box(tensor_kernel(&x, &y, &mut target, &mut workspace))
+                        |(x, y, mut target)| {
+                            black_box(tensor_kernel_new(&x, &y, &mut target))
                         },
                     )
                 },
