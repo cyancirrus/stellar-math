@@ -15,27 +15,24 @@ pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
         let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
         let y_cols = y.dims[1];
         // will reuse allocation if available
-        let t_d = &mut target[..x_rows * y_cols];
-        t_d.fill(0f32);
         let x_d = &x.data;
         let y_d = &y.data;
-        let k_end = (x_cols + SIMD_WIDTH - 1) / SIMD_WIDTH;
+        let t_d = &mut target[..x_rows * y_cols];
+        t_d.fill(0f32);
+        let s_ycols = SIMD_WIDTH * y_cols;
+        let s_xcols = SIMD_WIDTH * y_cols;
         debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
-        t_d.par_chunks_mut(SIMD_WIDTH * y_cols)
-            .zip(x_d.par_chunks(SIMD_WIDTH * x_cols))
+        t_d.par_chunks_mut(s_ycols)
+            .zip(x_d.par_chunks(s_xcols))
             .for_each(|(t_block_row, x_block_row)| {
                 PROC_WORKSPACE.with(|workspace_cell| {
-                    let mut work_x = workspace_cell.borrow_mut();
-                    // upper threshold as i is zero indexed
                     let ii_end = x_block_row.len() / x_cols;
-                    // let mut k = 0;
-                    for k_block in 0..k_end {
-                        let k = SIMD_WIDTH * k_block;
-                        let yoffset = k * y_cols;
+                    let mut work_x = workspace_cell.borrow_mut();
+                    let mut yoffset = 0;
+                    for k in (0..x_cols).step_by(SIMD_WIDTH) {
+                        let kk_end = SIMD_WIDTH.min(x_cols - k);
                         let mut woffset = 0;
                         let mut xoffset = k;
-                        let kk_end = SIMD_WIDTH.min(x_cols - k);
-                        // kernel methods where need 0 are handled with iterator
                         for _ in 0..ii_end {
                             work_x
                                 .get_unchecked_mut(woffset..woffset + kk_end)
@@ -57,10 +54,9 @@ pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
                                 SIMD_WIDTH,
                                 y_cols,
                             );
-                            // yoffset += SIMD_WIDTH;
                         }
+                        yoffset += s_ycols;
                     }
-                    // k += SIMD_WIDTH;
                 })
             });
     }
