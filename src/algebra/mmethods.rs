@@ -29,8 +29,8 @@ pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
                     let mut yoffset = 0;
                     for k in (0..x_cols).step_by(SIMD_WIDTH) {
                         let kk_end = SIMD_WIDTH.min(x_cols - k);
-                        let mut woffset = 0;
                         let mut xoffset = k;
+                        let mut woffset = 0;
                         for _ in 0..ii_end {
                             work_x
                                 .get_unchecked_mut(woffset..woffset + kk_end)
@@ -44,7 +44,7 @@ pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
                             let jj_end = SIMD_WIDTH.min(y_cols - j);
                             kernel_mult(
                                 &work_x,
-                                y_d.get_unchecked( yoffset + j..),
+                                y_d.get_unchecked(yoffset + j..),
                                 t_block_row.get_unchecked_mut(j..),
                                 ii_end,
                                 kk_end,
@@ -62,52 +62,59 @@ pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 
 pub fn tensor_kernel(x: &NdArray, y: &NdArray, target: &mut [f32], workspace: &mut [f32]) {
     unsafe {
-    let bsize = SIMD_WIDTH * SIMD_WIDTH;
-    let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
-    let y_cols = y.dims[1];
-    // will reuse allocation if available
-    let t_d = &mut target[..x_rows * y_cols];
-    t_d.fill(0f32);
-    let x_d = &x.data;
-    let y_d = &y.data;
-    let k_end = (x_cols + SIMD_WIDTH - 1) / SIMD_WIDTH;
-    // debug_assert!(workspace.len() >= bsize * 2 * num_threads);
-    debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
-    t_d.par_chunks_mut(SIMD_WIDTH * y_cols)
-        .zip(x_d.par_chunks(SIMD_WIDTH * x_cols))
-        .zip(workspace.par_chunks_mut(bsize))
-        .for_each(|((t_block_row, x_block_row), work_x)| {
-            // upper threshold as i is zero indexed
-            let ii_end = x_block_row.len() / x_cols;
-            // let mut k = 0;
-            for k_block in 0..k_end {
-                let k = SIMD_WIDTH * k_block;
-                let yoffset = k * y_cols;
-                let mut woffset = 0;
-                let mut xoffset = k;
-                let kk_end = SIMD_WIDTH.min(x_cols - k);
-                // kernel methods where need 0 are handled with iterator
-                for _ in 0..ii_end {
-                    work_x.get_unchecked_mut(woffset..woffset + kk_end)
-                        .copy_from_slice(&x_block_row.get_unchecked(xoffset..xoffset + kk_end));
-                    woffset += SIMD_WIDTH;
-                    xoffset += x_cols;
+        let bsize = SIMD_WIDTH * SIMD_WIDTH;
+        let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
+        let y_cols = y.dims[1];
+        // will reuse allocation if available
+        let t_d = &mut target[..x_rows * y_cols];
+        t_d.fill(0f32);
+        let x_d = &x.data;
+        let y_d = &y.data;
+        let k_end = (x_cols + SIMD_WIDTH - 1) / SIMD_WIDTH;
+        // debug_assert!(workspace.len() >= bsize * 2 * num_threads);
+        debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
+        t_d.par_chunks_mut(SIMD_WIDTH * y_cols)
+            .zip(x_d.par_chunks(SIMD_WIDTH * x_cols))
+            .zip(workspace.par_chunks_mut(bsize))
+            .for_each(|((t_block_row, x_block_row), work_x)| {
+                // upper threshold as i is zero indexed
+                let ii_end = x_block_row.len() / x_cols;
+                // let mut k = 0;
+                for k_block in 0..k_end {
+                    let k = SIMD_WIDTH * k_block;
+                    let yoffset = k * y_cols;
+                    let mut woffset = 0;
+                    let mut xoffset = k;
+                    let kk_end = SIMD_WIDTH.min(x_cols - k);
+                    // kernel methods where need 0 are handled with iterator
+                    for _ in 0..ii_end {
+                        work_x
+                            .get_unchecked_mut(woffset..woffset + kk_end)
+                            .copy_from_slice(&x_block_row.get_unchecked(xoffset..xoffset + kk_end));
+                        woffset += SIMD_WIDTH;
+                        xoffset += x_cols;
+                    }
+                    for j in (0..y_cols).step_by(SIMD_WIDTH) {
+                        let jj_end = SIMD_WIDTH.min(y_cols - j);
+                        // let y_align = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
+                        // let t_align = &mut t_block_row[j..];
+                        kernel_mult(
+                            &work_x,
+                            y_d.get_unchecked(
+                                yoffset + j..yoffset + j + (kk_end - 1) * y_cols + jj_end,
+                            ),
+                            t_block_row.get_unchecked_mut(j..),
+                            ii_end,
+                            kk_end,
+                            jj_end,
+                            SIMD_WIDTH,
+                            y_cols,
+                        );
+                        // yoffset += SIMD_WIDTH;
+                    }
+                    // k += SIMD_WIDTH;
                 }
-                for j in (0..y_cols).step_by(SIMD_WIDTH) {
-                    let jj_end = SIMD_WIDTH.min(y_cols - j);
-                    // let y_align = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
-                    // let t_align = &mut t_block_row[j..];
-                    kernel_mult(
-                        &work_x,
-                        y_d.get_unchecked( yoffset + j..yoffset + j + (kk_end - 1) * y_cols + jj_end ),
-                        t_block_row.get_unchecked_mut(j..),
-                        ii_end, kk_end, jj_end, SIMD_WIDTH, y_cols,
-                    );
-                    // yoffset += SIMD_WIDTH;
-                }
-                // k += SIMD_WIDTH;
-            }
-        });
+            });
     }
 }
 

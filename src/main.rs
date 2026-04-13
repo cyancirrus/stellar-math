@@ -15,7 +15,9 @@
 // 4. AVX-512 blocksizes  ← 2hrs, great benchmark result
 // 5. Trait refactor      ← important but least urgent
 
-use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_kernel, tensor_kernel_new, tensor_mult_cache};
+use stellar::algebra::mmethods::{
+    par_tensor_mult_cache, tensor_kernel, tensor_kernel_new, tensor_mult_cache,
+};
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::arch::SIMD_WIDTH;
 use stellar::random::generation::generate_random_matrix;

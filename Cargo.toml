@@ -35,6 +35,12 @@ sample_size = 4
 harness = false
 
 [[bench]]
+name = "matrix_flame"
+sample_size = 4
+harness = false
+
+
+[[bench]]
 name = "kernel"
 sample_size = 1
 harness = false
