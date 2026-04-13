@@ -12,18 +12,16 @@ thread_local! {
 #[inline(always)]
 pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     unsafe {
-        let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
-        let y_cols = y.dims[1];
         // will reuse allocation if available
         let x_d = &x.data;
         let y_d = &y.data;
+        let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
+        let y_cols = y.dims[1];
         let t_d = &mut target[..x_rows * y_cols];
-        let s_ycols = SIMD_WIDTH * y_cols;
-        let s_xcols = SIMD_WIDTH * y_cols;
-        debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
         t_d.fill(0f32);
-        t_d.par_chunks_mut(s_ycols)
-            .zip(x_d.par_chunks(s_xcols))
+        debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
+        t_d.par_chunks_mut(SIMD_WIDTH * y_cols)
+            .zip(x_d.par_chunks(SIMD_WIDTH * x_cols))
             .for_each(|(t_block_row, x_block_row)| {
                 PROC_WORKSPACE.with(|workspace_cell| {
                     let ii_end = x_block_row.len() / x_cols;
@@ -55,7 +53,7 @@ pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
                                 y_cols,
                             );
                         }
-                        yoffset += s_ycols;
+                        yoffset += SIMD_WIDTH * y_cols;
                     }
                 })
             });
