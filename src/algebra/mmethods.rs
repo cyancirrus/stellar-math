@@ -18,10 +18,10 @@ pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
         let x_d = &x.data;
         let y_d = &y.data;
         let t_d = &mut target[..x_rows * y_cols];
-        t_d.fill(0f32);
         let s_ycols = SIMD_WIDTH * y_cols;
         let s_xcols = SIMD_WIDTH * y_cols;
         debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
+        t_d.fill(0f32);
         t_d.par_chunks_mut(s_ycols)
             .zip(x_d.par_chunks(s_xcols))
             .for_each(|(t_block_row, x_block_row)| {
