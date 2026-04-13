@@ -47,14 +47,9 @@ pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
                         }
                         for j in (0..y_cols).step_by(SIMD_WIDTH) {
                             let jj_end = SIMD_WIDTH.min(y_cols - j);
-                            // let y_align = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
-                            // let t_align = &mut t_block_row[j..];
                             kernel_mult(
                                 &work_x,
                                 y_d.get_unchecked( yoffset + j..),
-                                // y_d.get_unchecked(
-                                //     yoffset + j..yoffset + j + (kk_end - 1) * y_cols + jj_end,
-                                // ),
                                 t_block_row.get_unchecked_mut(j..),
                                 ii_end,
                                 kk_end,
