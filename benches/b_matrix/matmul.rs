@@ -176,7 +176,7 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
         }
         group.finish();
     };
-    run_bench("MatMul - Small", &S_MATRIX_DIMS);
-    run_bench("MatMul - Medium", &M_MATRIX_DIMS);
-    // run_bench("MatMul - Large", &L_MATRIX_DIMS);
+    // run_bench("MatMul - Small", &S_MATRIX_DIMS);
+    // run_bench("MatMul - Medium", &M_MATRIX_DIMS);
+    run_bench("MatMul - Large", &L_MATRIX_DIMS);
 }

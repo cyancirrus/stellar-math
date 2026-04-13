@@ -5,6 +5,7 @@ use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 
 pub fn tensor_kernel(x: &NdArray, y: &NdArray, target: &mut [f32], workspace: &mut [f32]) {
+    unsafe {
     let bsize = SIMD_WIDTH * SIMD_WIDTH;
     let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
     let y_cols = y.dims[1];
@@ -31,23 +32,43 @@ pub fn tensor_kernel(x: &NdArray, y: &NdArray, target: &mut [f32], workspace: &m
                 let mut yoffset = k * y_cols;
                 // kernel methods where need 0 are handled with iterator
                 for _ in 0..ii_end {
-                    work_x[woffset..woffset + kk_end]
-                        .copy_from_slice(&x_block_row[xoffset..xoffset + kk_end]);
+                    work_x.get_unchecked_mut(woffset..woffset + kk_end)
+                        .copy_from_slice(&x_block_row.get_unchecked(xoffset..xoffset + kk_end));
                     woffset += SIMD_WIDTH;
                     xoffset += x_cols;
                 }
+                // for _ in 0..ii_end {
+                //     work_x[woffset..woffset + kk_end]
+                //         .copy_from_slice(&x_block_row[xoffset..xoffset + kk_end]);
+                //     woffset += SIMD_WIDTH;
+                //     xoffset += x_cols;
+                // }
                 for j in (0..y_cols).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(y_cols - j);
-                    let y_align = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
-                    let t_align = &mut t_block_row[j..];
+                    // let y_align = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
+                    // let t_align = &mut t_block_row[j..];
                     kernel_mult(
-                        &work_x, y_align, t_align, ii_end, kk_end, jj_end, SIMD_WIDTH, y_cols,
+                        &work_x,
+                        y_d.get_unchecked( yoffset..yoffset + (kk_end - 1) * y_cols + jj_end ),
+                        t_block_row.get_unchecked_mut(j..),
+                        ii_end, kk_end, jj_end, SIMD_WIDTH, y_cols,
                     );
                     yoffset += SIMD_WIDTH;
                 }
                 k += SIMD_WIDTH;
+                // for j in (0..y_cols).step_by(SIMD_WIDTH) {
+                //     let jj_end = SIMD_WIDTH.min(y_cols - j);
+                //     let y_align = &y_d[yoffset..yoffset + (kk_end - 1) * y_cols + jj_end];
+                //     let t_align = &mut t_block_row[j..];
+                //     kernel_mult(
+                //         &work_x, y_align, t_align, ii_end, kk_end, jj_end, SIMD_WIDTH, y_cols,
+                //     );
+                //     yoffset += SIMD_WIDTH;
+                // }
+                // k += SIMD_WIDTH;
             }
         });
+    }
 }
 
 pub fn tensor_mult_cache(
