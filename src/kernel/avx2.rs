@@ -13,7 +13,6 @@ use std::arch::x86_64::{
 /// * stride : the number of cols in the output matrix c
 /// * offset : the outer k which will determine where we need to write
 #[target_feature(enable = "avx,fma")]
-// #[inline(always)]
 pub fn kernel_mult_simd(
     a: &[f32],
     b: &[f32],
@@ -136,6 +135,7 @@ pub fn kernel_lt_mult_simd(
         }
     }
 }
+
 
 #[cfg(test)]
 mod test_avx2_kernels {

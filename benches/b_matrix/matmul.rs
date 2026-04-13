@@ -32,7 +32,9 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                     b.iter_with_setup(
                         || {
                             let num_threads = rayon::current_num_threads();
-                            let workspace = vec![0f32; SIMD_WIDTH * SIMD_WIDTH * 2 * num_threads];
+                            // let workspace = vec![0f32; SIMD_WIDTH * SIMD_WIDTH * 2 * num_threads];
+                            let workspace = vec![0.0f32; (j + SIMD_WIDTH - 1)  * num_threads * SIMD_WIDTH];
+                            // let workspace = vec![0.0f32; j *SIMD_WIDTH  * num_threads * SIMD_WIDTH];
                             let x = generate_random_matrix(i, k);
                             let y = generate_random_matrix(k, j);
                             let target = vec![f32::NAN; i * j];
@@ -44,35 +46,34 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                     )
                 },
             );
-            std::thread::sleep(std::time::Duration::from_secs(2));
-            group.bench_with_input(
-                BenchmarkId::new("faer", &parameter),
-                &(i, j, k),
-                |b, &(m, n, k)| {
-                    b.iter_with_setup(
-                        || {
-                            let data_x = generate_random_matrix(m, k);
-                            let data_y = generate_random_matrix(k, n);
-                            let x = faer::Mat::from_fn(m, k, |r, c| data_x.data[r * k + c]);
-                            let y = faer::Mat::from_fn(k, n, |r, c| data_y.data[r * n + c]);
-                            let target = faer::Mat::<f32>::zeros(m, n);
-                            (x, y, target)
-                        },
-                        |(x, y, mut target)| {
-                            let threads = rayon::current_num_threads();
-                            matmul(
-                                target.as_mut(),
-                                faer::Accum::Replace,
-                                x.as_ref(),
-                                y.as_ref(),
-                                1.0f32,
-                                faer::Par::Rayon(std::num::NonZero::new(threads).unwrap()),
-                            );
-                            black_box(target)
-                        },
-                    );
-                },
-            );
+            // group.bench_with_input(
+            //     BenchmarkId::new("faer", &parameter),
+            //     &(i, j, k),
+            //     |b, &(m, n, k)| {
+            //         b.iter_with_setup(
+            //             || {
+            //                 let data_x = generate_random_matrix(m, k);
+            //                 let data_y = generate_random_matrix(k, n);
+            //                 let x = faer::Mat::from_fn(m, k, |r, c| data_x.data[r * k + c]);
+            //                 let y = faer::Mat::from_fn(k, n, |r, c| data_y.data[r * n + c]);
+            //                 let target = faer::Mat::<f32>::zeros(m, n);
+            //                 (x, y, target)
+            //             },
+            //             |(x, y, mut target)| {
+            //                 let threads = rayon::current_num_threads();
+            //                 matmul(
+            //                     target.as_mut(),
+            //                     faer::Accum::Replace,
+            //                     x.as_ref(),
+            //                     y.as_ref(),
+            //                     1.0f32,
+            //                     faer::Par::Rayon(std::num::NonZero::new(threads).unwrap()),
+            //                 );
+            //                 black_box(target)
+            //             },
+            //         );
+            //     },
+            // );
             // group.bench_with_input(
             //     BenchmarkId::new("parcache", &parameter),
             //     &(i, j, k),
@@ -80,8 +81,9 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
             //         b.iter_with_setup(
             //             || {
             //                 let num_threads = rayon::current_num_threads();
-            //                 let workspace =
-            //                     vec![0f32; BLOCK_CACHE_PAR * BLOCK_CACHE_PAR * 2 * num_threads];
+            //                 // let workspace =
+            //                 //     vec![0f32; BLOCK_CACHE_PAR * BLOCK_CACHE_PAR * 2 * num_threads];
+            //                 let workspace = vec![0.0f32; (j + SIMD_WIDTH - 1)  * num_threads * SIMD_WIDTH];
             //                 let x = generate_random_matrix(i, k);
             //                 let y = generate_random_matrix(k, j);
             //                 let target = vec![f32::NAN; i * j];
@@ -174,7 +176,7 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
         }
         group.finish();
     };
-    // run_bench("MatMul - Small", &S_MATRIX_DIMS);
-    // run_bench("MatMul - Medium", &M_MATRIX_DIMS);
-    run_bench("MatMul - Large", &L_MATRIX_DIMS);
+    run_bench("MatMul - Small", &S_MATRIX_DIMS);
+    run_bench("MatMul - Medium", &M_MATRIX_DIMS);
+    // run_bench("MatMul - Large", &L_MATRIX_DIMS);
 }

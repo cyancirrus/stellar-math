@@ -141,6 +141,7 @@ pub fn par_tensor_mult_cache(
         .zip(x_d.par_chunks(block * x_cols))
         .zip(workspace.par_chunks_mut(bsize * 2))
         .for_each(|((t_block_row, x_block_row), work)| {
+            // wrong
             let (work_x, work_y) = work.split_at_mut(bsize);
             // upper threshold as i is zero indexed
             let ii_end = x_block_row.len() / x_cols;
