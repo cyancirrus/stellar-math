@@ -10,6 +10,7 @@ thread_local! {
 }
 
 // #[inline(always)]
+#[inline(never)]
 pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     unsafe {
         // will reuse allocation if available
