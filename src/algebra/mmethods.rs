@@ -9,7 +9,7 @@ thread_local! {
     static PROC_WORKSPACE: RefCell<Vec<f32>> = RefCell::new(vec![0.0f32; SIMD_WIDTH * SIMD_WIDTH]);
 }
 
-#[inline(always)]
+// #[inline(always)]
 pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     unsafe {
         // will reuse allocation if available
