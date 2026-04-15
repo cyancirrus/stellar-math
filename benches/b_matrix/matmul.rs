@@ -1,14 +1,14 @@
 #![allow(unused_imports)]
 use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_DIMS};
-use criterion::{BenchmarkId, Criterion, Throughput, black_box};
+use criterion::{BenchmarkId, Criterion, Throughput};
 use faer::linalg::matmul::matmul;
 use faer::prelude::*;
 use ndarray::Array2;
+use std::hint::black_box;
 use stellar::algebra::mmethods::{
     par_tensor_mult_cache, tensor_kernel, tensor_kernel_new, tensor_mult_cache,
 };
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
-use stellar::arch::SIMD_WIDTH;
 use stellar::random::generation::generate_random_matrix;
 // use criterion::{AxisScale, PlotConfiguration};
 
@@ -33,8 +33,6 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                 |b, &(i, j, k)| {
                     b.iter_with_setup(
                         || {
-                            // let workspace = vec![0f32; SIMD_WIDTH * SIMD_WIDTH * 2 * num_threads];
-                            // let workspace = vec![0.0f32; (i + SIMD_WIDTH) * SIMD_WIDTH];
                             let x = generate_random_matrix(i, k);
                             let y = generate_random_matrix(k, j);
                             let target = vec![f32::NAN; i * j];
@@ -82,7 +80,6 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
             //                 let num_threads = rayon::current_num_threads();
             //                 // let workspace =
             //                 //     vec![0f32; BLOCK_CACHE_PAR * BLOCK_CACHE_PAR * 2 * num_threads];
-            //                 let workspace = vec![0.0f32; (j + SIMD_WIDTH - 1)  * num_threads * SIMD_WIDTH];
             //                 let x = generate_random_matrix(i, k);
             //                 let y = generate_random_matrix(k, j);
             //                 let target = vec![f32::NAN; i * j];

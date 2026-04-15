@@ -23,5 +23,5 @@ use stellar::arch::SIMD_WIDTH;
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 // use criterion::{AxisScale, PlotConfiguration};
-fn main() {
-}
+
+fn main() {}

@@ -18,9 +18,10 @@ rand_distr = "0.6.0"
 rayon = "1.10.0"
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = "0.8"
 ndarray = "0.17.2"
-plotters = {version= "0.3", features = ["full_palette"] }
+pprof = { version = "0.15", features = ["flamegraph", "frame-pointer"] }
+plotters = { version = "0.3", features = ["full_palette"] }
 faer = { version = "0.24.0", features = ["std", "rayon"] }
 faer-ext = { version = "0.7.1", features = ["ndarray"] }
 
@@ -31,14 +32,12 @@ harness = false
 
 [[bench]]
 name = "matrix"
-sample_size = 4
+sample_size = 1
 harness = false
 
-# [[bench]]
-# name = "matrix_flame"
-# sample_size = 4
-# harness = false
-
+[[bench]]
+name = "matrix_flame"
+harness = false
 
 [[bench]]
 name = "kernel"
@@ -51,7 +50,8 @@ codegen-units = 1
 lto = true
 
 [profile.bench]
-opt-level = 3
-lto = true
 codegen-units = 1
-debug = false
+debug = true
+force-frame-pointers = true
+lto = true
+opt-level = 3
