@@ -9,9 +9,9 @@ use std::arch::x86_64::{
 /// * a : block of a
 /// * b : block of b
 /// * c : block row of c
-/// * block : size of block rows which is equal to block cols
-/// * stride : the number of cols in the output matrix c
-/// * offset : the outer k which will determine where we need to write
+/// * block_m : size of block rows which is equal to block cols
+/// * s_x : number of columns in input matrix x
+/// * s_y : number of columns in input matrix y
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_mult_simd(
     a: &[f32],
