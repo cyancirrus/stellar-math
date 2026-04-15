@@ -50,8 +50,12 @@ codegen-units = 1
 lto = true
 
 [profile.bench]
-codegen-units = 1
+# codegen-units = 1
 debug = true
 force-frame-pointers = true
 lto = true
 opt-level = 3
+
+[profile.samply]
+inherits = "release"
+debug = true
