@@ -1,6 +1,6 @@
 use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_DIMS};
 use pprof::ProfilerGuard;
-// use pprof::ProfilerGuardBuilder;
+use pprof::ProfilerGuardBuilder;
 use stellar::algebra::mmethods::tensor_kernel_new;
 use stellar::random::generation::generate_random_matrix;
 use std::fs::File;
@@ -9,12 +9,12 @@ use std::hint::black_box;
 const ITERS_PER_DIM:usize = 200;
 
 pub fn run_flame() {
-    let guard = ProfilerGuard::new(100).expect("could not start profiler");
-    // let guard = ProfilerGuardBuilder::default()
-    //     .frequency(200)
-    //     .blocklist(&["librc", "libgcc", "pthread", "vDSP"])
-    //     .build()
-    //     .expect("could not start profilier");
+    // let guard = ProfilerGuard::new(100).expect("could not start profiler");
+    let guard = ProfilerGuardBuilder::default()
+        .frequency(200)
+        .blocklist(&["librc", "libgcc", "pthread", "vDSP"])
+        .build()
+        .expect("could not start profilier");
 
     for &(i, k, j) in &L_MATRIX_DIMS {
         let x = generate_random_matrix(i, k);
