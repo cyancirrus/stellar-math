@@ -11,7 +11,7 @@ const ITERS_PER_DIM:usize = 200;
 pub fn run_flame() {
     // let guard = ProfilerGuard::new(100).expect("could not start profiler");
     let guard = ProfilerGuardBuilder::default()
-        .frequency(200)
+        .frequency(1000)
         .blocklist(&["librc", "libgcc", "pthread", "vDSP"])
         .build()
         .expect("could not start profilier");
