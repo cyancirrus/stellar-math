@@ -27,7 +27,7 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 // use criterion::{AxisScale, PlotConfiguration};
 
-pub fn tensor_mini(x: &NdArray, y: &NdArray, target: &mut [f32]) {
+pub fn tensor_minikern(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     unsafe {
         // will reuse allocation if available
         let x_d = &x.data;
@@ -66,7 +66,7 @@ pub fn tensor_mini(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     }
 }
 
-fn test_mini_equivalence() {
+fn test_minikern_equivalence() {
     let ikj = [
         (1, 1, 1),
         (8, 1, 1),
@@ -82,19 +82,19 @@ fn test_mini_equivalence() {
     let block = 4;
     let mut result = vec![f32::NAN; 8 * 8];
     for (i, k, j) in ikj {
-        test_mini_equivalence_mkn(block, i, k, j, &mut result);
+        test_minikern_equivalence_mkn(block, i, k, j, &mut result);
     }
 }
-fn test_mini_equivalence_mkn(block: usize, m: usize, k: usize, n: usize, result: &mut [f32]) {
+fn test_minikern_equivalence_mkn(block: usize, m: usize, k: usize, n: usize, result: &mut [f32]) {
     let x = generate_random_matrix(m, k);
     let y = generate_random_matrix(k, n);
     let mut result = vec![0f32; m * n];
 
     let expected = basic_mult(&x, &y);
-    tensor_mini(&x, &y, &mut result);
+    tensor_minikern(&x, &y, &mut result);
     let inspect = NdArray { dims: vec![m, n], data: result.clone()};
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 fn main() {
-    test_mini_equivalence();
+    test_minikern_equivalence();
 }
