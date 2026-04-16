@@ -1,7 +1,7 @@
 use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_DIMS};
 use pprof::ProfilerGuard;
 use pprof::ProfilerGuardBuilder;
-use stellar::algebra::mmethods::tensor_kernel_new;
+use stellar::algebra::mmethods::tensor_kernel;
 use stellar::random::generation::generate_random_matrix;
 use std::fs::File;
 use std::hint::black_box;
@@ -22,7 +22,7 @@ pub fn run_flame() {
         let mut target = vec![0.0f32; i * j];
 
         for _ in 0..ITERS_PER_DIM {
-            black_box(tensor_kernel_new(&x, &y, &mut target));
+            black_box(tensor_kernel(&x, &y, &mut target));
         }
     }
 

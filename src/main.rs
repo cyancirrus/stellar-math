@@ -16,7 +16,7 @@
 // 5. Trait refactor      ← important but least urgent
 
 use stellar::algebra::mmethods::{
-    par_tensor_mult_cache, tensor_kernel, tensor_kernel_new, tensor_mult_cache,
+    par_tensor_mult_cache, tensor_kernel,
 };
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::arch::SIMD_WIDTH;
