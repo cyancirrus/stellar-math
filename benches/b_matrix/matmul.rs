@@ -5,7 +5,7 @@ use faer::linalg::matmul::matmul;
 use faer::prelude::*;
 use ndarray::Array2;
 use std::hint::black_box;
-use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_kernel};
+use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_kernel, tensor_minikern};
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::random::generation::generate_random_matrix;
 // use criterion::{AxisScale, PlotConfiguration};
@@ -17,10 +17,6 @@ const BLOCK_CACHE_PAR: usize = 8;
 pub fn bench_matmul_scaling(c: &mut Criterion) {
     let mut run_bench = |group_name: &str, dims: &[(usize, usize, usize)]| {
         let mut group = c.benchmark_group(group_name);
-        // NOTE: would need an external library
-        // let plot_config = PlotConfiguration::default()
-        // .summary_scale(AxisScale::Logarithmic);
-        // group.plot_config(plot_config);
         group.sampling_mode(criterion::SamplingMode::Auto);
         for &(i, k, j) in dims {
             let parameter = format!("{}x{}x{}", i, k, j);
@@ -38,6 +34,23 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                             (x, y, target)
                         },
                         |(x, y, mut target)| black_box(tensor_kernel(&x, &y, &mut target)),
+                    )
+                },
+            );
+            group.throughput(Throughput::Elements((2 * i * k * j) as u64));
+            group.bench_with_input(
+                BenchmarkId::new("tensor_minikern", &parameter),
+                &(i, j, k),
+                |b, &(i, j, k)| {
+                    b.iter_with_setup(
+                        || {
+                            let x = generate_random_matrix(i, k);
+                            let y = generate_random_matrix(k, j);
+                            let target = vec![f32::NAN; i * j];
+                            // (x, y, target, workspace)
+                            (x, y, target)
+                        },
+                        |(x, y, mut target)| black_box(tensor_minikern(&x, &y, &mut target)),
                     )
                 },
             );
@@ -105,6 +118,6 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
         group.finish();
     };
     // run_bench("MatMul - Small", &S_MATRIX_DIMS);
-    // run_bench("MatMul - Medium", &M_MATRIX_DIMS);
-    run_bench("MatMul - Large", &L_MATRIX_DIMS);
+    run_bench("MatMul - Medium", &M_MATRIX_DIMS);
+    // run_bench("MatMul - Large", &L_MATRIX_DIMS);
 }
