@@ -18,14 +18,13 @@ use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
 use stellar::arch::SIMD_WIDTH;
+
+use stellar::algebra::mmethods::tensor_kernel;
+use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::equality::approximate::approx_vector_eq;
 use stellar::kernel::matkerns::kernel_mult;
-
-use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_kernel};
-use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 // use criterion::{AxisScale, PlotConfiguration};
 
-fn main() {
-}
+fn main() {}
