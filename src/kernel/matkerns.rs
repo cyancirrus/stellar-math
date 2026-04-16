@@ -27,6 +27,5 @@ pub fn kernel_mult(
             return kernel_mult_simd(x, y, t, block_m, s_x, s_y);
         }
     }
-
     kernel_mult_scalar(x, y, t, block_m, block_k, block_n, s_x, s_y);
 }

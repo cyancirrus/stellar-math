@@ -5,9 +5,7 @@ use faer::linalg::matmul::matmul;
 use faer::prelude::*;
 use ndarray::Array2;
 use std::hint::black_box;
-use stellar::algebra::mmethods::{
-    par_tensor_mult_cache, tensor_kernel,
-};
+use stellar::algebra::mmethods::{par_tensor_mult_cache, tensor_kernel};
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::random::generation::generate_random_matrix;
 // use criterion::{AxisScale, PlotConfiguration};

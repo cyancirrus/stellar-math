@@ -1,12 +1,12 @@
 use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_DIMS};
 use pprof::ProfilerGuard;
 use pprof::ProfilerGuardBuilder;
-use stellar::algebra::mmethods::tensor_kernel;
-use stellar::random::generation::generate_random_matrix;
 use std::fs::File;
 use std::hint::black_box;
+use stellar::algebra::mmethods::tensor_kernel;
+use stellar::random::generation::generate_random_matrix;
 
-const ITERS_PER_DIM:usize = 200;
+const ITERS_PER_DIM: usize = 200;
 
 pub fn run_flame() {
     // let guard = ProfilerGuard::new(100).expect("could not start profiler");
@@ -33,10 +33,9 @@ pub fn run_flame() {
             report.flamegraph(file).expect("could not write file");
             println!("Flamegraph written :: {path:?}");
             println!("Open with firefox :: open -a \"Firefox\" {path:?}");
-        },
+        }
         Err(e) => {
             println!("Failure in building report with error {e:?}");
         }
-        
     }
 }
