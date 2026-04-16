@@ -11,21 +11,29 @@ thread_local! {
     static PROC_WORKSPACE: RefCell<Vec<f32>> = RefCell::new(vec![0.0f32; SIMD_WIDTH * SIMD_WIDTH]);
 }
 
+///  tensor_kernel
+///  - accumulates the multiplication into the target matrix
+///  - t += x * y
 #[inline(always)]
 pub fn tensor_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
-    // replace 64 with l2 cache size
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
-    let (x_d, y_d, t_d) = (&x.data, &y.data, &mut target[..m * n]);
-    t_d.fill(0f32);
     if m <= MINIKERN_GATE && p <= MINIKERN_GATE << 1 && n <= MINIKERN_GATE {
-        tensor_minikern(x_d, y_d, t_d, m, p, n)
+        tensor_minikern(&x.data, &y.data, target, m, p, n)
     } else {
-        tensor_parkern(x_d, y_d, target, m, p, n);
+        tensor_parkern(&x.data, &y.data, target, m, p, n);
     }
 }
 
-pub fn tensor_parkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], _:usize, p:usize, n:usize) {
+///  tensor_kernel into 
+///   - returns x * y
+#[inline(always)]
+pub fn tensor_kernel_into(x: &NdArray, y: &NdArray, target: &mut [f32]) {
+    target.fill(0f32);
+    tensor_kernel(x, y, target);
+}
+
+pub fn tensor_parkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], _: usize, p: usize, n: usize) {
     unsafe {
         // will reuse allocation if available
         t_d.par_chunks_mut(SIMD_WIDTH * n)
@@ -68,7 +76,7 @@ pub fn tensor_parkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], _:usize, p:usiz
     }
 }
 
-pub fn tensor_minikern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m:usize, p:usize, n:usize) {
+pub fn tensor_minikern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
     unsafe {
         // will reuse allocation if available
         // t_d.fill(0f32);
@@ -123,8 +131,9 @@ mod test_cached_matrix_methods {
             (8, 6, 4),
             (16, 8, 16),
         ];
-        let mut result = vec![f32::NAN; 16 * 16];
+        let mut result = vec![0f32; 16 * 16];
         for (i, k, j) in ikj {
+            result.fill(0f32);
             test_par_kernel_equivalence_mpn(i, k, j, &mut result);
         }
     }
@@ -132,7 +141,7 @@ mod test_cached_matrix_methods {
         let x = generate_random_matrix(m, p);
         let y = generate_random_matrix(p, n);
         let expected = basic_mult(&x, &y);
-        tensor_parkern(&x.data, &y.data, &mut result[.. m * n], m, p, n);
+        tensor_parkern(&x.data, &y.data, &mut result[..m * n], m, p, n);
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
     }
     #[test]
@@ -153,14 +162,10 @@ mod test_cached_matrix_methods {
             test_minikern_equivalence_mkn(i, k, j);
         }
     }
-    fn test_minikern_equivalence_mkn(
-        m: usize,
-        k: usize,
-        n: usize,
-    ) {
+    fn test_minikern_equivalence_mkn(m: usize, k: usize, n: usize) {
         let x = generate_random_matrix(m, k);
         let y = generate_random_matrix(k, n);
-        let mut result = vec![f32::NAN; m * n];
+        let mut result = vec![0f32; m * n];
         let expected = basic_mult(&x, &y);
         tensor_minikern(&x.data, &y.data, &mut result, m, k, n);
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));

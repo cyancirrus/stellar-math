@@ -14,17 +14,73 @@
 // 3. Triangle kernel     ← 2hrs, unblocks LQ block
 // 4. AVX-512 blocksizes  ← 2hrs, great benchmark result
 // 5. Trait refactor      ← important but least urgent
-use rayon::prelude::*;
-use rayon::slice::ParallelSlice;
-use std::cell::RefCell;
-use stellar::arch::SIMD_WIDTH;
-
-use stellar::algebra::mmethods::tensor_kernel;
-use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
+use stellar::algebra::mmethods::*;
+use stellar::algebra::ndmethods::basic_mult;
 use stellar::equality::approximate::approx_vector_eq;
-use stellar::kernel::matkerns::kernel_mult;
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
-// use criterion::{AxisScale, PlotConfiguration};
 
-fn main() {}
+// #[cfg(feature = "avx2")]
+fn test_par_kernel_equivalence() {
+    let ikj = [
+        (1, 1, 1),
+        (8, 1, 1),
+        (1, 8, 1),
+        (1, 1, 8),
+        (6, 4, 8),
+        (6, 8, 4),
+        (4, 6, 8),
+        (4, 8, 6),
+        (8, 4, 6),
+        (8, 6, 4),
+        (16, 8, 16),
+    ];
+    let mut result = vec![0f32; 16 * 16];
+    for (i, k, j) in ikj {
+        result.fill(0f32);
+        println!("(i: {i:}, j: {j:}, k: {k:}");
+        test_par_kernel_equivalence_mpn(i, k, j, &mut result);
+    }
+}
+fn test_par_kernel_equivalence_mpn(m: usize, p: usize, n: usize, result: &mut [f32]) {
+    let x = generate_random_matrix(m, p);
+    let y = generate_random_matrix(p, n);
+    let expected = basic_mult(&x, &y);
+    let mut result = vec![0f32; 16 * 16];
+    tensor_parkern(&x.data, &y.data, &mut result[..m * n], m, p, n);
+    let inspect = NdArray { dims: vec![m, n], data: result.clone() };
+    println!("expected {expected:?}");
+    println!("actual {inspect:?}");
+    assert!(approx_vector_eq(&expected.data, &result[..m * n]));
+}
+fn test_minikern_equivalence() {
+    let ikj = [
+        (1, 1, 1),
+        (8, 1, 1),
+        (1, 8, 1),
+        (1, 1, 8),
+        (6, 4, 8),
+        (6, 8, 4),
+        (4, 6, 8),
+        (4, 8, 6),
+        (8, 4, 6),
+        (8, 6, 4),
+    ];
+    for (i, k, j) in ikj {
+        test_minikern_equivalence_mkn(i, k, j);
+    }
+}
+fn test_minikern_equivalence_mkn(m: usize, k: usize, n: usize) {
+    let x = generate_random_matrix(m, k);
+    let y = generate_random_matrix(k, n);
+    let mut result = vec![0f32; m * n];
+    let expected = basic_mult(&x, &y);
+    tensor_minikern(&x.data, &y.data, &mut result, m, k, n);
+    assert!(approx_vector_eq(&expected.data, &result[..m * n]));
+}
+
+fn main() {
+test_minikern_equivalence();
+test_par_kernel_equivalence();
+
+}

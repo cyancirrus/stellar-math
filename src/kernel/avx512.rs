@@ -42,7 +42,8 @@ pub fn kernel_mult_simd(
             let mut acc0 = _mm512_setzero_ps();
             let mut acc1 = _mm512_setzero_ps();
             let mut acc2 = _mm512_setzero_ps();
-            let mut acc3 = _mm512_loadu_ps(t_row);
+            // start with existing t for accumulation
+            let mut acc3 = _mm512_loadu_ps(t_row); 
             acc0 = _mm512_fmadd_ps(_mm512_set1_ps(*xrow.add(0)), i_row, acc0);
             acc1 = _mm512_fmadd_ps(_mm512_set1_ps(*xrow.add(1)), ii_row, acc1);
             acc2 = _mm512_fmadd_ps(_mm512_set1_ps(*xrow.add(2)), iii_row, acc2);
