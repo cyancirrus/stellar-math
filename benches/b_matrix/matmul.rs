@@ -33,50 +33,50 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                     )
                 },
             );
-            group.bench_with_input(
-                BenchmarkId::new("faer", &parameter),
-                &(i, j, k),
-                |b, &(m, n, k)| {
-                    b.iter_with_setup(
-                        || {
-                            let data_x = generate_random_matrix(m, k);
-                            let data_y = generate_random_matrix(k, n);
-                            let x = faer::Mat::from_fn(m, k, |r, c| data_x.data[r * k + c]);
-                            let y = faer::Mat::from_fn(k, n, |r, c| data_y.data[r * n + c]);
-                            let target = faer::Mat::<f32>::zeros(m, n);
-                            (x, y, target)
-                        },
-                        |(x, y, mut target)| {
-                            let threads = rayon::current_num_threads();
-                            matmul(
-                                target.as_mut(),
-                                faer::Accum::Replace,
-                                x.as_ref(),
-                                y.as_ref(),
-                                1.0f32,
-                                faer::Par::Rayon(std::num::NonZero::new(threads).unwrap()),
-                            );
-                            black_box(target)
-                        },
-                    );
-                },
-            );
-            group.bench_with_input(
-                BenchmarkId::new("ndarray", &parameter),
-                &(i, j, k),
-                |b, &(i, j, k)| {
-                    b.iter_with_setup(
-                        || {
-                            let data_x = generate_random_matrix(i, k);
-                            let data_y = generate_random_matrix(k, j);
-                            let x = Array2::from_shape_vec((i, k), data_x.data).unwrap();
-                            let y = Array2::from_shape_vec((k, j), data_y.data).unwrap();
-                            (x, y)
-                        },
-                        |(x, y)| black_box(x.dot(&y)),
-                    );
-                },
-            );
+            // group.bench_with_input(
+            //     BenchmarkId::new("faer", &parameter),
+            //     &(i, j, k),
+            //     |b, &(m, n, k)| {
+            //         b.iter_with_setup(
+            //             || {
+            //                 let data_x = generate_random_matrix(m, k);
+            //                 let data_y = generate_random_matrix(k, n);
+            //                 let x = faer::Mat::from_fn(m, k, |r, c| data_x.data[r * k + c]);
+            //                 let y = faer::Mat::from_fn(k, n, |r, c| data_y.data[r * n + c]);
+            //                 let target = faer::Mat::<f32>::zeros(m, n);
+            //                 (x, y, target)
+            //             },
+            //             |(x, y, mut target)| {
+            //                 let threads = rayon::current_num_threads();
+            //                 matmul(
+            //                     target.as_mut(),
+            //                     faer::Accum::Replace,
+            //                     x.as_ref(),
+            //                     y.as_ref(),
+            //                     1.0f32,
+            //                     faer::Par::Rayon(std::num::NonZero::new(threads).unwrap()),
+            //                 );
+            //                 black_box(target)
+            //             },
+            //         );
+            //     },
+            // );
+            // group.bench_with_input(
+            //     BenchmarkId::new("ndarray", &parameter),
+            //     &(i, j, k),
+            //     |b, &(i, j, k)| {
+            //         b.iter_with_setup(
+            //             || {
+            //                 let data_x = generate_random_matrix(i, k);
+            //                 let data_y = generate_random_matrix(k, j);
+            //                 let x = Array2::from_shape_vec((i, k), data_x.data).unwrap();
+            //                 let y = Array2::from_shape_vec((k, j), data_y.data).unwrap();
+            //                 (x, y)
+            //             },
+            //             |(x, y)| black_box(x.dot(&y)),
+            //         );
+            //     },
+            // );
             // group.bench_with_input(
             //     BenchmarkId::new("tensor_parkernel", &parameter),
             //     &(i, j, k),

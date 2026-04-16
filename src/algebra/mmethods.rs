@@ -11,34 +11,32 @@ thread_local! {
     static PROC_WORKSPACE: RefCell<Vec<f32>> = RefCell::new(vec![0.0f32; SIMD_WIDTH * SIMD_WIDTH]);
 }
 
+#[inline(always)]
 pub fn tensor_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
+    debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     // replace 64 with l2 cache size
-    if x.dims[0] <= MINIKERN_GATE && y.dims[0] <= MINIKERN_GATE << 1 && y.dims[1] <= MINIKERN_GATE {
-        tensor_minikern(x, y, target)
+    let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
+    let (x_d, y_d, t_d) = (&x.data, &y.data, &mut target[..m * n]);
+    t_d.fill(0f32);
+    if m <= MINIKERN_GATE && p <= MINIKERN_GATE << 1 && n <= MINIKERN_GATE {
+        tensor_minikern(x_d, y_d, t_d, m, p, n)
     } else {
-        tensor_parkern(x, y, target);
+        tensor_parkern(x_d, y_d, target, m, p, n);
     }
 }
 
-pub fn tensor_parkern(x: &NdArray, y: &NdArray, target: &mut [f32]) {
+pub fn tensor_parkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], _:usize, p:usize, n:usize) {
     unsafe {
         // will reuse allocation if available
-        let x_d = &x.data;
-        let y_d = &y.data;
-        let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
-        let y_cols = y.dims[1];
-        let t_d = &mut target[..x_rows * y_cols];
-        t_d.fill(0f32);
-        debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
-        t_d.par_chunks_mut(SIMD_WIDTH * y_cols)
-            .zip(x_d.par_chunks(SIMD_WIDTH * x_cols))
+        t_d.par_chunks_mut(SIMD_WIDTH * n)
+            .zip(x_d.par_chunks(SIMD_WIDTH * p))
             .for_each(|(t_block_row, x_block_row)| {
                 PROC_WORKSPACE.with(|workspace_cell| {
-                    let ii_end = x_block_row.len() / x_cols;
+                    let ii_end = x_block_row.len() / p;
                     let mut work_x = workspace_cell.borrow_mut();
                     let mut yoffset = 0;
-                    for k in (0..x_cols).step_by(SIMD_WIDTH) {
-                        let kk_end = SIMD_WIDTH.min(x_cols - k);
+                    for k in (0..p).step_by(SIMD_WIDTH) {
+                        let kk_end = SIMD_WIDTH.min(p - k);
                         let mut xoffset = k;
                         let mut woffset = 0;
                         for _ in 0..ii_end {
@@ -48,10 +46,10 @@ pub fn tensor_parkern(x: &NdArray, y: &NdArray, target: &mut [f32]) {
                                     &x_block_row.get_unchecked(xoffset..xoffset + kk_end),
                                 );
                             woffset += SIMD_WIDTH;
-                            xoffset += x_cols;
+                            xoffset += p;
                         }
-                        for j in (0..y_cols).step_by(SIMD_WIDTH) {
-                            let jj_end = SIMD_WIDTH.min(y_cols - j);
+                        for j in (0..n).step_by(SIMD_WIDTH) {
+                            let jj_end = SIMD_WIDTH.min(n - j);
                             kernel_mult(
                                 &work_x,
                                 y_d.get_unchecked(yoffset + j..),
@@ -60,35 +58,29 @@ pub fn tensor_parkern(x: &NdArray, y: &NdArray, target: &mut [f32]) {
                                 kk_end,
                                 jj_end,
                                 SIMD_WIDTH,
-                                y_cols,
+                                n,
                             );
                         }
-                        yoffset += SIMD_WIDTH * y_cols;
+                        yoffset += SIMD_WIDTH * n;
                     }
                 })
             });
     }
 }
 
-pub fn tensor_minikern(x: &NdArray, y: &NdArray, target: &mut [f32]) {
+pub fn tensor_minikern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m:usize, p:usize, n:usize) {
     unsafe {
         // will reuse allocation if available
-        let x_d = &x.data;
-        let y_d = &y.data;
-        let (x_rows, x_cols) = (x.dims[0], x.dims[1]);
-        let y_cols = y.dims[1];
-        let t_d = &mut target[..x_rows * y_cols];
-        t_d.fill(0f32);
-        debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
+        // t_d.fill(0f32);
         let mut xoffset = 0;
         let mut toffset = 0;
-        for i in (0..x_rows).step_by(SIMD_WIDTH) {
-            let ii_end = SIMD_WIDTH.min(x_rows - i);
+        for i in (0..m).step_by(SIMD_WIDTH) {
+            let ii_end = SIMD_WIDTH.min(m - i);
             let mut yoffset = 0;
-            for k in (0..x_cols).step_by(SIMD_WIDTH) {
-                let kk_end = SIMD_WIDTH.min(x_cols - k);
-                for j in (0..y_cols).step_by(SIMD_WIDTH) {
-                    let jj_end = SIMD_WIDTH.min(y_cols - j);
+            for k in (0..p).step_by(SIMD_WIDTH) {
+                let kk_end = SIMD_WIDTH.min(p - k);
+                for j in (0..n).step_by(SIMD_WIDTH) {
+                    let jj_end = SIMD_WIDTH.min(n - j);
                     kernel_mult(
                         x_d.get_unchecked(xoffset + k..),
                         y_d.get_unchecked(yoffset + j..),
@@ -96,14 +88,14 @@ pub fn tensor_minikern(x: &NdArray, y: &NdArray, target: &mut [f32]) {
                         ii_end,
                         kk_end,
                         jj_end,
-                        x_cols,
-                        y_cols,
+                        p,
+                        n,
                     );
                 }
-                yoffset += SIMD_WIDTH * y_cols;
+                yoffset += SIMD_WIDTH * n;
             }
-            toffset += SIMD_WIDTH * y_cols;
-            xoffset += SIMD_WIDTH * x_cols;
+            toffset += SIMD_WIDTH * n;
+            xoffset += SIMD_WIDTH * p;
         }
     }
 }
@@ -133,14 +125,14 @@ mod test_cached_matrix_methods {
         ];
         let mut result = vec![f32::NAN; 16 * 16];
         for (i, k, j) in ikj {
-            test_par_kernel_equivalence_mkn(i, k, j, &mut result);
+            test_par_kernel_equivalence_mpn(i, k, j, &mut result);
         }
     }
-    fn test_kernel_equivalence_mkn(m: usize, k: usize, n: usize, result: &mut [f32]) {
-        let x = generate_random_matrix(m, k);
-        let y = generate_random_matrix(k, n);
+    fn test_par_kernel_equivalence_mpn(m: usize, p: usize, n: usize, result: &mut [f32]) {
+        let x = generate_random_matrix(m, p);
+        let y = generate_random_matrix(p, n);
         let expected = basic_mult(&x, &y);
-        tensor_parkern(&x, &y, result);
+        tensor_parkern(&x.data, &y.data, &mut result[.. m * n], m, p, n);
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
     }
     #[test]
@@ -157,24 +149,20 @@ mod test_cached_matrix_methods {
             (8, 4, 6),
             (8, 6, 4),
         ];
-        let block = 4;
-        let mut result = vec![f32::NAN; 8 * 8];
         for (i, k, j) in ikj {
-            test_minikern_equivalence_mkn(block, i, k, j, &mut result);
+            test_minikern_equivalence_mkn(i, k, j);
         }
     }
     fn test_minikern_equivalence_mkn(
-        block: usize,
         m: usize,
         k: usize,
         n: usize,
-        result: &mut [f32],
     ) {
         let x = generate_random_matrix(m, k);
         let y = generate_random_matrix(k, n);
         let mut result = vec![f32::NAN; m * n];
         let expected = basic_mult(&x, &y);
-        tensor_minikern(&x, &y, &mut result);
+        tensor_minikern(&x.data, &y.data, &mut result, m, k, n);
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
     }
 }
