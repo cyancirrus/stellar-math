@@ -37,12 +37,11 @@ fn test_par_kernel_equivalence() {
     ];
     let mut result = vec![0f32; 16 * 16];
     for (i, k, j) in ikj {
-        result.fill(0f32);
         println!("(i: {i:}, j: {j:}, k: {k:}");
-        test_par_kernel_equivalence_mpn(i, k, j, &mut result);
+        test_par_kernel_equivalence_mpn(i, k, j);
     }
 }
-fn test_par_kernel_equivalence_mpn(m: usize, p: usize, n: usize, result: &mut [f32]) {
+fn test_par_kernel_equivalence_mpn(m: usize, p: usize, n: usize) {
     let x = generate_random_matrix(m, p);
     let y = generate_random_matrix(p, n);
     let expected = basic_mult(&x, &y);
