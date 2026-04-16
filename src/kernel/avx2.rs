@@ -25,7 +25,7 @@ pub fn kernel_mult_simd(
         let xptr = x.as_ptr();
         let yptr = y.as_ptr();
         let tptr = t.as_mut_ptr();
-        let i_row = _mm256_loadu_ps(xptr);
+        let i_row = _mm256_loadu_ps(yptr);
         let ii_row = _mm256_loadu_ps(yptr.add(s_y));
         let iii_row = _mm256_loadu_ps(yptr.add(s_y * 2));
         let iv_row = _mm256_loadu_ps(yptr.add(s_y * 3));

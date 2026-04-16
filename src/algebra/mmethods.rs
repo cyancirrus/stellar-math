@@ -75,7 +75,6 @@ pub fn tensor_parkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], _: usize, p: us
             });
     }
 }
-
 pub fn tensor_minikern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
     unsafe {
         // will reuse allocation if available
