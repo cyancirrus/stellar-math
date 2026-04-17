@@ -12,6 +12,7 @@ pub fn kernel_mult_simd(
     block_m: usize,
     s_x: usize,
     s_y: usize,
+    s_t: usize,
 ) {
     unsafe {
         let i_row = _mm256_loadu_ps(yptr);
@@ -37,7 +38,7 @@ pub fn kernel_mult_simd(
             acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7)), viii_row, acc1);
             _mm256_storeu_ps(tptr, _mm256_add_ps(acc1, acc0));
             xptr = xptr.add(s_x);
-            tptr = tptr.add(s_y);
+            tptr = tptr.add(s_t);
         }
     }
 }
@@ -50,6 +51,7 @@ pub fn kernel_ut_mult_simd(
     block_m: usize,
     s_x: usize,
     s_y: usize,
+    s_t: usize,
 ) {
     debug_assert!(block_m <= 8);
     unsafe {
@@ -77,7 +79,7 @@ pub fn kernel_ut_mult_simd(
             }
             _mm256_storeu_ps(trow, acc);
             xoffset += s_x;
-            toffset += s_y;
+            toffset += s_t;
         }
     }
 }
@@ -90,6 +92,7 @@ pub fn kernel_lt_mult_simd(
     block_m: usize,
     s_x: usize,
     s_y: usize,
+    s_t: usize,
 ) {
     debug_assert!(block_m <= 8);
     unsafe {
@@ -117,7 +120,7 @@ pub fn kernel_lt_mult_simd(
             }
             _mm256_storeu_ps(trow, acc);
             xoffset += s_x;
-            toffset += s_y;
+            toffset += s_t;
         }
     }
 }
@@ -156,7 +159,7 @@ mod test_avx2_kernels {
         let b = generate_random_matrix(k, n);
         let expected = basic_mult(&a_control, &b);
         unsafe {
-            kernel_lt_mult_simd(&a.data, &b.data, output, BLOCK_AVX2, m, n);
+            kernel_lt_mult_simd(&a.data, &b.data, output, BLOCK_AVX2, m, n, n);
         }
         debug_assert!(approx_vector_eq(&expected.data, &output[..m * n]));
     }
@@ -168,7 +171,7 @@ mod test_avx2_kernels {
         filter_upper_triangle(&mut a_control);
         let expected = basic_mult(&a_control, &b);
         unsafe {
-            kernel_ut_mult_simd(&a.data, &b.data, output, BLOCK_AVX2, m, n);
+            kernel_ut_mult_simd(&a.data, &b.data, output, BLOCK_AVX2, m, n, n);
         }
         debug_assert!(approx_vector_eq(&expected.data, &output[..m * n]));
     }

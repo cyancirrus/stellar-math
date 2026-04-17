@@ -12,6 +12,7 @@ pub fn kernel_mult_simd(
     block_m: usize,
     s_x: usize,
     s_y: usize,
+    s_t: usize,
 ) {
     unsafe {
         let i_row = _mm512_loadu_ps(yptr);
@@ -62,7 +63,7 @@ pub fn kernel_mult_simd(
                 _mm512_add_ps(_mm512_add_ps(acc0, acc1), _mm512_add_ps(acc2, acc3)),
             );
             xptr = xptr.add(s_x);
-            tptr = tptr.add(s_y);
+            tptr = tptr.add(s_t);
         }
     }
 }

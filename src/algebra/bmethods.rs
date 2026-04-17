@@ -59,18 +59,17 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
         for pc in (0..p).step_by(PC) {
             // shared dimension
             let pa = (p - pc).min(PC);
-            pack(&y_d[nc * n..], &mut y_pack, pa, na, NC, n);
+            pack(&y_d[pc * n + nc..], &mut y_pack, pa, na, NC, n);
             // pack_x  ~ MC x PC; // to fit in l2
             for mc in (0..m).step_by(MC) {
                 let ma = (m - mc).min(MC);
-                pack(&x_d[mc * p..], &mut x_pack, ma, pa, PC, p);
+                pack(&x_d[mc * p + pc..], &mut x_pack, ma, pa, PC, p);
                 // should i pass in a stride?
-                tensor_minikern(&x_pack, &y_pack, &mut t_d[mc * n + nc..], ma, pa, na);
+                tensor_newkern(&x_pack, &y_pack, &mut t_d[mc * n + nc..], ma, pa, na, PC, NC, n);
             }
         }
     }
 }
-
 /// # pack_x returns a panel of the original matrix x
 /// - d ~ M(r, s)
 ///
@@ -123,6 +122,7 @@ pub fn tensor_newkern(
                         jj_end,
                         s_x,
                         s_y,
+                        s_t,
                     );
                 }
                 yoffset += SIMD_WIDTH * s_y;
@@ -133,3 +133,54 @@ pub fn tensor_newkern(
     }
 }
 
+#[cfg(test)]
+mod test_kernel_block {
+    use crate::arch::SIMD_WIDTH;
+    use crate::structure::ndarray::NdArray;
+    use crate::algebra::bmethods::tensor_blockkern;
+    use crate::random::generation::generate_random_matrix;
+    use crate::equality::approximate::approx_vector_eq;
+    use crate::algebra::ndmethods::basic_mult;
+
+    #[test]
+    fn test_blockkern_equivalence() {
+        let ikj = [
+            (1, 1, 1),
+            (8, 1, 1),
+            (1, 8, 1),
+            (1, 1, 8),
+            (6, 4, 8),
+            (6, 8, 4),
+            (4, 6, 8),
+            (4, 8, 6),
+            (8, 4, 6),
+            (8, 6, 4),
+            (8, 8, 8),
+            (16, 16, 16),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        ];
+        for (i, k, j) in ikj {
+            println!("(i: {i:?}, k: {k:?}, {j:})");
+            test_blockkern_equivalence_mkn(i, k, j);
+        }
+    }
+    fn test_blockkern_equivalence_mkn(m: usize, k: usize, n: usize) {
+        let x = generate_random_matrix(m, k);
+        let y = generate_random_matrix(k, n);
+        let mut result = vec![0f32; m * n];
+        let expected = basic_mult(&x, &y);
+        tensor_blockkern(&x.data, &y.data, &mut result, m, k, n);
+        let inspect = NdArray { dims: vec![m, n], data: result.clone()};
+        println!("expected {expected:?}");
+        println!("actual {inspect:?}");
+        assert!(approx_vector_eq(&expected.data, &result[..m * n]));
+    }
+
+}

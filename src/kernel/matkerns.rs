@@ -21,10 +21,11 @@ pub fn kernel_mult(
     block_n: usize,
     s_x: usize,
     s_y: usize,
+    s_t: usize,
 ) {
     unsafe {
         if SIMD_WIDTH == block_n && SIMD_WIDTH == block_k {
-            return kernel_mult_simd(x.as_ptr(), y.as_ptr(), t.as_mut_ptr(), block_m, s_x, s_y);
+            return kernel_mult_simd(x.as_ptr(), y.as_ptr(), t.as_mut_ptr(), block_m, s_x, s_y, s_t);
         }
         kernel_mult_scalar(
             x.as_ptr(),
@@ -35,6 +36,7 @@ pub fn kernel_mult(
             block_n,
             s_x,
             s_y,
+            s_t,
         );
     }
 }

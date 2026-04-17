@@ -17,6 +17,7 @@ pub unsafe fn kernel_mult_simd(
     block_m: usize,
     s_x: usize,
     s_y: usize,
+    s_t: usize,
 ) {
     // NOTE: might be able to dual accumulate so that the acc isn't blocked
     // default rust method
@@ -40,7 +41,7 @@ pub unsafe fn kernel_mult_simd(
                 *tptr.add(j) += acc[j];
             }
             xptr = xptr.add(s_x);
-            tptr = tptr.add(s_y);
+            tptr = tptr.add(s_t);
         }
     }
 }
@@ -54,6 +55,7 @@ pub fn kernel_mult_scalar(
     block_n: usize,
     s_x: usize,
     s_y: usize,
+    s_t: usize,
 ) {
     unsafe {
         // simple method to handle edge cases
@@ -76,7 +78,7 @@ pub fn kernel_mult_scalar(
                 *tptr.add(j) += acc[j];
             }
             xptr = xptr.add(s_x);
-            tptr = tptr.add(s_y);
+            tptr = tptr.add(s_t);
         }
     }
 }

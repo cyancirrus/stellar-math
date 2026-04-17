@@ -13,5 +13,55 @@
 // 2. Blog redesign       ← makes everything else findable
 // 3. Triangle kernel     ← 2hrs, unblocks LQ block
 // 4. Trait refactor      ← important but least urgent
+use stellar::arch::SIMD_WIDTH;
+use stellar::structure::ndarray::NdArray;
+use stellar::algebra::bmethods::tensor_blockkern;
+use stellar::random::generation::generate_random_matrix;
+use stellar::equality::approximate::approx_vector_eq;
+use stellar::algebra::ndmethods::basic_mult;
 
-fn main() {}
+fn test_blockkern_equivalence() {
+    let ikj = [
+        (1, 1, 1),
+        (8, 1, 1),
+        (1, 8, 1),
+        (1, 1, 8),
+        (6, 4, 8),
+        (6, 8, 4),
+        (4, 6, 8),
+        (4, 8, 6),
+        (8, 4, 6),
+        (8, 6, 4),
+        (8, 8, 8),
+        (16, 16, 16),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+    ];
+    for (i, k, j) in ikj {
+        println!("(i: {i:?}, k: {k:?}, {j:})");
+        test_blockkern_equivalence_mkn(i, k, j);
+    }
+}
+fn test_blockkern_equivalence_mkn(m: usize, k: usize, n: usize) {
+    let x = generate_random_matrix(m, k);
+    let y = generate_random_matrix(k, n);
+    let mut result = vec![0f32; m * n];
+    let expected = basic_mult(&x, &y);
+    tensor_blockkern(&x.data, &y.data, &mut result, m, k, n);
+    let inspect = NdArray { dims: vec![m, n], data: result.clone()};
+    println!("expected {expected:?}");
+    println!("actual {inspect:?}");
+    assert!(approx_vector_eq(&expected.data, &result[..m * n]));
+}
+
+
+fn main() {
+test_blockkern_equivalence();
+
+}
