@@ -14,9 +14,12 @@ const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // const MC: usize = 64; // l2 cachesize
 // const PC: usize = 256; // l1 cachesize
 // const NC: usize = 1024; // to be tuned
-const MC: usize = 128; // l2 cachesize
-const PC: usize = 64; // l1 cachesize
-const NC: usize = 1024; // to be tuned
+// const MC: usize = 128; // l2 cachesize
+// const PC: usize = 64; // l1 cachesize
+// const NC: usize = 1024; // to be tuned
+const MC: usize = 4; // l2 cachesize
+const PC: usize = 2; // l1 cachesize
+const NC: usize = 8; // to be tuned
 
 thread_local! {
     static PACK_X: RefCell<Vec<f32>> = RefCell::new(vec![0f32; MC * PC]);
