@@ -1,17 +1,11 @@
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use std::arch::x86_64::{
-    _mm256_add_ps, _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_set1_ps, _mm256_setzero_ps,
-    _mm256_storeu_ps,
+    _mm256_add_ps, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps, _mm256_set1_ps, _mm256_setzero_ps,
+    _mm256_storeu_ps, _mm256_mask_load_ps
 };
-/// kernel_mult
-/// a * b -> c
-///
-/// * a : block of a
-/// * b : block of b
-/// * c : block row of c
-/// * block_m : size of block rows which is equal to block cols
-/// * s_x : number of columns in input matrix x
-/// * s_y : number of columns in input matrix y
+
+// TODO: add masking because the avx2 kernel is 10x the speed of the default
+//  can align when using the x_pack, y_pack
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_mult_simd(
     x: &[f32],
@@ -22,9 +16,7 @@ pub fn kernel_mult_simd(
     s_y: usize,
 ) {
     unsafe {
-        let xptr = x.as_ptr();
         let yptr = y.as_ptr();
-        let tptr = t.as_mut_ptr();
         let i_row = _mm256_loadu_ps(yptr);
         let ii_row = _mm256_loadu_ps(yptr.add(s_y));
         let iii_row = _mm256_loadu_ps(yptr.add(s_y * 2));
@@ -34,28 +26,29 @@ pub fn kernel_mult_simd(
         let vii_row = _mm256_loadu_ps(yptr.add(s_y * 6));
         let viii_row = _mm256_loadu_ps(yptr.add(s_y * 7));
 
-        let mut xoffset = 0;
-        let mut toffset = 0;
+        let mut xptr = x.as_ptr();
+        let mut tptr = t.as_mut_ptr();
         for _ in 0..block_m {
-            let xrow = xptr.add(xoffset);
-            let trow = tptr.add(toffset);
+            let mut acc1 = _mm256_loadu_ps(tptr);
             let mut acc0 = _mm256_setzero_ps();
             // start with existing t for accumulation
-            let mut acc1 = _mm256_loadu_ps(trow);
-            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xrow.add(0)), i_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xrow.add(1)), ii_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xrow.add(2)), iii_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xrow.add(3)), iv_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xrow.add(4)), v_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xrow.add(5)), vi_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xrow.add(6)), vii_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xrow.add(7)), viii_row, acc1);
-            _mm256_storeu_ps(trow, _mm256_add_ps(acc0, acc1));
-            xoffset += s_x;
-            toffset += s_y;
+            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(0)), i_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(1)), ii_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2)), iii_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3)), iv_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(4)), v_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(5)), vi_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(6)), vii_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7)), viii_row, acc1);
+            _mm256_storeu_ps(tptr, _mm256_add_ps(acc1, acc0));
+            xptr = xptr.add(s_x);
+            tptr = tptr.add(s_y);
         }
     }
 }
+
+
+
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_ut_mult_simd(
     x: &[f32],
@@ -70,7 +63,6 @@ pub fn kernel_ut_mult_simd(
         let xptr = x.as_ptr();
         let yptr = y.as_ptr();
         let tptr = t.as_mut_ptr();
-        // let i_row = _mm256_loadu_ps(yptr);
         let irows = [
             _mm256_loadu_ps(yptr),
             _mm256_loadu_ps(yptr.add(s_y)),

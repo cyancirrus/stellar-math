@@ -12,9 +12,9 @@
 // 1. Animate demo        ← most legible to employers
 // 2. Blog redesign       ← makes everything else findable
 // 3. Triangle kernel     ← 2hrs, unblocks LQ block
-// 4. AVX-512 blocksizes  ← 2hrs, great benchmark result
-// 5. Trait refactor      ← important but least urgent
+// 4. Trait refactor      ← important but least urgent
 
-fn main() {
 
-}
+
+
+fn main() {}

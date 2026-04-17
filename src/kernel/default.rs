@@ -38,7 +38,6 @@ pub unsafe fn kernel_mult_simd(
         toffset += s_y;
     }
 }
-
 #[inline(always)]
 pub fn kernel_mult_scalar(
     x: &[f32],
@@ -50,24 +49,21 @@ pub fn kernel_mult_scalar(
     s_x: usize,
     s_y: usize,
 ) {
+    unsafe {
     // simple method to handle edge cases
-    let mut xoffset = 0;
-    let mut toffset = 0;
-    let mut yoffset;
+    let mut xptr = x.as_ptr();
+    let mut tptr = t.as_mut_ptr();
 
     for _i in 0..block_m {
-        yoffset = 0;
-        let x_row = &x[xoffset..xoffset + block_k];
+        let mut yptr = y.as_ptr();
         for k in 0..block_k {
-            let scalar = x_row[k];
-            let y_row = &y[yoffset..yoffset + block_n];
-            let t_row = &mut t[toffset..toffset + block_n];
-            for (t, y) in t_row.iter_mut().zip(y_row.iter()) {
-                *t += scalar * y;
+            let scalar = *xptr.add(k);
+            for j in 0..block_n {
+                *tptr.add(j) += scalar * *yptr.add(j);
             }
-            yoffset += s_y;
+            yptr = yptr.add(s_y);
         }
-        xoffset += s_x;
-        toffset += s_y;
-    }
+        xptr = xptr.add(s_x);
+        tptr = tptr.add(s_y);
+    }}
 }

@@ -1,5 +1,4 @@
 [features]
-default = []
 avx2 = []
 avx512 = []
 neon = []

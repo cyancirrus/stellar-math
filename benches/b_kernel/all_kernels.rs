@@ -1,16 +1,22 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::Throughput;
+use criterion::{Criterion, criterion_group, criterion_main};
+use std::hint::black_box;
+use stellar::arch::SIMD_WIDTH;
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use stellar::kernel::avx2;
 use stellar::kernel::default;
-
 pub fn benchmark_kernels(c: &mut Criterion) {
-    let block = 8;
-    let stride = 8;
-    let a = vec![1.0f32; 64]; // Use 64 for 8x8 block
-    let b = vec![2.0f32; 64];
-    let mut c_out = vec![0.0f32; 64];
+    let block = SIMD_WIDTH;
+    let stride = SIMD_WIDTH;
+    let a = vec![1.0f32; SIMD_WIDTH * SIMD_WIDTH]; // Use 64 for 8x8 block
+    let b = vec![2.0f32; SIMD_WIDTH * SIMD_WIDTH];
+    let mut c_out = vec![0.0f32; SIMD_WIDTH * SIMD_WIDTH];
 
     let mut group = c.benchmark_group("Matrix Kernel");
+    group.sampling_mode(criterion::SamplingMode::Auto);
+    group.throughput(Throughput::Elements(
+        (2 * SIMD_WIDTH * SIMD_WIDTH * SIMD_WIDTH) as u64,
+    ));
     #[cfg(feature = "avx2")]
     group.bench_function("AVX2 Kernel", |b_inner| {
         b_inner.iter(|| unsafe {
@@ -20,24 +26,22 @@ pub fn benchmark_kernels(c: &mut Criterion) {
                 black_box(&mut c_out),
                 block,
                 stride,
-                0,
-            )
-        });
-    });
-
-    group.bench_function("Default Kernel", |b_inner| {
-        b_inner.iter(|| unsafe {
-            default::kernel_mult_simd(
-                black_box(&a),
-                black_box(&b),
-                black_box(&mut c_out),
-                block,
                 stride,
-                0,
             )
         });
     });
-
+    // group.bench_function("Default Kernel", |b_inner| {
+    //     b_inner.iter(|| unsafe {
+    //         default::kernel_mult_simd(
+    //             black_box(&a),
+    //             black_box(&b),
+    //             black_box(&mut c_out),
+    //             block,
+    //             stride,
+    //             stride,
+    //         )
+    //     });
+    // });
     group.bench_function("Scalar Kernel", |b_inner| {
         b_inner.iter(|| {
             default::kernel_mult_scalar(
@@ -48,11 +52,10 @@ pub fn benchmark_kernels(c: &mut Criterion) {
                 block,
                 block,
                 stride,
-                0,
+                stride,
             )
         });
     });
-
     group.finish();
 }
 

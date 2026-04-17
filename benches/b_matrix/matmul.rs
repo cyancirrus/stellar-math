@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_DIMS};
+use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_ALIGNED, S_MATRIX_UNALIGNED};
 use criterion::{BenchmarkId, Criterion, Throughput};
 use faer::linalg::matmul::matmul;
 use faer::prelude::*;
@@ -17,7 +17,6 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
         for &(i, k, j) in dims {
             let parameter = format!("{}x{}x{}", i, k, j);
             group.throughput(Throughput::Elements((2 * i * k * j) as u64));
-            group.throughput(Throughput::Elements((2 * i * k * j) as u64));
             group.bench_with_input(
                 BenchmarkId::new("tensor_kernel", &parameter),
                 &(i, j, k),
@@ -33,34 +32,34 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                     )
                 },
             );
-            // group.bench_with_input(
-            //     BenchmarkId::new("faer", &parameter),
-            //     &(i, j, k),
-            //     |b, &(m, n, k)| {
-            //         b.iter_with_setup(
-            //             || {
-            //                 let data_x = generate_random_matrix(m, k);
-            //                 let data_y = generate_random_matrix(k, n);
-            //                 let x = faer::Mat::from_fn(m, k, |r, c| data_x.data[r * k + c]);
-            //                 let y = faer::Mat::from_fn(k, n, |r, c| data_y.data[r * n + c]);
-            //                 let target = faer::Mat::<f32>::zeros(m, n);
-            //                 (x, y, target)
-            //             },
-            //             |(x, y, mut target)| {
-            //                 let threads = rayon::current_num_threads();
-            //                 matmul(
-            //                     target.as_mut(),
-            //                     faer::Accum::Replace,
-            //                     x.as_ref(),
-            //                     y.as_ref(),
-            //                     1.0f32,
-            //                     faer::Par::Rayon(std::num::NonZero::new(threads).unwrap()),
-            //                 );
-            //                 black_box(target)
-            //             },
-            //         );
-            //     },
-            // );
+            group.bench_with_input(
+                BenchmarkId::new("faer", &parameter),
+                &(i, j, k),
+                |b, &(m, n, k)| {
+                    b.iter_with_setup(
+                        || {
+                            let data_x = generate_random_matrix(m, k);
+                            let data_y = generate_random_matrix(k, n);
+                            let x = faer::Mat::from_fn(m, k, |r, c| data_x.data[r * k + c]);
+                            let y = faer::Mat::from_fn(k, n, |r, c| data_y.data[r * n + c]);
+                            let target = faer::Mat::<f32>::zeros(m, n);
+                            (x, y, target)
+                        },
+                        |(x, y, mut target)| {
+                            let threads = rayon::current_num_threads();
+                            matmul(
+                                target.as_mut(),
+                                faer::Accum::Replace,
+                                x.as_ref(),
+                                y.as_ref(),
+                                1.0f32,
+                                faer::Par::Rayon(std::num::NonZero::new(threads).unwrap()),
+                            );
+                            black_box(target)
+                        },
+                    );
+                },
+            );
             // group.bench_with_input(
             //     BenchmarkId::new("ndarray", &parameter),
             //     &(i, j, k),
@@ -111,7 +110,8 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
         }
         group.finish();
     };
-    run_bench("MatMul - Small", &S_MATRIX_DIMS);
-    run_bench("MatMul - Medium", &M_MATRIX_DIMS);
-    run_bench("MatMul - Large", &L_MATRIX_DIMS);
+    run_bench("MatMul - Small", &S_MATRIX_ALIGNED);
+    run_bench("MatMul - Small Unaligned", &S_MATRIX_UNALIGNED);
+    // run_bench("MatMul - Medium", &M_MATRIX_DIMS);
+    // run_bench("MatMul - Large", &L_MATRIX_DIMS);
 }
