@@ -4,8 +4,6 @@ use std::arch::x86_64::{
     _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
 };
 
-// TODO: add masking because the avx2 kernel is 10x the speed of the default
-//  can align when using the x_pack, y_pack
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_mult_simd(
     mut xptr: *const f32,

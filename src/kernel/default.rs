@@ -57,7 +57,7 @@ pub fn kernel_mult_scalar(
     unsafe {
         // simple method to handle edge cases
         let yorig = yptr;
-        let mut acc = [0f32; 8];
+        let mut acc = [0f32; SIMD_WIDTH];
         for _i in 0..block_m {
             yptr = yorig;
             let scalar = *xptr;

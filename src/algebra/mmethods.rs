@@ -7,12 +7,15 @@ use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
 
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
-const MC: usize = 32; // l2 cachesize
-const PC: usize = 64; // l1 cachesize
-const NC: usize = 256; // to be tuned
+// const MC: usize = 32; // l2 cachesize
+// const PC: usize = 64; // l1 cachesize
+// const NC: usize = 256; // to be tuned
 // const MC: usize = 64; // l2 cachesize
 // const PC: usize = 256; // l1 cachesize
 // const NC: usize = 1024; // to be tuned
+const MC: usize = 128; // l2 cachesize
+const PC: usize = 64; // l1 cachesize
+const NC: usize = 1024; // to be tuned
 
 thread_local! {
     static PROC_WORKSPACEX: RefCell<Vec<f32>> = RefCell::new(vec![0.0f32; SIMD_WIDTH * SIMD_WIDTH]);
@@ -60,26 +63,20 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
 ///
 /// * d: contains the source data of x sliced to begin at mc
 /// * pack: contains the reused pack for the outer iteration loop
-/// * rl: r-index in the outer loop for the begin
 /// * re: size of the r-block
-/// * sl: used for when there exists a partial block
 /// * se: size of the s-block
 /// * sd: stride of the matrix d
 fn pack(
     d: &[f32],
     pack: &mut [f32],
-    rl: usize,
     re: usize,
-    sl: usize,
     se: usize,
     block: usize,
     stride: usize,
 ) {
     unsafe {
-        // window offset
         let mut woffset = 0;
-        // data offset
-        let mut doffset = rl;
+        let mut doffset = 0;
         for _ in 0..re {
             pack.get_unchecked_mut(woffset..woffset + se)
                 .copy_from_slice(&d.get_unchecked(doffset..doffset + se));
@@ -89,56 +86,6 @@ fn pack(
     }
 }
 
-// /// # pack_x returns a panel of the original matrix x
-// /// - x ~ M(m, p)
-// ///
-// /// * x_d: contains the source data of x sliced to begin at mc
-// /// * x_pack: contains the reused pack for the outer iteration loop
-// /// * mc: i-index in the outer loop for the begin
-// /// * pc: k-index in the outer loop for the begin
-// /// * end: used for when there exists a partial block
-// /// * s_x: the iteration for the unsliced source matrix x
-// fn pack_x(x_d: &[f32], x_pack:&mut [f32], mc:usize, pc:usize, end:usize, sx: usize) {
-//     unsafe {
-//         let mut xoffset = 0;
-//         let mut woffset = pc;
-//         for _ in 0..MC {
-//             x_pack
-//                 .get_unchecked_mut(woffset..woffset + end)
-//                 .copy_from_slice(
-//                     &x_d.get_unchecked(xoffset..xoffset + end),
-//                 );
-//             woffset += MC;
-//             xoffset += sx;
-//         }
-//     }
-// }
-
-// /// # pack_y returns a panel of the original matrix y
-// /// - y ~ M(p, n)
-// ///
-// /// * x_d: contains the source data of x sliced to begin at mc
-// /// * x_pack: contains the reused pack for the outer iteration loop
-// /// * mc: i-index in the outer loop for the begin
-// /// * pc: k-index in the outer loop for the begin
-// /// * end: used for when there exists a partial block
-// /// * s_x: the iteration for the unsliced source matrix x
-// fn pack_y(y_d: &[f32], y_pack:&mut [f32], pc:usize, nc:usize, end:usize, sy: usize) {
-//     unsafe {
-//         let mut yoffset = 0;
-//         let mut woffset = pc;
-//         for _ in 0..PC {
-//             y_pack
-//                 .get_unchecked_mut(woffset..woffset + end)
-//                 .copy_from_slice(
-//                     &y_d.get_unchecked(yoffset..yoffset + end),
-//                 );
-//             woffset += MC;
-//             yoffset += sy;
-//         }
-//     }
-
-// }
 
 pub fn tensor_parkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], _: usize, p: usize, n: usize) {
     unsafe {
