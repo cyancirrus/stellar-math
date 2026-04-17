@@ -18,6 +18,7 @@ pub unsafe fn kernel_mult_simd(
     s_x: usize,
     s_y: usize,
 ) {
+    // NOTE: might be able to dual accumulate so that the acc isn't blocked
     // default rust method
     unsafe {
         let yorig = yptr;

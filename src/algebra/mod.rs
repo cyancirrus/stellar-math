@@ -5,5 +5,5 @@ pub mod ndsmethods;
 pub mod signal;
 pub mod simd;
 pub mod vector;
-// matrix methods
 pub mod mmethods;
+pub mod bmethods;
