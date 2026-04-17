@@ -11,59 +11,71 @@ use crate::arch::SIMD_WIDTH;
 /// * offset : the outer k which will determine where we need to write
 #[inline(always)]
 pub unsafe fn kernel_mult_simd(
-    x: &[f32],
-    y: &[f32],
-    t: &mut [f32],
-    block_v: usize,
+    mut xptr: *const f32,
+    mut yptr: *const f32,
+    mut tptr: *mut f32,
+    block_m: usize,
     s_x: usize,
     s_y: usize,
 ) {
     // default rust method
-    let mut xoffset = 0;
-    let mut toffset = 0;
-    let mut yoffset;
-    for _i in 0..block_v {
-        yoffset = 0;
-        let x_row = &x[xoffset..xoffset + SIMD_WIDTH];
-        for k in 0..SIMD_WIDTH {
-            let scalar = x_row[k];
-            let y_row = &y[yoffset..yoffset + SIMD_WIDTH];
-            let t_row = &mut t[toffset..toffset + SIMD_WIDTH];
-            for (t, y) in t_row.iter_mut().zip(y_row.iter()) {
-                *t += scalar * y;
+    unsafe {
+        let yorig = yptr;
+        let mut acc = [0f32; 8];
+        for _i in 0..block_m {
+            yptr = yorig;
+            let scalar = *xptr;
+            for j in 0..SIMD_WIDTH {
+                acc[j] = scalar * *yptr.add(j);
             }
-            yoffset += s_y;
+            for k in 1..SIMD_WIDTH {
+                yptr = yptr.add(s_y);
+                let scalar = *xptr.add(k);
+                for j in 0..SIMD_WIDTH {
+                    acc[j] += scalar * *yptr.add(j);
+                }
+            }
+            for j in 0..SIMD_WIDTH {
+                *tptr.add(j) += acc[j];
+            }
+            xptr = xptr.add(s_x);
+            tptr = tptr.add(s_y);
         }
-        xoffset += s_x;
-        toffset += s_y;
     }
 }
 #[inline(always)]
 pub fn kernel_mult_scalar(
-    x: &[f32],
-    y: &[f32],
-    t: &mut [f32],
+    mut xptr: *const f32,
+    mut yptr: *const f32,
+    mut tptr: *mut f32,
     block_m: usize,
-    block_k: usize,
+    block_p: usize,
     block_n: usize,
     s_x: usize,
     s_y: usize,
 ) {
     unsafe {
-    // simple method to handle edge cases
-    let mut xptr = x.as_ptr();
-    let mut tptr = t.as_mut_ptr();
-
-    for _i in 0..block_m {
-        let mut yptr = y.as_ptr();
-        for k in 0..block_k {
-            let scalar = *xptr.add(k);
+        // simple method to handle edge cases
+        let yorig = yptr;
+        let mut acc = [0f32; 8];
+        for _i in 0..block_m {
+            yptr = yorig;
+            let scalar = *xptr;
             for j in 0..block_n {
-                *tptr.add(j) += scalar * *yptr.add(j);
+                acc[j] = scalar * *yptr.add(j);
             }
-            yptr = yptr.add(s_y);
+            for k in 1..block_p {
+                yptr = yptr.add(s_y);
+                let scalar = *xptr.add(k);
+                for j in 0..block_n {
+                    acc[j] += scalar * *yptr.add(j);
+                }
+            }
+            for j in 0..block_n {
+                *tptr.add(j) += acc[j];
+            }
+            xptr = xptr.add(s_x);
+            tptr = tptr.add(s_y);
         }
-        xptr = xptr.add(s_x);
-        tptr = tptr.add(s_y);
-    }}
+    }
 }

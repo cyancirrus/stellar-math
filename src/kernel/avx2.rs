@@ -1,22 +1,21 @@
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use std::arch::x86_64::{
-    _mm256_add_ps, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps, _mm256_set1_ps, _mm256_setzero_ps,
-    _mm256_storeu_ps, _mm256_mask_load_ps
+    _mm256_add_ps, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps, _mm256_mask_load_ps,
+    _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
 };
 
 // TODO: add masking because the avx2 kernel is 10x the speed of the default
 //  can align when using the x_pack, y_pack
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_mult_simd(
-    x: &[f32],
-    y: &[f32],
-    t: &mut [f32],
+    mut xptr: *const f32,
+    mut yptr: *const f32,
+    mut tptr: *mut f32,
     block_m: usize,
     s_x: usize,
     s_y: usize,
 ) {
     unsafe {
-        let yptr = y.as_ptr();
         let i_row = _mm256_loadu_ps(yptr);
         let ii_row = _mm256_loadu_ps(yptr.add(s_y));
         let iii_row = _mm256_loadu_ps(yptr.add(s_y * 2));
@@ -26,8 +25,6 @@ pub fn kernel_mult_simd(
         let vii_row = _mm256_loadu_ps(yptr.add(s_y * 6));
         let viii_row = _mm256_loadu_ps(yptr.add(s_y * 7));
 
-        let mut xptr = x.as_ptr();
-        let mut tptr = t.as_mut_ptr();
         for _ in 0..block_m {
             let mut acc1 = _mm256_loadu_ps(tptr);
             let mut acc0 = _mm256_setzero_ps();
@@ -46,8 +43,6 @@ pub fn kernel_mult_simd(
         }
     }
 }
-
-
 
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_ut_mult_simd(
