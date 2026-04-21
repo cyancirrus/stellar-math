@@ -8,22 +8,14 @@ use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
 
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
-// const MC: usize = 32; // l2 cachesize
-// const PC: usize = 64; // l1 cachesize
-// const NC: usize = 256; // to be tuned
+const LC: usize = 5; // l2 cachesize
+const MC: usize = 1; // l2 cachesize
+const PC: usize = 3; // l1 cachesize
+const NC: usize = 7; // to be tuned
+// const LC: usize = 512; // l2 cachesize
 // const MC: usize = 64; // l2 cachesize
-// const PC: usize = 256; // l1 cachesize
-// const NC: usize = 1024; // to be tuned
-const MC: usize = 128; // l2 cachesize
-const PC: usize = 64; // l1 cachesize
-const NC: usize = 1024; // to be tuned
-
-thread_local! {
-    static PACK_X: RefCell<Vec<f32>> = RefCell::new(vec![0f32; MC * PC]);
-    static PACK_Y: RefCell<Vec<f32>> = RefCell::new(vec![0f32; PC * NC]);
-    static PROC_WORKSPACEX: RefCell<Vec<f32>> = RefCell::new(vec![0.0f32; SIMD_WIDTH * SIMD_WIDTH]);
-    static PROC_WORKSPACEY: RefCell<Vec<f32>> = RefCell::new(vec![0.0f32; SIMD_WIDTH * SIMD_WIDTH]);
-}
+// const PC: usize = 128; // l1 cachesize
+// const NC: usize = 32; // to be tuned
 
 ///  tensor_kernel
 ///  - accumulates the multiplication into the target matrix
@@ -47,39 +39,98 @@ pub fn tensor_kernel_into(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     tensor_kernel(x, y, target);
 }
 
-pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
-    // NOTE: par at this level so that each core gets its own data
-    // n p m is recommended
-    // TODO: remove this once threaded correctly
-    let mut x_pack = vec![0f32; MC * PC];
-    let mut y_pack = vec![0f32; PC * NC];
-    // suffix c: chunk, suffix a: actual
-    for nc in (0..n).step_by(NC) {
-        let na = (n - nc).min(NC);
-        for pc in (0..p).step_by(PC) {
-            // shared dimension
-            let pa = (p - pc).min(PC);
-            pack(&y_d[pc * n + nc..], &mut y_pack, pa, na, NC, n);
-            // pack_x  ~ MC x PC; // to fit in l2
-            for mc in (0..m).step_by(MC) {
-                let ma = (m - mc).min(MC);
-                pack(&x_d[mc * p + pc..], &mut x_pack, ma, pa, PC, p);
-                // should i pass in a stride?
-                tensor_newkern(
-                    &x_pack,
-                    &y_pack,
-                    &mut t_d[mc * n + nc..],
-                    ma,
-                    pa,
-                    na,
-                    PC,
-                    NC,
-                    n,
-                );
-            }
-        }
-    }
+thread_local! {
+    static PACK: RefCell<(Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC]));
 }
+
+pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
+    // suffix c: chunk, suffix a: actual
+    t_d.par_chunks_mut(LC * n)
+        .zip(x_d.par_chunks(LC * p))
+        .for_each(|(t, x)| {
+            PACK.with(|workspace_cell| {
+                let (x_pack, y_pack) = &mut *workspace_cell.borrow_mut();
+                let rows = x.len() / p;
+                for nc in (0..n).step_by(NC) {
+                    let na = (n - nc).min(NC);
+                    for pc in (0..p).step_by(PC) {
+                        let pa = (p - pc).min(PC);
+                        pack(&y_d[pc * n + nc..], y_pack, pa, na, NC, n);
+                        for mc in (0..rows).step_by(MC) {
+                            let ma = (rows - mc).min(MC);
+                            pack(&x[mc * p + pc..], x_pack, ma, pa, PC, p);
+                            tensor_newkern(
+                                &x_pack,
+                                &y_pack,
+                                &mut t[mc * n + nc..],
+                                ma,
+                                pa,
+                                na,
+                                PC,
+                                NC,
+                                n,
+                            );
+                        }
+                    }
+                }
+            })
+        });
+}
+
+// pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
+//     // suffix c: chunk, suffix a: actual
+//     t_d.par_chunks_mut(LC * n)
+//         .zip(x_d.par_chunks(LC * p))
+//         .for_each(|(t, x)| {
+//             PACK.with(|workspace_cell| {
+//                 let (x_pack, y_pack) = &mut *workspace_cell.borrow_mut();
+//                 let rows = x.len() / p;
+//                 for mc in (0..rows).step_by(MC) {
+//                     let ma = (rows - mc).min(MC);
+//                     for pc in (0..p).step_by(PC) {
+//                         let pa = (p - pc).min(PC);
+//                         pack(&x[mc * p + pc..], x_pack, ma, pa, PC, p);
+//                         for nc in (0..n).step_by(NC) {
+//                             let na = (n - nc).min(NC);
+//                             pack(&y_d[pc * n + nc..], y_pack, pa, na, NC, n);
+//                             tensor_newkern(
+//                                 &x_pack,
+//                                 &y_pack,
+//                                 &mut t[mc * n + nc..],
+//                                 ma,
+//                                 pa,
+//                                 na,
+//                                 PC,
+//                                 NC,
+//                                 n,
+//                             );
+//                         }
+//                     }
+//                 }
+//             })
+//         });
+// }
+
+// pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
+//     // suffix c: chunk, suffix a: actual
+//     t_d.par_chunks_mut(MC * n)
+//         .zip(x_d.par_chunks(MC * p))
+//         .for_each(|(t, x)| {
+//             PACK_WORKSPACE.with(|workspace_cell| {
+//                 let (x_pack, y_pack) = &mut *workspace_cell.borrow_mut();
+//                 let ma = (x.len() / p).min(MC);
+//                 for pc in (0..p).step_by(PC) {
+//                     let pa = (p - pc).min(PC);
+//                     pack(&x[pc..], x_pack, ma, pa, PC, p);
+//                     for nc in (0..n).step_by(NC) {
+//                         let na = (n - nc).min(NC);
+//                         pack(&y_d[pc * n + nc..], y_pack, pa, na, NC, n);
+//                         tensor_newkern(&x_pack, &y_pack, &mut t[nc..], ma, pa, na, PC, NC, n);
+//                     }
+//                 }
+//             })
+//         });
+// }
 /// # pack_x returns a panel of the original matrix x
 /// - d ~ M(r, s)
 ///
@@ -166,15 +217,15 @@ mod test_kernel_block {
             (8, 4, 6),
             (8, 6, 4),
             (8, 8, 8),
-            (16, 16, 16),
-            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-            (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-            (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-            (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-            (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+            // (16, 16, 16),
+            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+            // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+            // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+            // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+            // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
         ];
         for (i, k, j) in ikj {
             println!("(i: {i:?}, k: {k:?}, {j:})");
