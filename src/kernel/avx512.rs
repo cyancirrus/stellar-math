@@ -59,7 +59,7 @@ pub fn kernel_mult_simd(
             acc3 = _mm512_fmadd_ps(_mm512_set1_ps(*xptr.add(15)), xvi_row, acc3);
 
             _mm512_storeu_ps(
-                t_row,
+                tpr,
                 _mm512_add_ps(_mm512_add_ps(acc0, acc1), _mm512_add_ps(acc2, acc3)),
             );
             xptr = xptr.add(s_x);

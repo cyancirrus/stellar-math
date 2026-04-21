@@ -390,17 +390,46 @@ impl LuPivotDecompose {
             }
         }
     }
-    // TODO: migrate to ikj, j is inner most loop this iteration doesn't make sense
     pub fn forward_solve_inplace(&self, y: &mut NdArray) {
+        // transforms y -> z
+        unsafe {
+            let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
+            let (trows, tcols) = (y.dims[0], y.dims[1]);
+            debug_assert_eq!(cols, trows);
+            debug_assert_eq!(rows * cols, self.matrix.data.len());
+            debug_assert_eq!(trows * tcols, y.data.len());
+            let sptr = self.matrix.data.as_ptr();
+            let yptr = y.data.as_mut_ptr();
+            let mut soffset = 0;
+            let mut yoffset = 0;
+            let mut coffset;
+            for i in 0..rows {
+                coffset = 0;
+                let mptr = sptr.add(soffset);
+                let tptr = yptr.add(yoffset);
+                for k in 0..i {
+                    let cptr = yptr.add(coffset);
+                    let scaler = *mptr.add(k);
+                    for j in 0..tcols {
+                        *tptr.add(j) -= scaler * *cptr.add(j);
+                    }
+                    coffset += tcols;
+                }
+                yoffset += tcols;
+                soffset += cols;
+            }
+        }
+    }
+    pub fn forward_solve_inplace_safe(&self, y: &mut NdArray) {
         // transforms y -> z
         debug_assert_eq!(self.matrix.dims[1], y.dims[0]);
         let (rows, cols) = (self.matrix.dims[0], self.matrix.dims[1]);
-        // let (trows, tcols) = (y.dims[0], y.dims[1]);
         let tcols = y.dims[1];
-        for j in 0..tcols {
-            for i in 0..rows {
-                for k in 0..i {
-                    y.data[i * tcols + j] -= self.matrix.data[i * cols + k] * y.data[k * tcols + j];
+        for i in 0..rows {
+            for k in 0..i {
+                let scaler = self.matrix.data[i * cols + k];
+                for j in 0..tcols {
+                    y.data[i * tcols + j] -= scaler * y.data[k * tcols + j];
                 }
             }
         }

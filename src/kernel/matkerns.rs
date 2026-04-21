@@ -11,7 +11,8 @@ use crate::kernel::neon::kernel_mult_simd;
 
 use crate::kernel::default::kernel_mult_scalar;
 
-#[inline(always)]
+// #[inline(always)]
+#[inline(never)]
 pub fn kernel_mult(
     x: &[f32],
     y: &[f32],
@@ -23,20 +24,28 @@ pub fn kernel_mult(
     s_y: usize,
     s_t: usize,
 ) {
-    unsafe {
-        if SIMD_WIDTH == block_n && SIMD_WIDTH == block_k {
-            return kernel_mult_simd(x.as_ptr(), y.as_ptr(), t.as_mut_ptr(), block_m, s_x, s_y, s_t);
+    if SIMD_WIDTH == block_n && SIMD_WIDTH == block_k {
+        unsafe {
+            return kernel_mult_simd(
+                x.as_ptr(),
+                y.as_ptr(),
+                t.as_mut_ptr(),
+                block_m,
+                s_x,
+                s_y,
+                s_t,
+            );
         }
-        kernel_mult_scalar(
-            x.as_ptr(),
-            y.as_ptr(),
-            t.as_mut_ptr(),
-            block_m,
-            block_k,
-            block_n,
-            s_x,
-            s_y,
-            s_t,
-        );
     }
+    kernel_mult_scalar(
+        x.as_ptr(),
+        y.as_ptr(),
+        t.as_mut_ptr(),
+        block_m,
+        block_k,
+        block_n,
+        s_x,
+        s_y,
+        s_t,
+    );
 }

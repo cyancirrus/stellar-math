@@ -1,5 +1,7 @@
 use crate::arch::SIMD_WIDTH;
 
+// NOTE: could consider switching to a mask look up table
+
 /// kernel_mult_scalar
 /// a * b -> c
 ///
@@ -22,17 +24,18 @@ pub unsafe fn kernel_mult_simd(
     // NOTE: might be able to dual accumulate so that the acc isn't blocked
     // default rust method
     unsafe {
-        let yorig = yptr;
         let mut acc = [0f32; 8];
-        for _i in 0..block_m {
-            yptr = yorig;
-            let scalar = *xptr;
-            for j in 0..SIMD_WIDTH {
-                acc[j] = scalar * *yptr.add(j);
+        let yorig = yptr;
+        for _ in 0..block_m {
+            {
+                let scalar = *xptr;
+                for j in 0..SIMD_WIDTH {
+                    acc[j] = scalar * *yptr.add(j);
+                }
             }
             for k in 1..SIMD_WIDTH {
-                yptr = yptr.add(s_y);
                 let scalar = *xptr.add(k);
+                yptr = yptr.add(s_y);
                 for j in 0..SIMD_WIDTH {
                     acc[j] += scalar * *yptr.add(j);
                 }
@@ -40,8 +43,9 @@ pub unsafe fn kernel_mult_simd(
             for j in 0..SIMD_WIDTH {
                 *tptr.add(j) += acc[j];
             }
-            xptr = xptr.add(s_x);
             tptr = tptr.add(s_t);
+            xptr = xptr.add(s_x);
+            yptr = yorig;
         }
     }
 }
@@ -58,18 +62,19 @@ pub fn kernel_mult_scalar(
     s_t: usize,
 ) {
     unsafe {
-        // simple method to handle edge cases
+        let mut acc = [0f32; 8];
         let yorig = yptr;
-        let mut acc = [0f32; SIMD_WIDTH];
-        for _i in 0..block_m {
+        for _ in 0..block_m {
             yptr = yorig;
-            let scalar = *xptr;
-            for j in 0..block_n {
-                acc[j] = scalar * *yptr.add(j);
+            {
+                let scalar = *xptr;
+                for j in 0..block_n {
+                    acc[j] = scalar * *yptr.add(j);
+                }
             }
             for k in 1..block_p {
-                yptr = yptr.add(s_y);
                 let scalar = *xptr.add(k);
+                yptr = yptr.add(s_y);
                 for j in 0..block_n {
                     acc[j] += scalar * *yptr.add(j);
                 }
@@ -77,8 +82,8 @@ pub fn kernel_mult_scalar(
             for j in 0..block_n {
                 *tptr.add(j) += acc[j];
             }
-            xptr = xptr.add(s_x);
             tptr = tptr.add(s_t);
+            xptr = xptr.add(s_x);
         }
     }
 }

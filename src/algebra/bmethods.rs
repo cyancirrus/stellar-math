@@ -1,6 +1,6 @@
 #![allow(unused)]
-use crate::arch::SIMD_WIDTH;
 use crate::algebra::mmethods::{tensor_minikern, tensor_parkern};
+use crate::arch::SIMD_WIDTH;
 use crate::kernel::matkerns::kernel_mult;
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
@@ -14,12 +14,9 @@ const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // const MC: usize = 64; // l2 cachesize
 // const PC: usize = 256; // l1 cachesize
 // const NC: usize = 1024; // to be tuned
-// const MC: usize = 128; // l2 cachesize
-// const PC: usize = 64; // l1 cachesize
-// const NC: usize = 1024; // to be tuned
-const MC: usize = 4; // l2 cachesize
-const PC: usize = 2; // l1 cachesize
-const NC: usize = 8; // to be tuned
+const MC: usize = 128; // l2 cachesize
+const PC: usize = 64; // l1 cachesize
+const NC: usize = 1024; // to be tuned
 
 thread_local! {
     static PACK_X: RefCell<Vec<f32>> = RefCell::new(vec![0f32; MC * PC]);
@@ -68,7 +65,17 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
                 let ma = (m - mc).min(MC);
                 pack(&x_d[mc * p + pc..], &mut x_pack, ma, pa, PC, p);
                 // should i pass in a stride?
-                tensor_newkern(&x_pack, &y_pack, &mut t_d[mc * n + nc..], ma, pa, na, PC, NC, n);
+                tensor_newkern(
+                    &x_pack,
+                    &y_pack,
+                    &mut t_d[mc * n + nc..],
+                    ma,
+                    pa,
+                    na,
+                    PC,
+                    NC,
+                    n,
+                );
             }
         }
     }
@@ -138,12 +145,12 @@ pub fn tensor_newkern(
 
 #[cfg(test)]
 mod test_kernel_block {
-    use crate::arch::SIMD_WIDTH;
-    use crate::structure::ndarray::NdArray;
     use crate::algebra::bmethods::tensor_blockkern;
-    use crate::random::generation::generate_random_matrix;
-    use crate::equality::approximate::approx_vector_eq;
     use crate::algebra::ndmethods::basic_mult;
+    use crate::arch::SIMD_WIDTH;
+    use crate::equality::approximate::approx_vector_eq;
+    use crate::random::generation::generate_random_matrix;
+    use crate::structure::ndarray::NdArray;
 
     #[test]
     fn test_blockkern_equivalence() {
@@ -180,10 +187,12 @@ mod test_kernel_block {
         let mut result = vec![0f32; m * n];
         let expected = basic_mult(&x, &y);
         tensor_blockkern(&x.data, &y.data, &mut result, m, k, n);
-        let inspect = NdArray { dims: vec![m, n], data: result.clone()};
+        let inspect = NdArray {
+            dims: vec![m, n],
+            data: result.clone(),
+        };
         println!("expected {expected:?}");
         println!("actual {inspect:?}");
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
     }
-
 }

@@ -27,6 +27,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
                 block,
                 stride,
                 stride,
+                stride,
             )
         });
     });
@@ -51,6 +52,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
                 block,
                 block,
                 block,
+                stride,
                 stride,
                 stride,
             )
