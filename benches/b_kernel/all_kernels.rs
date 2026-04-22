@@ -31,18 +31,20 @@ pub fn benchmark_kernels(c: &mut Criterion) {
             )
         });
     });
-    // group.bench_function("Default Kernel", |b_inner| {
-    //     b_inner.iter(|| unsafe {
-    //         default::kernel_mult_simd(
-    //             black_box(&a),
-    //             black_box(&b),
-    //             black_box(&mut c_out),
-    //             block,
-    //             stride,
-    //             stride,
-    //         )
-    //     });
-    // });
+    #[cfg(feature = "avx2")]
+    group.bench_function("AVX2 Outer Kernel", |b_inner| {
+        b_inner.iter(|| {
+            unsafe {
+            avx2::kernel_imult_simd(
+                black_box(a.as_ptr()),
+                black_box(b.as_ptr()),
+                black_box(c_out.as_mut_ptr()),
+                stride,
+                stride,
+                stride,
+            )}
+        });
+    });
     group.bench_function("Scalar Kernel", |b_inner| {
         b_inner.iter(|| {
             default::kernel_mult_scalar(
