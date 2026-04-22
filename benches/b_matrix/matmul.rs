@@ -5,6 +5,7 @@ use faer::linalg::matmul::matmul;
 use faer::prelude::*;
 use ndarray::Array2;
 use std::hint::black_box;
+use stellar::algebra::bmethods::tensor_kernel_new;
 use stellar::algebra::mmethods::tensor_kernel;
 use stellar::algebra::ndmethods::{basic_mult, tensor_mult};
 use stellar::random::generation::generate_random_matrix;
@@ -18,7 +19,7 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
             let parameter = format!("{}x{}x{}", i, k, j);
             group.throughput(Throughput::Elements((2 * i * k * j) as u64));
             group.bench_with_input(
-                BenchmarkId::new("tensor_kernel", &parameter),
+                BenchmarkId::new("saturated_kernel", &parameter),
                 &(i, j, k),
                 |b, &(i, j, k)| {
                     b.iter_with_setup(
@@ -28,10 +29,25 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
                             let target = vec![f32::NAN; i * j];
                             (x, y, target)
                         },
-                        |(x, y, mut target)| black_box(tensor_kernel(&x, &y, &mut target)),
+                        |(x, y, mut target)| black_box(tensor_kernel_new(&x, &y, &mut target)),
                     )
                 },
             );
+            // group.bench_with_input(
+            //     BenchmarkId::new("tensor_kernel", &parameter),
+            //     &(i, j, k),
+            //     |b, &(i, j, k)| {
+            //         b.iter_with_setup(
+            //             || {
+            //                 let x = generate_random_matrix(i, k);
+            //                 let y = generate_random_matrix(k, j);
+            //                 let target = vec![f32::NAN; i * j];
+            //                 (x, y, target)
+            //             },
+            //             |(x, y, mut target)| black_box(tensor_kernel(&x, &y, &mut target)),
+            //         )
+            //     },
+            // );
             group.bench_with_input(
                 BenchmarkId::new("faer", &parameter),
                 &(i, j, k),

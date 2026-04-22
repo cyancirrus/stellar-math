@@ -159,6 +159,8 @@ mod test_cached_matrix_methods {
             (8, 6, 4),
             (8, 8, 8),
             (16, 16, 16),
+            (47, 53, 18),
+            (51, 53, 13),
             (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
             (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
             (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
