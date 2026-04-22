@@ -77,10 +77,7 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
                             let pa = (p - pc).min(PC);
                             pack(&y_d[pc * n + nc..], y_pack, pa, na, NC, n);
                             pack(&x[mc * p + pc..], x_pack, ma, pa, PC, p);
-                            tensor_newkern(
-                                &x_pack, &y_pack,
-                                t_accum, ma, pa, na, PC, NC, NC,
-                            );
+                            tensor_newkern(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
                         }
                         for k in 0..ma {
                             let trow = &t_accum[k * NC..k * NC + na];
@@ -215,6 +212,7 @@ mod test_kernel_block {
             (8, 6, 4),
             (8, 8, 8),
             (16, 16, 16),
+            // (512, 512, 512),
             (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
             (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
             (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),

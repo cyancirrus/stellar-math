@@ -1,7 +1,13 @@
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
+// use std::arch::x86_64::{
+//     _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps,
+//     _mm256_mask_load_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
+// };
 use std::arch::x86_64::{
-    _mm256_add_ps, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps, _mm256_mask_load_ps,
-    _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps, _mm_prefetch, _MM_HINT_T0
+    _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_castpd_ps, _mm256_castps_pd, _mm256_fmadd_ps,
+    _mm256_load_ps, _mm256_loadu_ps, _mm256_mask_load_ps, _mm256_permute2f128_ps, _mm256_set1_ps,
+    _mm256_setzero_ps, _mm256_storeu_ps, _mm256_unpackhi_pd, _mm256_unpackhi_ps,
+    _mm256_unpacklo_pd, _mm256_unpacklo_ps,
 };
 
 #[target_feature(enable = "avx,fma")]
@@ -14,6 +20,7 @@ pub fn kernel_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
+    // excels at tall x matrix and wide y
     unsafe {
         let i_row = _mm256_loadu_ps(yptr);
         let ii_row = _mm256_loadu_ps(yptr.add(s_y));
@@ -44,17 +51,60 @@ pub fn kernel_mult_simd(
         }
     }
 }
+#[rustfmt::skip]
+#[target_feature(enable = "avx,fma")]
+pub fn kernel_trans_simd(mut tptr: *mut f32) {
+    unsafe {
+        let mut r0 = _mm256_loadu_ps(tptr);
+        let mut r1 = _mm256_loadu_ps(tptr.add(8));
+        let mut r2 = _mm256_loadu_ps(tptr.add(8 * 2));
+        let mut r3 = _mm256_loadu_ps(tptr.add(8 * 3));
+        let mut r4 = _mm256_loadu_ps(tptr.add(8 * 4));
+        let mut r5 = _mm256_loadu_ps(tptr.add(8 * 5));
+        let mut r6 = _mm256_loadu_ps(tptr.add(8 * 6));
+        let mut r7 = _mm256_loadu_ps(tptr.add(8 * 7));
+
+        let t0 = _mm256_unpacklo_ps(r0, r1);
+        let t1 = _mm256_unpackhi_ps(r0, r1);
+        let t2 = _mm256_unpacklo_ps(r2, r3);
+        let t3 = _mm256_unpackhi_ps(r2, r3);
+        let t4 = _mm256_unpacklo_ps(r4, r5);
+        let t5 = _mm256_unpackhi_ps(r4, r5);
+        let t6 = _mm256_unpacklo_ps(r6, r7);
+        let t7 = _mm256_unpackhi_ps(r6, r7);
+
+        let q0 = _mm256_castpd_ps(_mm256_unpacklo_pd( _mm256_castps_pd(t0), _mm256_castps_pd(t2),));
+        let q1 = _mm256_castpd_ps(_mm256_unpackhi_pd( _mm256_castps_pd(t0), _mm256_castps_pd(t2),));
+        let q2 = _mm256_castpd_ps(_mm256_unpacklo_pd( _mm256_castps_pd(t1), _mm256_castps_pd(t3),));
+        let q3 = _mm256_castpd_ps(_mm256_unpackhi_pd( _mm256_castps_pd(t1), _mm256_castps_pd(t3),));
+        let q4 = _mm256_castpd_ps(_mm256_unpacklo_pd( _mm256_castps_pd(t4), _mm256_castps_pd(t6),));
+        let q5 = _mm256_castpd_ps(_mm256_unpackhi_pd( _mm256_castps_pd(t4), _mm256_castps_pd(t6),));
+        let q6 = _mm256_castpd_ps(_mm256_unpacklo_pd( _mm256_castps_pd(t5), _mm256_castps_pd(t7),));
+        let q7 = _mm256_castpd_ps(_mm256_unpackhi_pd( _mm256_castps_pd(t5), _mm256_castps_pd(t7),));
+
+        _mm256_storeu_ps(tptr, _mm256_permute2f128_ps(q0, q4, 0x20));
+        _mm256_storeu_ps(tptr.add(8), _mm256_permute2f128_ps(q0, q4, 0x31));
+        _mm256_storeu_ps(tptr.add(8 * 2), _mm256_permute2f128_ps(q1, q5, 0x20));
+        _mm256_storeu_ps(tptr.add(8 * 3), _mm256_permute2f128_ps(q1, q5, 0x31));
+        _mm256_storeu_ps(tptr.add(8 * 4), _mm256_permute2f128_ps(q2, q6, 0x20));
+        _mm256_storeu_ps(tptr.add(8 * 5), _mm256_permute2f128_ps(q2, q6, 0x31));
+        _mm256_storeu_ps(tptr.add(8 * 6), _mm256_permute2f128_ps(q3, q7, 0x20));
+        _mm256_storeu_ps(tptr.add(8 * 7), _mm256_permute2f128_ps(q3, q7, 0x31));
+    }
+}
 
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_imult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
     mut tptr: *mut f32,
+    block_p: usize,
     s_x: usize,
     s_y: usize,
     s_t: usize,
 ) {
     // Sum[K] Union[I] { g^i = aik b^k }
+    // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
         let mut i_row = _mm256_loadu_ps(tptr);
         let mut ii_row = _mm256_loadu_ps(tptr.add(s_t));
@@ -64,7 +114,7 @@ pub fn kernel_imult_simd(
         let mut vi_row = _mm256_loadu_ps(tptr.add(s_t * 5));
         let mut vii_row = _mm256_loadu_ps(tptr.add(s_t * 6));
         let mut viii_row = _mm256_loadu_ps(tptr.add(s_t * 7));
-        for _ in 0..8 {
+        for _ in 0..block_p {
             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             let b = _mm256_loadu_ps(yptr);
             i_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr), b, i_row);
@@ -76,7 +126,7 @@ pub fn kernel_imult_simd(
             vii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(6 * s_x)), b, vii_row);
             viii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7 * s_x)), b, viii_row);
             // accumulates k offset
-            xptr = xptr.add(s_x + 1); 
+            xptr = xptr.add(s_x + 1);
             yptr = yptr.add(s_y);
         }
         _mm256_storeu_ps(tptr, i_row);
@@ -123,7 +173,7 @@ pub fn kernel_wmult_simd(
             iv_row_0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3 * s_x)), b_0, iv_row_0);
             iv_row_1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3 * s_x)), b_1, iv_row_1);
             // accumulates k offset
-            xptr = xptr.add(s_x + 1); 
+            xptr = xptr.add(s_x + 1);
             yptr = yptr.add(s_y);
         }
         _mm256_storeu_ps(tptr, i_row_0);

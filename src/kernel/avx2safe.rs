@@ -1,31 +1,9 @@
-#![allow(unused)]
-// TODO:
-// then make the LX, async method
-// do the 16 x 16 instruction ie 512 for the tower
-// make the toml cfg to get cacheline size etc
-// do a small test
-// inspect the flamegraph to see if any hanging threads
-// ie suspect like communication jam in l1-> l2
-//
-// value sanity start working on the LX async vision with the queue
-
-// 1. Animate demo        ← most legible to employers
-// 2. Blog redesign       ← makes everything else findable
-// 3. Triangle kernel     ← 2hrs, unblocks LQ block
-// 4. Trait refactor      ← important but least urgent
 use std::arch::x86_64::{
-    __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_castpd_ps, _mm256_castps_pd,
-    _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps, _mm256_loadu_si256,
-    _mm256_mask_load_ps, _mm256_mask_loadu_ps, _mm256_maskload_ps, _mm256_permute2f128_ps,
-    _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps, _mm256_unpackhi_pd, _mm256_unpackhi_ps,
-    _mm256_unpacklo_pd, _mm256_unpacklo_ps,
+    __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps,
+    _mm256_fmadd_ps, _mm256_loadu_si256,
+    _mm256_maskload_ps,
+    _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
 };
-use stellar::algebra::bmethods::tensor_blockkern;
-use stellar::algebra::ndmethods::basic_mult;
-use stellar::arch::SIMD_WIDTH;
-use stellar::equality::approximate::approx_vector_eq;
-use stellar::random::generation::generate_random_matrix;
-use stellar::structure::ndarray::NdArray;
 
 // negative 1 is twos complement so all bits active
 #[rustfmt::skip]
@@ -47,20 +25,18 @@ unsafe fn gate_value(ptr: *const f32, cur: usize, cap: usize) -> __m256 {
         _mm256_set1_ps(val)
     }
 }
-
 unsafe fn gate_row( ptr: *const f32, cur: usize, cap: usize, mask: __m256i) -> __m256 {
     unsafe{
-        let val = if cur < cap { *ptr.add(cur) } else { 0f32 };
-
-        _mm256_maskload_ps(ptr, mask)
+        let val = if cur < cap { ptr.add(cur) } else { &0f32  as *const f32};
+        _mm256_maskload_ps(val, mask)
     }
 }
 
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_mult_safe(
     mut xptr: *const f32,
-    mut yptr: *const f32,
-    mut tptr: *mut f32,
+    yptr: *const f32,
+    tptr: *mut f32,
     mut wptr: *mut f32,
     block_m: usize,
     block_p: usize,
@@ -83,8 +59,6 @@ pub fn kernel_mult_safe(
         let vi_row = gate_row(yptr.add(s_y * 5), 5, block_p, mask_n);
         let vii_row = gate_row(yptr.add(s_y * 6), 6, block_p, mask_n);
         let viii_row = gate_row(yptr.add(s_y * 7), 7, block_p, mask_n);
-        let mask_p_ptr = MASK[block_p].as_ptr() as *const __m256i;
-        let mask_p = _mm256_loadu_si256(mask_p_ptr);
 
         for _ in 0..block_m {
             let mut acc1 = _mm256_setzero_ps();
@@ -114,11 +88,4 @@ pub fn kernel_mult_safe(
             tidx += s_t;
         }
     }
-}
-
-// check compilation flags
-// write a copy fn which actually loads the block
-
-fn main() {
-    println!("{:b}", 0xe7);
 }

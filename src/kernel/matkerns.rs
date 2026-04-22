@@ -11,20 +11,20 @@ use crate::kernel::neon::kernel_mult_simd;
 
 use crate::kernel::default::kernel_mult_scalar;
 
-// #[inline(always)]
 #[inline(never)]
 pub fn kernel_mult(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
     block_m: usize,
-    block_k: usize,
+    block_p: usize,
     block_n: usize,
     s_x: usize,
     s_y: usize,
     s_t: usize,
 ) {
-    if SIMD_WIDTH == block_n && SIMD_WIDTH == block_k {
+    //   TODO: move inside the archetectural blocks
+    if (block_m | block_p | block_n) & (SIMD_WIDTH - 1) != 0 {
         unsafe {
             return kernel_mult_simd(
                 x.as_ptr(),
@@ -37,12 +37,13 @@ pub fn kernel_mult(
             );
         }
     }
+    // change this to be the safe version
     kernel_mult_scalar(
         x.as_ptr(),
         y.as_ptr(),
         t.as_mut_ptr(),
         block_m,
-        block_k,
+        block_p,
         block_n,
         s_x,
         s_y,
