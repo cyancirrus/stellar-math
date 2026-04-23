@@ -81,7 +81,8 @@ pub fn kernel_trans_simd(mut tptr: *mut f32) {
         let q5 = _mm256_castpd_ps(_mm256_unpackhi_pd( _mm256_castps_pd(t4), _mm256_castps_pd(t6),));
         let q6 = _mm256_castpd_ps(_mm256_unpacklo_pd( _mm256_castps_pd(t5), _mm256_castps_pd(t7),));
         let q7 = _mm256_castpd_ps(_mm256_unpackhi_pd( _mm256_castps_pd(t5), _mm256_castps_pd(t7),));
-
+        
+        // 0 low of arg 1, 1 high of arg 1, 2 low of arg 2, 3 high of arg 2
         _mm256_storeu_ps(tptr, _mm256_permute2f128_ps(q0, q4, 0x20));
         _mm256_storeu_ps(tptr.add(8), _mm256_permute2f128_ps(q0, q4, 0x31));
         _mm256_storeu_ps(tptr.add(8 * 2), _mm256_permute2f128_ps(q1, q5, 0x20));
