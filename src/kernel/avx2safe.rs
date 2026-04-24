@@ -1,7 +1,7 @@
 // #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use std::arch::x86_64::{
     __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_fmadd_ps, _mm256_loadu_si256,
-    _mm256_maskload_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps
+    _mm256_maskload_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps, _mm256_maskstore_ps
 };
 
 // negative 1 is twos complement so all bits active
@@ -33,13 +33,19 @@ unsafe fn gate_row(ptr: *const f32, cur: usize, cap: usize, mask: __m256i) -> __
         }
     }
 }
+unsafe fn sgate_row(ptr: *mut f32, cur: usize, cap: usize, mask: __m256i, data: __m256) {
+    unsafe {
+        if cur < cap {
+            _mm256_maskstore_ps(ptr, mask, data);
+        }
+    }
+}
 
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_mult_safe(
     mut xptr: *const f32,
     yptr: *const f32,
-    tptr: *mut f32,
-    mut wptr: *mut f32,
+    mut tptr: *mut f32,
     m: usize,
     p: usize,
     n: usize,
@@ -50,7 +56,6 @@ pub fn kernel_mult_safe(
     // w: workspace
     // excels at tall x matrix and wide y
     unsafe {
-        let wbase = wptr;
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
         let i_row = gate_row(yptr, 0, p, mask_n);
@@ -66,7 +71,7 @@ pub fn kernel_mult_safe(
             let mut acc1 = _mm256_setzero_ps();
             let mut acc0 = _mm256_setzero_ps();
             _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
-            _mm_prefetch(wptr.add(8) as *const i8, _MM_HINT_T0);
+            _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
             // start with existing t for accumulation
             acc0 = _mm256_fmadd_ps(gate_value(xptr, 0, p), i_row, acc0);
             acc1 = _mm256_fmadd_ps(gate_value(xptr.add(1), 1, p), ii_row, acc1);
@@ -76,28 +81,17 @@ pub fn kernel_mult_safe(
             acc1 = _mm256_fmadd_ps(gate_value(xptr.add(5), 5, p), vi_row, acc1);
             acc0 = _mm256_fmadd_ps(gate_value(xptr.add(6), 6, p), vii_row, acc0);
             acc1 = _mm256_fmadd_ps(gate_value(xptr.add(7), 7, p), viii_row, acc1);
-            _mm256_storeu_ps(wptr, _mm256_add_ps(acc1, acc0));
+            _mm256_maskstore_ps(tptr, mask_n, _mm256_add_ps(acc1, acc0));
             xptr = xptr.add(s_x);
-            wptr = wptr.add(8);
-        }
-        wptr = wbase;
-        let (mut tidx, mut widx) = (0, 0);
-        for _ in 0..m {
-            for k in 0..n {
-                *tptr.add(tidx + k) += *wptr.add(widx + k);
-            }
-            widx += 8;
-            tidx += s_t;
+            tptr = tptr.add(s_t);
         }
     }
 }
-
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_imult_safe(
     xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
-    wptr: *mut f32,
     m: usize,
     p: usize,
     n: usize,
@@ -118,8 +112,6 @@ pub fn kernel_imult_safe(
         let mut vi_row = gate_row(tptr.add(s_t * 5), 5, p, mask_n);
         let mut vii_row = gate_row(tptr.add(s_t * 6), 6, p, mask_n);
         let mut viii_row = gate_row(tptr.add(s_t * 7), 7, p, mask_n);
-        let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
-        let mask_n = _mm256_loadu_si256(mask_n_ptr);
         for k in 0..p {
             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             let b = _mm256_maskload_ps(yptr, mask_n);
@@ -134,27 +126,80 @@ pub fn kernel_imult_safe(
             // accumulates k offset
             yptr = yptr.add(s_y);
         }
-        _mm256_storeu_ps(wptr, i_row);
-        _mm256_storeu_ps(wptr.add(8), ii_row);
-        _mm256_storeu_ps(wptr.add(8 * 2), iii_row);
-        _mm256_storeu_ps(wptr.add(8 * 3), iv_row);
-        _mm256_storeu_ps(wptr.add(8 * 4), v_row);
-        _mm256_storeu_ps(wptr.add(8 * 5), vi_row);
-        _mm256_storeu_ps(wptr.add(8 * 6), vii_row);
-        _mm256_storeu_ps(wptr.add(8 * 7), viii_row);
-        let (mut tidx, mut widx) = (0, 0);
-        for _ in 0..m {
-            for k in 0..n {
-                *tptr.add(tidx + k) = *wptr.add(widx + k);
-            }
-            widx += 8;
-            tidx += s_t;
-        }
+        sgate_row(tptr, 0, m, mask_n, i_row);
+        sgate_row(tptr.add(s_t), 1, m, mask_n, ii_row);
+        sgate_row(tptr.add(s_t * 2), 2, m, mask_n, iii_row);
+        sgate_row(tptr.add(s_t * 3), 3, m, mask_n, iv_row);
+        sgate_row(tptr.add(s_t * 4), 4, m, mask_n, v_row);
+        sgate_row(tptr.add(s_t * 5), 5, m, mask_n, vi_row);
+        sgate_row(tptr.add(s_t * 6), 6, m, mask_n, vii_row);
+        sgate_row(tptr.add(s_t * 7), 7, m, mask_n, viii_row);
     }
 }
+
+// #[target_feature(enable = "avx,fma")]
+// pub fn kernel_imult_safe(
+//     xptr: *const f32,
+//     mut yptr: *const f32,
+//     tptr: *mut f32,
+//     wptr: *mut f32,
+//     m: usize,
+//     p: usize,
+//     n: usize,
+//     s_x: usize,
+//     s_y: usize,
+//     s_t: usize,
+// ) {
+//     // Sum[K] Union[I] { g^i = aik b^k }
+//     // excels at processing panels of data ie 8 x K * K x 8;
+//     unsafe {
+//         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
+//         let mask_n = _mm256_loadu_si256(mask_n_ptr);
+//         let mut i_row = gate_row(tptr, 0, p, mask_n);
+//         let mut ii_row = gate_row(tptr.add(s_t), 1, p, mask_n);
+//         let mut iii_row = gate_row(tptr.add(s_t * 2), 2, p, mask_n);
+//         let mut iv_row = gate_row(tptr.add(s_t * 3), 3, p, mask_n);
+//         let mut v_row = gate_row(tptr.add(s_t * 4), 4, p, mask_n);
+//         let mut vi_row = gate_row(tptr.add(s_t * 5), 5, p, mask_n);
+//         let mut vii_row = gate_row(tptr.add(s_t * 6), 6, p, mask_n);
+//         let mut viii_row = gate_row(tptr.add(s_t * 7), 7, p, mask_n);
+//         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
+//         let mask_n = _mm256_loadu_si256(mask_n_ptr);
+//         for k in 0..p {
+//             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
+//             let b = _mm256_maskload_ps(yptr, mask_n);
+//             i_row = _mm256_fmadd_ps(gate_value(xptr.add(k), 0, m), b, i_row);
+//             ii_row = _mm256_fmadd_ps(gate_value(xptr.add(s_x + k), 1, m), b, ii_row);
+//             iii_row = _mm256_fmadd_ps(gate_value(xptr.add(2 * s_x + k), 2, m), b, iii_row);
+//             iv_row = _mm256_fmadd_ps(gate_value(xptr.add(3 * s_x + k), 3, m), b, iv_row);
+//             v_row = _mm256_fmadd_ps(gate_value(xptr.add(4 * s_x + k), 4, m), b, v_row);
+//             vi_row = _mm256_fmadd_ps(gate_value(xptr.add(5 * s_x + k), 5, m), b, vi_row);
+//             vii_row = _mm256_fmadd_ps(gate_value(xptr.add(6 * s_x + k), 6, m), b, vii_row);
+//             viii_row = _mm256_fmadd_ps(gate_value(xptr.add(7 * s_x + k), 7, m), b, viii_row);
+//             // accumulates k offset
+//             yptr = yptr.add(s_y);
+//         }
+//         _mm256_storeu_ps(wptr, i_row);
+//         _mm256_storeu_ps(wptr.add(8), ii_row);
+//         _mm256_storeu_ps(wptr.add(8 * 2), iii_row);
+//         _mm256_storeu_ps(wptr.add(8 * 3), iv_row);
+//         _mm256_storeu_ps(wptr.add(8 * 4), v_row);
+//         _mm256_storeu_ps(wptr.add(8 * 5), vi_row);
+//         _mm256_storeu_ps(wptr.add(8 * 6), vii_row);
+//         _mm256_storeu_ps(wptr.add(8 * 7), viii_row);
+//         let (mut tidx, mut widx) = (0, 0);
+//         for _ in 0..m {
+//             for k in 0..n {
+//                 *tptr.add(tidx + k) = *wptr.add(widx + k);
+//             }
+//             widx += 8;
+//             tidx += s_t;
+//         }
+//     }
+// }
 #[cfg(test)]
+#[allow(dead_code, unused_imports, unused)]
 mod test_safe_kernels {
-    #[allow(dead_code, unused_imports, unused)]
     use super::*;
     use crate::algebra::bmethods::tensor_blockkern;
     use crate::arch::SIMD_WIDTH;
@@ -193,13 +238,15 @@ mod test_safe_kernels {
         let mut y_simd = y.data.clone();
         let mut w = vec![0f32; 8 * 8];
         let mut t = vec![0f32; m * n];
-        kernel_imult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), w.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
+        kernel_mult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
+        // kernel_mult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), w.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
+        println!("output {t:?}");
         assert!(approx_vector_eq(&expect.data, &t));
         let mut x_simd = x.data.clone();
         let mut y_simd = y.data.clone();
         let mut w = vec![0f32; 8 * 8];
         let mut t = vec![0f32; m * n];
-        kernel_imult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), w.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
+        kernel_imult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
         assert!(approx_vector_eq(&expect.data, &t));
         }
     }

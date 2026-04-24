@@ -11,7 +11,6 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     let mut a = vec![1.0f32; SIMD_WIDTH * SIMD_WIDTH]; // Use 64 for 8x8 block
     let b = vec![2.0f32; SIMD_WIDTH * SIMD_WIDTH];
     let mut c_out = vec![0.0f32; SIMD_WIDTH * SIMD_WIDTH];
-    let mut wrk = vec![0.0f32; SIMD_WIDTH * SIMD_WIDTH];
 
     let mut group = c.benchmark_group("Matrix Kernel");
     group.sampling_mode(criterion::SamplingMode::Auto);
@@ -53,7 +52,6 @@ pub fn benchmark_kernels(c: &mut Criterion) {
                 black_box(a.as_mut_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
-                black_box(wrk.as_mut_ptr()),
                 SIMD_WIDTH,
                 SIMD_WIDTH,
                 SIMD_WIDTH,
@@ -70,7 +68,6 @@ pub fn benchmark_kernels(c: &mut Criterion) {
                 black_box(a.as_mut_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
-                black_box(wrk.as_mut_ptr()),
                 SIMD_WIDTH,
                 SIMD_WIDTH,
                 SIMD_WIDTH,

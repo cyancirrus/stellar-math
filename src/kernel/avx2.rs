@@ -11,7 +11,7 @@ pub fn kernel_mult_simd(
     mut xptr: *const f32,
     yptr: *const f32,
     mut tptr: *mut f32,
-    block_m: usize,
+    m: usize,
     s_x: usize,
     s_y: usize,
     s_t: usize,
@@ -27,7 +27,7 @@ pub fn kernel_mult_simd(
         let vii_row = _mm256_loadu_ps(yptr.add(s_y * 6));
         let viii_row = _mm256_loadu_ps(yptr.add(s_y * 7));
         // t is being passed in
-        for _ in 0..block_m {
+        for _ in 0..m {
             let mut acc1 = _mm256_loadu_ps(tptr);
             let mut acc0 = _mm256_setzero_ps();
             _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
@@ -51,7 +51,7 @@ pub fn kernel_imult_simd(
     xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
-    block_p: usize,
+    p: usize,
     s_x: usize,
     s_y: usize,
     s_t: usize,
@@ -67,7 +67,7 @@ pub fn kernel_imult_simd(
         let mut vi_row = _mm256_loadu_ps(tptr.add(s_t * 5));
         let mut vii_row = _mm256_loadu_ps(tptr.add(s_t * 6));
         let mut viii_row = _mm256_loadu_ps(tptr.add(s_t * 7));
-        for k in 0..block_p {
+        for k in 0..p {
             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             let b = _mm256_loadu_ps(yptr);
             i_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(k)), b, i_row);
@@ -185,12 +185,12 @@ pub fn kernel_ut_mult_simd(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
-    block_m: usize,
+    m: usize,
     s_x: usize,
     s_y: usize,
     s_t: usize,
 ) {
-    debug_assert!(block_m <= 8);
+    debug_assert!(m <= 8);
     unsafe {
         let xptr = x.as_ptr();
         let yptr = y.as_ptr();
@@ -207,7 +207,7 @@ pub fn kernel_ut_mult_simd(
         ];
         let mut xoffset = 0;
         let mut toffset = 0;
-        for i in 0..block_m {
+        for i in 0..m {
             let xrow = xptr.add(xoffset);
             let trow = tptr.add(toffset);
             let mut acc = _mm256_loadu_ps(trow);
@@ -226,12 +226,12 @@ pub fn kernel_lt_mult_simd(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
-    block_m: usize,
+    m: usize,
     s_x: usize,
     s_y: usize,
     s_t: usize,
 ) {
-    debug_assert!(block_m <= 8);
+    debug_assert!(m <= 8);
     unsafe {
         let xptr = x.as_ptr();
         let yptr = y.as_ptr();
@@ -248,7 +248,7 @@ pub fn kernel_lt_mult_simd(
         ];
         let mut xoffset = 0;
         let mut toffset = 0;
-        for i in 0..block_m {
+        for i in 0..m {
             let xrow = xptr.add(xoffset);
             let trow = tptr.add(toffset);
             let mut acc = _mm256_loadu_ps(trow);
