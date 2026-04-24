@@ -24,23 +24,24 @@ unsafe fn gate_value(ptr: *const f32, cur: usize, cap: usize) -> __m256 {
         _mm256_set1_ps(val)
     }
 }
-// unsafe fn gate_row(ptr: *const f32, cur: usize, cap: usize, mask: __m256i) -> __m256 {
-//     unsafe {
-//         if cur < cap {
-//             _mm256_maskload_ps(ptr, mask)
-//         } else {
-//             _mm256_setzero_ps()
-//         }
-//     }
-// }
+unsafe fn gate_row(ptr: *const f32, cur: usize, cap: usize, mask: __m256i) -> __m256 {
+    unsafe {
+        if cur < cap {
+            _mm256_maskload_ps(ptr, mask)
+        } else {
+            _mm256_setzero_ps()
+        }
+    }
+}
 unsafe fn sgate_row(ptr: *mut f32, cur: usize, cap: usize, mask: __m256i, data: __m256) {
     unsafe {
         if cur < cap {
             _mm256_maskstore_ps(ptr, mask, data);
+        } else {
+            _mm256_setzero_ps();
         }
     }
 }
-
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_mult_safe(
     mut xptr: *const f32,
@@ -58,14 +59,14 @@ pub fn kernel_mult_safe(
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
-        let i_row = _mm256_maskload_ps(yptr, mask_n);
-        let ii_row = _mm256_maskload_ps(yptr.add(s_y), mask_n);
-        let iii_row = _mm256_maskload_ps(yptr.add(s_y * 2), mask_n);
-        let iv_row = _mm256_maskload_ps(yptr.add(s_y * 3), mask_n);
-        let v_row = _mm256_maskload_ps(yptr.add(s_y * 4), mask_n);
-        let vi_row = _mm256_maskload_ps(yptr.add(s_y * 5), mask_n);
-        let vii_row = _mm256_maskload_ps(yptr.add(s_y * 6), mask_n);
-        let viii_row = _mm256_maskload_ps(yptr.add(s_y * 7), mask_n);
+        let i_row = gate_row(yptr, 0, p, mask_n);
+        let ii_row = gate_row(yptr.add(s_y), 1, p, mask_n);
+        let iii_row = gate_row(yptr.add(s_y * 2), 2, p, mask_n);
+        let iv_row = gate_row(yptr.add(s_y * 3), 3, p, mask_n);
+        let v_row = gate_row(yptr.add(s_y * 4), 4, p, mask_n);
+        let vi_row = gate_row(yptr.add(s_y * 5), 5, p, mask_n);
+        let vii_row = gate_row(yptr.add(s_y * 6), 6, p, mask_n);
+        let viii_row = gate_row(yptr.add(s_y * 7), 7, p, mask_n);
         for _ in 0..m {
             let mut acc1 = _mm256_maskload_ps(tptr, mask_n);
             let mut acc0 = _mm256_setzero_ps();
@@ -151,6 +152,7 @@ mod test_safe_kernels {
         for i in 1..=8 {
             for k in 1..=8 {
                 for j in 1..=8 {
+                    println!("i {i:}, k: {k:}, j: {j:}");
                     test_mpn_dimensions(i, k, j);
                 }
             }
@@ -177,6 +179,9 @@ mod test_safe_kernels {
                 s_y,
                 s_z,
             );
+            println!("expected {expect:?}");
+            let inspect = NdArray {dims: vec![m, n], data: t.clone()};
+            println!("actual {inspect:?}");
             assert!(approx_vector_eq(&expect.data, &t));
             let mut x_simd = x.data.clone();
             let mut y_simd = y.data.clone();
