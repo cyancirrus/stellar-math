@@ -22,6 +22,7 @@ use stellar::structure::ndarray::NdArray;
 
 fn test_minikern_equivalence() {
     let ikj = [
+        // (8, 9, 8),
         (1, 1, 1),
         (8, 1, 1),
         (1, 8, 1),
