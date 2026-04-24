@@ -179,9 +179,9 @@ mod test_safe_kernels {
                 s_y,
                 s_z,
             );
-            println!("expected {expect:?}");
-            let inspect = NdArray {dims: vec![m, n], data: t.clone()};
-            println!("actual {inspect:?}");
+            // let inspect = NdArray {dims: vec![m, n], data: t.clone()};
+            // println!("expected {expect:?}");
+            // println!("actual {inspect:?}");
             assert!(approx_vector_eq(&expect.data, &t));
             let mut x_simd = x.data.clone();
             let mut y_simd = y.data.clone();
