@@ -263,6 +263,7 @@ pub fn kernel_lt_mult_simd(
 }
 
 #[cfg(test)]
+#[cfg(feature = "avx2")]
 mod test_avx2_kernels {
     use super::*;
     use crate::algebra::ndmethods::basic_mult;
@@ -321,5 +322,27 @@ mod test_avx2_kernels {
         output.fill(0f32);
         test_upper_triangle(m, k, n, &mut output);
         output.fill(0f32);
+    }
+    #[test]
+    fn test_kernel_8x8_kernels() {
+        unsafe {
+        let (m, p, n) = (8, 8, 8);
+        let (s_x, s_y, s_z) = (8,8,8);
+        let mut x = generate_random_matrix(m, p);
+        let mut y = generate_random_matrix(p, n);
+        let expect = basic_mult(&x, &y);
+        let mut x_simd = x.data.clone();
+        let mut y_simd = y.data.clone();
+        let mut w = vec![0f32; 8 * 8];
+        let mut t = vec![0f32; m * n];
+        kernel_imult_simd(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), m, s_x, s_y, s_z);
+        assert!(approx_vector_eq(&expect.data, &t));
+        let mut x_simd = x.data.clone();
+        let mut y_simd = y.data.clone();
+        let mut w = vec![0f32; 8 * 8];
+        let mut t = vec![0f32; m * n];
+        kernel_mult_simd(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), m, s_x, s_y, s_z);
+        assert!(approx_vector_eq(&expect.data, &t));
+        }
     }
 }

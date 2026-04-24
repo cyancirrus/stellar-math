@@ -223,7 +223,7 @@ mod test_kernel_block {
             (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
         ];
         for (i, k, j) in ikj {
-            println!("(i: {i:?}, k: {k:?}, {j:})");
+            // println!("(i: {i:?}, k: {k:?}, {j:})");
             test_blockkern_equivalence_mkn(i, k, j);
         }
     }
@@ -237,8 +237,8 @@ mod test_kernel_block {
             dims: vec![m, n],
             data: result.clone(),
         };
-        println!("expected {expected:?}");
-        println!("actual {inspect:?}");
+        // println!("expected {expected:?}");
+        // println!("actual {inspect:?}");
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
     }
 }

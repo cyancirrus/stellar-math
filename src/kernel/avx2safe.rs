@@ -152,3 +152,55 @@ pub fn kernel_imult_safe(
         }
     }
 }
+#[cfg(test)]
+mod test_safe_kernels {
+    #[allow(dead_code, unused_imports, unused)]
+    use super::*;
+    use crate::algebra::bmethods::tensor_blockkern;
+    use crate::arch::SIMD_WIDTH;
+    use crate::equality::approximate::approx_vector_eq;
+    use crate::random::generation::generate_random_matrix;
+    use crate::structure::ndarray::NdArray;
+    use crate::algebra::ndmethods::basic_mult;
+    #[cfg(feature = "avx2")]
+    #[test]
+    fn test_safe_kernels_dimensions() {
+        let dims = [
+            (8, 8, 8),
+            (6, 4, 4),
+            (4, 6, 4),
+            (4, 4, 6),
+            (6, 4, 6),
+            (1, 8, 8),
+            (8, 1, 8),
+            (8, 8, 1),
+            (1, 8, 6),
+            (1, 1, 1),
+        ];
+        for (m, p, n) in dims {
+            test_mpn_dimensions(m, p, n);
+        }
+
+    }
+    #[cfg(feature = "avx2")]
+    fn test_mpn_dimensions(m:usize, p:usize, n:usize) {
+        unsafe {
+        let (s_x, s_y, s_z) = (p,n,n);
+        let mut x = generate_random_matrix(m, p);
+        let mut y = generate_random_matrix(p, n);
+        let expect = basic_mult(&x, &y);
+        let mut x_simd = x.data.clone();
+        let mut y_simd = y.data.clone();
+        let mut w = vec![0f32; 8 * 8];
+        let mut t = vec![0f32; m * n];
+        kernel_imult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), w.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
+        assert!(approx_vector_eq(&expect.data, &t));
+        let mut x_simd = x.data.clone();
+        let mut y_simd = y.data.clone();
+        let mut w = vec![0f32; 8 * 8];
+        let mut t = vec![0f32; m * n];
+        kernel_imult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), w.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
+        assert!(approx_vector_eq(&expect.data, &t));
+        }
+    }
+}
