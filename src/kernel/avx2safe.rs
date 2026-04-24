@@ -1,7 +1,7 @@
 // #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use std::arch::x86_64::{
     __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_fmadd_ps, _mm256_loadu_si256,
-    _mm256_maskload_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps, _mm256_loadu_ps
+    _mm256_maskload_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps
 };
 
 // negative 1 is twos complement so all bits active
@@ -30,7 +30,6 @@ unsafe fn gate_row(ptr: *const f32, cur: usize, cap: usize, mask: __m256i) -> __
             _mm256_maskload_ps(ptr, mask)
         } else {
             _mm256_setzero_ps()
-            // _mm256_loadu_ps(&0f32 as *const f32)
         }
     }
 }
@@ -95,7 +94,7 @@ pub fn kernel_mult_safe(
 
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_imult_safe(
-    mut xptr: *const f32,
+    xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
     wptr: *mut f32,
@@ -111,14 +110,16 @@ pub fn kernel_imult_safe(
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
-        let mut i_row = gate_row(wptr, 0, p, mask_n);
-        let mut ii_row = gate_row(wptr.add(s_t), 1, p, mask_n);
-        let mut iii_row = gate_row(wptr.add(s_t * 2), 2, p, mask_n);
-        let mut iv_row = gate_row(wptr.add(s_t * 3), 3, p, mask_n);
-        let mut v_row = gate_row(wptr.add(s_t * 4), 4, p, mask_n);
-        let mut vi_row = gate_row(wptr.add(s_t * 5), 5, p, mask_n);
-        let mut vii_row = gate_row(wptr.add(s_t * 6), 6, p, mask_n);
-        let mut viii_row = gate_row(wptr.add(s_t * 7), 7, p, mask_n);
+        let mut i_row = gate_row(tptr, 0, p, mask_n);
+        let mut ii_row = gate_row(tptr.add(s_t), 1, p, mask_n);
+        let mut iii_row = gate_row(tptr.add(s_t * 2), 2, p, mask_n);
+        let mut iv_row = gate_row(tptr.add(s_t * 3), 3, p, mask_n);
+        let mut v_row = gate_row(tptr.add(s_t * 4), 4, p, mask_n);
+        let mut vi_row = gate_row(tptr.add(s_t * 5), 5, p, mask_n);
+        let mut vii_row = gate_row(tptr.add(s_t * 6), 6, p, mask_n);
+        let mut viii_row = gate_row(tptr.add(s_t * 7), 7, p, mask_n);
+        let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
+        let mask_n = _mm256_loadu_si256(mask_n_ptr);
         for k in 0..p {
             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             let b = _mm256_maskload_ps(yptr, mask_n);
@@ -141,11 +142,10 @@ pub fn kernel_imult_safe(
         _mm256_storeu_ps(wptr.add(8 * 5), vi_row);
         _mm256_storeu_ps(wptr.add(8 * 6), vii_row);
         _mm256_storeu_ps(wptr.add(8 * 7), viii_row);
-        println!("w: {:?}", *wptr);
         let (mut tidx, mut widx) = (0, 0);
         for _ in 0..m {
             for k in 0..n {
-                *tptr.add(tidx + k) += *wptr.add(widx + k);
+                *tptr.add(tidx + k) = *wptr.add(widx + k);
             }
             widx += 8;
             tidx += s_t;
