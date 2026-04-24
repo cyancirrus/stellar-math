@@ -119,21 +119,29 @@ pub fn kernel_imult_safe(
         let mut vi_row = gate_row(wptr.add(s_t * 5), 5, p, mask_n);
         let mut vii_row = gate_row(wptr.add(s_t * 6), 6, p, mask_n);
         let mut viii_row = gate_row(wptr.add(s_t * 7), 7, p, mask_n);
-        for _ in 0..p {
+        for k in 0..p {
             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             let b = _mm256_maskload_ps(yptr, mask_n);
-            i_row = _mm256_fmadd_ps(gate_value(xptr, 0, m), b, i_row);
-            ii_row = _mm256_fmadd_ps(gate_value(xptr.add(s_x), 1, m), b, ii_row);
-            iii_row = _mm256_fmadd_ps(gate_value(xptr.add(2 * s_x), 2, m), b, iii_row);
-            iv_row = _mm256_fmadd_ps(gate_value(xptr.add(3 * s_x), 3, m), b, iv_row);
-            v_row = _mm256_fmadd_ps(gate_value(xptr.add(4 * s_x), 4, m), b, v_row);
-            vi_row = _mm256_fmadd_ps(gate_value(xptr.add(5 * s_x), 5, m), b, vi_row);
-            vii_row = _mm256_fmadd_ps(gate_value(xptr.add(6 * s_x), 6, m), b, vii_row);
-            viii_row = _mm256_fmadd_ps(gate_value(xptr.add(7 * s_x), 7, m), b, viii_row);
+            i_row = _mm256_fmadd_ps(gate_value(xptr.add(k), 0, m), b, i_row);
+            ii_row = _mm256_fmadd_ps(gate_value(xptr.add(s_x + k), 1, m), b, ii_row);
+            iii_row = _mm256_fmadd_ps(gate_value(xptr.add(2 * s_x + k), 2, m), b, iii_row);
+            iv_row = _mm256_fmadd_ps(gate_value(xptr.add(3 * s_x + k), 3, m), b, iv_row);
+            v_row = _mm256_fmadd_ps(gate_value(xptr.add(4 * s_x + k), 4, m), b, v_row);
+            vi_row = _mm256_fmadd_ps(gate_value(xptr.add(5 * s_x + k), 5, m), b, vi_row);
+            vii_row = _mm256_fmadd_ps(gate_value(xptr.add(6 * s_x + k), 6, m), b, vii_row);
+            viii_row = _mm256_fmadd_ps(gate_value(xptr.add(7 * s_x + k), 7, m), b, viii_row);
             // accumulates k offset
-            xptr = xptr.add(s_x + 1);
             yptr = yptr.add(s_y);
         }
+        _mm256_storeu_ps(wptr, i_row);
+        _mm256_storeu_ps(wptr.add(8), ii_row);
+        _mm256_storeu_ps(wptr.add(8 * 2), iii_row);
+        _mm256_storeu_ps(wptr.add(8 * 3), iv_row);
+        _mm256_storeu_ps(wptr.add(8 * 4), v_row);
+        _mm256_storeu_ps(wptr.add(8 * 5), vi_row);
+        _mm256_storeu_ps(wptr.add(8 * 6), vii_row);
+        _mm256_storeu_ps(wptr.add(8 * 7), viii_row);
+        println!("w: {:?}", *wptr);
         let (mut tidx, mut widx) = (0, 0);
         for _ in 0..m {
             for k in 0..n {

@@ -58,10 +58,10 @@ fn test_mpn_kernels(m:usize, p:usize, n:usize) {
     let mut y_simd = y.data.clone();
     let mut w = vec![0f32; 8 * 8];
     let mut t = vec![0f32; m * n];
-    // avx2safe::kernel_mult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), w.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
+    avx2safe::kernel_imult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), w.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
     // avx2safe::kernel_mult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), w.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
     // avx2::kernel_mult_simd(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), m, s_x, s_y, s_z);
-    avx2::kernel_imult_simd(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), m, s_x, s_y, s_z);
+    // avx2::kernel_imult_simd(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), m, s_x, s_y, s_z);
     let expect = basic_mult(&x, &y);
     let inspect = NdArray { dims: vec![m,n], data: t.clone() };
     println!("expect {expect:?}");
@@ -74,17 +74,18 @@ fn test_mpn_kernels(m:usize, p:usize, n:usize) {
 fn test_kernels() {
     let dims = [
         (8, 8, 8),
-        // (6, 4, 4),
-        // (4, 6, 4),
-        // (4, 4, 6),
-        // (6, 4, 6),
-        // (1, 8, 8),
-        // (8, 1, 8),
-        // (8, 8, 1),
-        // (1, 8, 6),
-        // (1, 1, 1),
+        (6, 4, 4),
+        (4, 6, 4),
+        (4, 4, 6),
+        (6, 4, 6),
+        (1, 8, 8),
+        (8, 1, 8),
+        (8, 8, 1),
+        (1, 8, 6),
+        (1, 1, 1),
     ];
     for (m, p, n) in dims {
+        println!("m {m:}, p: {p:}, n: {n:}");
         test_mpn_kernels(m, p, n);
     }
 
