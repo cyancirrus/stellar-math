@@ -30,11 +30,9 @@ use stellar::algebra::ndmethods::basic_mult;
 use stellar::kernel::{avx2, avx2safe};
 
 #[cfg(feature = "avx2")]
-fn test_things() {
+fn test_mpn_kernels(m:usize, p:usize, n:usize) {
     unsafe {
-    let (m, p, n) = (8, 8, 8);
-    // let (m, p, n) = (4, 4, 8);
-    let (s_x, s_y, s_z) = (8,8,8);
+    let (s_x, s_y, s_z) = (p,n,n);
     let mut x = generate_random_matrix(m, p);
     let mut y = generate_random_matrix(p, n);
     let mut x_simd = x.data.clone();
@@ -44,14 +42,35 @@ fn test_things() {
     avx2safe::kernel_mult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), w.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
     // avx2::kernel_mult_simd(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), m, s_x, s_y, s_z);
     let expect = basic_mult(&x, &y);
-    let inspect = NdArray { dims: vec![8,8], data: t.clone() };
+    let inspect = NdArray { dims: vec![m,n], data: t.clone() };
     println!("expect {expect:?}");
     println!("actual {inspect:?}");
     assert!(approx_vector_eq(&expect.data, &t));
     }
 }
 
+#[cfg(feature = "avx2")]
+fn test_kernels() {
+    let dims = [
+        (4, 4, 4),
+        // (8, 8, 8),
+        (6, 4, 4),
+        (4, 6, 4),
+        (4, 4, 6),
+        (6, 4, 6),
+        (1, 8, 8),
+        (8, 1, 8),
+        (8, 8, 1),
+        (1, 8, 6),
+        (1, 1, 1),
+    ];
+    for (m, p, n) in dims {
+        test_mpn_kernels(m, p, n);
+    }
+
+}
+
 fn main() {
     #[cfg(feature = "avx2")]
-    test_things();
+    test_kernels();
 }

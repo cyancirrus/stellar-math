@@ -1,7 +1,7 @@
 // #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use std::arch::x86_64::{
     __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_fmadd_ps, _mm256_loadu_si256,
-    _mm256_maskload_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps
+    _mm256_maskload_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps, _mm256_loadu_ps
 };
 
 // negative 1 is twos complement so all bits active
@@ -26,12 +26,12 @@ unsafe fn gate_value(ptr: *const f32, cur: usize, cap: usize) -> __m256 {
 }
 unsafe fn gate_row(ptr: *const f32, cur: usize, cap: usize, mask: __m256i) -> __m256 {
     unsafe {
-        let val = if cur < cap {
-            ptr
+        if cur < cap {
+            _mm256_maskload_ps(ptr, mask)
         } else {
-            &0f32 as *const f32
-        };
-        _mm256_maskload_ps(val, mask)
+            _mm256_setzero_ps()
+            // _mm256_loadu_ps(&0f32 as *const f32)
+        }
     }
 }
 
