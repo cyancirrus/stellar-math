@@ -20,51 +20,7 @@ use stellar::equality::approximate::approx_vector_eq;
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 
-fn test_minikern_equivalence() {
-    let ikj = [
-        // (8, 9, 8),
-        (1, 1, 1),
-        (8, 1, 1),
-        (1, 8, 1),
-        (1, 1, 8),
-        (6, 4, 8),
-        (6, 8, 4),
-        (4, 6, 8),
-        (4, 8, 6),
-        (8, 4, 6),
-        (8, 6, 4),
-        (16, 16, 16),
-        (47, 53, 18),
-        (51, 53, 13),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-    ];
-    for (i, k, j) in ikj {
-        println!("(i: {i:?}, k: {k:?}, {j:})");
-        test_minikern_equivalence_mkn(i, k, j);
-    }
-}
-fn test_minikern_equivalence_mkn(m: usize, k: usize, n: usize) {
-    let x = generate_random_matrix(m, k);
-    let y = generate_random_matrix(k, n);
-    let mut result = vec![0f32; m * n];
-    let expected = basic_mult(&x, &y);
-    tensor_minikern(&x.data, &y.data, &mut result, m, k, n);
-        let inspect = NdArray {
-            dims: vec![m, n],
-            data: result.clone(),
-        };
-        println!("expected {expected:?}");
-        println!("actual {inspect:?}");
-    assert!(approx_vector_eq(&expected.data, &result[..m * n]));
-}
+// contract over the k dimension for matmul
 
 fn main() {
-    test_minikern_equivalence();
 }

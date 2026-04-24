@@ -22,9 +22,10 @@ pub fn kernel_mult_simd(
     s_t: usize,
 ) {
     unsafe {
-        // if (m | p | n) & (SIMD_WIDTH - 1) == 0 {
         if (p | n) & (SIMD_WIDTH - 1) == 0 {
             kernel_mult_simd_aligned(xptr, yptr, tptr, m, s_x, s_y, s_t);
+        // if (m | p | n) & (SIMD_WIDTH - 1) == 0 {
+        //     kernel_imult_simd(xptr, yptr, tptr, m, s_x, s_y, s_t);
         } else {
             avx2safe::kernel_mult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
             // avx2safe::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);

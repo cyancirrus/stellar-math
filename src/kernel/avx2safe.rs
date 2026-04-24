@@ -24,15 +24,15 @@ unsafe fn gate_value(ptr: *const f32, cur: usize, cap: usize) -> __m256 {
         _mm256_set1_ps(val)
     }
 }
-unsafe fn gate_row(ptr: *const f32, cur: usize, cap: usize, mask: __m256i) -> __m256 {
-    unsafe {
-        // if cur < cap {
-            _mm256_maskload_ps(ptr, mask)
-        // } else {
-        //     _mm256_setzero_ps()
-        // }
-    }
-}
+// unsafe fn gate_row(ptr: *const f32, cur: usize, cap: usize, mask: __m256i) -> __m256 {
+//     unsafe {
+//         if cur < cap {
+//             _mm256_maskload_ps(ptr, mask)
+//         } else {
+//             _mm256_setzero_ps()
+//         }
+//     }
+// }
 unsafe fn sgate_row(ptr: *mut f32, cur: usize, cap: usize, mask: __m256i, data: __m256) {
     unsafe {
         if cur < cap {
@@ -66,15 +66,6 @@ pub fn kernel_mult_safe(
         let vi_row = _mm256_maskload_ps(yptr.add(s_y * 5), mask_n);
         let vii_row = _mm256_maskload_ps(yptr.add(s_y * 6), mask_n);
         let viii_row = _mm256_maskload_ps(yptr.add(s_y * 7), mask_n);
-        // let i_row = gate_row(yptr, 0, p, mask_n);
-        // let ii_row = gate_row(yptr.add(s_y), 1, p, mask_n);
-        // let iii_row = gate_row(yptr.add(s_y * 2), 2, p, mask_n);
-        // let iv_row = gate_row(yptr.add(s_y * 3), 3, p, mask_n);
-        // let v_row = gate_row(yptr.add(s_y * 4), 4, p, mask_n);
-        // let vi_row = gate_row(yptr.add(s_y * 5), 5, p, mask_n);
-        // let vii_row = gate_row(yptr.add(s_y * 6), 6, p, mask_n);
-        // let viii_row = gate_row(yptr.add(s_y * 7), 7, p, mask_n);
-
         for _ in 0..m {
             let mut acc1 = _mm256_maskload_ps(tptr, mask_n);
             let mut acc0 = _mm256_setzero_ps();
@@ -111,7 +102,6 @@ pub fn kernel_imult_safe(
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
-        // let mask_n = _mm256_loadu_si256(mask_n_ptr);
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
         let mut i_row = _mm256_maskload_ps(tptr, mask_n);
         let mut ii_row = _mm256_maskload_ps(tptr.add(s_t), mask_n);
@@ -121,16 +111,7 @@ pub fn kernel_imult_safe(
         let mut vi_row = _mm256_maskload_ps(tptr.add(s_t * 5), mask_n);
         let mut vii_row = _mm256_maskload_ps(tptr.add(s_t * 6), mask_n);
         let mut viii_row = _mm256_maskload_ps(tptr.add(s_t * 7), mask_n);
-        // let mut i_row = gate_row(tptr, 0, p, mask_n);
-        // let mut ii_row = gate_row(tptr.add(s_t), 1, p, mask_n);
-        // let mut iii_row = gate_row(tptr.add(s_t * 2), 2, p, mask_n);
-        // let mut iv_row = gate_row(tptr.add(s_t * 3), 3, p, mask_n);
-        // let mut v_row = gate_row(tptr.add(s_t * 4), 4, p, mask_n);
-        // let mut vi_row = gate_row(tptr.add(s_t * 5), 5, p, mask_n);
-        // let mut vii_row = gate_row(tptr.add(s_t * 6), 6, p, mask_n);
-        // let mut viii_row = gate_row(tptr.add(s_t * 7), 7, p, mask_n);
         for k in 0..p {
-            println!("p {k: }");
             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             let b = _mm256_maskload_ps(yptr, mask_n);
             i_row = _mm256_fmadd_ps(gate_value(xptr.add(k), 0, m), b, i_row);
