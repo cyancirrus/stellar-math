@@ -110,19 +110,17 @@ pub fn kernel_imult_simd(
         let mut vi_row = _mm256_loadu_ps(tptr.add(s_t * 5));
         let mut vii_row = _mm256_loadu_ps(tptr.add(s_t * 6));
         let mut viii_row = _mm256_loadu_ps(tptr.add(s_t * 7));
-        for _ in 0..block_p {
+        for k in 0..block_p {
             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             let b = _mm256_loadu_ps(yptr);
-            i_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr), b, i_row);
-            ii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(s_x)), b, ii_row);
-            iii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2 * s_x)), b, iii_row);
-            iv_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3 * s_x)), b, iv_row);
-            v_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(4 * s_x)), b, v_row);
-            vi_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(5 * s_x)), b, vi_row);
-            vii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(6 * s_x)), b, vii_row);
-            viii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7 * s_x)), b, viii_row);
-            // accumulates k offset
-            xptr = xptr.add(s_x + 1);
+            i_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(k)), b, i_row);
+            ii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(s_x + k)), b, ii_row);
+            iii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2 * s_x + k)), b, iii_row);
+            iv_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3 * s_x + k)), b, iv_row);
+            v_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(4 * s_x + k)), b, v_row);
+            vi_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(5 * s_x + k)), b, vi_row);
+            vii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(6 * s_x + k)), b, vii_row);
+            viii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7 * s_x + k)), b, viii_row);
             yptr = yptr.add(s_y);
         }
         _mm256_storeu_ps(tptr, i_row);

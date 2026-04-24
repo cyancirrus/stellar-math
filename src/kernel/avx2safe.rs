@@ -51,7 +51,6 @@ pub fn kernel_mult_safe(
     // w: workspace
     // excels at tall x matrix and wide y
     unsafe {
-        println!("n {n:}");
         let wbase = wptr;
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
@@ -62,10 +61,7 @@ pub fn kernel_mult_safe(
         let v_row = gate_row(yptr.add(s_y * 4), 4, p, mask_n);
         let vi_row = gate_row(yptr.add(s_y * 5), 5, p, mask_n);
         let vii_row = gate_row(yptr.add(s_y * 6), 6, p, mask_n);
-        println!("before row 8");
         let viii_row = gate_row(yptr.add(s_y * 7), 7, p, mask_n);
-        println!("Mask value {:?}", MASK[n]);
-        println!("viii_row {viii_row:?}");
 
         for _ in 0..m {
             let mut acc1 = _mm256_setzero_ps();
