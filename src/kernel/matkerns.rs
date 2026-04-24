@@ -1,5 +1,3 @@
-use crate::arch::SIMD_WIDTH;
-
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use crate::kernel::avx2::kernel_mult_simd;
 #[cfg(all(feature = "avx512", target_arch = "x86_64"))]
@@ -8,8 +6,6 @@ use crate::kernel::avx512::kernel_mult_simd;
 use crate::kernel::default::kernel_mult_simd;
 #[cfg(all(feature = "neon", target_arch = "aarch64"))]
 use crate::kernel::neon::kernel_mult_simd;
-
-use crate::kernel::default::kernel_mult_scalar;
 
 #[inline(never)]
 pub fn kernel_mult(
@@ -23,30 +19,17 @@ pub fn kernel_mult(
     s_y: usize,
     s_t: usize,
 ) {
-    //   TODO: move inside the archetectural blocks
-    if (m | p | n) & (SIMD_WIDTH - 1) == 0 {
-        unsafe {
-            return kernel_mult_simd(
-                x.as_ptr(),
-                y.as_ptr(),
-                t.as_mut_ptr(),
-                m,
-                s_x,
-                s_y,
-                s_t,
-            );
-        }
+    unsafe {
+        kernel_mult_simd(
+            x.as_ptr(),
+            y.as_ptr(),
+            t.as_mut_ptr(),
+            m,
+            p,
+            n,
+            s_x,
+            s_y,
+            s_t,
+        );
     }
-    // change this to be the safe version
-    kernel_mult_scalar(
-        x.as_ptr(),
-        y.as_ptr(),
-        t.as_mut_ptr(),
-        m,
-        p,
-        n,
-        s_x,
-        s_y,
-        s_t,
-    );
 }

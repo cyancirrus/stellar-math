@@ -1,15 +1,33 @@
 #[cfg(all(feature = "avx512", target_arch = "x86_64"))]
+use crate::kernel::default::kernel_mult_scalar;
 use std::arch::x86_64::{
     _mm512_add_ps, _mm512_fmadd_ps, _mm512_loadu_ps, _mm512_set1_ps, _mm512_setzero_ps,
     _mm512_storeu_ps,
 };
-
-#[target_feature(enable = "avx512f,fma")]
 pub fn kernel_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
     mut tptr: *mut f32,
-    block_m: usize,
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    if (m | p | n) & (SIMD_WIDTH - 1) == 0 {
+        kernel_mult_simd_aligned(x, y, t, m, s_x, s_y, s_t);
+    } else {
+        kernel_mult_scalar(x, y, t, m, p, n, s_x, s_y, s_t);
+    }
+}
+
+#[target_feature(enable = "avx512f,fma")]
+pub fn kernel_mult_simd_aligned(
+    mut xptr: *const f32,
+    mut yptr: *const f32,
+    mut tptr: *mut f32,
+    m: usize,
     s_x: usize,
     s_y: usize,
     s_t: usize,
@@ -32,7 +50,7 @@ pub fn kernel_mult_simd(
         let xv_row = _mm512_loadu_ps(yptr.add(s_y * 14));
         let xvi_row = _mm512_loadu_ps(yptr.add(s_y * 15));
 
-        for _ in 0..block_m {
+        for _ in 0..m {
             let mut acc0 = _mm512_setzero_ps();
             let mut acc1 = _mm512_setzero_ps();
             let mut acc2 = _mm512_setzero_ps();
