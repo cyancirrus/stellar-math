@@ -2,9 +2,9 @@ use criterion::Throughput;
 use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 use stellar::arch::SIMD_WIDTH;
+use stellar::kernel::default;
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use stellar::kernel::{avx2, avx2safe};
-use stellar::kernel::default;
 pub fn benchmark_kernels(c: &mut Criterion) {
     let block = SIMD_WIDTH;
     let stride = SIMD_WIDTH;
@@ -50,6 +50,23 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     group.bench_function("AVX2 Kernel General Shape", |b_inner| {
         b_inner.iter(|| unsafe {
             avx2safe::kernel_mult_safe(
+                black_box(a.as_mut_ptr()),
+                black_box(b.as_ptr()),
+                black_box(c_out.as_mut_ptr()),
+                black_box(wrk.as_mut_ptr()),
+                SIMD_WIDTH,
+                SIMD_WIDTH,
+                SIMD_WIDTH,
+                stride,
+                stride,
+                stride,
+            )
+        });
+    });
+    #[cfg(feature = "avx2")]
+    group.bench_function("AVX2 Kernel Inner General Shape", |b_inner| {
+        b_inner.iter(|| unsafe {
+            avx2safe::kernel_imult_safe(
                 black_box(a.as_mut_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),

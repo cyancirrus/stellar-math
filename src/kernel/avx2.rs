@@ -1,8 +1,4 @@
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-// use std::arch::x86_64::{
-//     _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps,
-//     _mm256_mask_load_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
-// };
 use std::arch::x86_64::{
     _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_castpd_ps, _mm256_castps_pd, _mm256_fmadd_ps,
     _mm256_load_ps, _mm256_loadu_ps, _mm256_mask_load_ps, _mm256_permute2f128_ps, _mm256_set1_ps,
@@ -34,8 +30,7 @@ pub fn kernel_mult_simd(
         for _ in 0..block_m {
             let mut acc1 = _mm256_loadu_ps(tptr);
             let mut acc0 = _mm256_setzero_ps();
-            // _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
-            // _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
+            _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
             // start with existing t for accumulation
             acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr), i_row, acc0);
             acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(1)), ii_row, acc1);
@@ -98,7 +93,7 @@ pub fn kernel_trans_simd(mut tptr: *mut f32) {
 pub fn kernel_imult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
-    mut tptr: *mut f32,
+    tptr: *mut f32,
     block_p: usize,
     s_x: usize,
     s_y: usize,

@@ -116,7 +116,6 @@ mod test_cached_matrix_methods {
     use crate::random::generation::generate_random_matrix;
 
     #[test]
-    // #[cfg(feature = "avx2")]
     fn test_par_kernel_equivalence() {
         let ikj = [
             (1, 1, 1),

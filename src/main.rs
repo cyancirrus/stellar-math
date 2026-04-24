@@ -21,104 +21,37 @@ use std::arch::x86_64::{
     _mm256_unpacklo_pd, _mm256_unpacklo_ps,
 };
 use stellar::algebra::bmethods::tensor_blockkern;
-use stellar::algebra::ndmethods::basic_mult;
 use stellar::arch::SIMD_WIDTH;
 use stellar::equality::approximate::approx_vector_eq;
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
+use stellar::algebra::ndmethods::basic_mult;
+#[cfg(feature = "avx2")]
+use stellar::kernel::{avx2, avx2safe};
 
-// negative 1 is twos complement so all bits active
-#[rustfmt::skip]
-const MASK:[[i32;8];9] = [
-    [ 0,  0,  0,  0,  0,  0,  0,  0],
-    [-1,  0,  0,  0,  0,  0,  0,  0],
-    [-1, -1,  0,  0,  0,  0,  0,  0],
-    [-1, -1, -1,  0,  0,  0,  0,  0],
-    [-1, -1, -1, -1,  0,  0,  0,  0],
-    [-1, -1, -1, -1, -1,  0,  0,  0],
-    [-1, -1, -1, -1, -1, -1,  0,  0],
-    [-1, -1, -1, -1, -1, -1, -1,  0],
-    [-1, -1, -1, -1, -1, -1, -1, -1],
-];
-
-unsafe fn gate_value(ptr: *const f32, cur: usize, cap: usize) -> __m256 {
+#[cfg(feature = "avx2")]
+fn test_things() {
     unsafe {
-        let val = if cur < cap { *ptr.add(cur) } else { 0f32 };
-        _mm256_set1_ps(val)
+    let (m, p, n) = (8, 8, 8);
+    // let (m, p, n) = (4, 4, 8);
+    let (s_x, s_y, s_z) = (8,8,8);
+    let mut x = generate_random_matrix(m, p);
+    let mut y = generate_random_matrix(p, n);
+    let mut x_simd = x.data.clone();
+    let mut y_simd = y.data.clone();
+    let mut w = vec![0f32; 8 * 8];
+    let mut t = vec![0f32; m * n];
+    avx2safe::kernel_mult_safe(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), w.as_mut_ptr(), m, p, n, s_x, s_y, s_z);
+    // avx2::kernel_mult_simd(x_simd.as_ptr(), y_simd.as_ptr(), t.as_mut_ptr(), m, s_x, s_y, s_z);
+    let expect = basic_mult(&x, &y);
+    let inspect = NdArray { dims: vec![8,8], data: t.clone() };
+    println!("expect {expect:?}");
+    println!("actual {inspect:?}");
+    assert!(approx_vector_eq(&expect.data, &t));
     }
 }
-
-unsafe fn gate_row( ptr: *const f32, cur: usize, cap: usize, mask: __m256i) -> __m256 {
-    unsafe{
-        let val = if cur < cap { *ptr.add(cur) } else { 0f32 };
-
-        _mm256_maskload_ps(ptr, mask)
-    }
-}
-
-#[target_feature(enable = "avx,fma")]
-pub fn kernel_mult_safe(
-    mut xptr: *const f32,
-    mut yptr: *const f32,
-    mut tptr: *mut f32,
-    mut wptr: *mut f32,
-    block_m: usize,
-    block_p: usize,
-    block_n: usize,
-    s_x: usize,
-    s_y: usize,
-    s_t: usize,
-) {
-    // w: workspace
-    // excels at tall x matrix and wide y
-    unsafe {
-        let wbase = wptr;
-        let mask_n_ptr = MASK[block_n].as_ptr() as *const __m256i;
-        let mask_n = _mm256_loadu_si256(mask_n_ptr);
-        let i_row = gate_row(yptr, 0, block_p, mask_n);
-        let ii_row = gate_row(yptr.add(s_y), 1, block_p, mask_n);
-        let iii_row = gate_row(yptr.add(s_y * 2), 2, block_p, mask_n);
-        let iv_row = gate_row(yptr.add(s_y * 3), 3, block_p, mask_n);
-        let v_row = gate_row(yptr.add(s_y * 4), 4, block_p, mask_n);
-        let vi_row = gate_row(yptr.add(s_y * 5), 5, block_p, mask_n);
-        let vii_row = gate_row(yptr.add(s_y * 6), 6, block_p, mask_n);
-        let viii_row = gate_row(yptr.add(s_y * 7), 7, block_p, mask_n);
-        let mask_p_ptr = MASK[block_p].as_ptr() as *const __m256i;
-        let mask_p = _mm256_loadu_si256(mask_p_ptr);
-
-        for _ in 0..block_m {
-            let mut acc1 = _mm256_setzero_ps();
-            let mut acc0 = _mm256_setzero_ps();
-            _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
-            _mm_prefetch(wptr.add(8) as *const i8, _MM_HINT_T0);
-            // start with existing t for accumulation
-            acc0 = _mm256_fmadd_ps(gate_value(xptr, 0, block_p), i_row, acc0);
-            acc1 = _mm256_fmadd_ps(gate_value(xptr, 1, block_p), ii_row, acc1);
-            acc0 = _mm256_fmadd_ps(gate_value(xptr, 2, block_p), iii_row, acc0);
-            acc1 = _mm256_fmadd_ps(gate_value(xptr, 3, block_p), iv_row, acc1);
-            acc0 = _mm256_fmadd_ps(gate_value(xptr, 4, block_p), v_row, acc0);
-            acc1 = _mm256_fmadd_ps(gate_value(xptr, 5, block_p), vi_row, acc1);
-            acc0 = _mm256_fmadd_ps(gate_value(xptr, 6, block_p), vii_row, acc0);
-            acc1 = _mm256_fmadd_ps(gate_value(xptr, 7, block_p), viii_row, acc1);
-            _mm256_storeu_ps(wptr, _mm256_add_ps(acc1, acc0));
-            xptr = xptr.add(s_x);
-            wptr = wptr.add(8);
-        }
-        wptr = wbase;
-        let (mut tidx, mut widx) = (0, 0);
-        for _ in 0..block_m {
-            for k in 0..block_n {
-                *tptr.add(tidx + k) += *wptr.add(widx + k);
-            }
-            widx += 8;
-            tidx += s_t;
-        }
-    }
-}
-
-// check compilation flags
-// write a copy fn which actually loads the block
 
 fn main() {
-    println!("{:b}", 0xe7);
+    #[cfg(feature = "avx2")]
+    test_things();
 }
