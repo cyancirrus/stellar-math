@@ -261,7 +261,6 @@ mod test_kernel_block {
             (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
         ];
         for (i, k, j) in ikj {
-            println!("(i: {i:?}, k: {k:?}, j: {j:})");
             test_outkern_equivalence_mkn(i, k, j);
         }
     }
@@ -271,10 +270,10 @@ mod test_kernel_block {
         let mut result = vec![0f32; m * n];
         let expected = basic_mult(&x, &y);
         tensor_outkern(&x.data, &y.data, &mut result, m, p, n, p, n, n);
-        let inspect = NdArray {
-            dims: vec![m, n],
-            data: result.clone(),
-        };
+        // let inspect = NdArray {
+        //     dims: vec![m, n],
+        //     data: result.clone(),
+        // };
         // println!("expected {expected:?}");
         // println!("actual {inspect:?}");
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
@@ -320,8 +319,8 @@ mod test_kernel_block {
             dims: vec![m, n],
             data: result.clone(),
         };
-        println!("expected {expected:?}");
-        println!("actual {inspect:?}");
+        // println!("expected {expected:?}");
+        // println!("actual {inspect:?}");
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
     }
 }
