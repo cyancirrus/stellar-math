@@ -6,7 +6,7 @@ use std::arch::x86_64::{
     _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_castpd_ps, _mm256_castps_pd, _mm256_fmadd_ps,
     _mm256_load_ps, _mm256_loadu_ps, _mm256_mask_load_ps, _mm256_permute2f128_ps, _mm256_set1_ps,
     _mm256_setzero_ps, _mm256_storeu_ps, _mm256_unpackhi_pd, _mm256_unpackhi_ps,
-    _mm256_unpacklo_pd, _mm256_unpacklo_ps,
+    _mm256_unpacklo_pd, _mm256_unpacklo_ps, _mm256_broadcast_ss,
 };
 
 #[target_feature(enable = "avx,fma")]
@@ -23,15 +23,16 @@ pub fn kernel_mult_simd(
 ) {
     unsafe {
         if (m | p | n) & (SIMD_WIDTH - 1) == 0 {
-            kernel_mult_simd_aligned(xptr, yptr, tptr, m, s_x, s_y, s_t);
-            // kernel_imult_simd(xptr, yptr, tptr, m, s_x, s_y, s_t);
+            // kernel_mult_simd_aligned(xptr, yptr, tptr, m, s_x, s_y, s_t);
+            kernel_imult_simd(xptr, yptr, tptr, m, s_x, s_y, s_t);
         } else {
-            avx2safe::kernel_mult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-            // avx2safe::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+            // avx2safe::kernel_mult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+            avx2safe::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
     }
 }
-#[target_feature(enable = "avx,fma")]
+// #[target_feature(enable = "avx,fma")]
+#[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_mult_simd_aligned(
     mut xptr: *const f32,
     yptr: *const f32,
@@ -57,14 +58,22 @@ pub fn kernel_mult_simd_aligned(
             let mut acc0 = _mm256_setzero_ps();
             _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
             // start with existing t for accumulation
-            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr), i_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(1)), ii_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2)), iii_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3)), iv_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(4)), v_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(5)), vi_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(6)), vii_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7)), viii_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr), i_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(1)), ii_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(2)), iii_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(3)), iv_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(4)), v_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(5)), vi_row, acc1);
+            acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(6)), vii_row, acc0);
+            acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(7)), viii_row, acc1);
+            // acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr), i_row, acc0);
+            // acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(1)), ii_row, acc1);
+            // acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2)), iii_row, acc0);
+            // acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3)), iv_row, acc1);
+            // acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(4)), v_row, acc0);
+            // acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(5)), vi_row, acc1);
+            // acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(6)), vii_row, acc0);
+            // acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7)), viii_row, acc1);
             _mm256_storeu_ps(tptr, _mm256_add_ps(acc1, acc0));
             xptr = xptr.add(s_x);
             tptr = tptr.add(s_t);
@@ -95,14 +104,22 @@ pub fn kernel_imult_simd(
         for k in 0..p {
             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             let b = _mm256_loadu_ps(yptr);
-            i_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(k)), b, i_row);
-            ii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(s_x + k)), b, ii_row);
-            iii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2 * s_x + k)), b, iii_row);
-            iv_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3 * s_x + k)), b, iv_row);
-            v_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(4 * s_x + k)), b, v_row);
-            vi_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(5 * s_x + k)), b, vi_row);
-            vii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(6 * s_x + k)), b, vii_row);
-            viii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7 * s_x + k)), b, viii_row);
+            i_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(k)), b, i_row);
+            ii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(s_x + k)), b, ii_row);
+            iii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(2 * s_x + k)), b, iii_row);
+            iv_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(3 * s_x + k)), b, iv_row);
+            v_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(4 * s_x + k)), b, v_row);
+            vi_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(5 * s_x + k)), b, vi_row);
+            vii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(6 * s_x + k)), b, vii_row);
+            viii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(7 * s_x + k)), b, viii_row);
+            // i_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(k)), b, i_row);
+            // ii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(s_x + k)), b, ii_row);
+            // iii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2 * s_x + k)), b, iii_row);
+            // iv_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3 * s_x + k)), b, iv_row);
+            // v_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(4 * s_x + k)), b, v_row);
+            // vi_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(5 * s_x + k)), b, vi_row);
+            // vii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(6 * s_x + k)), b, vii_row);
+            // viii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7 * s_x + k)), b, viii_row);
             yptr = yptr.add(s_y);
         }
         _mm256_storeu_ps(tptr, i_row);

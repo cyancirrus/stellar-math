@@ -1,7 +1,7 @@
 // #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use std::arch::x86_64::{
     __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_fmadd_ps, _mm256_loadu_si256,
-    _mm256_maskload_ps, _mm256_maskstore_ps, _mm256_set1_ps, _mm256_setzero_ps,
+    _mm256_maskload_ps, _mm256_maskstore_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_broadcast_ss, _mm256_set1_epi32, _mm256_and_ps, _mm256_castsi256_ps
 };
 
 // negative 1 is twos complement so all bits active
@@ -18,31 +18,58 @@ const MASK:[[i32;8];9] = [
     [-1, -1, -1, -1, -1, -1, -1, -1],
 ];
 
+#[target_feature(enable = "avx2")]
 unsafe fn gate_value(ptr: *const f32, cur: usize, cap: usize) -> __m256 {
     unsafe {
-        let val = if cur < cap { *ptr } else { 0f32 };
-        _mm256_set1_ps(val)
+        let val = if cur < cap { ptr } else { &0f32 as *const f32};
+        // _mm256_set1_ps(val)
+        _mm256_broadcast_ss(&*val)
     }
 }
+// unsafe fn gate_value(ptr: *const f32, cur: usize, cap: usize) -> __m256 {
+//     unsafe {
+//         let val = if cur < cap { *ptr } else { 0f32 };
+//         // _mm256_set1_ps(val)
+//         _mm256_broadcast_ss(&val)
+//     }
+// }
+#[target_feature(enable = "avx2")]
 unsafe fn gate_row(ptr: *const f32, cur: usize, cap: usize, mask: __m256i) -> __m256 {
+    static ZEROS: [f32; 8] = [0f32; 8];
     unsafe {
-        if cur < cap {
-            _mm256_maskload_ps(ptr, mask)
+        let safe_ptr = if cur < cap {
+            ptr
         } else {
-            _mm256_setzero_ps()
-        }
+            ZEROS.as_ptr()
+        };
+        _mm256_maskload_ps(safe_ptr, mask)
     }
+    // unsafe {
+    //     if cur < cap {
+    //         _mm256_maskload_ps(ptr, mask)
+    //     } else {
+    //         _mm256_setzero_ps()
+    //     }
+    // }
 }
+#[target_feature(enable = "avx2")]
 unsafe fn sgate_row(ptr: *mut f32, cur: usize, cap: usize, mask: __m256i, data: __m256) {
     unsafe {
         if cur < cap {
             _mm256_maskstore_ps(ptr, mask, data);
-        } else {
-            _mm256_setzero_ps();
+        // } else {
+        //     _mm256_setzero_ps();
         }
     }
 }
-#[target_feature(enable = "avx,fma")]
+unsafe fn gate_value_branchless(ptr: *const f32, mask_bit: i32) -> __m256 {
+    unsafe {
+        _mm256_and_ps(_mm256_broadcast_ss(&*ptr),  _mm256_castsi256_ps(_mm256_set1_epi32(mask_bit)))
+    }
+
+}
+
+#[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_mult_safe(
     mut xptr: *const f32,
     yptr: *const f32,
@@ -67,6 +94,14 @@ pub fn kernel_mult_safe(
         let vi_row = gate_row(yptr.add(s_y * 5), 5, p, mask_n);
         let vii_row = gate_row(yptr.add(s_y * 6), 6, p, mask_n);
         let viii_row = gate_row(yptr.add(s_y * 7), 7, p, mask_n);
+        // let i_row = gate_row(yptr, 0, p, mask_n);
+        // let ii_row = gate_row(yptr.add(s_y), 1, p, mask_n);
+        // let iii_row = gate_row(yptr.add(s_y * 2), 2, p, mask_n);
+        // let iv_row = gate_row(yptr.add(s_y * 3), 3, p, mask_n);
+        // let v_row = gate_row(yptr.add(s_y * 4), 4, p, mask_n);
+        // let vi_row = gate_row(yptr.add(s_y * 5), 5, p, mask_n);
+        // let vii_row = gate_row(yptr.add(s_y * 6), 6, p, mask_n);
+        // let viii_row = gate_row(yptr.add(s_y * 7), 7, p, mask_n);
         for _ in 0..m {
             let mut acc1 = _mm256_maskload_ps(tptr, mask_n);
             let mut acc0 = _mm256_setzero_ps();
@@ -103,6 +138,7 @@ pub fn kernel_imult_safe(
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
+        let mask_m = MASK[m];
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
         let mut i_row = _mm256_maskload_ps(tptr, mask_n);
         let mut ii_row = _mm256_maskload_ps(tptr.add(s_t), mask_n);
@@ -115,14 +151,22 @@ pub fn kernel_imult_safe(
         for k in 0..p {
             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             let b = _mm256_maskload_ps(yptr, mask_n);
-            i_row = _mm256_fmadd_ps(gate_value(xptr.add(k), 0, m), b, i_row);
-            ii_row = _mm256_fmadd_ps(gate_value(xptr.add(s_x + k), 1, m), b, ii_row);
-            iii_row = _mm256_fmadd_ps(gate_value(xptr.add(2 * s_x + k), 2, m), b, iii_row);
-            iv_row = _mm256_fmadd_ps(gate_value(xptr.add(3 * s_x + k), 3, m), b, iv_row);
-            v_row = _mm256_fmadd_ps(gate_value(xptr.add(4 * s_x + k), 4, m), b, v_row);
-            vi_row = _mm256_fmadd_ps(gate_value(xptr.add(5 * s_x + k), 5, m), b, vi_row);
-            vii_row = _mm256_fmadd_ps(gate_value(xptr.add(6 * s_x + k), 6, m), b, vii_row);
-            viii_row = _mm256_fmadd_ps(gate_value(xptr.add(7 * s_x + k), 7, m), b, viii_row);
+            i_row = _mm256_fmadd_ps(gate_value_branchless(xptr.add(k), mask_m[0]), b, i_row);
+            ii_row = _mm256_fmadd_ps(gate_value_branchless(xptr.add(s_x + k), mask_m[1]), b, ii_row);
+            iii_row = _mm256_fmadd_ps(gate_value_branchless(xptr.add(2 * s_x + k), mask_m[2]), b, iii_row);
+            iv_row = _mm256_fmadd_ps(gate_value_branchless(xptr.add(3 * s_x + k), mask_m[3]), b, iv_row);
+            v_row = _mm256_fmadd_ps(gate_value_branchless(xptr.add(4 * s_x + k), mask_m[4]), b, v_row);
+            vi_row = _mm256_fmadd_ps(gate_value_branchless(xptr.add(5 * s_x + k), mask_m[5]), b, vi_row);
+            vii_row = _mm256_fmadd_ps(gate_value_branchless(xptr.add(6 * s_x + k), mask_m[6]), b, vii_row);
+            viii_row = _mm256_fmadd_ps(gate_value_branchless(xptr.add(7 * s_x + k), mask_m[7]), b, viii_row);
+            // i_row = _mm256_fmadd_ps(gate_value(xptr.add(k), 0, m), b, i_row);
+            // ii_row = _mm256_fmadd_ps(gate_value(xptr.add(s_x + k), 1, m), b, ii_row);
+            // iii_row = _mm256_fmadd_ps(gate_value(xptr.add(2 * s_x + k), 2, m), b, iii_row);
+            // iv_row = _mm256_fmadd_ps(gate_value(xptr.add(3 * s_x + k), 3, m), b, iv_row);
+            // v_row = _mm256_fmadd_ps(gate_value(xptr.add(4 * s_x + k), 4, m), b, v_row);
+            // vi_row = _mm256_fmadd_ps(gate_value(xptr.add(5 * s_x + k), 5, m), b, vi_row);
+            // vii_row = _mm256_fmadd_ps(gate_value(xptr.add(6 * s_x + k), 6, m), b, vii_row);
+            // viii_row = _mm256_fmadd_ps(gate_value(xptr.add(7 * s_x + k), 7, m), b, viii_row);
             // accumulates k offset
             yptr = yptr.add(s_y);
         }
@@ -202,3 +246,48 @@ mod test_safe_kernels {
         }
     }
 }
+// #[target_feature(enable = "avx,avx2,fma")]
+// pub fn kernel_mult_safe(
+//     mut xptr: *const f32,
+//     yptr: *const f32,
+//     mut tptr: *mut f32,
+//     m: usize,
+//     p: usize,
+//     n: usize,
+//     s_x: usize,
+//     s_y: usize,
+//     s_t: usize,
+// ) {
+//     // w: workspace
+//     // excels at tall x matrix and wide y
+//     unsafe {
+//         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
+//         let mask_n = _mm256_loadu_si256(mask_n_ptr);
+//         let i_row = gate_row(yptr, 0, p, mask_n);
+//         let ii_row = gate_row(yptr.add(s_y), 1, p, mask_n);
+//         let iii_row = gate_row(yptr.add(s_y * 2), 2, p, mask_n);
+//         let iv_row = gate_row(yptr.add(s_y * 3), 3, p, mask_n);
+//         let v_row = gate_row(yptr.add(s_y * 4), 4, p, mask_n);
+//         let vi_row = gate_row(yptr.add(s_y * 5), 5, p, mask_n);
+//         let vii_row = gate_row(yptr.add(s_y * 6), 6, p, mask_n);
+//         let viii_row = gate_row(yptr.add(s_y * 7), 7, p, mask_n);
+//         for _ in 0..m {
+//             let mut acc1 = _mm256_maskload_ps(tptr, mask_n);
+//             let mut acc0 = _mm256_setzero_ps();
+//             _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
+//             _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
+//             // start with existing t for accumulation
+//             acc0 = _mm256_fmadd_ps(gate_value(xptr, 0, p), i_row, acc0);
+//             acc1 = _mm256_fmadd_ps(gate_value(xptr.add(1), 1, p), ii_row, acc1);
+//             acc0 = _mm256_fmadd_ps(gate_value(xptr.add(2), 2, p), iii_row, acc0);
+//             acc1 = _mm256_fmadd_ps(gate_value(xptr.add(3), 3, p), iv_row, acc1);
+//             acc0 = _mm256_fmadd_ps(gate_value(xptr.add(4), 4, p), v_row, acc0);
+//             acc1 = _mm256_fmadd_ps(gate_value(xptr.add(5), 5, p), vi_row, acc1);
+//             acc0 = _mm256_fmadd_ps(gate_value(xptr.add(6), 6, p), vii_row, acc0);
+//             acc1 = _mm256_fmadd_ps(gate_value(xptr.add(7), 7, p), viii_row, acc1);
+//             _mm256_maskstore_ps(tptr, mask_n, _mm256_add_ps(acc1, acc0));
+//             xptr = xptr.add(s_x);
+//             tptr = tptr.add(s_t);
+//         }
+//     }
+// }
