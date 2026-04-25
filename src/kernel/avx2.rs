@@ -9,7 +9,7 @@ use std::arch::x86_64::{
     _mm256_unpacklo_pd, _mm256_unpacklo_ps, _mm256_broadcast_ss,
 };
 
-#[target_feature(enable = "avx,fma")]
+// #[inline(always)]
 pub fn kernel_mult_simd(
     mut xptr: *const f32,
     yptr: *const f32,
@@ -22,9 +22,10 @@ pub fn kernel_mult_simd(
     s_t: usize,
 ) {
     unsafe {
-        if (m | p | n) & (SIMD_WIDTH - 1) == 0 {
-            // kernel_mult_simd_aligned(xptr, yptr, tptr, m, s_x, s_y, s_t);
-            kernel_imult_simd(xptr, yptr, tptr, m, s_x, s_y, s_t);
+        if (m | n) & (SIMD_WIDTH - 1) == 0 {
+            kernel_imult_simd_aligned(xptr, yptr, tptr, p, s_x, s_y, s_t);
+        // if (p | n) & (SIMD_WIDTH - 1) == 0 {
+        //     kernel_mult_simd_aligned(xptr, yptr, tptr, m, s_x, s_y, s_t);
         } else {
             // avx2safe::kernel_mult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
             avx2safe::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
@@ -57,6 +58,7 @@ pub fn kernel_mult_simd_aligned(
             let mut acc1 = _mm256_loadu_ps(tptr);
             let mut acc0 = _mm256_setzero_ps();
             _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
+            _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
             // start with existing t for accumulation
             acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr), i_row, acc0);
             acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(1)), ii_row, acc1);
@@ -66,22 +68,15 @@ pub fn kernel_mult_simd_aligned(
             acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(5)), vi_row, acc1);
             acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(6)), vii_row, acc0);
             acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(7)), viii_row, acc1);
-            // acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr), i_row, acc0);
-            // acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(1)), ii_row, acc1);
-            // acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2)), iii_row, acc0);
-            // acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3)), iv_row, acc1);
-            // acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(4)), v_row, acc0);
-            // acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(5)), vi_row, acc1);
-            // acc0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(6)), vii_row, acc0);
-            // acc1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7)), viii_row, acc1);
             _mm256_storeu_ps(tptr, _mm256_add_ps(acc1, acc0));
             xptr = xptr.add(s_x);
             tptr = tptr.add(s_t);
         }
     }
 }
-#[target_feature(enable = "avx,fma")]
-pub fn kernel_imult_simd(
+// #[target_feature(enable = "avx,fma")]
+#[target_feature(enable = "avx,avx2,fma")]
+pub fn kernel_imult_simd_aligned(
     xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -112,14 +107,6 @@ pub fn kernel_imult_simd(
             vi_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(5 * s_x + k)), b, vi_row);
             vii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(6 * s_x + k)), b, vii_row);
             viii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(7 * s_x + k)), b, viii_row);
-            // i_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(k)), b, i_row);
-            // ii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(s_x + k)), b, ii_row);
-            // iii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2 * s_x + k)), b, iii_row);
-            // iv_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3 * s_x + k)), b, iv_row);
-            // v_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(4 * s_x + k)), b, v_row);
-            // vi_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(5 * s_x + k)), b, vi_row);
-            // vii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(6 * s_x + k)), b, vii_row);
-            // viii_row = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(7 * s_x + k)), b, viii_row);
             yptr = yptr.add(s_y);
         }
         _mm256_storeu_ps(tptr, i_row);
@@ -377,7 +364,7 @@ mod test_avx2_kernels {
             let mut y_simd = y.data.clone();
             let mut w = vec![0f32; 8 * 8];
             let mut t = vec![0f32; m * n];
-            kernel_imult_simd(
+            kernel_imult_simd_aligned(
                 x_simd.as_ptr(),
                 y_simd.as_ptr(),
                 t.as_mut_ptr(),

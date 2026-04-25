@@ -42,7 +42,8 @@ pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
     if m <= MINIKERN_GATE && p <= MINIKERN_GATE << 1 && n <= MINIKERN_GATE {
-        tensor_minikern(&x.data, &y.data, target, m, p, n)
+        // tensor_minikern(&x.data, &y.data, target, m, p, n)
+        tensor_outkern(&x.data, &y.data, target, m, p, n, p, n, n);
     } else {
         tensor_blockkern(&x.data, &y.data, target, m, p, n);
     }
@@ -145,6 +146,47 @@ fn pack(d: &[f32], pack: &mut [f32], re: usize, se: usize, block: usize, stride:
         }
     }
 }
+pub fn tensor_outkern(
+    x_d: &[f32],
+    y_d: &[f32],
+    t_d: &mut [f32],
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    unsafe {
+        let mut xoffset = 0;
+        let mut toffset = 0;
+        let mut yoffset = 0;
+        for i in (0..m).step_by(SIMD_WIDTH) {
+            let ii_end = SIMD_WIDTH.min(m - i);
+            yoffset = 0;
+                for j in (0..n).step_by(SIMD_WIDTH) {
+                    let jj_end = SIMD_WIDTH.min(n - j);
+                    kernel_mult(
+                        x_d.get_unchecked(xoffset..),
+                        // y_d.get_unchecked(yoffset + j..),
+                        y_d.get_unchecked(j ..),
+                        // y_d.get_unchecked(j..),
+                        t_d.get_unchecked_mut(toffset + j..),
+                        ii_end,
+                        p,
+                        jj_end,
+                        s_x,
+                        s_y,
+                        s_t,
+                    );
+                    // yoffset += SIMD_WIDTH * n;
+                }
+                // yoffset += SIMD_WIDTH * s_y;
+            toffset += SIMD_WIDTH * s_t;
+            xoffset += SIMD_WIDTH * s_x;
+        }
+    }
+}
 
 pub fn tensor_newkern(
     x_d: &[f32],
@@ -190,13 +232,60 @@ pub fn tensor_newkern(
 
 #[cfg(test)]
 mod test_kernel_block {
-    use crate::algebra::bmethods::tensor_blockkern;
+    use crate::algebra::bmethods::{tensor_blockkern, tensor_outkern};
     use crate::algebra::ndmethods::basic_mult;
     use crate::arch::SIMD_WIDTH;
     use crate::equality::approximate::approx_vector_eq;
     use crate::random::generation::generate_random_matrix;
     use crate::structure::ndarray::NdArray;
 
+    #[test]
+    fn test_outkern_equivalence() {
+        let ikj = [
+            (1, 1, 1),
+            (8, 1, 1),
+            (1, 8, 1),
+            (1, 1, 8),
+            (6, 4, 8),
+            (6, 8, 4),
+            (4, 6, 8),
+            (4, 8, 6),
+            (8, 4, 6),
+            (8, 6, 4),
+            (8, 8, 8),
+            (16, 16, 16),
+            (32, 32, 32),
+            (64, 64, 64),
+            // (512, 512, 512),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        ];
+        for (i, k, j) in ikj {
+            println!("(i: {i:?}, k: {k:?}, j: {j:})");
+            test_outkern_equivalence_mkn(i, k, j);
+        }
+    }
+    fn test_outkern_equivalence_mkn(m: usize, p: usize, n: usize) {
+        let x = generate_random_matrix(m, p);
+        let y = generate_random_matrix(p, n);
+        let mut result = vec![0f32; m * n];
+        let expected = basic_mult(&x, &y);
+        tensor_outkern(&x.data, &y.data, &mut result, m, p, n, p, n, n);
+        let inspect = NdArray {
+            dims: vec![m, n],
+            data: result.clone(),
+        };
+        // println!("expected {expected:?}");
+        // println!("actual {inspect:?}");
+        assert!(approx_vector_eq(&expected.data, &result[..m * n]));
+        println!("passed");
+    }
     #[test]
     fn test_blockkern_equivalence() {
         let ikj = [
@@ -223,7 +312,7 @@ mod test_kernel_block {
             (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
         ];
         for (i, k, j) in ikj {
-            println!("(i: {i:?}, k: {k:?}, j: {j:})");
+            // println!("(i: {i:?}, k: {k:?}, j: {j:})");
             test_blockkern_equivalence_mkn(i, k, j);
         }
     }
