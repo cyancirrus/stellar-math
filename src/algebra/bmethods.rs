@@ -160,17 +160,13 @@ pub fn tensor_outkern(
     unsafe {
         let mut xoffset = 0;
         let mut toffset = 0;
-        let mut yoffset = 0;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
-            yoffset = 0;
                 for j in (0..n).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(n - j);
                     kernel_mult(
                         x_d.get_unchecked(xoffset..),
-                        // y_d.get_unchecked(yoffset + j..),
                         y_d.get_unchecked(j ..),
-                        // y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
                         ii_end,
                         p,
@@ -179,9 +175,7 @@ pub fn tensor_outkern(
                         s_y,
                         s_t,
                     );
-                    // yoffset += SIMD_WIDTH * n;
                 }
-                // yoffset += SIMD_WIDTH * s_y;
             toffset += SIMD_WIDTH * s_t;
             xoffset += SIMD_WIDTH * s_x;
         }
