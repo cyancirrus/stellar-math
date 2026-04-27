@@ -9,19 +9,21 @@ use std::cell::RefCell;
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 
 /// Cache Kern
-// const LC: usize = 64; // l1 cachesize
-// const MC: usize = 8; // l1 cachesize
-// const PC: usize = 512; // l2 cachesize
-// const NC: usize = 256; // to be tuned
+// const LC: usize = 64;
+// const MC: usize = 8;
+// const PC: usize = 512;
+// const NC: usize = 256;
 
 
-
-// /// Block Kern
-const LC: usize = 64; // l2 cachesize
-const MC: usize = 64; // l2 cachesize
-const PC: usize = 512; // l1 cachesize
-const NC: usize = 64; // to be tuned
-
+// Block
+// const LC: usize = 32;
+// const MC: usize = 32;
+// const PC: usize = 256;
+// const NC: usize = 128;
+const LC: usize = 64;
+const MC: usize = 64;
+const PC: usize = 256;
+const NC: usize = 128;
 
 ///  tensor_kernel
 ///  - accumulates the multiplication into the target matrix
@@ -30,8 +32,9 @@ const NC: usize = 64; // to be tuned
 pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
-    if m <= MINIKERN_GATE && p <= MINIKERN_GATE << 1 && n <= MINIKERN_GATE {
-        tensor_outkern(&x.data, &y.data, target, m, p, n, p, n, n);
+    // if m <= MINIKERN_GATE && p <= MINIKERN_GATE << 1 && n <= MINIKERN_GATE {
+    if m <= MINIKERN_GATE && n <= MINIKERN_GATE {
+        tensor_contraction(&x.data, &y.data, target, m, p, n, p, n, n);
     } else {
         tensor_blockkern(&x.data, &y.data, target, m, p, n);
         // tensor_cachekern(&x.data, &y.data, target, m, p, n);
@@ -79,7 +82,7 @@ pub fn tensor_cachekern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
                                 PC,
                                 p,
                             );
-                            tensor_outkern(
+                            tensor_contraction(
                                 &x_pack,
                                 &y_pack,
                                 &mut t[mc * n + nc..mc * n + ma * n],
@@ -96,6 +99,38 @@ pub fn tensor_cachekern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
             })
         });
 }
+// pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
+//     // suffix c: chunk, suffix a: actual
+//     t_d.par_chunks_mut(LC * n)
+//         .zip(x_d.par_chunks(LC * p))
+//         .for_each(|(t, x)| {
+//             PACK.with(|workspace_cell| {
+//                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
+//                 let (mut xoffset, mut yoffset, mut toffset) = (0, 0, 0);
+//                 let rows = x.len() / p;
+//                 for nc in (0..n).step_by(NC) {
+//                     let na = (n - nc).min(NC);
+//                     xoffset = 0;
+//                     toffset = 0;
+//                     for mc in (0..rows).step_by(MC) {
+//                         let ma = (rows - mc).min(MC);
+//                         t_accum.fill(0f32);
+//                         yoffset = 0;
+//                         for pc in (0..p).step_by(PC) {
+//                             let pa = (p - pc).min(PC);
+//                             pack(&y_d[yoffset + nc.. yoffset + pa * n], y_pack, pa, na, NC, n);
+//                             pack(&x[xoffset + pc..xoffset + ma * p], x_pack, ma, pa, PC, p);
+//                             tensor_contraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
+//                             yoffset += PC * n;
+//                         }
+//                         unpack(&mut t[toffset + nc..toffset + ma * n], &t_accum, ma, na, NC, n);
+//                         xoffset += MC * p;
+//                         toffset += MC * n;
+//                     }
+//                 }
+//             })
+//         });
+// }
 pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
     // suffix c: chunk, suffix a: actual
     t_d.par_chunks_mut(LC * n)
@@ -115,8 +150,7 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
                             let pa = (p - pc).min(PC);
                             pack(&y_d[yoffset + nc.. yoffset + pa * n], y_pack, pa, na, NC, n);
                             pack(&x[xoffset + pc..xoffset + ma * p], x_pack, ma, pa, PC, p);
-                            // tensor_newkern(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
-                            tensor_outkern(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
+                            tensor_contraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
                             yoffset += PC * n;
                         }
                         unpack(&mut t[toffset + nc..toffset + ma * n], &t_accum, ma, na, NC, n);
@@ -171,7 +205,7 @@ fn unpack(d: &mut [f32], pack:&[f32], re:usize, se:usize, s_b:usize, s_d:usize) 
         }
     }
 }
-pub fn tensor_outkern(
+pub fn tensor_contraction(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
@@ -206,52 +240,9 @@ pub fn tensor_outkern(
         }
     }
 }
-
-pub fn tensor_newkern(
-    x_d: &[f32],
-    y_d: &[f32],
-    t_d: &mut [f32],
-    m: usize,
-    p: usize,
-    n: usize,
-    s_x: usize,
-    s_y: usize,
-    s_t: usize,
-) {
-    unsafe {
-        let mut xoffset = 0;
-        let mut toffset = 0;
-        let mut yoffset;
-        for i in (0..m).step_by(SIMD_WIDTH) {
-            let ii_end = SIMD_WIDTH.min(m - i);
-            yoffset = 0;
-            for k in (0..p).step_by(SIMD_WIDTH) {
-                let kk_end = SIMD_WIDTH.min(p - k);
-                for j in (0..n).step_by(SIMD_WIDTH) {
-                    let jj_end = SIMD_WIDTH.min(n - j);
-                    kernel_mult(
-                        x_d.get_unchecked(xoffset + k..),
-                        y_d.get_unchecked(yoffset + j..),
-                        t_d.get_unchecked_mut(toffset + j..),
-                        ii_end,
-                        kk_end,
-                        jj_end,
-                        s_x,
-                        s_y,
-                        s_t,
-                    );
-                }
-                yoffset += SIMD_WIDTH * s_y;
-            }
-            toffset += SIMD_WIDTH * s_t;
-            xoffset += SIMD_WIDTH * s_x;
-        }
-    }
-}
-
 #[cfg(test)]
 mod test_kernel_block {
-    use crate::algebra::bmethods::{tensor_blockkern, tensor_cachekern, tensor_outkern};
+    use crate::algebra::bmethods::{tensor_blockkern, tensor_cachekern, tensor_contraction};
     use crate::algebra::ndmethods::basic_mult;
     use crate::arch::SIMD_WIDTH;
     use crate::equality::approximate::approx_vector_eq;
@@ -293,7 +284,7 @@ mod test_kernel_block {
         let y = generate_random_matrix(p, n);
         let mut result = vec![0f32; m * n];
         let expected = basic_mult(&x, &y);
-        tensor_outkern(&x.data, &y.data, &mut result, m, p, n, p, n, n);
+        tensor_contraction(&x.data, &y.data, &mut result, m, p, n, p, n, n);
         // let inspect = NdArray {
         //     dims: vec![m, n],
         //     data: result.clone(),
