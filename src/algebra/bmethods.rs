@@ -7,19 +7,7 @@ use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
 
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
-
-/// Cache Kern
-// const LC: usize = 64;
-// const MC: usize = 8;
-// const PC: usize = 512;
-// const NC: usize = 256;
-
-
-// Block
-// const LC: usize = 32;
-// const MC: usize = 32;
-// const PC: usize = 256;
-// const NC: usize = 128;
+// NOTE: could set these as cache sizes so threads reflect the amount of work
 const LC: usize = 64;
 const MC: usize = 64;
 const PC: usize = 256;
@@ -28,21 +16,20 @@ const NC: usize = 128;
 ///  tensor_kernel
 ///  - accumulates the multiplication into the target matrix
 ///  - t += x * y
-// #[inline(always)]
+#[inline(always)]
 pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
-    // if m <= MINIKERN_GATE && p <= MINIKERN_GATE << 1 && n <= MINIKERN_GATE {
     if m <= MINIKERN_GATE && n <= MINIKERN_GATE {
         tensor_contraction(&x.data, &y.data, target, m, p, n, p, n, n);
     } else {
         tensor_blockkern(&x.data, &y.data, target, m, p, n);
-        // tensor_cachekern(&x.data, &y.data, target, m, p, n);
     }
 }
 
-///  tensor_kernel into
-///   - returns x * y
+///  tensor_kernel_into
+///  # not accumulated
+///   - returns t = x * y
 #[inline(always)]
 pub fn tensor_kernel_into(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     target.fill(0f32);
@@ -52,85 +39,6 @@ pub fn tensor_kernel_into(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }
-pub fn tensor_cachekern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
-    // suffix c: chunk, suffix a: actual
-    t_d.par_chunks_mut(LC * n)
-        .zip(x_d.par_chunks(LC * p))
-        .for_each(|(t, x)| {
-            PACK.with(|workspace_cell| {
-                let (x_pack, y_pack, _) = &mut *workspace_cell.borrow_mut();
-                let rows = x.len() / p;
-                for nc in (0..n).step_by(NC) {
-                    let na = (n - nc).min(NC);
-                    for pc in (0..p).step_by(PC) {
-                        let pa = (p - pc).min(PC);
-                        pack(
-                            &y_d[pc * n + nc..pc * n + pa * n],
-                            y_pack,
-                            pa,
-                            na,
-                            NC,
-                            n,
-                        );
-                        for mc in (0..rows).step_by(MC) {
-                            let ma = (rows - mc).min(MC);
-                            pack(
-                                &x[mc * p + pc..mc * p + ma * p],
-                                x_pack,
-                                ma,
-                                pa,
-                                PC,
-                                p,
-                            );
-                            tensor_contraction(
-                                &x_pack,
-                                &y_pack,
-                                &mut t[mc * n + nc..mc * n + ma * n],
-                                ma,
-                                pa,
-                                na,
-                                PC,
-                                NC,
-                                n,
-                            );
-                        }
-                    }
-                }
-            })
-        });
-}
-// pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
-//     // suffix c: chunk, suffix a: actual
-//     t_d.par_chunks_mut(LC * n)
-//         .zip(x_d.par_chunks(LC * p))
-//         .for_each(|(t, x)| {
-//             PACK.with(|workspace_cell| {
-//                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-//                 let (mut xoffset, mut yoffset, mut toffset) = (0, 0, 0);
-//                 let rows = x.len() / p;
-//                 for nc in (0..n).step_by(NC) {
-//                     let na = (n - nc).min(NC);
-//                     xoffset = 0;
-//                     toffset = 0;
-//                     for mc in (0..rows).step_by(MC) {
-//                         let ma = (rows - mc).min(MC);
-//                         t_accum.fill(0f32);
-//                         yoffset = 0;
-//                         for pc in (0..p).step_by(PC) {
-//                             let pa = (p - pc).min(PC);
-//                             pack(&y_d[yoffset + nc.. yoffset + pa * n], y_pack, pa, na, NC, n);
-//                             pack(&x[xoffset + pc..xoffset + ma * p], x_pack, ma, pa, PC, p);
-//                             tensor_contraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
-//                             yoffset += PC * n;
-//                         }
-//                         unpack(&mut t[toffset + nc..toffset + ma * n], &t_accum, ma, na, NC, n);
-//                         xoffset += MC * p;
-//                         toffset += MC * n;
-//                     }
-//                 }
-//             })
-//         });
-// }
 pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
     // suffix c: chunk, suffix a: actual
     t_d.par_chunks_mut(LC * n)
@@ -144,16 +52,31 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
                     let ma = (rows - mc).min(MC);
                     for nc in (0..n).step_by(NC) {
                         let na = (n - nc).min(NC);
-                        t_accum.fill(0f32);
                         yoffset = 0;
+                        t_accum.fill(0f32);
                         for pc in (0..p).step_by(PC) {
                             let pa = (p - pc).min(PC);
-                            pack(&y_d[yoffset + nc.. yoffset + pa * n], y_pack, pa, na, NC, n);
+                            pack(&y_d[yoffset + nc..yoffset + pa * n], y_pack, pa, na, NC, n);
                             pack(&x[xoffset + pc..xoffset + ma * p], x_pack, ma, pa, PC, p);
                             tensor_contraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
                             yoffset += PC * n;
                         }
-                        unpack(&mut t[toffset + nc..toffset + ma * n], &t_accum, ma, na, NC, n);
+                        pack(
+                            &t_accum,
+                            &mut t[toffset + nc..toffset + ma * n],
+                            ma,
+                            na,
+                            n,
+                            NC,
+                        );
+                        // unpack(
+                        //     &mut t[toffset + nc..toffset + ma * n],
+                        //     &t_accum,
+                        //     ma,
+                        //     na,
+                        //     NC,
+                        //     n,
+                        // );
                     }
                     xoffset += MC * p;
                     toffset += MC * n;
@@ -183,7 +106,7 @@ fn pack(d: &[f32], pack: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usiz
         }
     }
 }
-/// # unpack transfers a copy from pack to d 
+/// # unpack transfers a copy from pack to d
 /// - d ~ M(r, s)
 ///
 /// * d: contains the source data of x sliced to begin at mc
@@ -192,19 +115,19 @@ fn pack(d: &[f32], pack: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usiz
 /// * se: size of the s-block
 /// * s_b: stride of block
 /// * s_d: stride of the matrix d
-#[inline(always)]
-fn unpack(d: &mut [f32], pack:&[f32], re:usize, se:usize, s_b:usize, s_d:usize) {
-    unsafe {
-        let mut boffset = 0;
-        let mut doffset = 0;
-        for _ in 0..re {
-            d.get_unchecked_mut(doffset..doffset + se)
-                .copy_from_slice(&pack.get_unchecked(boffset..boffset + se));
-            boffset += s_b;
-            doffset += s_d;
-        }
-    }
-}
+// #[inline(always)]
+// fn unpack(d: &mut [f32], pack: &[f32], re: usize, se: usize, s_b: usize, s_d: usize) {
+//     unsafe {
+//         let mut boffset = 0;
+//         let mut doffset = 0;
+//         for _ in 0..re {
+//             d.get_unchecked_mut(doffset..doffset + se)
+//                 .copy_from_slice(&pack.get_unchecked(boffset..boffset + se));
+//             boffset += s_b;
+//             doffset += s_d;
+//         }
+//     }
+// }
 pub fn tensor_contraction(
     x_d: &[f32],
     y_d: &[f32],
@@ -242,7 +165,7 @@ pub fn tensor_contraction(
 }
 #[cfg(test)]
 mod test_kernel_block {
-    use crate::algebra::bmethods::{tensor_blockkern, tensor_cachekern, tensor_contraction};
+    use crate::algebra::bmethods::{tensor_blockkern, tensor_contraction};
     use crate::algebra::ndmethods::basic_mult;
     use crate::arch::SIMD_WIDTH;
     use crate::equality::approximate::approx_vector_eq;
@@ -323,7 +246,6 @@ mod test_kernel_block {
         ];
         for (i, k, j) in ikj {
             println!("(i: {i:?}, k: {k:?}, j: {j:})");
-            test_cachekern_equivalence_mkn(i, k, j);
             test_blockkern_equivalence_mkn(i, k, j);
         }
     }
@@ -333,20 +255,6 @@ mod test_kernel_block {
         let mut result = vec![0f32; m * n];
         let expected = basic_mult(&x, &y);
         tensor_blockkern(&x.data, &y.data, &mut result, m, k, n);
-        let inspect = NdArray {
-            dims: vec![m, n],
-            data: result.clone(),
-        };
-        // println!("expected {expected:?}");
-        // println!("actual {inspect:?}");
-        assert!(approx_vector_eq(&expected.data, &result[..m * n]));
-    }
-    fn test_cachekern_equivalence_mkn(m: usize, k: usize, n: usize) {
-        let x = generate_random_matrix(m, k);
-        let y = generate_random_matrix(k, n);
-        let mut result = vec![0f32; m * n];
-        let expected = basic_mult(&x, &y);
-        tensor_cachekern(&x.data, &y.data, &mut result, m, k, n);
         let inspect = NdArray {
             dims: vec![m, n],
             data: result.clone(),
