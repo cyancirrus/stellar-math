@@ -23,12 +23,16 @@ pub fn kernel_mult_simd(
 ) {
     unsafe {
         if (m | n) & (SIMD_WIDTH - 1) == 0 {
-            kernel_imult_simd_aligned(xptr, yptr, tptr, p, s_x, s_y, s_t);
-        // if (p | n) & (SIMD_WIDTH - 1) == 0 {
-        //     kernel_mult_simd_aligned(xptr, yptr, tptr, m, s_x, s_y, s_t);
-        } else {
+            kernel_imult_simd_aligned(xptr, yptr, tptr, p, s_x, s_y, s_t);}
+        else {
+            if (p | n) & (SIMD_WIDTH - 1) == 0 {
+            kernel_mult_simd_aligned(xptr, yptr, tptr, m, s_x, s_y, s_t);
+            }
+
+         else {
             // avx2safe::kernel_mult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
             avx2safe::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        }
         }
     }
 }
@@ -58,7 +62,7 @@ pub fn kernel_mult_simd_aligned(
             let mut acc1 = _mm256_loadu_ps(tptr);
             let mut acc0 = _mm256_setzero_ps();
             _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
-            _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
+            // _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
             // start with existing t for accumulation
             acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr), i_row, acc0);
             acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(1)), ii_row, acc1);

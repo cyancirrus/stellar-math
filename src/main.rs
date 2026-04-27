@@ -13,9 +13,10 @@
 // 2. Blog redesign       ← makes everything else findable
 // 3. Triangle kernel     ← 2hrs, unblocks LQ block
 // 4. Trait refactor      ← important but least urgent
+use stellar::arch::SIMD_WIDTH;
+
 use stellar::algebra::mmethods::tensor_minikern;
 use stellar::algebra::ndmethods::basic_mult;
-use stellar::arch::SIMD_WIDTH;
 use stellar::equality::approximate::approx_vector_eq;
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
