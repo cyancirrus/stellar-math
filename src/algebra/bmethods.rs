@@ -8,31 +8,17 @@ use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
 
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
+
 // const LC: usize = 32; // l2 cachesize
-// const MC: usize = 16; // l2 cachesize
-// const PC: usize = 8; // l1 cachesize
-// const NC: usize = 512; // to be tuned
-
-// const LC: usize = 16; // l2 cachesize
-// const MC: usize = 16; // l2 cachesize
-// const PC: usize = 1024; // l1 cachesize
-// const NC: usize = 128; // to be tuned
-
-// const LC: usize = 16; // l2 cachesize
-// const MC: usize = 16; // l2 cachesize
-// const PC: usize = 512; // l1 cachesize
-// const NC: usize = 128; // to be tuned
-
-// THIS IS FOR THE TARGET CACHE
-// const LC: usize = 64; // l2 cachesize
-// const MC: usize = 64; // l2 cachesize
-// const PC: usize = 128; // l1 cachesize
+// const MC: usize = 32; // l2 cachesize
+// const PC: usize = 256; // l1 cachesize
 // const NC: usize = 128; // to be tuned
 
 const LC: usize = 64; // l2 cachesize
 const MC: usize = 64; // l2 cachesize
-const PC: usize = 16; // l1 cachesize
-const NC: usize = 128; // to be tuned
+// const PC: usize = 128; // l1 cachesize
+const PC: usize = 1024; // l1 cachesize
+const NC: usize = 256; // to be tuned
 
 ///  tensor_kernel
 ///  - accumulates the multiplication into the target matrix
@@ -59,6 +45,31 @@ pub fn tensor_kernel_into(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
+}
+
+pub fn tensor_cachekern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
+    // suffix c: chunk, suffix a: actual
+    t_d.par_chunks_mut(LC * n)
+        .zip(x_d.par_chunks(LC * p))
+        .for_each(|(t, x)| {
+            PACK.with(|workspace_cell| {
+                let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
+                let rows = x.len() / p;
+                for nc in (0..n).step_by(NC) {
+                    let na = (n - nc).min(NC);
+                    for pc in (0..p).step_by(PC) {
+                        let pa = (p - pc).min(PC);
+                        pack(&y_d[pc * n + nc..], y_pack, pa, na, NC, n);
+                        for mc in (0..rows).step_by(MC) {
+                            t_accum.fill(0f32);
+                            let ma = (rows - mc).min(MC);
+                            pack(&x[mc * p + pc..], x_pack, ma, pa, PC, p);
+                            tensor_outkern(&x_pack, &y_pack, &mut t[mc * n + nc..], ma, pa, na, PC, NC, n);
+                        }
+                    }
+                }
+            })
+        });
 }
 
 pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
@@ -162,20 +173,20 @@ pub fn tensor_outkern(
         let mut toffset = 0;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
-                for j in (0..n).step_by(SIMD_WIDTH) {
-                    let jj_end = SIMD_WIDTH.min(n - j);
-                    kernel_mult(
-                        x_d.get_unchecked(xoffset..),
-                        y_d.get_unchecked(j ..),
-                        t_d.get_unchecked_mut(toffset + j..),
-                        ii_end,
-                        p,
-                        jj_end,
-                        s_x,
-                        s_y,
-                        s_t,
-                    );
-                }
+            for j in (0..n).step_by(SIMD_WIDTH) {
+                let jj_end = SIMD_WIDTH.min(n - j);
+                kernel_mult(
+                    x_d.get_unchecked(xoffset..),
+                    y_d.get_unchecked(j..),
+                    t_d.get_unchecked_mut(toffset + j..),
+                    ii_end,
+                    p,
+                    jj_end,
+                    s_x,
+                    s_y,
+                    s_t,
+                );
+            }
             toffset += SIMD_WIDTH * s_t;
             xoffset += SIMD_WIDTH * s_x;
         }
@@ -294,7 +305,9 @@ mod test_kernel_block {
             (8, 6, 4),
             (8, 8, 8),
             (16, 16, 16),
-            // (512, 512, 512),
+            (1024, 64, 1024),
+            (256, 1024, 512),
+            (512, 512, 512),
             (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
             (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
             (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),

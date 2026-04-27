@@ -1,7 +1,8 @@
 // #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use std::arch::x86_64::{
-    __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_fmadd_ps, _mm256_loadu_si256,
-    _mm256_maskload_ps, _mm256_maskstore_ps, _mm256_setzero_ps, _mm256_broadcast_ss, _mm256_set1_epi32, _mm256_and_ps, _mm256_castsi256_ps
+    __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_and_ps, _mm256_broadcast_ss,
+    _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_si256, _mm256_maskload_ps,
+    _mm256_maskstore_ps, _mm256_set1_epi32, _mm256_setzero_ps,
 };
 
 // negative 1 is twos complement so all bits active
@@ -18,29 +19,29 @@ const MASK:[[i32;8];9] = [
     [-1, -1, -1, -1, -1, -1, -1, -1],
 ];
 
-unsafe fn gate_row(ptr: *const f32, ctrl:i32, mask: __m256i) -> __m256 {
+unsafe fn gate_row(ptr: *const f32, ctrl: i32, mask: __m256i) -> __m256 {
     static ZEROS: [f32; 8] = [0f32; 8];
     unsafe {
-        let safe_ptr = if ctrl == 0 {
-            ZEROS.as_ptr()
-        } else {
-            ptr
-        };
+        let safe_ptr = if ctrl == 0 { ZEROS.as_ptr() } else { ptr };
         _mm256_maskload_ps(safe_ptr, mask)
     }
 }
-unsafe fn sgate_row(ptr: *mut f32, ctrl:i32, mask: __m256i, data: __m256) {
+unsafe fn sgate_row(ptr: *mut f32, ctrl: i32, mask: __m256i, data: __m256) {
     unsafe {
-        if ctrl == 0 { return; }
+        if ctrl == 0 {
+            return;
+        }
         _mm256_maskstore_ps(ptr, mask, data);
     }
 }
 unsafe fn gate_value(ptr: *const f32, mask_bit: i32) -> __m256 {
     // f32 & mask bit
     unsafe {
-        _mm256_and_ps(_mm256_broadcast_ss(&*ptr),  _mm256_castsi256_ps(_mm256_set1_epi32(mask_bit)))
+        _mm256_and_ps(
+            _mm256_broadcast_ss(&*ptr),
+            _mm256_castsi256_ps(_mm256_set1_epi32(mask_bit)),
+        )
     }
-
 }
 
 #[target_feature(enable = "avx,avx2,fma")]

@@ -23,5 +23,4 @@ use stellar::structure::ndarray::NdArray;
 
 // contract over the k dimension for matmul
 
-fn main() {
-}
+fn main() {}
