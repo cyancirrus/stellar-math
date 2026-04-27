@@ -33,34 +33,6 @@ pub fn kernel_mult_simd(
     }
 }
 
-// // #[inline(always)]
-// pub fn kernel_mult_simd(
-//     mut xptr: *const f32,
-//     yptr: *const f32,
-//     mut tptr: *mut f32,
-//     m: usize,
-//     p: usize,
-//     n: usize,
-//     s_x: usize,
-//     s_y: usize,
-//     s_t: usize,
-// ) {
-//     unsafe {
-//         if (m | n) & (SIMD_WIDTH - 1) == 0 {
-//             kernel_imult_simd_aligned(xptr, yptr, tptr, p, s_x, s_y, s_t);}
-//         else {
-//             if (p | n) & (SIMD_WIDTH - 1) == 0 {
-//             kernel_mult_simd_aligned(xptr, yptr, tptr, m, s_x, s_y, s_t);
-//             }
-
-//          else {
-//             avx2safe::kernel_mult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-//             // avx2safe::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-//         }
-//         }
-//     }
-// }
-// #[target_feature(enable = "avx,fma")]
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_mult_simd_aligned(
     mut xptr: *const f32,
@@ -86,7 +58,7 @@ pub fn kernel_mult_simd_aligned(
             let mut acc1 = _mm256_loadu_ps(tptr);
             let mut acc0 = _mm256_setzero_ps();
             _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
-            // _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
+            _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
             // start with existing t for accumulation
             acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr), i_row, acc0);
             acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(1)), ii_row, acc1);
@@ -102,7 +74,6 @@ pub fn kernel_mult_simd_aligned(
         }
     }
 }
-// #[target_feature(enable = "avx,fma")]
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_imult_simd_aligned(
     xptr: *const f32,
@@ -189,7 +160,6 @@ pub fn kernel_trans_simd(mut tptr: *mut f32) {
         _mm256_storeu_ps(tptr.add(8 * 7), _mm256_permute2f128_ps(q3, q7, 0x31));
     }
 }
-
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_wmult_simd(
     mut xptr: *const f32,
@@ -236,7 +206,6 @@ pub fn kernel_wmult_simd(
         _mm256_storeu_ps(tptr.add(3 * s_t + 8), iv_row_1);
     }
 }
-
 #[target_feature(enable = "avx,fma")]
 pub fn kernel_ut_mult_simd(
     x: &[f32],

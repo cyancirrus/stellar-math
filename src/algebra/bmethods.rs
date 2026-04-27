@@ -21,7 +21,7 @@ const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
  const LC: usize = 64; // l2 cachesize
  const MC: usize = 64; // l2 cachesize
 const PC: usize = 1024; // l1 cachesize
-const NC: usize = 256; // to be tuned
+const NC: usize = 64; // to be tuned
 // const LC: usize = 64; // l2 cachesize
 // const MC: usize = 64; // l2 cachesize
 // const PC: usize = 256; // l1 cachesize
@@ -111,6 +111,7 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let rows = x.len() / p;
+                // let (mut xoffset, mut yoffset, mut toffset) = (0, 0, 0);
                 for mc in (0..rows).step_by(MC) {
                     let ma = (rows - mc).min(MC);
                     for nc in (0..n).step_by(NC) {
@@ -120,7 +121,10 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
                             let pa = (p - pc).min(PC);
                             pack(&y_d[pc * n + nc.. pc * n + pa * n], y_pack, pa, na, NC, n);
                             pack(&x[mc * p + pc.. mc * p + ma * p], x_pack, ma, pa, PC, p);
+                            // pack(&y_d[pc * n + nc..], y_pack, pa, na, NC, n);
+                            // pack(&x[mc * p + pc..], x_pack, ma, pa, PC, p);
                             tensor_newkern(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
+                            // yoffset += PC * n;
                         }
                         for k in 0..ma {
                             let trow = &t_accum[k * NC..k * NC + na];
@@ -128,6 +132,7 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
                             tout.copy_from_slice(trow);
                         }
                     }
+                    // xoffset += MC * P;
                 }
             })
         });
