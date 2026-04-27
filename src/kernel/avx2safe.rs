@@ -189,7 +189,6 @@ mod test_safe_kernels {
             assert!(approx_vector_eq(&expect.data, &t));
             let mut x_simd = x.data.clone();
             let mut y_simd = y.data.clone();
-            let mut w = vec![0f32; 8 * 8];
             let mut t = vec![0f32; m * n];
             kernel_imult_safe(
                 x_simd.as_ptr(),
