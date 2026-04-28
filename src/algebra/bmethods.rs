@@ -77,49 +77,28 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
         });
 }
 /// # pack transfers a copy of data from d to pack
+/// * to inverse simply exchange d and b
 /// - d ~ M(r, s)
 ///
 /// * d: contains the source data of x sliced to begin at mc
-/// * pack: contains the reused pack for the outer iteration loop
+/// * b: contains the target pack for the outer iteration loop
 /// * re: size of the r-block
 /// * se: size of the s-block
 /// * s_b: stride of block
 /// * s_d: stride of the matrix d
 #[inline(always)]
-fn pack(d: &[f32], pack: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usize) {
+fn pack(d: &[f32], b: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usize) {
     unsafe {
         let mut doffset = 0;
         let mut boffset = 0;
         for _ in 0..re {
-            pack.get_unchecked_mut(boffset..boffset + se)
+            b.get_unchecked_mut(boffset..boffset + se)
                 .copy_from_slice(&d.get_unchecked(doffset..doffset + se));
             boffset += s_b;
             doffset += s_d;
         }
     }
 }
-/// # unpack transfers a copy from pack to d
-/// - d ~ M(r, s)
-///
-/// * d: contains the source data of x sliced to begin at mc
-/// * pack: contains the reused pack for the outer iteration loop
-/// * re: size of the r-block
-/// * se: size of the s-block
-/// * s_b: stride of block
-/// * s_d: stride of the matrix d
-// #[inline(always)]
-// fn unpack(d: &mut [f32], pack: &[f32], re: usize, se: usize, s_b: usize, s_d: usize) {
-//     unsafe {
-//         let mut boffset = 0;
-//         let mut doffset = 0;
-//         for _ in 0..re {
-//             d.get_unchecked_mut(doffset..doffset + se)
-//                 .copy_from_slice(&pack.get_unchecked(boffset..boffset + se));
-//             boffset += s_b;
-//             doffset += s_d;
-//         }
-//     }
-// }
 pub fn tensor_contraction(
     x_d: &[f32],
     y_d: &[f32],

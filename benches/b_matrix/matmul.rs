@@ -76,22 +76,22 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
             //         );
             //     },
             // );
-            group.bench_with_input(
-                BenchmarkId::new("ndarray", &parameter),
-                &(i, j, k),
-                |b, &(i, j, k)| {
-                    b.iter_with_setup(
-                        || {
-                            let data_x = generate_random_matrix(i, k);
-                            let data_y = generate_random_matrix(k, j);
-                            let x = Array2::from_shape_vec((i, k), data_x.data).unwrap();
-                            let y = Array2::from_shape_vec((k, j), data_y.data).unwrap();
-                            (x, y)
-                        },
-                        |(x, y)| black_box(x.dot(&y)),
-                    );
-                },
-            );
+            // group.bench_with_input(
+            //     BenchmarkId::new("ndarray", &parameter),
+            //     &(i, j, k),
+            //     |b, &(i, j, k)| {
+            //         b.iter_with_setup(
+            //             || {
+            //                 let data_x = generate_random_matrix(i, k);
+            //                 let data_y = generate_random_matrix(k, j);
+            //                 let x = Array2::from_shape_vec((i, k), data_x.data).unwrap();
+            //                 let y = Array2::from_shape_vec((k, j), data_y.data).unwrap();
+            //                 (x, y)
+            //             },
+            //             |(x, y)| black_box(x.dot(&y)),
+            //         );
+            //     },
+            // );
             // group.bench_with_input(
             //     BenchmarkId::new("tensor_parkernel", &parameter),
             //     &(i, j, k),
@@ -126,8 +126,8 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
         }
         group.finish();
     };
-    run_bench("MatMul - Small", &S_MATRIX_ALIGNED);
-    run_bench("MatMul - Small Unaligned", &S_MATRIX_UNALIGNED);
-    // run_bench("MatMul - Medium", &M_MATRIX_DIMS);
-    // run_bench("MatMul - Large", &L_MATRIX_DIMS);
+    // run_bench("MatMul - Small", &S_MATRIX_ALIGNED);
+    // run_bench("MatMul - Small Unaligned", &S_MATRIX_UNALIGNED);
+    run_bench("MatMul - Medium", &M_MATRIX_DIMS);
+    run_bench("MatMul - Large", &L_MATRIX_DIMS);
 }

@@ -20,18 +20,18 @@ const MASK:[[i32;8];9] = [
 ];
 
 unsafe fn gate_row(ptr: *const f32, ctrl: i32, mask: __m256i) -> __m256 {
+
     static ZEROS: [f32; 8] = [0f32; 8];
     unsafe {
-        let safe_ptr = if ctrl == 0 { ZEROS.as_ptr() } else { ptr };
+        let safe_ptr = if ctrl != 0 { ptr } else { ZEROS.as_ptr() };
         _mm256_maskload_ps(safe_ptr, mask)
     }
 }
 unsafe fn sgate_row(ptr: *mut f32, ctrl: i32, mask: __m256i, data: __m256) {
     unsafe {
-        if ctrl == 0 {
-            return;
+        if ctrl != 0 {
+            _mm256_maskstore_ps(ptr, mask, data);
         }
-        _mm256_maskstore_ps(ptr, mask, data);
     }
 }
 unsafe fn gate_value(ptr: *const f32, mask_bit: i32) -> __m256 {
