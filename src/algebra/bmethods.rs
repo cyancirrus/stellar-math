@@ -10,7 +10,7 @@ const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // NOTE: could set these as cache sizes so threads reflect the amount of work
 const LC: usize = 64;
 const MC: usize = 64;
-const PC: usize = 256;
+const PC: usize = 512;
 const NC: usize = 128;
 
 ///  tensor_kernel
