@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_ALIGNED, S_MATRIX_UNALIGNED};
+use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_ALIGNED, S_MATRIX_UNALIGNED, L_MAT10S_DIMS, M_MAT10_DIMS};
 use criterion::{BenchmarkId, Criterion, Throughput};
 use faer::linalg::matmul::matmul;
 use faer::prelude::*;
@@ -128,6 +128,10 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
     };
     // run_bench("MatMul - Small", &S_MATRIX_ALIGNED);
     // run_bench("MatMul - Small Unaligned", &S_MATRIX_UNALIGNED);
+    // run_bench("MatMul - Medium", &M_MATRIX_DIMS);
+    // run_bench("MatMul - Large", &L_MATRIX_DIMS);
     run_bench("MatMul - Medium", &M_MATRIX_DIMS);
     run_bench("MatMul - Large", &L_MATRIX_DIMS);
+    run_bench("MatMul - Medium", &M_MAT10_DIMS);
+    run_bench("MatMul - Large", &L_MAT10S_DIMS);
 }
