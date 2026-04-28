@@ -63,12 +63,12 @@ pub fn kernel_mult_safe(
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
         let i_row = gate_row(yptr, mask_p[0], mask_n);
-        let ii_row = gate_row(yptr.add(s_y), mask_p[1], mask_n);
-        let iii_row = gate_row(yptr.add(s_y * 2), mask_p[2], mask_n);
-        let iv_row = gate_row(yptr.add(s_y * 3), mask_p[3], mask_n);
         let v_row = gate_row(yptr.add(s_y * 4), mask_p[4], mask_n);
+        let ii_row = gate_row(yptr.add(s_y), mask_p[1], mask_n);
         let vi_row = gate_row(yptr.add(s_y * 5), mask_p[5], mask_n);
+        let iii_row = gate_row(yptr.add(s_y * 2), mask_p[2], mask_n);
         let vii_row = gate_row(yptr.add(s_y * 6), mask_p[6], mask_n);
+        let iv_row = gate_row(yptr.add(s_y * 3), mask_p[3], mask_n);
         let viii_row = gate_row(yptr.add(s_y * 7), mask_p[7], mask_n);
         for _ in 0..m {
             let mut acc1 = _mm256_maskload_ps(tptr, mask_n);
@@ -77,12 +77,12 @@ pub fn kernel_mult_safe(
             // _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
             // start with existing t for accumulation
             acc0 = _mm256_fmadd_ps(gate_value(xptr, mask_p[0]), i_row, acc0);
-            acc1 = _mm256_fmadd_ps(gate_value(xptr.add(1), mask_p[1]), ii_row, acc1);
-            acc0 = _mm256_fmadd_ps(gate_value(xptr.add(2), mask_p[2]), iii_row, acc0);
-            acc1 = _mm256_fmadd_ps(gate_value(xptr.add(3), mask_p[3]), iv_row, acc1);
-            acc0 = _mm256_fmadd_ps(gate_value(xptr.add(4), mask_p[4]), v_row, acc0);
+            acc1 = _mm256_fmadd_ps(gate_value(xptr.add(4), mask_p[4]), v_row, acc1);
+            acc0 = _mm256_fmadd_ps(gate_value(xptr.add(1), mask_p[1]), ii_row, acc0);
             acc1 = _mm256_fmadd_ps(gate_value(xptr.add(5), mask_p[5]), vi_row, acc1);
-            acc0 = _mm256_fmadd_ps(gate_value(xptr.add(6), mask_p[6]), vii_row, acc0);
+            acc0 = _mm256_fmadd_ps(gate_value(xptr.add(2), mask_p[2]), iii_row, acc0);
+            acc1 = _mm256_fmadd_ps(gate_value(xptr.add(6), mask_p[6]), vii_row, acc1);
+            acc0 = _mm256_fmadd_ps(gate_value(xptr.add(3), mask_p[3]), iv_row, acc0);
             acc1 = _mm256_fmadd_ps(gate_value(xptr.add(7), mask_p[7]), viii_row, acc1);
             _mm256_maskstore_ps(tptr, mask_n, _mm256_add_ps(acc1, acc0));
             xptr = xptr.add(s_x);

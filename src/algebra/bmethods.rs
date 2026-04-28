@@ -69,14 +69,6 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
                             n,
                             NC,
                         );
-                        // unpack(
-                        //     &mut t[toffset + nc..toffset + ma * n],
-                        //     &t_accum,
-                        //     ma,
-                        //     na,
-                        //     NC,
-                        //     n,
-                        // );
                     }
                     xoffset += MC * p;
                     toffset += MC * n;

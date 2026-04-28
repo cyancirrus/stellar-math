@@ -34,7 +34,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     #[cfg(feature = "avx2")]
     group.bench_function("AVX2 Outer Kernel", |b_inner| {
         b_inner.iter(|| unsafe {
-            avx2::kernel_imult_simd(
+            avx2::kernel_imult_simd_aligned(
                 black_box(a.as_mut_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
