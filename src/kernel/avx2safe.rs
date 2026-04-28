@@ -73,8 +73,8 @@ pub fn kernel_mult_safe(
         for _ in 0..m {
             let mut acc1 = _mm256_maskload_ps(tptr, mask_n);
             let mut acc0 = _mm256_setzero_ps();
-            _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
-            _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
+            // _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
+            // _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
             // start with existing t for accumulation
             acc0 = _mm256_fmadd_ps(gate_value(xptr, mask_p[0]), i_row, acc0);
             acc1 = _mm256_fmadd_ps(gate_value(xptr.add(1), mask_p[1]), ii_row, acc1);
@@ -106,37 +106,38 @@ pub fn kernel_imult_safe(
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
-        let mask_m = MASK[m];
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
         let mut i_row = _mm256_maskload_ps(tptr, mask_n);
-        let mut ii_row = _mm256_maskload_ps(tptr.add(s_t), mask_n);
-        let mut iii_row = _mm256_maskload_ps(tptr.add(s_t * 2), mask_n);
-        let mut iv_row = _mm256_maskload_ps(tptr.add(s_t * 3), mask_n);
         let mut v_row = _mm256_maskload_ps(tptr.add(s_t * 4), mask_n);
+        let mut ii_row = _mm256_maskload_ps(tptr.add(s_t), mask_n);
         let mut vi_row = _mm256_maskload_ps(tptr.add(s_t * 5), mask_n);
+        let mut iii_row = _mm256_maskload_ps(tptr.add(s_t * 2), mask_n);
         let mut vii_row = _mm256_maskload_ps(tptr.add(s_t * 6), mask_n);
+        let mut iv_row = _mm256_maskload_ps(tptr.add(s_t * 3), mask_n);
         let mut viii_row = _mm256_maskload_ps(tptr.add(s_t * 7), mask_n);
+        let mask_m = MASK[m];
         for k in 0..p {
-            _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
+            // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
+            // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
             let b = _mm256_maskload_ps(yptr, mask_n);
             i_row = _mm256_fmadd_ps(gate_value(xptr.add(k), mask_m[0]), b, i_row);
-            ii_row = _mm256_fmadd_ps(gate_value(xptr.add(s_x + k), mask_m[1]), b, ii_row);
-            iii_row = _mm256_fmadd_ps(gate_value(xptr.add(2 * s_x + k), mask_m[2]), b, iii_row);
-            iv_row = _mm256_fmadd_ps(gate_value(xptr.add(3 * s_x + k), mask_m[3]), b, iv_row);
             v_row = _mm256_fmadd_ps(gate_value(xptr.add(4 * s_x + k), mask_m[4]), b, v_row);
+            ii_row = _mm256_fmadd_ps(gate_value(xptr.add(s_x + k), mask_m[1]), b, ii_row);
             vi_row = _mm256_fmadd_ps(gate_value(xptr.add(5 * s_x + k), mask_m[5]), b, vi_row);
+            iii_row = _mm256_fmadd_ps(gate_value(xptr.add(2 * s_x + k), mask_m[2]), b, iii_row);
             vii_row = _mm256_fmadd_ps(gate_value(xptr.add(6 * s_x + k), mask_m[6]), b, vii_row);
+            iv_row = _mm256_fmadd_ps(gate_value(xptr.add(3 * s_x + k), mask_m[3]), b, iv_row);
             viii_row = _mm256_fmadd_ps(gate_value(xptr.add(7 * s_x + k), mask_m[7]), b, viii_row);
             // accumulates k offset
             yptr = yptr.add(s_y);
         }
         sgate_row(tptr, mask_m[0], mask_n, i_row);
-        sgate_row(tptr.add(s_t), mask_m[1], mask_n, ii_row);
-        sgate_row(tptr.add(s_t * 2), mask_m[2], mask_n, iii_row);
-        sgate_row(tptr.add(s_t * 3), mask_m[3], mask_n, iv_row);
         sgate_row(tptr.add(s_t * 4), mask_m[4], mask_n, v_row);
+        sgate_row(tptr.add(s_t), mask_m[1], mask_n, ii_row);
         sgate_row(tptr.add(s_t * 5), mask_m[5], mask_n, vi_row);
+        sgate_row(tptr.add(s_t * 2), mask_m[2], mask_n, iii_row);
         sgate_row(tptr.add(s_t * 6), mask_m[6], mask_n, vii_row);
+        sgate_row(tptr.add(s_t * 3), mask_m[3], mask_n, iv_row);
         sgate_row(tptr.add(s_t * 7), mask_m[7], mask_n, viii_row);
     }
 }

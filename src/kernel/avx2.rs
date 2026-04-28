@@ -88,38 +88,48 @@ pub fn kernel_imult_simd_aligned(
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
         let mut i_row = _mm256_loadu_ps(tptr);
-        let mut ii_row = _mm256_loadu_ps(tptr.add(s_t));
-        let mut iii_row = _mm256_loadu_ps(tptr.add(s_t * 2));
-        let mut iv_row = _mm256_loadu_ps(tptr.add(s_t * 3));
         let mut v_row = _mm256_loadu_ps(tptr.add(s_t * 4));
+        let mut ii_row = _mm256_loadu_ps(tptr.add(s_t));
         let mut vi_row = _mm256_loadu_ps(tptr.add(s_t * 5));
+        let mut iii_row = _mm256_loadu_ps(tptr.add(s_t * 2));
         let mut vii_row = _mm256_loadu_ps(tptr.add(s_t * 6));
+        let mut iv_row = _mm256_loadu_ps(tptr.add(s_t * 3));
         let mut viii_row = _mm256_loadu_ps(tptr.add(s_t * 7));
         for k in 0..p {
-            _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
+            // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
+            // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
             let b = _mm256_loadu_ps(yptr);
             i_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(k)), b, i_row);
-            ii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(s_x + k)), b, ii_row);
-            iii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(2 * s_x + k)), b, iii_row);
-            iv_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(3 * s_x + k)), b, iv_row);
             v_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(4 * s_x + k)), b, v_row);
+            ii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(s_x + k)), b, ii_row);
             vi_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(5 * s_x + k)), b, vi_row);
+            iii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(2 * s_x + k)), b, iii_row);
             vii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(6 * s_x + k)), b, vii_row);
+            iv_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(3 * s_x + k)), b, iv_row);
             viii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(7 * s_x + k)), b, viii_row);
+            // i_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(k)), b, i_row);
+            // ii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(s_x + k)), b, ii_row);
+            // iii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(2 * s_x + k)), b, iii_row);
+            // iv_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(3 * s_x + k)), b, iv_row);
+            // v_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(4 * s_x + k)), b, v_row);
+            // vi_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(5 * s_x + k)), b, vi_row);
+            // vii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(6 * s_x + k)), b, vii_row);
+            // viii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(7 * s_x + k)), b, viii_row);
             yptr = yptr.add(s_y);
         }
         _mm256_storeu_ps(tptr, i_row);
-        _mm256_storeu_ps(tptr.add(s_t), ii_row);
-        _mm256_storeu_ps(tptr.add(s_t * 2), iii_row);
-        _mm256_storeu_ps(tptr.add(s_t * 3), iv_row);
         _mm256_storeu_ps(tptr.add(s_t * 4), v_row);
+        _mm256_storeu_ps(tptr.add(s_t), ii_row);
         _mm256_storeu_ps(tptr.add(s_t * 5), vi_row);
+        _mm256_storeu_ps(tptr.add(s_t * 2), iii_row);
         _mm256_storeu_ps(tptr.add(s_t * 6), vii_row);
+        _mm256_storeu_ps(tptr.add(s_t * 3), iv_row);
         _mm256_storeu_ps(tptr.add(s_t * 7), viii_row);
     }
 }
 #[rustfmt::skip]
 #[target_feature(enable = "avx,fma")]
+// pub fn kernel_trans_simd(mut tptr: *mut f32, mut wptr: *mut f32) {
 pub fn kernel_trans_simd(mut tptr: *mut f32) {
     unsafe {
         let r0 = _mm256_loadu_ps(tptr);
@@ -150,6 +160,14 @@ pub fn kernel_trans_simd(mut tptr: *mut f32) {
         let q7 = _mm256_castpd_ps(_mm256_unpackhi_pd( _mm256_castps_pd(t5), _mm256_castps_pd(t7),));
         
         // 0 low of arg 1, 1 high of arg 1, 2 low of arg 2, 3 high of arg 2
+        // _mm256_storeu_ps(wptr, _mm256_permute2f128_ps(q0, q4, 0x20));
+        // _mm256_storeu_ps(wptr.add(8), _mm256_permute2f128_ps(q0, q4, 0x31));
+        // _mm256_storeu_ps(wptr.add(8 * 2), _mm256_permute2f128_ps(q1, q5, 0x20));
+        // _mm256_storeu_ps(wptr.add(8 * 3), _mm256_permute2f128_ps(q1, q5, 0x31));
+        // _mm256_storeu_ps(wptr.add(8 * 4), _mm256_permute2f128_ps(q2, q6, 0x20));
+        // _mm256_storeu_ps(wptr.add(8 * 5), _mm256_permute2f128_ps(q2, q6, 0x31));
+        // _mm256_storeu_ps(wptr.add(8 * 6), _mm256_permute2f128_ps(q3, q7, 0x20));
+        // _mm256_storeu_ps(wptr.add(8 * 7), _mm256_permute2f128_ps(q3, q7, 0x31));
         _mm256_storeu_ps(tptr, _mm256_permute2f128_ps(q0, q4, 0x20));
         _mm256_storeu_ps(tptr.add(8), _mm256_permute2f128_ps(q0, q4, 0x31));
         _mm256_storeu_ps(tptr.add(8 * 2), _mm256_permute2f128_ps(q1, q5, 0x20));
