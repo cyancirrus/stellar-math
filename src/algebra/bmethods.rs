@@ -37,22 +37,8 @@ pub fn tensor_kernel_into(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 }
 /// (x - b).min(t)
 #[inline(always)]
-fn diff_min(x:usize, b:usize, t:usize) -> usize {
-    // if x.saturating_sub(t) > b  {
-    //     t
-    // } else {
-    //     x - b
-    // }
-    if x - b >= t  {
-        t
-    } else {
-        x - b
-    }
-    // if x > b + t {
-    //     t
-    // } else {
-    //     x - b
-    // }
+fn diff_min(x: usize, b: usize, t: usize) -> usize {
+    if x - b < t { x - b } else { t }
 }
 
 thread_local! {
@@ -65,29 +51,24 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
         .for_each(|(t, x)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let (dx, dy, dt) = (MC * p, PC * n, MC * n);
-                let (mut xend, mut yend, mut tend) ;
+                let (dx, dt, dy) = (MC * p, MC * n, PC * n);
+                let (mut xend, mut yend, mut tend);
                 let (mut xoffset, mut yoffset, mut toffset) = (0, 0, 0);
                 let rows = x.len() / p;
                 for mc in (0..rows).step_by(MC) {
                     let ma = diff_min(rows, mc, MC);
-                    // let ma = (rows - mc).min(MC);
                     (xend, tend) = (ma * p, ma * n);
                     for nc in (0..n).step_by(NC) {
-                        // let na = (n - nc).min(NC);
-                        let na = diff_min(n , nc, NC);
+                        let na = diff_min(n, nc, NC);
                         t_accum.fill(0f32);
                         yoffset = 0;
                         for pc in (0..p).step_by(PC) {
-                            // let pa = (p - pc).min(PC);
                             let pa = diff_min(p, pc, PC);
                             yend = pa * n;
-                            // pack(&y_d[yoffset + nc..yoffset + pa * n], y_pack, pa, na, NC, n);
-                            pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, n);
                             pack(&x[xoffset + pc..xoffset + xend], x_pack, ma, pa, PC, p);
+                            pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, n);
                             tensor_contraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
                             yoffset += dy;
-                            // yoffset += PC * n;
                         }
                         // unpack
                         pack(
@@ -101,8 +82,6 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
                     }
                     xoffset += dx;
                     toffset += dt;
-                    // xoffset += MC * p;
-                    // toffset += MC * n;
                 }
             })
         });

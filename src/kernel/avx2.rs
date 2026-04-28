@@ -76,7 +76,7 @@ pub fn kernel_mult_simd_aligned(
 }
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_imult_simd_aligned(
-    xptr: *const f32,
+    mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
     p: usize,
@@ -95,17 +95,18 @@ pub fn kernel_imult_simd_aligned(
         let mut vii_row = _mm256_loadu_ps(tptr.add(s_t * 6));
         let mut iv_row = _mm256_loadu_ps(tptr.add(s_t * 3));
         let mut viii_row = _mm256_loadu_ps(tptr.add(s_t * 7));
-        for k in 0..p {
+        for _ in 0..p {
             let b = _mm256_loadu_ps(yptr);
-            i_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(k)), b, i_row);
-            v_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(4 * s_x + k)), b, v_row);
-            ii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(s_x + k)), b, ii_row);
-            vi_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(5 * s_x + k)), b, vi_row);
-            iii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(2 * s_x + k)), b, iii_row);
-            vii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(6 * s_x + k)), b, vii_row);
-            iv_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(3 * s_x + k)), b, iv_row);
-            viii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(7 * s_x + k)), b, viii_row);
             yptr = yptr.add(s_y);
+            i_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr), b, i_row);
+            v_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(4 * s_x)), b, v_row);
+            ii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(s_x)), b, ii_row);
+            vi_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(5 * s_x)), b, vi_row);
+            iii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(2 * s_x)), b, iii_row);
+            vii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(6 * s_x)), b, vii_row);
+            iv_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(3 * s_x)), b, iv_row);
+            viii_row = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(7 * s_x)), b, viii_row);
+            xptr = xptr.add(1);
         }
         _mm256_storeu_ps(tptr, i_row);
         _mm256_storeu_ps(tptr.add(s_t * 4), v_row);
