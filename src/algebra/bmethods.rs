@@ -35,6 +35,25 @@ pub fn tensor_kernel_into(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     target.fill(0f32);
     tensor_kernel_new(x, y, target);
 }
+/// (x - b).min(t)
+#[inline(always)]
+fn diff_min(x:usize, b:usize, t:usize) -> usize {
+    // if x.saturating_sub(t) > b  {
+    //     t
+    // } else {
+    //     x - b
+    // }
+    if x - b >= t  {
+        t
+    } else {
+        x - b
+    }
+    // if x > b + t {
+    //     t
+    // } else {
+    //     x - b
+    // }
+}
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -46,25 +65,31 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
         .for_each(|(t, x)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let (mut xend, mut tend) ;
                 let (dx, dy, dt) = (MC * p, PC * n, MC * n);
+                let (mut xend, mut yend, mut tend) ;
                 let (mut xoffset, mut yoffset, mut toffset) = (0, 0, 0);
                 let rows = x.len() / p;
                 for mc in (0..rows).step_by(MC) {
-                    let ma = (rows - mc).min(MC);
+                    let ma = diff_min(rows, mc, MC);
+                    // let ma = (rows - mc).min(MC);
                     (xend, tend) = (ma * p, ma * n);
-
                     for nc in (0..n).step_by(NC) {
-                        let na = (n - nc).min(NC);
+                        // let na = (n - nc).min(NC);
+                        let na = diff_min(n , nc, NC);
                         t_accum.fill(0f32);
                         yoffset = 0;
                         for pc in (0..p).step_by(PC) {
-                            let pa = (p - pc).min(PC);
-                            pack(&y_d[yoffset + nc..yoffset + pa * n], y_pack, pa, na, NC, n);
+                            // let pa = (p - pc).min(PC);
+                            let pa = diff_min(p, pc, PC);
+                            yend = pa * n;
+                            // pack(&y_d[yoffset + nc..yoffset + pa * n], y_pack, pa, na, NC, n);
+                            pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, n);
                             pack(&x[xoffset + pc..xoffset + xend], x_pack, ma, pa, PC, p);
                             tensor_contraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
                             yoffset += dy;
+                            // yoffset += PC * n;
                         }
+                        // unpack
                         pack(
                             &t_accum,
                             &mut t[toffset + nc..toffset + tend],
