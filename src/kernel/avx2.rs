@@ -56,7 +56,7 @@ pub fn kernel_imult_simd_aligned(
         let mut vii_row = _mm256_loadu_ps(tptr.add(s_t * 6));
         let mut iv_row = _mm256_loadu_ps(tptr.add(s_t * 3));
         let mut viii_row = _mm256_loadu_ps(tptr.add(s_t * 7));
-        for _ in 0..p / 2 {
+        for _ in 0..p >> 1 {
             let b0 = _mm256_loadu_ps(yptr);
             let b1 = _mm256_loadu_ps(yptr.add(s_y));
             yptr = yptr.add(s_y + s_y);

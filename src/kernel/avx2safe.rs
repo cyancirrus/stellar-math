@@ -77,7 +77,7 @@ pub fn kernel_imult_safe(
         let mut iv_row = _mm256_maskload_ps(tptr.add(s_t * 3), mask_n);
         let mut viii_row = _mm256_maskload_ps(tptr.add(s_t * 7), mask_n);
         let mask_m = MASK[m];
-        for _ in 0..p / 2 {
+        for _ in 0..p >> 1 {
             // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
             let b0 = _mm256_maskload_ps(yptr, mask_n);
