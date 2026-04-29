@@ -143,8 +143,6 @@ pub fn tensor_contraction(
             }
             toffset += dt;
             xoffset += dx;
-            // toffset += SIMD_WIDTH * s_t;
-            // xoffset += SIMD_WIDTH * s_x;
         }
     }
 }
