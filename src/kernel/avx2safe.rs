@@ -19,15 +19,6 @@ const MASK:[[i32;8];9] = [
     [-1, -1, -1, -1, -1, -1, -1, -1],
 ];
 
-macro_rules! fma_gated {
-    ($acc:expr, $ptr:expr, $mask_bit:expr, $data:expr) => {
-        if $mask_bit != 0 {
-            $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$ptr), $data, $acc);
-            // $acc = _mm256_fmadd_ps(_mm256_set1_ps(*$ptr), $b, $acc);
-        }
-    };
-}
-
 static ZEROS: [f32; 8] = [0f32; 8];
 unsafe fn gate_row(ptr: *const f32, ctrl: i32, mask: __m256i) -> __m256 {
     unsafe {
@@ -52,6 +43,14 @@ unsafe fn sgate_row(ptr: *mut f32, ctrl: i32, mask: __m256i, data: __m256) {
 //     }
 // }
 
+macro_rules! fma_gated {
+    ($acc:expr, $ptr:expr, $mask_bit:expr, $data:expr) => {
+        if $mask_bit != 0 {
+            $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$ptr), $data, $acc);
+            // $acc = _mm256_fmadd_ps(_mm256_set1_ps(*$ptr), $b, $acc);
+        }
+    };
+}
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_imult_safe(
     mut xptr: *const f32,
@@ -106,8 +105,9 @@ pub fn kernel_imult_safe(
             xptr = xptr.add(2);
             yptr = yptr.add(s_y + s_y);
         }
-        if p & 1 == 1 {
-            let b = _mm256_maskload_ps(yptr.add(s_y), mask_n);
+        if (p & 1) == 1 {
+            println!("hello i'm odd!");
+            let b = _mm256_maskload_ps(yptr, mask_n);
             fma_gated!(i_row, xptr, mask_m[0], b);
             fma_gated!(v_row, xptr.add(4 * s_x), mask_m[4], b);
             fma_gated!(ii_row, xptr.add(s_x), mask_m[1], b);

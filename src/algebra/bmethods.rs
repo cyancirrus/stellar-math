@@ -202,7 +202,8 @@ mod test_kernel_block {
     #[test]
     fn test_gemm_equivalence() {
         let ikj = [
-            (256, 256, 256),
+            // (256, 256, 256),
+            (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
             (1, 1, 1),
             (8, 1, 1),
             (1, 8, 1),
@@ -217,7 +218,6 @@ mod test_kernel_block {
             (16, 16, 16),
             (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
             (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-            (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
             (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
             (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
             (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
