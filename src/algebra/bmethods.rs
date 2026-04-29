@@ -244,8 +244,8 @@ mod test_kernel_block {
             dims: vec![m, n],
             data: result.clone(),
         };
-        // println!("expected {expected:?}");
-        // println!("actual {inspect:?}");
+        println!("expected {expected:?}");
+        println!("actual {inspect:?}");
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
     }
 }
