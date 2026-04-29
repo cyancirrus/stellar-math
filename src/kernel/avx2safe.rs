@@ -105,7 +105,7 @@ pub fn kernel_imult_safe(
             xptr = xptr.add(2);
             yptr = yptr.add(s_y + s_y);
         }
-        if (p & 1) == 1 {
+        if p & 1 == 1 {
             println!("hello i'm odd!");
             let b = _mm256_maskload_ps(yptr, mask_n);
             fma_gated!(i_row, xptr, mask_m[0], b);
