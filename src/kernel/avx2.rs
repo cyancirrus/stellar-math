@@ -30,12 +30,11 @@ pub fn kernel_mult_simd(
         }
     }
 }
-macro_rules! fmadd_accum {
+macro_rules! fma_accum {
     ($acc:expr, $ptr:expr, $data:expr) => {
         $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$ptr), $data, $acc);
     };
 }
-
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_imult_simd_aligned(
     mut xptr: *const f32,
@@ -61,24 +60,35 @@ pub fn kernel_imult_simd_aligned(
             let b0 = _mm256_loadu_ps(yptr);
             let b1 = _mm256_loadu_ps(yptr.add(s_y));
             yptr = yptr.add(s_y + s_y);
-            fmadd_accum!(i_row, xptr, b0);
-            fmadd_accum!(v_row, xptr.add(4 * s_x + 1), b1);
-            fmadd_accum!(ii_row, xptr.add(s_x), b0);
-            fmadd_accum!(vi_row, xptr.add(5 * s_x + 1), b1);
-            fmadd_accum!(iii_row, xptr.add(2 * s_x), b0);
-            fmadd_accum!(vii_row, xptr.add(6 * s_x + 1), b1);
-            fmadd_accum!(iv_row, xptr.add(3 * s_x), b0);
-            fmadd_accum!(viii_row, xptr.add(7 * s_x + 1), b1);
+            fma_accum!(i_row, xptr, b0);
+            fma_accum!(v_row, xptr.add(4 * s_x + 1), b1);
+            fma_accum!(ii_row, xptr.add(s_x), b0);
+            fma_accum!(vi_row, xptr.add(5 * s_x + 1), b1);
+            fma_accum!(iii_row, xptr.add(2 * s_x), b0);
+            fma_accum!(vii_row, xptr.add(6 * s_x + 1), b1);
+            fma_accum!(iv_row, xptr.add(3 * s_x), b0);
+            fma_accum!(viii_row, xptr.add(7 * s_x + 1), b1);
 
-            fmadd_accum!(i_row, xptr.add(1), b1);
-            fmadd_accum!(v_row, xptr.add(4 * s_x), b0);
-            fmadd_accum!(ii_row, xptr.add(s_x + 1), b1);
-            fmadd_accum!(vi_row, xptr.add(5 * s_x), b0);
-            fmadd_accum!(iii_row, xptr.add(2 * s_x + 1), b1);
-            fmadd_accum!(vii_row, xptr.add(6 * s_x), b0);
-            fmadd_accum!(iv_row, xptr.add(3 * s_x + 1), b1);
-            fmadd_accum!(viii_row, xptr.add(7 * s_x), b0);
+            fma_accum!(i_row, xptr.add(1), b1);
+            fma_accum!(v_row, xptr.add(4 * s_x), b0);
+            fma_accum!(ii_row, xptr.add(s_x + 1), b1);
+            fma_accum!(vi_row, xptr.add(5 * s_x), b0);
+            fma_accum!(iii_row, xptr.add(2 * s_x + 1), b1);
+            fma_accum!(vii_row, xptr.add(6 * s_x), b0);
+            fma_accum!(iv_row, xptr.add(3 * s_x + 1), b1);
+            fma_accum!(viii_row, xptr.add(7 * s_x), b0);
             xptr = xptr.add(2);
+        }
+        if p & 1 == 1 {
+            let b = _mm256_loadu_ps(yptr);
+            fma_accum!(i_row, xptr, b);
+            fma_accum!(v_row, xptr.add(4 * s_x), b);
+            fma_accum!(ii_row, xptr.add(s_x), b);
+            fma_accum!(vi_row, xptr.add(5 * s_x), b);
+            fma_accum!(iii_row, xptr.add(2 * s_x), b);
+            fma_accum!(vii_row, xptr.add(6 * s_x), b);
+            fma_accum!(iv_row, xptr.add(3 * s_x), b);
+            fma_accum!(viii_row, xptr.add(7 * s_x), b);
         }
         _mm256_storeu_ps(tptr, i_row);
         _mm256_storeu_ps(tptr.add(s_t * 4), v_row);
