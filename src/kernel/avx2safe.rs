@@ -107,7 +107,7 @@ pub fn kernel_imult_safe(
             yptr = yptr.add(s_y + s_y);
         }
         if p & 1 == 1 {
-            let b = _mm256_maskload_ps(yptr, mask_n);
+            let b = _mm256_maskload_ps(yptr.add(s_y), mask_n);
             fma_gated!(i_row, xptr, mask_m[0], b);
             fma_gated!(v_row, xptr.add(4 * s_x), mask_m[4], b);
             fma_gated!(ii_row, xptr.add(s_x), mask_m[1], b);
