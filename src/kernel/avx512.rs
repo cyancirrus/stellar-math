@@ -1,5 +1,5 @@
 #[cfg(all(feature = "avx512", target_arch = "x86_64"))]
-use crate::kernel::default::kernel_mult_scalar;
+use crate::kernel::default;
 use std::arch::x86_64::{
     _mm512_add_ps, _mm512_fmadd_ps, _mm512_loadu_ps, _mm512_set1_ps, _mm512_setzero_ps,
     _mm512_storeu_ps,
@@ -18,9 +18,26 @@ pub fn kernel_mult_simd(
     if (m | p | n) & (SIMD_WIDTH - 1) == 0 {
         kernel_mult_simd_aligned(x, y, t, m, s_x, s_y, s_t);
     } else {
-        kernel_mult_scalar(x, y, t, m, p, n, s_x, s_y, s_t);
+        default::kernel_mult_scalar(x, y, t, m, p, n, s_x, s_y, s_t);
     }
 }
+
+#[inline(always)]
+pub fn kernel_lt_mult_simd(
+    mut xptr: *const f32,
+    yptr: *const f32,
+    mut tptr: *mut f32,
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    default::kernel_lt_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+}
+
+
 
 #[target_feature(enable = "avx512f,fma")]
 pub fn kernel_mult_simd_aligned(

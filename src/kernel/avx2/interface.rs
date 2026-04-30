@@ -1,6 +1,6 @@
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::avx2::{alligned, unalligned};
+use crate::kernel::avx2::{alligned, unalligned, triangle};
 use crate::kernel::default::kernel_mult_scalar;
 use std::arch::x86_64::{
     _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_broadcast_ss, _mm256_castpd_ps,
@@ -27,5 +27,21 @@ pub fn kernel_mult_simd(
         } else {
             unalligned::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
+    }
+}
+#[inline(always)]
+pub fn kernel_lt_mult_simd(
+    mut xptr: *const f32,
+    yptr: *const f32,
+    mut tptr: *mut f32,
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    unsafe {
+        triangle::kernel_imult_lt_unalligned(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
     }
 }
