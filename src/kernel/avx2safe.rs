@@ -33,16 +33,6 @@ unsafe fn sgate_row(ptr: *mut f32, ctrl: i32, mask: __m256i, data: __m256) {
         }
     }
 }
-unsafe fn gate_value(ptr: *const f32, mask_bit: i32) -> __m256 {
-    // f32 & mask bit
-    unsafe {
-        _mm256_and_ps(
-            _mm256_broadcast_ss(&*ptr),
-            _mm256_castsi256_ps(_mm256_set1_epi32(mask_bit)),
-        )
-    }
-}
-
 macro_rules! fma_gated {
     ($acc:expr, $ptr:expr, $mask_bit:expr, $data:expr) => {
         if $mask_bit != 0 {
@@ -82,6 +72,7 @@ pub fn kernel_imult_safe(
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
             let b0 = _mm256_maskload_ps(yptr, mask_n);
             let b1 = _mm256_maskload_ps(yptr.add(s_y), mask_n);
+            yptr = yptr.add(s_y + s_y);
             fma_gated!(i_row, xptr, mask_m[0], b0);
             fma_gated!(v_row, xptr.add(4 * s_x + 1), mask_m[4], b1);
             fma_gated!(ii_row, xptr.add(s_x), mask_m[1], b0);
@@ -100,10 +91,7 @@ pub fn kernel_imult_safe(
             fma_gated!(iv_row, xptr.add(3 * s_x + 1), mask_m[3], b1);
             fma_gated!(viii_row, xptr.add(7 * s_x), mask_m[7], b0);
             // accumulates k offset
-
-            // accumulates k offset
             xptr = xptr.add(2);
-            yptr = yptr.add(s_y + s_y);
         }
         if p & 1 == 1 {
             let b = _mm256_maskload_ps(yptr, mask_n);

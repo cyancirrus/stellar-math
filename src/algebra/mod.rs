@@ -1,7 +1,6 @@
 pub mod bmethods;
 pub mod fourier;
 pub mod math;
-pub mod mmethods;
 pub mod ndmethods;
 pub mod ndsmethods;
 pub mod signal;

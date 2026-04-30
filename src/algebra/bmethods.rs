@@ -17,11 +17,13 @@ const NC: usize = 128;
 ///  - accumulates the multiplication into the target matrix
 ///  - t += x * y
 #[inline(always)]
-pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
+pub fn tensor_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
     if m <= MINIKERN_GATE && n <= MINIKERN_GATE {
+        unsafe {
         tensor_contraction(&x.data, &y.data, target, m, p, n, p, n, n);
+        }
     } else {
         tensor_blockkern(&x.data, &y.data, target, m, p, n);
     }
@@ -33,7 +35,7 @@ pub fn tensor_kernel_new(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 #[inline(always)]
 pub fn tensor_kernel_into(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     target.fill(0f32);
-    tensor_kernel_new(x, y, target);
+    tensor_kernel(x, y, target);
 }
 /// (x - b).min(t)
 #[inline(always)]
@@ -143,6 +145,37 @@ pub fn tensor_contraction(
             }
             toffset += dt;
             xoffset += dx;
+        }
+    }
+}
+pub fn tensor_minikern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
+    unsafe {
+        let mut xoffset = 0;
+        let mut toffset = 0;
+        let mut yoffset;
+        for i in (0..m).step_by(SIMD_WIDTH) {
+            let ii_end = SIMD_WIDTH.min(m - i);
+            yoffset = 0;
+            for k in (0..p).step_by(SIMD_WIDTH) {
+                let kk_end = SIMD_WIDTH.min(p - k);
+                for j in (0..n).step_by(SIMD_WIDTH) {
+                    let jj_end = SIMD_WIDTH.min(n - j);
+                    kernel_mult(
+                        x_d.get_unchecked(xoffset + k..),
+                        y_d.get_unchecked(yoffset + j..),
+                        t_d.get_unchecked_mut(toffset + j..),
+                        ii_end,
+                        kk_end,
+                        jj_end,
+                        p,
+                        n,
+                        n,
+                    );
+                }
+                yoffset += SIMD_WIDTH * n;
+            }
+            toffset += SIMD_WIDTH * n;
+            xoffset += SIMD_WIDTH * p;
         }
     }
 }
