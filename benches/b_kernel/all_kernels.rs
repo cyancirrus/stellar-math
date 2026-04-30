@@ -32,7 +32,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
         });
     });
     #[cfg(feature = "avx2")]
-    group.bench_function("AVX2 Outer Kernel", |b_inner| {
+    group.bench_function("AVX2 Contraction Kernel", |b_inner| {
         b_inner.iter(|| unsafe {
             avx2::kernel_imult_simd_aligned(
                 black_box(a.as_mut_ptr()),
@@ -62,9 +62,25 @@ pub fn benchmark_kernels(c: &mut Criterion) {
         });
     });
     #[cfg(feature = "avx2")]
-    group.bench_function("AVX2 Kernel Inner General Shape", |b_inner| {
+    group.bench_function("AVX2 Kernel Contraction General Shape", |b_inner| {
         b_inner.iter(|| unsafe {
             avx2safe::kernel_imult_safe(
+                black_box(a.as_mut_ptr()),
+                black_box(b.as_ptr()),
+                black_box(c_out.as_mut_ptr()),
+                SIMD_WIDTH,
+                SIMD_WIDTH,
+                SIMD_WIDTH,
+                stride,
+                stride,
+                stride,
+            )
+        });
+    });
+    #[cfg(feature = "avx2")]
+    group.bench_function("AVX2 Kernel LT General Shape", |b_inner| {
+        b_inner.iter(|| unsafe {
+            avx2safe::kernel_imult_lt_safe(
                 black_box(a.as_mut_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
