@@ -20,7 +20,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     #[cfg(feature = "avx2")]
     group.bench_function("AVX2 Kernel", |b_inner| {
         b_inner.iter(|| unsafe {
-            avx2::kernel_mult_simd_aligned(
+            avx2::alligned::kernel_mult_simd_aligned(
                 black_box(a.as_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
@@ -34,7 +34,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     #[cfg(feature = "avx2")]
     group.bench_function("AVX2 Contraction Kernel", |b_inner| {
         b_inner.iter(|| unsafe {
-            avx2::kernel_imult_simd_aligned(
+            avx2::alligned::kernel_imult_simd_aligned(
                 black_box(a.as_mut_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
@@ -48,7 +48,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     #[cfg(feature = "avx2")]
     group.bench_function("AVX2 Kernel General Shape", |b_inner| {
         b_inner.iter(|| unsafe {
-            avx2safe::kernel_mult_safe(
+            avx2::unalligned::kernel_mult_safe(
                 black_box(a.as_mut_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
@@ -64,7 +64,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     #[cfg(feature = "avx2")]
     group.bench_function("AVX2 Kernel Contraction General Shape", |b_inner| {
         b_inner.iter(|| unsafe {
-            avx2safe::kernel_imult_safe(
+            avx2::unalligned::kernel_imult_safe(
                 black_box(a.as_mut_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
@@ -80,7 +80,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     #[cfg(feature = "avx2")]
     group.bench_function("AVX2 Kernel LT General Shape", |b_inner| {
         b_inner.iter(|| unsafe {
-            avx2safe::kernel_imult_lt_safe(
+            avx2::triangle::kernel_imult_lt_safe(
                 black_box(a.as_mut_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
