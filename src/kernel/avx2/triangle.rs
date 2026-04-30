@@ -1,8 +1,8 @@
 use crate::kernel::avx2::constants::{MASK, sgate_row};
 use std::arch::x86_64::{
     __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_and_ps, _mm256_broadcast_ss,
-    _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_si256, _mm256_maskload_ps,
-    _mm256_maskstore_ps, _mm256_set1_epi32, _mm256_setzero_ps, _mm256_storeu_ps, _mm256_set1_ps, _mm256_loadu_ps
+    _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskload_ps,
+    _mm256_maskstore_ps, _mm256_set1_epi32, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
 };
 macro_rules! fma_gated {
     ($acc:expr, $ptr:expr, $mask_bit:expr, $data:expr) => {

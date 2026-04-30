@@ -37,8 +37,6 @@ pub fn kernel_lt_mult_simd(
     default::kernel_lt_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
 }
 
-
-
 #[target_feature(enable = "avx512f,fma")]
 pub fn kernel_mult_simd_aligned(
     mut xptr: *const f32,

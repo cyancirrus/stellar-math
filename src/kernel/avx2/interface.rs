@@ -1,6 +1,6 @@
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::avx2::{alligned, unalligned, triangle};
+use crate::kernel::avx2::{alligned, triangle, unalligned};
 use crate::kernel::default::kernel_mult_scalar;
 use std::arch::x86_64::{
     _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_broadcast_ss, _mm256_castpd_ps,

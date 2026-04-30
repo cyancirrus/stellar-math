@@ -25,7 +25,7 @@ pub fn tensor_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
             tensor_contraction(&x.data, &y.data, target, m, p, n, p, n, n);
         }
     } else {
-        tensor_blockkern(&x.data, &y.data, target, m, p, n);
+        tensor_blockkern(&x.data, &y.data, target, m, p, n, p, n, n);
     }
 }
 
@@ -46,29 +46,29 @@ fn diff_min(x: usize, b: usize, t: usize) -> usize {
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }
-pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize) {
+pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize, s_x:usize, s_y:usize, s_t:usize) {
     // suffix c: chunk, suffix a: actual
     t_d.par_chunks_mut(LC * n)
         .zip(x_d.par_chunks(LC * p))
         .for_each(|(t, x)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let (dx, dt, dy) = (MC * p, MC * n, PC * n);
+                let (dx, dt, dy) = (MC * s_x, MC * s_t, PC * s_y);
                 let (mut xend, mut yend, mut tend);
                 let (mut xoffset, mut yoffset, mut toffset) = (0, 0, 0);
-                let rows = x.len() / p;
+                let rows = x.len() / s_x;
                 for mc in (0..rows).step_by(MC) {
                     let ma = diff_min(rows, mc, MC);
-                    (xend, tend) = (ma * p, ma * n);
+                    (xend, tend) = (ma * s_x, ma * s_t);
                     for nc in (0..n).step_by(NC) {
                         let na = diff_min(n, nc, NC);
                         t_accum.fill(0f32);
                         yoffset = 0;
                         for pc in (0..p).step_by(PC) {
                             let pa = diff_min(p, pc, PC);
-                            yend = pa * n;
-                            pack(&x[xoffset + pc..xoffset + xend], x_pack, ma, pa, PC, p);
-                            pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, n);
+                            yend = pa * s_y;
+                            pack(&x[xoffset + pc..xoffset + xend], x_pack, ma, pa, PC, s_x);
+                            pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                             tensor_contraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
                             yoffset += dy;
                         }
@@ -78,7 +78,7 @@ pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: 
                             &mut t[toffset + nc..toffset + tend],
                             ma,
                             na,
-                            n,
+                            s_t,
                             NC,
                         );
                     }
@@ -270,7 +270,7 @@ mod test_kernel_block {
         let y = generate_random_matrix(k, n);
         let mut result = vec![0f32; m * n];
         let expected = basic_mult(&x, &y);
-        tensor_blockkern(&x.data, &y.data, &mut result, m, k, n);
+        tensor_blockkern(&x.data, &y.data, &mut result, m, k, n, k, n, n);
         let inspect = NdArray {
             dims: vec![m, n],
             data: result.clone(),
