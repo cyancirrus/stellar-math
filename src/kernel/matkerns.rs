@@ -1,5 +1,5 @@
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-use crate::kernel::avx2::kernel_mult_simd;
+use crate::kernel::avx2::interface::kernel_mult_simd;
 #[cfg(all(feature = "avx512", target_arch = "x86_64"))]
 use crate::kernel::avx512::kernel_mult_simd;
 #[cfg(not(any(feature = "avx2", feature = "avx512", feature = "neon")))]

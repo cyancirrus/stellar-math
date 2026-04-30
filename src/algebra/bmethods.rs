@@ -22,7 +22,7 @@ pub fn tensor_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
     if m <= MINIKERN_GATE && n <= MINIKERN_GATE {
         unsafe {
-        tensor_contraction(&x.data, &y.data, target, m, p, n, p, n, n);
+            tensor_contraction(&x.data, &y.data, target, m, p, n, p, n, n);
         }
     } else {
         tensor_blockkern(&x.data, &y.data, target, m, p, n);

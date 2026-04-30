@@ -2,9 +2,9 @@ use criterion::Throughput;
 use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 use stellar::arch::SIMD_WIDTH;
-use stellar::kernel::default;
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-use stellar::kernel::{avx2, avx2safe};
+use stellar::kernel::avx2;
+use stellar::kernel::default;
 pub fn benchmark_kernels(c: &mut Criterion) {
     let block = SIMD_WIDTH;
     let stride = SIMD_WIDTH;
