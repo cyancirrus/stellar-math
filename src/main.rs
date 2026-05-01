@@ -38,7 +38,17 @@ fn diff_min(x: usize, b: usize, t: usize) -> usize {
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }
-pub fn tensor_lt_block(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize, s_x:usize, s_y:usize, s_t:usize) {
+pub fn tensor_lt_block(
+    x_d: &[f32],
+    y_d: &[f32],
+    t_d: &mut [f32],
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
     // suffix c: chunk, suffix a: actual
     t_d.par_chunks_mut(LC * n)
         .zip(x_d.par_chunks(LC * p))
@@ -60,23 +70,13 @@ pub fn tensor_lt_block(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: u
                         t_accum.fill(0f32);
                         yoffset = 0;
                         for pc in (0..t_bound).step_by(PC) {
-                        // for pc in (0..p).step_by(PC) {
+                            // for pc in (0..p).step_by(PC) {
                             let pa = diff_min(p, pc, PC);
                             yend = pa * s_y;
                             pack(&x[xoffset + pc..xoffset + xend], x_pack, ma, pa, PC, s_x);
                             pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                             tensor_lt_contraction(
-                                &x_pack,
-                                &y_pack,
-                                t_accum,
-                                lc,
-                                pc,
-                                ma,
-                                pa,
-                                na,
-                                PC,
-                                NC,
-                                NC,
+                                &x_pack, &y_pack, t_accum, lc, pc, ma, pa, na, PC, NC, NC,
                             );
                             yoffset += dy;
                         }
@@ -233,6 +233,4 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
 
 fn main() {
     test_gemm_equivalence();
-
-
 }

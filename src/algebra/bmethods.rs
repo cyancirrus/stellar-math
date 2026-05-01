@@ -46,7 +46,17 @@ fn diff_min(x: usize, b: usize, t: usize) -> usize {
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }
-pub fn tensor_blockkern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: usize, n: usize, s_x:usize, s_y:usize, s_t:usize) {
+pub fn tensor_blockkern(
+    x_d: &[f32],
+    y_d: &[f32],
+    t_d: &mut [f32],
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
     // suffix c: chunk, suffix a: actual
     t_d.par_chunks_mut(LC * n)
         .zip(x_d.par_chunks(LC * p))
