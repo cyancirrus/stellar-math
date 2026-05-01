@@ -155,7 +155,6 @@ pub fn tensor_lt_contraction(
                     )
                 // } else {
                 } else if g_i + i >= g_k {
-                    println!("hello");
                     kernel_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -174,6 +173,38 @@ pub fn tensor_lt_contraction(
         }
     }
 }
+fn test_gemm_equivalence() {
+    let ikj = [
+        // (256, 256, 256),
+        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        // (1, 1, 1),
+        // (8, 1, 1),
+        // (1, 8, 1),
+        // (1, 1, 8),
+        // (6, 4, 8),
+        // (6, 8, 4),
+        // (4, 6, 8),
+        // (4, 8, 6),
+        // (8, 4, 6),
+        // (8, 6, 4),
+        (8, 8, 8),
+        (16, 16, 16),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        // (256, 1024, 512),
+        // (512, 512, 512),
+        // (1024, 64, 1024),
+    ];
+    for (i, k, j) in ikj {
+        println!("(i: {i:?}, k: {k:?}, j: {j:})");
+        test_lower_equivalence_mkn(i, k, j);
+    }
+}
 fn filter_lower_triangle(a: &mut NdArray) {
     let (rows, cols) = (a.dims[0], a.dims[1]);
     let d = &mut a.data;
@@ -183,8 +214,7 @@ fn filter_lower_triangle(a: &mut NdArray) {
         }
     }
 }
-    
-fn test_outkern_equivalence_mkn(m: usize, p: usize, n: usize) {
+fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let x = generate_random_matrix(m, p);
     let y = generate_random_matrix(p, n);
     let mut x_base = x.clone();
@@ -202,7 +232,7 @@ fn test_outkern_equivalence_mkn(m: usize, p: usize, n: usize) {
 }
 
 fn main() {
-    test_outkern_equivalence_mkn(8, 8, 8);
+    test_gemm_equivalence();
 
 
 }
