@@ -1,9 +1,9 @@
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-use crate::kernel::avx2::interface::{kernel_lt_mult_simd, kernel_mult_simd};
+use crate::kernel::avx2::interface::{kernel_mult_simd, kernel_lt_mult_simd};
 #[cfg(all(feature = "avx512", target_arch = "x86_64"))]
-use crate::kernel::avx512::{kernel_lt_mult_simd, kernel_mult_simd};
+use crate::kernel::avx512::{kernel_mult_simd, kernel_lt_mult_simd};
 #[cfg(not(any(feature = "avx2", feature = "avx512", feature = "neon")))]
-use crate::kernel::default::{kernel_lt_mult_simd, kernel_mult_simd};
+use crate::kernel::default::{kernel_mult_simd, kernel_lt_mult_simd};
 #[cfg(all(feature = "neon", target_arch = "aarch64"))]
 use crate::kernel::neon::kernel_mult_simd;
 
@@ -46,8 +46,9 @@ pub fn kernel_lt_mult(
     s_y: usize,
     s_t: usize,
 ) {
+    println!("matkern");
     unsafe {
-        kernel_mult_simd(
+        kernel_lt_mult_simd(
             x.as_ptr(),
             y.as_ptr(),
             t.as_mut_ptr(),

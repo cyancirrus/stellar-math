@@ -39,6 +39,7 @@ pub fn kernel_imult_lt_unalligned(
         let mut viii_row = _mm256_maskload_ps(tptr.add(s_t * 7), mask_n);
         let threshold = m.min(p);
         let mask_m = MASK[m];
+        println!("threshold {threshold:}");
         for k in threshold..p {
             // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);

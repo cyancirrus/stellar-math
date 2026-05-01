@@ -41,6 +41,7 @@ pub fn kernel_lt_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
+    println!("triangle interface ");
     unsafe {
         triangle::kernel_imult_lt_unalligned(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
     }

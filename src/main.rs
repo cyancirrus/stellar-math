@@ -155,6 +155,7 @@ pub fn tensor_lt_contraction(
                     )
                 // } else {
                 } else if g_i + i >= g_k {
+                    println!("hello");
                     kernel_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -173,20 +174,35 @@ pub fn tensor_lt_contraction(
         }
     }
 }
+fn filter_lower_triangle(a: &mut NdArray) {
+    let (rows, cols) = (a.dims[0], a.dims[1]);
+    let d = &mut a.data;
+    for i in 0..rows {
+        for j in i + 1..cols {
+            d[i * cols + j] = 0f32;
+        }
+    }
+}
     
 fn test_outkern_equivalence_mkn(m: usize, p: usize, n: usize) {
     let x = generate_random_matrix(m, p);
     let y = generate_random_matrix(p, n);
+    let mut x_base = x.clone();
+    filter_lower_triangle(&mut x_base);
+    let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
-    let expected = basic_mult(&x, &y);
     tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, m, p, n);
-    // let inspect = NdArray {
-    //     dims: vec![m, n],
-    //     data: result.clone(),
-    // };
-    // println!("expected {expected:?}");
-    // println!("actual {inspect:?}");
+    let inspect = NdArray {
+        dims: vec![m, n],
+        data: result.clone(),
+    };
+    println!("expected {expected:?}");
+    println!("actual {inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 
-fn main() {}
+fn main() {
+    test_outkern_equivalence_mkn(8, 8, 8);
+
+
+}
