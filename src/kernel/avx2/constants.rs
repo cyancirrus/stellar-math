@@ -20,8 +20,8 @@ pub const MASK:[[i32;8];9] = [
 pub static ZEROS: [f32; 8] = [0f32; 8];
 #[inline(always)]
 pub unsafe fn mask_load(ptr: *const f32, mask: __m256i) -> __m256 {
-    // _mm256_maskload_ps(ptr, mask)
-    _mm256_and_ps(_mm256_loadu_ps(ptr), _mm256_castsi256_ps(mask))
+    _mm256_maskload_ps(ptr, mask)
+    // _mm256_and_ps(_mm256_loadu_ps(ptr), _mm256_castsi256_ps(mask))
 }
 #[inline(always)]
 pub unsafe fn mask_load_ctrl(ptr: *const f32, mask: __m256i, ctrl: i32) -> __m256 {
