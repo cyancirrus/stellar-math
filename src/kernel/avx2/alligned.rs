@@ -7,8 +7,8 @@ use std::arch::x86_64::{
     _mm256_unpackhi_pd, _mm256_unpackhi_ps, _mm256_unpacklo_pd, _mm256_unpacklo_ps,
 };
 macro_rules! fma_accum {
-    ($acc:expr, $ptr:expr, $data:expr) => {
-        $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$ptr), $data, $acc);
+    ($acc:expr, $cptr:expr, $data:expr) => {
+        $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$cptr), $data, $acc);
     };
 }
 #[target_feature(enable = "avx,avx2,fma")]
@@ -103,14 +103,14 @@ pub fn kernel_mult_simd_aligned(
             // _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
             // _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
             // start with existing t for accumulation
-            acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr), i_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(4)), v_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(1)), ii_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(5)), vi_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(2)), iii_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(6)), vii_row, acc1);
-            acc0 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(3)), iv_row, acc0);
-            acc1 = _mm256_fmadd_ps(_mm256_broadcast_ss(&*xptr.add(7)), viii_row, acc1);
+            fma_accum!(acc0, xptr, i_row);
+            fma_accum!(acc1, xptr.add(4), v_row);
+            fma_accum!(acc0, xptr.add(1), ii_row);
+            fma_accum!(acc1, xptr.add(5), vi_row);
+            fma_accum!(acc0, xptr.add(2), iii_row);
+            fma_accum!(acc1, xptr.add(6), vii_row);
+            fma_accum!(acc0, xptr.add(3), iv_row);
+            fma_accum!(acc1, xptr.add(7), viii_row);
             _mm256_storeu_ps(tptr, _mm256_add_ps(acc1, acc0));
             xptr = xptr.add(s_x);
             tptr = tptr.add(s_t);
@@ -150,14 +150,6 @@ pub fn kernel_trans_simd(mut tptr: *mut f32) {
         let q7 = _mm256_castpd_ps(_mm256_unpackhi_pd( _mm256_castps_pd(t5), _mm256_castps_pd(t7),));
         
         // 0 low of arg 1, 1 high of arg 1, 2 low of arg 2, 3 high of arg 2
-        // _mm256_storeu_ps(wptr, _mm256_permute2f128_ps(q0, q4, 0x20));
-        // _mm256_storeu_ps(wptr.add(8), _mm256_permute2f128_ps(q0, q4, 0x31));
-        // _mm256_storeu_ps(wptr.add(8 * 2), _mm256_permute2f128_ps(q1, q5, 0x20));
-        // _mm256_storeu_ps(wptr.add(8 * 3), _mm256_permute2f128_ps(q1, q5, 0x31));
-        // _mm256_storeu_ps(wptr.add(8 * 4), _mm256_permute2f128_ps(q2, q6, 0x20));
-        // _mm256_storeu_ps(wptr.add(8 * 5), _mm256_permute2f128_ps(q2, q6, 0x31));
-        // _mm256_storeu_ps(wptr.add(8 * 6), _mm256_permute2f128_ps(q3, q7, 0x20));
-        // _mm256_storeu_ps(wptr.add(8 * 7), _mm256_permute2f128_ps(q3, q7, 0x31));
         _mm256_storeu_ps(tptr, _mm256_permute2f128_ps(q0, q4, 0x20));
         _mm256_storeu_ps(tptr.add(8), _mm256_permute2f128_ps(q0, q4, 0x31));
         _mm256_storeu_ps(tptr.add(8 * 2), _mm256_permute2f128_ps(q1, q5, 0x20));
@@ -192,14 +184,14 @@ pub fn kernel_wmult_simd(
             _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             let b_0 = _mm256_loadu_ps(yptr);
             let b_1 = _mm256_loadu_ps(yptr.add(8));
-            i_row_0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr), b_0, i_row_0);
-            i_row_1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr), b_1, i_row_1);
-            ii_row_0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(s_x)), b_0, ii_row_0);
-            ii_row_1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(s_x)), b_1, ii_row_1);
-            iii_row_0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2 * s_x)), b_0, iii_row_0);
-            iii_row_1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(2 * s_x)), b_1, iii_row_1);
-            iv_row_0 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3 * s_x)), b_0, iv_row_0);
-            iv_row_1 = _mm256_fmadd_ps(_mm256_set1_ps(*xptr.add(3 * s_x)), b_1, iv_row_1);
+            fma_accum!(i_row_0, xptr, b_0);
+            fma_accum!(i_row_1, xptr, b_1);
+            fma_accum!(ii_row_0, xptr.add(s_x), b_0);
+            fma_accum!(ii_row_1, xptr.add(s_x), b_1);
+            fma_accum!(iii_row_0, xptr.add(2 * s_x), b_0);
+            fma_accum!(iii_row_1, xptr.add(2 * s_x), b_1);
+            fma_accum!(iv_row_0, xptr.add(3 * s_x), b_0);
+            fma_accum!(iv_row_1, xptr.add(3 * s_x), b_1);
             // accumulates k offset
             xptr = xptr.add(s_x + 1);
             yptr = yptr.add(s_y);

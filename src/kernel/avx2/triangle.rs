@@ -1,8 +1,8 @@
-use crate::kernel::avx2::constants::{MASK, sgate_row};
+use crate::kernel::avx2::constants::{MASK, mask_load, mask_store_ctrl};
 use std::arch::x86_64::{
     __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_and_ps, _mm256_broadcast_ss,
-    _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskload_ps,
-    _mm256_maskstore_ps, _mm256_set1_epi32, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
+    _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskstore_ps,
+    _mm256_set1_epi32, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
 };
 macro_rules! fma_gated {
     ($acc:expr, $ptr:expr, $mask_bit:expr, $data:expr) => {
@@ -29,20 +29,20 @@ pub fn kernel_imult_lt_unalligned(
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
-        let mut i_row = _mm256_maskload_ps(tptr, mask_n);
-        let mut v_row = _mm256_maskload_ps(tptr.add(s_t * 4), mask_n);
-        let mut ii_row = _mm256_maskload_ps(tptr.add(s_t), mask_n);
-        let mut vi_row = _mm256_maskload_ps(tptr.add(s_t * 5), mask_n);
-        let mut iii_row = _mm256_maskload_ps(tptr.add(s_t * 2), mask_n);
-        let mut vii_row = _mm256_maskload_ps(tptr.add(s_t * 6), mask_n);
-        let mut iv_row = _mm256_maskload_ps(tptr.add(s_t * 3), mask_n);
-        let mut viii_row = _mm256_maskload_ps(tptr.add(s_t * 7), mask_n);
+        let mut i_row = mask_load(tptr, mask_n);
+        let mut v_row = mask_load(tptr.add(s_t * 4), mask_n);
+        let mut ii_row = mask_load(tptr.add(s_t), mask_n);
+        let mut vi_row = mask_load(tptr.add(s_t * 5), mask_n);
+        let mut iii_row = mask_load(tptr.add(s_t * 2), mask_n);
+        let mut vii_row = mask_load(tptr.add(s_t * 6), mask_n);
+        let mut iv_row = mask_load(tptr.add(s_t * 3), mask_n);
+        let mut viii_row = mask_load(tptr.add(s_t * 7), mask_n);
         let threshold = m.min(p);
         let mask_m = MASK[m];
         for k in threshold..p {
             // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
-            let b0 = _mm256_maskload_ps(yptr, mask_n);
+            let b0 = mask_load(yptr, mask_n);
             yptr = yptr.add(s_y);
             fma_gated!(i_row, xptr, mask_m[0], b0);
             fma_gated!(ii_row, xptr.add(s_x), mask_m[1], b0);
@@ -56,7 +56,7 @@ pub fn kernel_imult_lt_unalligned(
         }
         let mut mask_t = mask_m;
         for k in 0..threshold {
-            let b0 = _mm256_maskload_ps(yptr, mask_n);
+            let b0 = mask_load(yptr, mask_n);
             yptr = yptr.add(s_y);
             fma_gated!(i_row, xptr, mask_t[0], b0);
             fma_gated!(ii_row, xptr.add(s_x), mask_t[1], b0);
@@ -69,14 +69,14 @@ pub fn kernel_imult_lt_unalligned(
             mask_t[k] = 0;
             xptr = xptr.add(1);
         }
-        sgate_row(tptr, mask_m[0], mask_n, i_row);
-        sgate_row(tptr.add(s_t * 4), mask_m[4], mask_n, v_row);
-        sgate_row(tptr.add(s_t), mask_m[1], mask_n, ii_row);
-        sgate_row(tptr.add(s_t * 5), mask_m[5], mask_n, vi_row);
-        sgate_row(tptr.add(s_t * 2), mask_m[2], mask_n, iii_row);
-        sgate_row(tptr.add(s_t * 6), mask_m[6], mask_n, vii_row);
-        sgate_row(tptr.add(s_t * 3), mask_m[3], mask_n, iv_row);
-        sgate_row(tptr.add(s_t * 7), mask_m[7], mask_n, viii_row);
+        mask_store_ctrl(tptr, mask_n, i_row, mask_m[0]);
+        mask_store_ctrl(tptr.add(s_t * 4), mask_n, v_row, mask_m[4]);
+        mask_store_ctrl(tptr.add(s_t), mask_n, ii_row, mask_m[1]);
+        mask_store_ctrl(tptr.add(s_t * 5), mask_n, vi_row, mask_m[5]);
+        mask_store_ctrl(tptr.add(s_t * 2), mask_n, iii_row, mask_m[2]);
+        mask_store_ctrl(tptr.add(s_t * 6), mask_n, vii_row, mask_m[6]);
+        mask_store_ctrl(tptr.add(s_t * 3), mask_n, iv_row, mask_m[3]);
+        mask_store_ctrl(tptr.add(s_t * 7), mask_n, viii_row, mask_m[7]);
     }
 }
 #[target_feature(enable = "avx,avx2,fma")]
@@ -96,20 +96,20 @@ pub fn kernel_imult_ut_unalligned(
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
-        let mut i_row = _mm256_maskload_ps(tptr, mask_n);
-        let mut v_row = _mm256_maskload_ps(tptr.add(s_t * 4), mask_n);
-        let mut ii_row = _mm256_maskload_ps(tptr.add(s_t), mask_n);
-        let mut vi_row = _mm256_maskload_ps(tptr.add(s_t * 5), mask_n);
-        let mut iii_row = _mm256_maskload_ps(tptr.add(s_t * 2), mask_n);
-        let mut vii_row = _mm256_maskload_ps(tptr.add(s_t * 6), mask_n);
-        let mut iv_row = _mm256_maskload_ps(tptr.add(s_t * 3), mask_n);
-        let mut viii_row = _mm256_maskload_ps(tptr.add(s_t * 7), mask_n);
+        let mut i_row = mask_load(tptr, mask_n);
+        let mut v_row = mask_load(tptr.add(s_t * 4), mask_n);
+        let mut ii_row = mask_load(tptr.add(s_t), mask_n);
+        let mut vi_row = mask_load(tptr.add(s_t * 5), mask_n);
+        let mut iii_row = mask_load(tptr.add(s_t * 2), mask_n);
+        let mut vii_row = mask_load(tptr.add(s_t * 6), mask_n);
+        let mut iv_row = mask_load(tptr.add(s_t * 3), mask_n);
+        let mut viii_row = mask_load(tptr.add(s_t * 7), mask_n);
         let mask_m = MASK[m];
         let mut mask_t = MASK[0];
         let threshold = m.min(p);
         for k in 0..threshold {
             mask_t[k] = mask_m[k];
-            let b0 = _mm256_maskload_ps(yptr, mask_n);
+            let b0 = mask_load(yptr, mask_n);
             yptr = yptr.add(s_y);
             fma_gated!(i_row, xptr, mask_t[0], b0);
             fma_gated!(ii_row, xptr.add(s_x), mask_t[1], b0);
@@ -124,7 +124,7 @@ pub fn kernel_imult_ut_unalligned(
         for k in threshold..p {
             // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
-            let b0 = _mm256_maskload_ps(yptr, mask_n);
+            let b0 = mask_load(yptr, mask_n);
             yptr = yptr.add(s_y);
             fma_gated!(i_row, xptr, mask_m[0], b0);
             fma_gated!(ii_row, xptr.add(s_x), mask_m[1], b0);
@@ -136,54 +136,14 @@ pub fn kernel_imult_ut_unalligned(
             fma_gated!(viii_row, xptr.add(7 * s_x), mask_m[7], b0);
             xptr = xptr.add(1);
         }
-        sgate_row(tptr, mask_m[0], mask_n, i_row);
-        sgate_row(tptr.add(s_t * 4), mask_m[4], mask_n, v_row);
-        sgate_row(tptr.add(s_t), mask_m[1], mask_n, ii_row);
-        sgate_row(tptr.add(s_t * 5), mask_m[5], mask_n, vi_row);
-        sgate_row(tptr.add(s_t * 2), mask_m[2], mask_n, iii_row);
-        sgate_row(tptr.add(s_t * 6), mask_m[6], mask_n, vii_row);
-        sgate_row(tptr.add(s_t * 3), mask_m[3], mask_n, iv_row);
-        sgate_row(tptr.add(s_t * 7), mask_m[7], mask_n, viii_row);
-    }
-}
-#[target_feature(enable = "avx,fma")]
-pub fn kernel_ut_mult_simd(
-    x: &[f32],
-    y: &[f32],
-    t: &mut [f32],
-    m: usize,
-    s_x: usize,
-    s_y: usize,
-    s_t: usize,
-) {
-    debug_assert!(m <= 8);
-    unsafe {
-        let xptr = x.as_ptr();
-        let yptr = y.as_ptr();
-        let tptr = t.as_mut_ptr();
-        let irows = [
-            _mm256_loadu_ps(yptr),
-            _mm256_loadu_ps(yptr.add(s_y)),
-            _mm256_loadu_ps(yptr.add(s_y * 2)),
-            _mm256_loadu_ps(yptr.add(s_y * 3)),
-            _mm256_loadu_ps(yptr.add(s_y * 4)),
-            _mm256_loadu_ps(yptr.add(s_y * 5)),
-            _mm256_loadu_ps(yptr.add(s_y * 6)),
-            _mm256_loadu_ps(yptr.add(s_y * 7)),
-        ];
-        let mut xoffset = 0;
-        let mut toffset = 0;
-        for i in 0..m {
-            let xrow = xptr.add(xoffset);
-            let trow = tptr.add(toffset);
-            let mut acc = _mm256_loadu_ps(trow);
-            for k in i..8 {
-                acc = _mm256_fmadd_ps(_mm256_set1_ps(*xrow.add(k)), irows[k], acc);
-            }
-            _mm256_storeu_ps(trow, acc);
-            xoffset += s_x;
-            toffset += s_t;
-        }
+        mask_store_ctrl(tptr, mask_n, i_row, mask_m[0]);
+        mask_store_ctrl(tptr.add(s_t * 4), mask_n, v_row, mask_m[4]);
+        mask_store_ctrl(tptr.add(s_t), mask_n, ii_row, mask_m[1]);
+        mask_store_ctrl(tptr.add(s_t * 5), mask_n, vi_row, mask_m[5]);
+        mask_store_ctrl(tptr.add(s_t * 2), mask_n, iii_row, mask_m[2]);
+        mask_store_ctrl(tptr.add(s_t * 6), mask_n, vii_row, mask_m[6]);
+        mask_store_ctrl(tptr.add(s_t * 3), mask_n, iv_row, mask_m[3]);
+        mask_store_ctrl(tptr.add(s_t * 7), mask_n, viii_row, mask_m[7]);
     }
 }
 #[cfg(test)]
