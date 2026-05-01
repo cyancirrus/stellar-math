@@ -36,6 +36,7 @@ pub fn kernel_imult_simd_aligned(
             let b0 = _mm256_loadu_ps(yptr);
             let b1 = _mm256_loadu_ps(yptr.add(s_y));
             yptr = yptr.add(s_y + s_y);
+            // _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
             fma_accum!(i_row, xptr, b0);
             fma_accum!(v_row, xptr.add(4 * s_x + 1), b1);
             fma_accum!(ii_row, xptr.add(s_x), b0);
@@ -160,7 +161,7 @@ pub fn kernel_trans_simd(mut tptr: *mut f32) {
         _mm256_storeu_ps(tptr.add(8 * 7), _mm256_permute2f128_ps(q3, q7, 0x31));
     }
 }
-#[target_feature(enable = "avx,fma")]
+#[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_wmult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,

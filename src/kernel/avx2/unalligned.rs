@@ -4,15 +4,15 @@ use crate::kernel::avx2::constants::{mask_load, mask_load_ctrl, mask_store, mask
 use std::arch::x86_64::{
     __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_and_ps, _mm256_blendv_ps,
     _mm256_broadcast_ss, _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256,
-    _mm256_maskload_ps, _mm256_setzero_ps,
+    _mm256_maskload_ps, _mm256_setzero_ps, _mm256_set1_ps
 };
 
 macro_rules! fma_gated {
     // macro instead of fn: avoids &mut _mm256 which can force stack spill via pointer indirection
     ($acc:expr, $ptr:expr, $mask_bit:expr, $data:expr) => {
         if $mask_bit != 0 {
-            $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$ptr), $data, $acc);
-            // $acc = _mm256_fmadd_ps(_mm256_set1_ps(*$ptr), $b, $acc);
+            // $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$ptr), $data, $acc);
+            $acc = _mm256_fmadd_ps(_mm256_set1_ps(*$ptr), $data, $acc);
         }
     };
 }
@@ -32,9 +32,7 @@ pub fn kernel_imult_safe(
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
         // instead of maskload, just loadu + and with mask
-        // let masked = _mm256_and_ps(_mm256_loadu_ps(ptr), _mm256_castsi256_ps(mask_n));
-        let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
-        let mask_n = _mm256_loadu_si256(mask_n_ptr);
+        let mask_n = _mm256_loadu_si256(MASK[n].as_ptr() as *const __m256i);
         let mut i_row = mask_load(tptr, mask_n);
         let mut v_row = mask_load(tptr.add(s_t * 4), mask_n);
         let mut ii_row = mask_load(tptr.add(s_t), mask_n);
