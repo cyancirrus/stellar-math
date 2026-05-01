@@ -1,7 +1,8 @@
 // negative 1 is twos complement so all bits active
 use std::arch::x86_64::{
     __m256, __m256i, _mm256_and_ps, _mm256_blendv_ps, _mm256_broadcast_ss, _mm256_castsi256_ps,
-    _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_maskload_ps, _mm256_maskstore_ps, _mm256_storeu_ps,
+    _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_maskload_ps, _mm256_maskstore_ps,
+    _mm256_storeu_ps,
 };
 #[rustfmt::skip]
 pub const MASK:[[i32;8];9] = [
@@ -19,10 +20,11 @@ pub const MASK:[[i32;8];9] = [
 pub static ZEROS: [f32; 8] = [0f32; 8];
 #[inline(always)]
 pub unsafe fn mask_load(ptr: *const f32, mask: __m256i) -> __m256 {
+    // _mm256_maskload_ps(ptr, mask)
     _mm256_and_ps(_mm256_loadu_ps(ptr), _mm256_castsi256_ps(mask))
 }
 #[inline(always)]
-pub unsafe fn mask_load_ctrl(ptr: *const f32, mask: __m256i, ctrl: i32, ) -> __m256 {
+pub unsafe fn mask_load_ctrl(ptr: *const f32, mask: __m256i, ctrl: i32) -> __m256 {
     unsafe {
         let safe_ptr = if ctrl != 0 { ptr } else { ZEROS.as_ptr() };
         mask_load(safe_ptr, mask)
@@ -31,8 +33,9 @@ pub unsafe fn mask_load_ctrl(ptr: *const f32, mask: __m256i, ctrl: i32, ) -> __m
 #[inline(always)]
 pub unsafe fn mask_store(tgt: *mut f32, mask: __m256i, data: __m256) {
     unsafe {
-        let out = _mm256_blendv_ps(_mm256_loadu_ps(tgt), data, _mm256_castsi256_ps(mask));
-        _mm256_storeu_ps(tgt, out);
+        _mm256_maskstore_ps(tgt, mask, data);
+        // let out = _mm256_blendv_ps(_mm256_loadu_ps(tgt), data, _mm256_castsi256_ps(mask));
+        // _mm256_storeu_ps(tgt, out);
     }
 }
 #[inline(always)]

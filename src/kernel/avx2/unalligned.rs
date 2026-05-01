@@ -1,6 +1,6 @@
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use crate::kernel::avx2::constants::MASK;
-use crate::kernel::avx2::constants::{mask_load_ctrl, mask_load, mask_store, mask_store_ctrl};
+use crate::kernel::avx2::constants::{mask_load, mask_load_ctrl, mask_store, mask_store_ctrl};
 use std::arch::x86_64::{
     __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_and_ps, _mm256_blendv_ps,
     _mm256_broadcast_ss, _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256,
