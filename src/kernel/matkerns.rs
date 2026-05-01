@@ -46,7 +46,6 @@ pub fn kernel_lt_mult(
     s_y: usize,
     s_t: usize,
 ) {
-    println!("matkern");
     unsafe {
         kernel_lt_mult_simd(
             x.as_ptr(),
