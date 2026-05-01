@@ -78,8 +78,8 @@ pub fn bench_matmul_scaling(c: &mut Criterion) {
             //         );
             //     },
             // );
-        // }
-        // group.finish();
+        }
+        group.finish();
     };
     run_bench("MatMul - Small", &S_MATRIX_ALIGNED);
     run_bench("MatMul - Small Unaligned", &S_MATRIX_UNALIGNED);
