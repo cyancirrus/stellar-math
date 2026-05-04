@@ -88,4 +88,12 @@ All feedback is welcome — this library is meant to evolve with community input
 
 ---
 
+LLVM-MCA
+``` bash to test specific test
+cargo test --features="avx2" --lib test_kernel_block
+```
+
+
 ## License
+
+

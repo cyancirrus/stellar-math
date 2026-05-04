@@ -23,7 +23,14 @@ use stellar::equality::approximate::approx_vector_eq;
 use stellar::kernel::matkerns::{kernel_lt_mult, kernel_mult};
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
+use stellar::kernel::avx2::constants::MASK;
+use std::arch::x86_64::{
+    _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_broadcast_ss, _mm256_castpd_ps,
+    _mm256_castps_pd, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps, _mm256_mask_load_ps,
+    _mm256_permute2f128_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
+    _mm256_unpackhi_pd, _mm256_unpackhi_ps, _mm256_unpacklo_pd, _mm256_unpacklo_ps,
 
+};
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // NOTE: could set these as cache sizes so threads reflect the amount of work
 const LC: usize = 64;
@@ -35,6 +42,73 @@ const NC: usize = 128;
 fn diff_min(x: usize, b: usize, t: usize) -> usize {
     if x - b < t { x - b } else { t }
 }
+
+macro_rules! pack_simd_body {
+    ($bptr:expr, $dptr:expr, $s_b:expr, $s_d:expr, $(offset:expr), +) => {{
+        let mut bptr = $bptr;
+        let mut dptr = $dptr;
+        $(
+            _mm256_storeu_ps(
+                bptr.add($offset * SIMD_WIDTH),
+                _mm256_loadu_ps(dptr.add($offset * $s_d))
+            );
+        )+
+        bptr = bptr.add($s_b);
+        dptr = dptr.add($s_d);
+    }}
+}
+
+// #[inline(always)]
+// fn pack_simd(dptr: *const f32, bptr: *mut f32, re: usize, se: usize, s_b: usize, s_d: usize) {
+//     unsafe {
+//         let mask_tail = MASK[se & 7];
+//         for _ in 0..re {
+//             _mm256_storeu_ps(bptr, _mm256_loadu_ps(dptr));
+//             _mm256_storeu_ps(bptr.add(SIMD_WIDTH), _mm256_loadu_ps(dptr));
+//             _mm256_storeu_ps(bptr.add(2 * SIMD_WIDTH), _mm256_loadu_ps(dptr.add(s_d)));
+//             _mm256_storeu_ps(bptr.add(3 * SIMD_WIDTH), _mm256_loadu_ps(dptr.add(2 * s_b)));
+//             _mm256_storeu_ps(bptr.add(4 * SIMD_WIDTH), _mm256_loadu_ps(dptr.add(3 * s_b)));
+//             bptr = bptr.add(s_b);
+//             dptr = dptr.add(s_b);
+//         }
+//     }
+// }
+// #[inline(always)]
+// fn pack_simd(dptr: *const f32, bptr: *mut f32, re: usize, se: usize, s_b: usize, s_d: usize) {
+//     unsafe {
+//         let mask_tail = MASK[se & 7];
+//         for _ in 0..re {
+//             _mm256_storeu_ps(bptr, _mm256_loadu_ps(dptr));
+//             _mm256_storeu_ps(bptr.add(SIMD_WIDTH), _mm256_loadu_ps(dptr));
+//             bptr = bptr.add(s_b);
+//             dptr = dptr.add(s_b);
+//         }
+//     }
+// }
+#[inline(always)]
+fn pack_simd_zero(d: &[f32], b: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usize) {
+    unsafe {
+        let mut doffset = 0;
+        let mut boffset = 0;
+        for _ in 0..re {
+            b.get_unchecked_mut(boffset..boffset + se)
+                .copy_from_slice(&d.get_unchecked(doffset..doffset + se));
+            boffset += s_b;
+            doffset += s_d;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }
@@ -231,6 +305,99 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 
+fn other_fun(x:&mut usize) {
+    println!("x {x:?}");
+    *x+=1;
+}
+
+// macro_rules! pack_simd_core {
+//     ($bptr:expr, $dptr:expr, $s_b:expr, $s_d:expr, $offset:expr) => {{
+//             _mm256_storeu_ps(
+//                 $dptr.add($offset),
+//                 _mm256_loadu_ps($bptr.add($offset))
+//             );
+//     }}
+// }
+
+// macro_rules! pack_simd {
+//     ($mc:expr, $bptr:expr, $dptr:expr, $s_b:expr, $s_d:expr) => {
+//         for offset in 0..$mc.step_by(SIMD_WIDTH) {
+//             pack_simd_core!($bptr, $dptr, $s_b, $s_d, offset);
+//         }
+//     }
+// }
+
+macro_rules! offset_maker {
+    ($size:expr, $width:expr) => {{
+        let mut arr = [0; $size / $width];
+        let mut i = 1;
+        while i + $width < $size / $width {
+            arr[i] = arr[i-1] + $width;
+            i += 1;
+        }
+        arr
+    }}
+}
+
+const X_OFFSETS: [usize; PC / SIMD_WIDTH] = offset_maker!(PC, SIMD_WIDTH);
+const Y_OFFSETS: [usize; NC / SIMD_WIDTH] = offset_maker!(NC, SIMD_WIDTH);
+const T_OFFSETS: [usize; NC / SIMD_WIDTH] = offset_maker!(NC, SIMD_WIDTH);
+
+macro_rules! pack_simd_line {
+    ($bptr:expr, $dptr:expr, $($offset:expr)*) => {{
+        $( 
+            _mm256_storeu_ps(
+                $bptr.add($offset),
+                _mm256_loadu_ps($dptr.add($offset))
+            );
+        )+
+    }}
+}
+
+macro_rules! pack_simd {
+    ($bptr:expr, $dptr:expr, $r_e:expr, $s_b:expr, $s_d:expr, $($offsets:expr)+) => {{
+        for _ in 0..$rc {
+            pack_simd_line!(bptr, dptr, $offsets);
+            bptr = bptr.add($s_b);
+            dptr = dptr.add($s_d);
+        }
+    }}
+}
+
+macro_rules! pack_x {
+    ($bptr:expr, $dptr:expr, $s_d:expr) => {{
+        pack_simd($bptr, $dptr, MC, PC, $s_d:expr, X_OFFSETS);
+    }}
+}
+macro_rules! pack_y {
+    ($bptr:expr, $dptr:expr, $s_d:expr) => {{
+        pack_simd($bptr, $dptr, PC, NC, $s_d:expr, Y_OFFSETS);
+    }}
+}
+macro_rules! pack_t {
+    ($bptr:expr, $dptr:expr, $s_d:expr) => {{
+        pack_simd($bptr, $dptr, PC, NC, $s_d:expr, T_OFFSETS);
+    }}
+}
+
+// macro_rules! offset_count { { for i in 1..TIMES {
+//             offsets[i] = offsets[i-1] + 8;
+//         }
+//     }
+
+// }
+
+// macro for simd pack unrolling/pack_simd
 fn main() {
-    test_gemm_equivalence();
+
+    // let mut d_mat = generate_random_matrix(8, 64);
+    // let mut d= d_mat.data.as_mut_ptr();
+    // let mut b = vec![0f32; MC * PC].as_mut_ptr();
+    // assert!(PC % SIMD_WIDTH == 0);
+    // unsafe { 
+    //     pack_simd!(MC, PC, d, b, PC, 64); 
+    // }
+
+
+    // test_gemm_equivalence();
 }
