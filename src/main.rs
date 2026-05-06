@@ -82,14 +82,24 @@ fn default_pack(bptr: *mut f32, dptr: *const f32, re: usize, se: usize, s_b: usi
     }
 }
 
-macro_rules! pack_x {
-    ($bptr:expr, $dptr:expr, $re:expr, $se:expr, $s_d:expr) => {{
+pub fn pack_x (bptr:*mut f32, dptr:*const f32, re:usize, se:usize, s_d:usize) {
+    unsafe {
         #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-        avx2_pack_x!($bptr, $dptr, $re, $se, PC, $s_d);
+        avx2_pack_x!(bptr, dptr, re, se, PC, s_d);
         #[cfg(not(any(feature = "avx2")))]
-        default_pack($bptr, $dptr, $re, $se, PC, $s_d);
-    }};
+        default_pack(bptr, dptr, re, se, PC, s_d);
+    }
 }
+
+
+// macro_rules! pack_x {
+//     ($bptr:expr, $dptr:expr, $re:expr, $se:expr, $s_d:expr) => {{
+//         #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
+//         avx2_pack_x!($bptr, $dptr, $re, $se, PC, $s_d);
+//         #[cfg(not(any(feature = "avx2")))]
+//         default_pack($bptr, $dptr, $re, $se, PC, $s_d);
+//     }};
+// }
 
 use std::time::Instant;
 // const MC: usize = 48;
@@ -148,7 +158,7 @@ fn test_performance() {
             for pc in (0..cols).step_by(PC) {
                 let pa = diff_min(cols, pc, PC);
                 unsafe {
-                    pack_x!(
+                    pack_x(
                         b_simd.as_mut_ptr(),
                         dptr.add(mc * cols + pc),
                         ma,
