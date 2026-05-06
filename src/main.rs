@@ -14,390 +14,162 @@
 // 3. Triangle kernel     ← 2hrs, unblocks LQ block
 // 4. Trait refactor      ← important but least urgent
 
-use rayon::prelude::*;
-use rayon::slice::ParallelSlice;
-use std::cell::RefCell;
-use stellar::algebra::ndmethods::basic_mult;
+use std::ptr::copy_nonoverlapping;
+use stellar::algebra::bmethods::pack;
 use stellar::arch::SIMD_WIDTH;
-use stellar::equality::approximate::approx_vector_eq;
-use stellar::kernel::matkerns::{kernel_lt_mult, kernel_mult};
 use stellar::random::generation::generate_random_matrix;
-use stellar::structure::ndarray::NdArray;
-use stellar::kernel::avx2::constants::MASK;
-use std::arch::x86_64::{
-    _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_broadcast_ss, _mm256_castpd_ps,
-    _mm256_castps_pd, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps, _mm256_mask_load_ps,
-    _mm256_permute2f128_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
-    _mm256_unpackhi_pd, _mm256_unpackhi_ps, _mm256_unpacklo_pd, _mm256_unpacklo_ps,
-
-};
+use stellar_macros::{avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned};
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
-// NOTE: could set these as cache sizes so threads reflect the amount of work
-const LC: usize = 64;
-const MC: usize = 64;
-const PC: usize = 256;
-const NC: usize = 128;
+// const LC: usize = 48;
+// const MC: usize = 48;
+// const PC: usize = 32;
+// const NC: usize = 96;
+const MC: usize = 8;
+const PC: usize = 8;
+use std::arch::x86_64::{
+    __m256, __m256i, _mm256_and_ps, _mm256_blendv_ps, _mm256_broadcast_ss, _mm256_castsi256_ps,
+    _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskload_ps, _mm256_maskstore_ps,
+    _mm256_storeu_ps, _mm256_setzero_ps
+};
+#[rustfmt::skip]
+pub const MASK:[[i32;8];9] = [
+    [ 0,  0,  0,  0,  0,  0,  0,  0],
+    [-1,  0,  0,  0,  0,  0,  0,  0],
+    [-1, -1,  0,  0,  0,  0,  0,  0],
+    [-1, -1, -1,  0,  0,  0,  0,  0],
+    [-1, -1, -1, -1,  0,  0,  0,  0],
+    [-1, -1, -1, -1, -1,  0,  0,  0],
+    [-1, -1, -1, -1, -1, -1,  0,  0],
+    [-1, -1, -1, -1, -1, -1, -1,  0],
+    [-1, -1, -1, -1, -1, -1, -1, -1],
+];
+// #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
+macro_rules! avx2_pack_x {
+    ($bptr:expr, $dptr:expr, $re:expr, $se:expr, $s_b:expr, $s_d:expr) => {{
+        let mut bptr = $bptr;
+        let mut dptr = $dptr;
+        let mut boffset: usize = 0;
+        let mut doffset: usize = 0;
+        let base_dptr = $dptr;
+        if $se == PC {
+            for _ in 0..$re {
+                avx2_pack_simd_line_alligned!(bptr, dptr,);
+                bptr = bptr.add(PC);
+                dptr = dptr.add($s_d);
+            }
+        } else {
+            for _ in 0..$re {
+                avx2_pack_simd_line_unalligned!(bptr, dptr, $se, ZEROS);
+                bptr = bptr.add(PC);
+                dptr = dptr.add($s_d);
+            }
+        }
+    }};
+}
+#[inline(always)]
+#[cfg(not(any(feature = "avx2")))]
+fn default_pack(bptr: *mut f32, dptr: *const f32, re: usize, se: usize, s_b: usize, s_d: usize) {
+    unsafe {
+        let mut doffset = 0;
+        let mut boffset = 0;
+        for _ in 0..re {
+            copy_nonoverlapping(dptr.add(doffset), bptr.add(boffset), se);
+            boffset += s_b;
+            doffset += s_d;
+        }
+    }
+}
+
+macro_rules! pack_x {
+    ($bptr:expr, $dptr:expr, $re:expr, $se:expr, $s_d:expr) => {{
+        #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
+        avx2_pack_x!($bptr, $dptr, $re, $se, PC, $s_d);
+        #[cfg(not(any(feature = "avx2")))]
+        default_pack($bptr, $dptr, $re, $se, PC, $s_d);
+    }};
+}
+
+use std::time::Instant;
+// const MC: usize = 48;
+// const PC: usize = 192;
+// const NC: usize = 192;
+
+// const PC: usize = 16;
+// const NC: usize = 192;
 
 #[inline(always)]
 fn diff_min(x: usize, b: usize, t: usize) -> usize {
     if x - b < t { x - b } else { t }
 }
+fn test_performance() {
+    let rows = 64;
+    let cols = 40;
+    // let rows = 64;
+    // let cols = 256;
+    let mut d = generate_random_matrix(rows, cols);
+    let mut b_default = vec![0f32; MC * PC];
+    let mut b_simd = vec![0f32; MC * PC];
 
-macro_rules! pack_simd_body {
-    ($bptr:expr, $dptr:expr, $s_b:expr, $s_d:expr, $(offset:expr), +) => {{
-        let mut bptr = $bptr;
-        let mut dptr = $dptr;
-        $(
-            _mm256_storeu_ps(
-                bptr.add($offset * SIMD_WIDTH),
-                _mm256_loadu_ps(dptr.add($offset * $s_d))
-            );
-        )+
-        bptr = bptr.add($s_b);
-        dptr = dptr.add($s_d);
-    }}
-}
+    // let iters = 10_000;
+    let iters = 100;
 
-// #[inline(always)]
-// fn pack_simd(dptr: *const f32, bptr: *mut f32, re: usize, se: usize, s_b: usize, s_d: usize) {
-//     unsafe {
-//         let mask_tail = MASK[se & 7];
-//         for _ in 0..re {
-//             _mm256_storeu_ps(bptr, _mm256_loadu_ps(dptr));
-//             _mm256_storeu_ps(bptr.add(SIMD_WIDTH), _mm256_loadu_ps(dptr));
-//             _mm256_storeu_ps(bptr.add(2 * SIMD_WIDTH), _mm256_loadu_ps(dptr.add(s_d)));
-//             _mm256_storeu_ps(bptr.add(3 * SIMD_WIDTH), _mm256_loadu_ps(dptr.add(2 * s_b)));
-//             _mm256_storeu_ps(bptr.add(4 * SIMD_WIDTH), _mm256_loadu_ps(dptr.add(3 * s_b)));
-//             bptr = bptr.add(s_b);
-//             dptr = dptr.add(s_b);
-//         }
-//     }
-// }
-// #[inline(always)]
-// fn pack_simd(dptr: *const f32, bptr: *mut f32, re: usize, se: usize, s_b: usize, s_d: usize) {
-//     unsafe {
-//         let mask_tail = MASK[se & 7];
-//         for _ in 0..re {
-//             _mm256_storeu_ps(bptr, _mm256_loadu_ps(dptr));
-//             _mm256_storeu_ps(bptr.add(SIMD_WIDTH), _mm256_loadu_ps(dptr));
-//             bptr = bptr.add(s_b);
-//             dptr = dptr.add(s_b);
-//         }
-//     }
-// }
-#[inline(always)]
-fn pack_simd_zero(d: &[f32], b: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usize) {
-    unsafe {
-        let mut doffset = 0;
-        let mut boffset = 0;
-        for _ in 0..re {
-            b.get_unchecked_mut(boffset..boffset + se)
-                .copy_from_slice(&d.get_unchecked(doffset..doffset + se));
-            boffset += s_b;
-            doffset += s_d;
-        }
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-thread_local! {
-    static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
-}
-pub fn tensor_lt_block(
-    x_d: &[f32],
-    y_d: &[f32],
-    t_d: &mut [f32],
-    m: usize,
-    p: usize,
-    n: usize,
-    s_x: usize,
-    s_y: usize,
-    s_t: usize,
-) {
-    // suffix c: chunk, suffix a: actual
-    t_d.par_chunks_mut(LC * n)
-        .zip(x_d.par_chunks(LC * p))
-        .enumerate()
-        .for_each(|(lc_idx, (t, x))| {
-            PACK.with(|workspace_cell| {
-                let lc = lc_idx * LC;
-                let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let (dx, dt, dy) = (MC * s_x, MC * s_t, PC * s_y);
-                let (mut xend, mut yend, mut tend);
-                let (mut xoffset, mut yoffset, mut toffset) = (0, 0, 0);
-                let rows = x.len() / s_x;
-                for mc in (0..rows).step_by(MC) {
-                    let ma = diff_min(rows, mc, MC);
-                    let t_bound = lc + mc + ma;
-                    (xend, tend) = (ma * s_x, ma * s_t);
-                    for nc in (0..n).step_by(NC) {
-                        let na = diff_min(n, nc, NC);
-                        t_accum.fill(0f32);
-                        yoffset = 0;
-                        for pc in (0..t_bound).step_by(PC) {
-                            // for pc in (0..p).step_by(PC) {
-                            let pa = diff_min(p, pc, PC);
-                            yend = pa * s_y;
-                            pack(&x[xoffset + pc..xoffset + xend], x_pack, ma, pa, PC, s_x);
-                            pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
-                            tensor_lt_contraction(
-                                &x_pack, &y_pack, t_accum, lc, pc, ma, pa, na, PC, NC, NC,
-                            );
-                            yoffset += dy;
-                        }
-                        // unpack
-                        pack(
-                            &t_accum,
-                            &mut t[toffset + nc..toffset + tend],
-                            ma,
-                            na,
-                            s_y,
-                            NC,
-                        );
-                    }
-                    xoffset += dx;
-                    toffset += dt;
+    // // // warmup
+    // for _ in 0..100 {
+    //     pack(&d.data, &mut b_default, MC, PC, PC, cols);
+    // }
+    println!("default");
+    // default
+    let start = Instant::now();
+    for _ in 0..iters {
+        for mc in (0..rows).step_by(MC) {
+            let ma = diff_min(rows, mc, MC);
+            for pc in (0..cols).step_by(PC) {
+                let pa = diff_min(cols, pc, PC);
+                b_default.fill(0f32);
+                unsafe {
+                    pack(&d.data[mc * cols + pc..], &mut b_default, ma, pa, PC, cols);
                 }
-            })
-        });
-}
-/// # pack transfers a copy of data from d to pack
-/// * to inverse simply exchange d and b
-/// - d ~ M(r, s)
-///
-/// * d: contains the source data of x sliced to begin at mc
-/// * b: contains the target pack for the outer iteration loop
-/// * re: size of the r-block
-/// * se: size of the s-block
-/// * s_b: stride of block
-/// * s_d: stride of the matrix d
-#[inline(always)]
-fn pack(d: &[f32], b: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usize) {
-    unsafe {
-        let mut doffset = 0;
-        let mut boffset = 0;
-        for _ in 0..re {
-            b.get_unchecked_mut(boffset..boffset + se)
-                .copy_from_slice(&d.get_unchecked(doffset..doffset + se));
-            boffset += s_b;
-            doffset += s_d;
+                std::hint::black_box(&b_default);
+            }
         }
     }
-}
-pub fn tensor_lt_contraction(
-    x_d: &[f32],
-    y_d: &[f32],
-    t_d: &mut [f32],
-    g_i: usize,
-    g_k: usize,
-    m: usize,
-    p: usize,
-    n: usize,
-    s_x: usize,
-    s_y: usize,
-    s_t: usize,
-) {
-    unsafe {
-        let mut xoffset = 0;
-        let mut toffset = 0;
-        let dx = SIMD_WIDTH * s_x;
-        let dt = SIMD_WIDTH * s_t;
-        for i in (0..m).step_by(SIMD_WIDTH) {
-            let ii_end = SIMD_WIDTH.min(m - i);
-            for j in (0..=i).step_by(SIMD_WIDTH) {
-                let jj_end = SIMD_WIDTH.min(n - j);
-                if g_i + i == g_k {
-                    kernel_lt_mult(
-                        x_d.get_unchecked(xoffset..),
-                        y_d.get_unchecked(j..),
-                        t_d.get_unchecked_mut(toffset + j..),
-                        ii_end,
-                        p,
-                        jj_end,
-                        s_x,
-                        s_y,
-                        s_t,
-                    )
-                // } else {
-                } else if g_i + i >= g_k {
-                    kernel_mult(
-                        x_d.get_unchecked(xoffset..),
-                        y_d.get_unchecked(j..),
-                        t_d.get_unchecked_mut(toffset + j..),
-                        ii_end,
-                        p,
-                        jj_end,
-                        s_x,
-                        s_y,
-                        s_t,
-                    )
+    let default_time = start.elapsed();
+    println!("inline");
+    // // simd
+    let mut dptr = d.data.as_ptr();
+    let start = Instant::now();
+    for _ in 0..iters {
+        for mc in (0..rows).step_by(MC) {
+            let ma = diff_min(rows, mc, MC);
+            for pc in (0..cols).step_by(PC) {
+                let pa = diff_min(cols, pc, PC);
+                unsafe {
+                    pack_x!(
+                        b_simd.as_mut_ptr(),
+                        dptr.add(mc * cols + pc),
+                        ma,
+                        pa,
+                        cols
+                    );
+                    std::hint::black_box(&b_simd);
                 }
             }
-            toffset += dt;
-            xoffset += dx;
         }
     }
-}
-fn test_gemm_equivalence() {
-    let ikj = [
-        // (256, 256, 256),
-        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        // (1, 1, 1),
-        // (8, 1, 1),
-        // (1, 8, 1),
-        // (1, 1, 8),
-        // (6, 4, 8),
-        // (6, 8, 4),
-        // (4, 6, 8),
-        // (4, 8, 6),
-        // (8, 4, 6),
-        // (8, 6, 4),
-        (8, 8, 8),
-        (16, 16, 16),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        // (256, 1024, 512),
-        // (512, 512, 512),
-        // (1024, 64, 1024),
-    ];
-    for (i, k, j) in ikj {
-        println!("(i: {i:?}, k: {k:?}, j: {j:})");
-        test_lower_equivalence_mkn(i, k, j);
-    }
-}
-fn filter_lower_triangle(a: &mut NdArray) {
-    let (rows, cols) = (a.dims[0], a.dims[1]);
-    let d = &mut a.data;
-    for i in 0..rows {
-        for j in i + 1..cols {
-            d[i * cols + j] = 0f32;
-        }
-    }
-}
-fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
-    let x = generate_random_matrix(m, p);
-    let y = generate_random_matrix(p, n);
-    let mut x_base = x.clone();
-    filter_lower_triangle(&mut x_base);
-    let expected = basic_mult(&x_base, &y);
-    let mut result = vec![0f32; m * n];
-    tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, m, p, n);
-    let inspect = NdArray {
-        dims: vec![m, n],
-        data: result.clone(),
-    };
-    println!("expected {expected:?}");
-    println!("actual {inspect:?}");
-    assert!(approx_vector_eq(&expected.data, &result[..m * n]));
+    let simd_time = start.elapsed();
+
+    // correctness
+    assert_eq!(b_default, b_simd, "results don't match!");
+
+    let total_calls = (iters * (rows / MC) * (cols / PC)) as u32;
+    println!("default: {:?}", default_time );
+    println!("simd:    {:?}", simd_time );
+    println!(
+        "speedup: {:.2}x",
+        default_time.as_secs_f64() / simd_time.as_secs_f64()
+    );
 }
 
-fn other_fun(x:&mut usize) {
-    println!("x {x:?}");
-    *x+=1;
-}
-
-// macro_rules! pack_simd_core {
-//     ($bptr:expr, $dptr:expr, $s_b:expr, $s_d:expr, $offset:expr) => {{
-//             _mm256_storeu_ps(
-//                 $dptr.add($offset),
-//                 _mm256_loadu_ps($bptr.add($offset))
-//             );
-//     }}
-// }
-
-// macro_rules! pack_simd {
-//     ($mc:expr, $bptr:expr, $dptr:expr, $s_b:expr, $s_d:expr) => {
-//         for offset in 0..$mc.step_by(SIMD_WIDTH) {
-//             pack_simd_core!($bptr, $dptr, $s_b, $s_d, offset);
-//         }
-//     }
-// }
-
-macro_rules! offset_maker {
-    ($size:expr, $width:expr) => {{
-        let mut arr = [0; $size / $width];
-        let mut i = 1;
-        while i + $width < $size / $width {
-            arr[i] = arr[i-1] + $width;
-            i += 1;
-        }
-        arr
-    }}
-}
-
-const X_OFFSETS: [usize; PC / SIMD_WIDTH] = offset_maker!(PC, SIMD_WIDTH);
-const Y_OFFSETS: [usize; NC / SIMD_WIDTH] = offset_maker!(NC, SIMD_WIDTH);
-const T_OFFSETS: [usize; NC / SIMD_WIDTH] = offset_maker!(NC, SIMD_WIDTH);
-
-macro_rules! pack_simd_line {
-    ($bptr:expr, $dptr:expr, $($offset:expr)*) => {{
-        $( 
-            _mm256_storeu_ps(
-                $bptr.add($offset),
-                _mm256_loadu_ps($dptr.add($offset))
-            );
-        )+
-    }}
-}
-
-macro_rules! pack_simd {
-    ($bptr:expr, $dptr:expr, $r_e:expr, $s_b:expr, $s_d:expr, $($offsets:expr)+) => {{
-        for _ in 0..$rc {
-            pack_simd_line!(bptr, dptr, $offsets);
-            bptr = bptr.add($s_b);
-            dptr = dptr.add($s_d);
-        }
-    }}
-}
-
-macro_rules! pack_x {
-    ($bptr:expr, $dptr:expr, $s_d:expr) => {{
-        pack_simd($bptr, $dptr, MC, PC, $s_d:expr, X_OFFSETS);
-    }}
-}
-macro_rules! pack_y {
-    ($bptr:expr, $dptr:expr, $s_d:expr) => {{
-        pack_simd($bptr, $dptr, PC, NC, $s_d:expr, Y_OFFSETS);
-    }}
-}
-macro_rules! pack_t {
-    ($bptr:expr, $dptr:expr, $s_d:expr) => {{
-        pack_simd($bptr, $dptr, PC, NC, $s_d:expr, T_OFFSETS);
-    }}
-}
-
-// macro_rules! offset_count { { for i in 1..TIMES {
-//             offsets[i] = offsets[i-1] + 8;
-//         }
-//     }
-
-// }
-
-// macro for simd pack unrolling/pack_simd
 fn main() {
-
-    // let mut d_mat = generate_random_matrix(8, 64);
-    // let mut d= d_mat.data.as_mut_ptr();
-    // let mut b = vec![0f32; MC * PC].as_mut_ptr();
-    // assert!(PC % SIMD_WIDTH == 0);
-    // unsafe { 
-    //     pack_simd!(MC, PC, d, b, PC, 64); 
-    // }
-
-
-    // test_gemm_equivalence();
+    test_performance();
 }

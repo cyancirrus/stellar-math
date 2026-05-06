@@ -93,6 +93,10 @@ LLVM-MCA
 cargo test --features="avx2" --lib test_kernel_block
 ```
 
+```check generated proc macros
+cargo expand --features avx2 --bin stellar
+```
+
 
 ## License
 

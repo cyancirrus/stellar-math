@@ -3,6 +3,15 @@ avx2 = []
 avx512 = []
 neon = []
 
+# [lib]
+# proc-macro=true
+
+# [workspace] [ 
+#  "stellar",
+#  "stellar_macros"
+# ]
+
+
 [package]
 name = "stellar"
 version = "0.1.0"
@@ -10,6 +19,7 @@ edition = "2024"
 resolver = "3"
 
 [dependencies]
+stellar_macros = { path = "../stellar-macros" }
 rand = "0.10.0"
 rand_distr = "0.6.0"
 rayon = "1.10.0"

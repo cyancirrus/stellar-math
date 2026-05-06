@@ -8,10 +8,21 @@ use std::cell::RefCell;
 
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // NOTE: could set these as cache sizes so threads reflect the amount of work
-const LC: usize = 64;
-const MC: usize = 64;
-const PC: usize = 256;
-const NC: usize = 128;
+// const LC: usize = 64;
+// const MC: usize = 64;
+// const PC: usize = 256;
+// const NC: usize = 128;
+
+// current best no pack cost
+// const LC: usize = 32;
+// const MC: usize = 32;
+// const PC: usize = 128;
+// const NC: usize = 64;
+
+const LC: usize = 48;
+const MC: usize = 48;
+const PC: usize = 192;
+const NC: usize = 96;
 
 ///  tensor_kernel
 ///  - accumulates the multiplication into the target matrix
@@ -109,7 +120,7 @@ pub fn tensor_blockkern(
 /// * s_b: stride of block
 /// * s_d: stride of the matrix d
 #[inline(always)]
-fn pack(d: &[f32], b: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usize) {
+pub fn pack(d: &[f32], b: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usize) {
     unsafe {
         let mut doffset = 0;
         let mut boffset = 0;

@@ -1,8 +1,7 @@
 // negative 1 is twos complement so all bits active
 use std::arch::x86_64::{
     __m256, __m256i, _mm256_and_ps, _mm256_blendv_ps, _mm256_broadcast_ss, _mm256_castsi256_ps,
-    _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_maskload_ps, _mm256_maskstore_ps,
-    _mm256_storeu_ps,
+    _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_maskload_ps, _mm256_maskstore_ps, _mm256_storeu_ps,
 };
 #[rustfmt::skip]
 pub const MASK:[[i32;8];9] = [

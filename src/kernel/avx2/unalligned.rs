@@ -4,7 +4,7 @@ use crate::kernel::avx2::constants::{mask_load, mask_load_ctrl, mask_store, mask
 use std::arch::x86_64::{
     __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_and_ps, _mm256_blendv_ps,
     _mm256_broadcast_ss, _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256,
-    _mm256_maskload_ps, _mm256_setzero_ps, _mm256_set1_ps
+    _mm256_maskload_ps, _mm256_set1_ps, _mm256_setzero_ps,
 };
 
 macro_rules! fma_gated {
