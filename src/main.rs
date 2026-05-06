@@ -18,7 +18,7 @@ use std::ptr::copy_nonoverlapping;
 use stellar::algebra::bmethods::pack;
 use stellar::arch::SIMD_WIDTH;
 use stellar::random::generation::generate_random_matrix;
-use stellar_macros::{avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned};
+use stellar_macros::{avx2_pack_simd_line, avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned};
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // const LC: usize = 48;
 // const MC: usize = 48;
@@ -52,18 +52,23 @@ macro_rules! avx2_pack_x {
         let mut dptr = $dptr;
         let mut boffset: usize = 0;
         let mut doffset: usize = 0;
-        if $se == PC {
-            for _ in 0..$re {
-                avx2_pack_simd_line_alligned!(bptr, dptr,);
-                bptr = bptr.add(PC);
-                dptr = dptr.add($s_d);
-            }
-        } else {
-            for _ in 0..$re {
-                avx2_pack_simd_line_unalligned!(bptr, dptr, $se, ZEROS);
-                bptr = bptr.add(PC);
-                dptr = dptr.add($s_d);
-            }
+        // if $se == PC {
+        //     for _ in 0..$re {
+        //         avx2_pack_simd_line_alligned!(bptr, dptr,);
+        //         bptr = bptr.add(PC);
+        //         dptr = dptr.add($s_d);
+        //     }
+        // } else {
+        //     for _ in 0..$re {
+        //         avx2_pack_simd_line_unalligned!(bptr, dptr, $se, ZEROS);
+        //         bptr = bptr.add(PC);
+        //         dptr = dptr.add($s_d);
+        //     }
+        // }
+        for _ in 0..$re {
+            avx2_pack_simd_line!(bptr, dptr, $se, ZEROS);
+            bptr = bptr.add(PC);
+            dptr = dptr.add($s_d);
         }
         write_bytes(bptr, 0, (MC - $re) * PC);
     }};
