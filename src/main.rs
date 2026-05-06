@@ -114,10 +114,8 @@ fn diff_min(x: usize, b: usize, t: usize) -> usize {
     if x - b < t { x - b } else { t }
 }
 fn test_performance() {
-    let rows = 1024;
-    let cols = 1024;
-    // let rows = 1024;
-    // let cols = 1024;
+    let rows = 128;
+    let cols = 312;
     // let rows = 48;
     // let cols = 64;
     let mut d = generate_random_matrix(rows, cols);
