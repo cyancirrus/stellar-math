@@ -24,8 +24,8 @@ const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // const MC: usize = 48;
 // const PC: usize = 32;
 // const NC: usize = 96;
-const MC: usize = 8;
-const PC: usize = 8;
+const MC: usize = 48;
+const PC: usize = 256;
 use std::arch::x86_64::{
     __m256, __m256i, _mm256_and_ps, _mm256_blendv_ps, _mm256_broadcast_ss, _mm256_castsi256_ps,
     _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskload_ps, _mm256_maskstore_ps,
@@ -43,6 +43,8 @@ pub const MASK:[[i32;8];9] = [
     [-1, -1, -1, -1, -1, -1, -1,  0],
     [-1, -1, -1, -1, -1, -1, -1, -1],
 ];
+use std::ptr::write_bytes;
+
 // #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 macro_rules! avx2_pack_x {
     ($bptr:expr, $dptr:expr, $re:expr, $se:expr, $s_b:expr, $s_d:expr) => {{
@@ -50,7 +52,6 @@ macro_rules! avx2_pack_x {
         let mut dptr = $dptr;
         let mut boffset: usize = 0;
         let mut doffset: usize = 0;
-        let base_dptr = $dptr;
         if $se == PC {
             for _ in 0..$re {
                 avx2_pack_simd_line_alligned!(bptr, dptr,);
@@ -64,6 +65,7 @@ macro_rules! avx2_pack_x {
                 dptr = dptr.add($s_d);
             }
         }
+        write_bytes(bptr, 0, (MC - $re) * PC);
     }};
 }
 #[inline(always)]
@@ -102,10 +104,12 @@ fn diff_min(x: usize, b: usize, t: usize) -> usize {
     if x - b < t { x - b } else { t }
 }
 fn test_performance() {
-    let rows = 64;
-    let cols = 40;
-    // let rows = 64;
-    // let cols = 256;
+    let rows = 1024;
+    let cols = 1024;
+    // let rows = 1024;
+    // let cols = 1024;
+    // let rows = 48;
+    // let cols = 64;
     let mut d = generate_random_matrix(rows, cols);
     let mut b_default = vec![0f32; MC * PC];
     let mut b_simd = vec![0f32; MC * PC];
