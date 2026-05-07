@@ -29,7 +29,7 @@ const PC: usize = 256;
 use std::arch::x86_64::{
     __m256, __m256i, _mm256_and_ps, _mm256_blendv_ps, _mm256_broadcast_ss, _mm256_castsi256_ps,
     _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskload_ps, _mm256_maskstore_ps,
-    _mm256_storeu_ps, _mm256_setzero_ps
+    _mm256_storeu_ps, _mm256_setzero_ps, _mm256_stream_ps
 };
 #[rustfmt::skip]
 pub const MASK:[[i32;8];9] = [
@@ -50,21 +50,8 @@ macro_rules! avx2_pack_x {
     ($bptr:expr, $dptr:expr, $re:expr, $se:expr, $s_b:expr, $s_d:expr) => {{
         let mut bptr = $bptr;
         let mut dptr = $dptr;
-        let mut boffset: usize = 0;
-        let mut doffset: usize = 0;
-        // if $se == PC {
-        //     for _ in 0..$re {
-        //         avx2_pack_simd_line_alligned!(bptr, dptr,);
-        //         bptr = bptr.add(PC);
-        //         dptr = dptr.add($s_d);
-        //     }
-        // } else {
-        //     for _ in 0..$re {
-        //         avx2_pack_simd_line_unalligned!(bptr, dptr, $se, ZEROS);
-        //         bptr = bptr.add(PC);
-        //         dptr = dptr.add($s_d);
-        //     }
-        // }
+        let zeros = _mm256_setzero_ps();
+        let mask = _mm256_loadu_si256(MASK[$se & (SIMD_WIDTH - 1)].as_ptr() as *const __m256i);
         for _ in 0..$re {
             avx2_pack_simd_line!(bptr, dptr, $se, ZEROS);
             bptr = bptr.add(PC);
@@ -96,16 +83,6 @@ pub fn pack_x (bptr:*mut f32, dptr:*const f32, re:usize, se:usize, s_d:usize) {
     }
 }
 
-
-// macro_rules! pack_x {
-//     ($bptr:expr, $dptr:expr, $re:expr, $se:expr, $s_d:expr) => {{
-//         #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-//         avx2_pack_x!($bptr, $dptr, $re, $se, PC, $s_d);
-//         #[cfg(not(any(feature = "avx2")))]
-//         default_pack($bptr, $dptr, $re, $se, PC, $s_d);
-//     }};
-// }
-
 use std::time::Instant;
 // const MC: usize = 48;
 // const PC: usize = 192;
@@ -118,9 +95,13 @@ use std::time::Instant;
 fn diff_min(x: usize, b: usize, t: usize) -> usize {
     if x - b < t { x - b } else { t }
 }
+
+// replaced storeu with stream
 fn test_performance() {
-    let rows = 128;
-    let cols = 312;
+    let rows = 1024;
+    let cols = 1024;
+    // let rows = 128;
+    // let cols = 312;
     // let rows = 48;
     // let cols = 64;
     let mut d = generate_random_matrix(rows, cols);
