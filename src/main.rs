@@ -20,7 +20,8 @@ use stellar::arch::SIMD_WIDTH;
 use stellar::random::generation::generate_random_matrix;
 // use stellar_macros::{avx2_pack_simd_line, avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned};
 use stellar_macros::{
-    kernel_mult_alligned, avx2_pack_simd_line, avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned,
+    avx2_pack_simd_line, avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned,
+    kernel_mult_alligned,
 };
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
@@ -36,13 +37,11 @@ use std::arch::x86_64::{
     _mm256_setzero_ps, _mm256_storeu_ps, _mm256_stream_ps,
 };
 
-
 macro_rules! fma_accum {
     ($acc:expr, $cptr:expr, $data:expr) => {
         $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$cptr), $data, $acc);
     };
 }
-
 
 #[inline(always)]
 #[cfg(not(any(feature = "avx2")))]
@@ -72,8 +71,4 @@ pub fn kernel_mult(
     }
 }
 
-fn main() {
-
-
-
-}
+fn main() {}
