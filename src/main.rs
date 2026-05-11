@@ -18,7 +18,11 @@ use std::ptr::copy_nonoverlapping;
 use stellar::algebra::bmethods::pack;
 use stellar::arch::SIMD_WIDTH;
 use stellar::random::generation::generate_random_matrix;
-use stellar_macros::{avx2_pack_simd_line, avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned};
+// use stellar_macros::{avx2_pack_simd_line, avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned};
+use stellar_macros::{
+    kernel_mult_alligned, avx2_pack_simd_line, avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned,
+};
+#[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // const LC: usize = 48;
 // const MC: usize = 48;
@@ -29,145 +33,47 @@ const PC: usize = 256;
 use std::arch::x86_64::{
     __m256, __m256i, _mm256_and_ps, _mm256_blendv_ps, _mm256_broadcast_ss, _mm256_castsi256_ps,
     _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskload_ps, _mm256_maskstore_ps,
-    _mm256_storeu_ps, _mm256_setzero_ps, _mm256_stream_ps
+    _mm256_setzero_ps, _mm256_storeu_ps, _mm256_stream_ps,
 };
-#[rustfmt::skip]
-pub const MASK:[[i32;8];9] = [
-    [ 0,  0,  0,  0,  0,  0,  0,  0],
-    [-1,  0,  0,  0,  0,  0,  0,  0],
-    [-1, -1,  0,  0,  0,  0,  0,  0],
-    [-1, -1, -1,  0,  0,  0,  0,  0],
-    [-1, -1, -1, -1,  0,  0,  0,  0],
-    [-1, -1, -1, -1, -1,  0,  0,  0],
-    [-1, -1, -1, -1, -1, -1,  0,  0],
-    [-1, -1, -1, -1, -1, -1, -1,  0],
-    [-1, -1, -1, -1, -1, -1, -1, -1],
-];
-use std::ptr::write_bytes;
 
-// #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-macro_rules! avx2_pack_x {
-    ($bptr:expr, $dptr:expr, $re:expr, $se:expr, $s_b:expr, $s_d:expr) => {{
-        let mut bptr = $bptr;
-        let mut dptr = $dptr;
-        let zeros = _mm256_setzero_ps();
-        let mask = _mm256_loadu_si256(MASK[$se & (SIMD_WIDTH - 1)].as_ptr() as *const __m256i);
-        for _ in 0..$re {
-            avx2_pack_simd_line!(bptr, dptr, $se, ZEROS);
-            bptr = bptr.add(PC);
-            dptr = dptr.add($s_d);
-        }
-        write_bytes(bptr, 0, (MC - $re) * PC);
-    }};
+
+macro_rules! fma_accum {
+    ($acc:expr, $cptr:expr, $data:expr) => {
+        $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$cptr), $data, $acc);
+    };
 }
+
+
 #[inline(always)]
 #[cfg(not(any(feature = "avx2")))]
-fn default_pack(bptr: *mut f32, dptr: *const f32, re: usize, se: usize, s_b: usize, s_d: usize) {
+fn default_mult(bptr: *mut f32, dptr: *const f32, re: usize, se: usize, s_b: usize, s_d: usize) {
     unsafe {
-        let mut doffset = 0;
-        let mut boffset = 0;
-        for _ in 0..re {
-            copy_nonoverlapping(dptr.add(doffset), bptr.add(boffset), se);
-            boffset += s_b;
-            doffset += s_d;
-        }
+        println!("recompile with avx2");
     }
 }
 
-pub fn pack_x (bptr:*mut f32, dptr:*const f32, re:usize, se:usize, s_d:usize) {
+pub fn kernel_mult(
+    xptr: *const f32,
+    yptr: *const f32,
+    tptr: *mut f32,
+    m: usize,
+    n: usize,
+    p: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
     unsafe {
         #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-        avx2_pack_x!(bptr, dptr, re, se, PC, s_d);
+        kernel_mult_alligned!(xptr, yptr, tptr, m, n, p, s_x, s_y, s_t);
         #[cfg(not(any(feature = "avx2")))]
-        default_pack(bptr, dptr, re, se, PC, s_d);
+        {}
+        // default_mult(bptr, dptr, re, se, PC, s_d);
     }
-}
-
-use std::time::Instant;
-// const MC: usize = 48;
-// const PC: usize = 192;
-// const NC: usize = 192;
-
-// const PC: usize = 16;
-// const NC: usize = 192;
-
-#[inline(always)]
-fn diff_min(x: usize, b: usize, t: usize) -> usize {
-    if x - b < t { x - b } else { t }
-}
-
-// replaced storeu with stream
-fn test_performance() {
-    let rows = 1024;
-    let cols = 1024;
-    // let rows = 128;
-    // let cols = 312;
-    // let rows = 48;
-    // let cols = 64;
-    let mut d = generate_random_matrix(rows, cols);
-    let mut b_default = vec![0f32; MC * PC];
-    let mut b_simd = vec![0f32; MC * PC];
-
-    // let iters = 10_000;
-    let iters = 100;
-
-    // // // warmup
-    // for _ in 0..100 {
-    //     pack(&d.data, &mut b_default, MC, PC, PC, cols);
-    // }
-    println!("default");
-    // default
-    let start = Instant::now();
-    for _ in 0..iters {
-        for mc in (0..rows).step_by(MC) {
-            let ma = diff_min(rows, mc, MC);
-            for pc in (0..cols).step_by(PC) {
-                let pa = diff_min(cols, pc, PC);
-                b_default.fill(0f32);
-                unsafe {
-                    pack(&d.data[mc * cols + pc..], &mut b_default, ma, pa, PC, cols);
-                }
-                std::hint::black_box(&b_default);
-            }
-        }
-    }
-    let default_time = start.elapsed();
-    println!("inline");
-    // // simd
-    let mut dptr = d.data.as_ptr();
-    let start = Instant::now();
-    for _ in 0..iters {
-        for mc in (0..rows).step_by(MC) {
-            let ma = diff_min(rows, mc, MC);
-            for pc in (0..cols).step_by(PC) {
-                let pa = diff_min(cols, pc, PC);
-                unsafe {
-                    pack_x(
-                        b_simd.as_mut_ptr(),
-                        dptr.add(mc * cols + pc),
-                        ma,
-                        pa,
-                        cols
-                    );
-                    std::hint::black_box(&b_simd);
-                }
-            }
-        }
-    }
-    let simd_time = start.elapsed();
-
-    // correctness
-    assert_eq!(b_default, b_simd, "results don't match!");
-
-    let total_calls = (iters * (rows / MC) * (cols / PC)) as u32;
-    println!("default: {:?}", default_time );
-    println!("simd:    {:?}", simd_time );
-    println!(
-        "speedup: {:.2}x",
-        default_time.as_secs_f64() / simd_time.as_secs_f64()
-    );
 }
 
 fn main() {
-    test_performance();
+
+
+
 }
