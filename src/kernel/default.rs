@@ -1,4 +1,3 @@
-use crate::arch::SIMD_WIDTH;
 
 // NOTE: could consider switching to a mask look up table
 
