@@ -44,14 +44,14 @@ pub fn kernel_imult_lt_unalligned(
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
             let b0 = mask_load(yptr, mask_n);
             yptr = yptr.add(s_y);
-            mfma_accum!(mask_t[0], row0, xptr, b0);
-            mfma_accum!(mask_t[1], row1, xptr.add(s_x), b0);
-            mfma_accum!(mask_t[2], row2, xptr.add(2 * s_x), b0);
-            mfma_accum!(mask_t[3], row3, xptr.add(3 * s_x), b0);
-            mfma_accum!(mask_t[4], row4, xptr.add(4 * s_x), b0);
-            mfma_accum!(mask_t[5], row5, xptr.add(5 * s_x), b0);
-            mfma_accum!(mask_t[6], row6, xptr.add(6 * s_x), b0);
-            mfma_accum!(mask_t[7], row7, xptr.add(7 * s_x), b0);
+            mfma_accum!(mask_m[0], row0, xptr, b0);
+            mfma_accum!(mask_m[1], row1, xptr.add(s_x), b0);
+            mfma_accum!(mask_m[2], row2, xptr.add(2 * s_x), b0);
+            mfma_accum!(mask_m[3], row3, xptr.add(3 * s_x), b0);
+            mfma_accum!(mask_m[4], row4, xptr.add(4 * s_x), b0);
+            mfma_accum!(mask_m[5], row5, xptr.add(5 * s_x), b0);
+            mfma_accum!(mask_m[6], row6, xptr.add(6 * s_x), b0);
+            mfma_accum!(mask_m[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
         let mut mask_t = mask_m;
