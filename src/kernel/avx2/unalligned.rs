@@ -2,14 +2,13 @@
 use crate::kernel::avx2::constants::MASK;
 use crate::kernel::avx2::constants::{mask_load, mask_load_ctrl, mask_store, mask_store_ctrl};
 use std::arch::x86_64::{
-    __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_and_ps, _mm256_blendv_ps,
-    _mm256_broadcast_ss, _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256,
-    _mm256_maskload_ps, _mm256_set1_ps, _mm256_setzero_ps,
+    __m256i, _mm256_add_ps, _mm256_fmadd_ps, _mm256_loadu_si256, _mm256_maskload_ps,
+    _mm256_set1_ps, _mm256_setzero_ps,
 };
 
 macro_rules! fma_gated {
     // macro instead of fn: avoids &mut _mm256 which can force stack spill via pointer indirection
-    ($acc:expr, $ptr:expr, $mask_bit:expr, $data:expr) => {
+    ($mask_bit:expr, $acc:expr, $ptr:expr, $data:expr) => {
         if $mask_bit != 0 {
             // $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$ptr), $data, $acc);
             $acc = _mm256_fmadd_ps(_mm256_set1_ps(*$ptr), $data, $acc);
@@ -45,8 +44,8 @@ pub fn kernel_imult_safe(
         for _ in 0..p >> 1 {
             // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
-            let b0 = mask_load(yptr, mask_n);
-            let b1 = mask_load(yptr.add(s_y), mask_n);
+            let b0 = mask_load(mask_n, yptr);
+            let b1 = mask_load(mask_n, yptr.add(s_y));
             yptr = yptr.add(s_y + s_y);
             fma_gated!(mask_m[0], row0, xptr, b0);
             fma_gated!(mask_m[4], row4, xptr.add(4 * s_x + 1), b1);
@@ -79,14 +78,14 @@ pub fn kernel_imult_safe(
             fma_gated!(mask_m[3], row3, xptr.add(3 * s_x), b);
             fma_gated!(mask_m[7], row7, xptr.add(7 * s_x), b);
         }
-        mask_store_ctrl(mask_m[0], mask_n, tptr, i_row);
-        mask_store_ctrl(mask_m[4], mask_n, tptr.add(s_t * 4), v_row);
-        mask_store_ctrl(mask_m[1], mask_n, tptr.add(s_t), ii_row);
-        mask_store_ctrl(mask_m[5], mask_n, tptr.add(s_t * 5), vi_row);
-        mask_store_ctrl(mask_m[2], mask_n, tptr.add(s_t * 2), iii_row);
-        mask_store_ctrl(mask_m[6], mask_n, tptr.add(s_t * 6), vii_row);
-        mask_store_ctrl(mask_m[3], mask_n, tptr.add(s_t * 3), iv_row);
-        mask_store_ctrl(mask_m[7], mask_n, tptr.add(s_t * 7), viii_row);
+        mask_store_ctrl(mask_m[0], mask_n, tptr, row0);
+        mask_store_ctrl(mask_m[4], mask_n, tptr.add(s_t * 4), row4);
+        mask_store_ctrl(mask_m[1], mask_n, tptr.add(s_t), row1);
+        mask_store_ctrl(mask_m[5], mask_n, tptr.add(s_t * 5), row5);
+        mask_store_ctrl(mask_m[2], mask_n, tptr.add(s_t * 2), row2);
+        mask_store_ctrl(mask_m[6], mask_n, tptr.add(s_t * 6), row6);
+        mask_store_ctrl(mask_m[3], mask_n, tptr.add(s_t * 3), row3);
+        mask_store_ctrl(mask_m[7], mask_n, tptr.add(s_t * 7), row7);
     }
 }
 #[target_feature(enable = "avx,avx2,fma")]
@@ -129,8 +128,7 @@ pub fn kernel_mult_safe(
             fma_gated!(mask_p[6], acc1, xptr.add(6), row6);
             fma_gated!(mask_p[3], acc0, xptr.add(3), row3);
             fma_gated!(mask_p[7], acc1, xptr.add(7), row7);
-            // _mm256_maskstore_ps(tptr, mask_n, _mm256_add_ps(acc1, acc0));
-            mask_store(tptr, mask_n, _mm256_add_ps(acc1, acc0));
+            mask_store(mask_n, tptr, _mm256_add_ps(acc1, acc0));
             xptr = xptr.add(s_x);
             tptr = tptr.add(s_t);
         }

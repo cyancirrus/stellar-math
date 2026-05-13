@@ -19,19 +19,17 @@ pub fn kernel_mult(
     s_y: usize,
     s_t: usize,
 ) {
-    unsafe {
-        kernel_mult_simd(
-            x.as_ptr(),
-            y.as_ptr(),
-            t.as_mut_ptr(),
-            m,
-            p,
-            n,
-            s_x,
-            s_y,
-            s_t,
-        );
-    }
+    kernel_mult_simd(
+        x.as_ptr(),
+        y.as_ptr(),
+        t.as_mut_ptr(),
+        m,
+        p,
+        n,
+        s_x,
+        s_y,
+        s_t,
+    );
 }
 
 #[inline(never)]
@@ -46,17 +44,15 @@ pub fn kernel_lt_mult(
     s_y: usize,
     s_t: usize,
 ) {
-    unsafe {
-        kernel_lt_mult_simd(
-            x.as_ptr(),
-            y.as_ptr(),
-            t.as_mut_ptr(),
-            m,
-            p,
-            n,
-            s_x,
-            s_y,
-            s_t,
-        );
-    }
+    kernel_lt_mult_simd(
+        x.as_ptr(),
+        y.as_ptr(),
+        t.as_mut_ptr(),
+        m,
+        p,
+        n,
+        s_x,
+        s_y,
+        s_t,
+    );
 }

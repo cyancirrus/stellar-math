@@ -1,9 +1,5 @@
 use crate::kernel::avx2::constants::{MASK, mask_load, mask_store_ctrl};
-use std::arch::x86_64::{
-    __m256, __m256i, _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_and_ps, _mm256_broadcast_ss,
-    _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskstore_ps,
-    _mm256_set1_epi32, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
-};
+use std::arch::x86_64::{__m256i, _mm256_broadcast_ss, _mm256_fmadd_ps, _mm256_loadu_si256};
 macro_rules! mfma_accum {
     ($ctrl:expr, $acc:expr, $ptr:expr, $data:expr) => {
         if $ctrl != 0 {
@@ -39,10 +35,10 @@ pub fn kernel_imult_lt_unalligned(
         let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
         let threshold = m.min(p);
         let mask_m = MASK[m];
-        for k in threshold..p {
+        for _k in threshold..p {
             // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
-            let b0 = mask_load(yptr, mask_n);
+            let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
             mfma_accum!(mask_m[0], row0, xptr, b0);
             mfma_accum!(mask_m[1], row1, xptr.add(s_x), b0);
@@ -56,7 +52,7 @@ pub fn kernel_imult_lt_unalligned(
         }
         let mut mask_t = mask_m;
         for k in 0..threshold {
-            let b0 = mask_load(yptr, mask_n);
+            let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
             mfma_accum!(mask_t[0], row0, xptr, b0);
             mfma_accum!(mask_t[1], row1, xptr.add(s_x), b0);
@@ -109,7 +105,7 @@ pub fn kernel_imult_ut_unalligned(
         let threshold = m.min(p);
         for k in 0..threshold {
             mask_t[k] = mask_m[k];
-            let b0 = mask_load(yptr, mask_n);
+            let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
             mfma_accum!(mask_t[0], row0, xptr, b0);
             mfma_accum!(mask_t[1], row1, xptr.add(s_x), b0);
@@ -121,10 +117,10 @@ pub fn kernel_imult_ut_unalligned(
             mfma_accum!(mask_t[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
-        for k in threshold..p {
+        for _k in threshold..p {
             // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
-            let b0 = mask_load(yptr, mask_n);
+            let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
             mfma_accum!(mask_m[0], row0, xptr, b0);
             mfma_accum!(mask_m[1], row1, xptr.add(s_x), b0);
