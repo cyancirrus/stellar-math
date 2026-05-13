@@ -1,4 +1,3 @@
-
 // NOTE: could consider switching to a mask look up table
 
 /// kernel_mult_scalar

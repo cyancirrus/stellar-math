@@ -4,9 +4,9 @@ use std::arch::x86_64::{
     _mm256_castsi256_ps, _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskstore_ps,
     _mm256_set1_epi32, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
 };
-macro_rules! fma_gated {
-    ($acc:expr, $ptr:expr, $mask_bit:expr, $data:expr) => {
-        if $mask_bit != 0 {
+macro_rules! mfma_accum {
+    ($ctrl:expr, $acc:expr, $ptr:expr, $data:expr) => {
+        if $ctrl != 0 {
             $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$ptr), $data, $acc);
             // $acc = _mm256_fmadd_ps(_mm256_set1_ps(*$ptr), $b, $acc);
         }
@@ -29,14 +29,14 @@ pub fn kernel_imult_lt_unalligned(
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
-        let mut i_row = mask_load(tptr, mask_n);
-        let mut v_row = mask_load(tptr.add(s_t * 4), mask_n);
-        let mut ii_row = mask_load(tptr.add(s_t), mask_n);
-        let mut vi_row = mask_load(tptr.add(s_t * 5), mask_n);
-        let mut iii_row = mask_load(tptr.add(s_t * 2), mask_n);
-        let mut vii_row = mask_load(tptr.add(s_t * 6), mask_n);
-        let mut iv_row = mask_load(tptr.add(s_t * 3), mask_n);
-        let mut viii_row = mask_load(tptr.add(s_t * 7), mask_n);
+        let mut row0 = mask_load(mask_n, tptr);
+        let mut row1 = mask_load(mask_n, tptr.add(s_t));
+        let mut row2 = mask_load(mask_n, tptr.add(s_t * 2));
+        let mut row3 = mask_load(mask_n, tptr.add(s_t * 3));
+        let mut row4 = mask_load(mask_n, tptr.add(s_t * 4));
+        let mut row5 = mask_load(mask_n, tptr.add(s_t * 5));
+        let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
+        let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
         let threshold = m.min(p);
         let mask_m = MASK[m];
         for k in threshold..p {
@@ -44,39 +44,39 @@ pub fn kernel_imult_lt_unalligned(
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
             let b0 = mask_load(yptr, mask_n);
             yptr = yptr.add(s_y);
-            fma_gated!(i_row, xptr, mask_m[0], b0);
-            fma_gated!(ii_row, xptr.add(s_x), mask_m[1], b0);
-            fma_gated!(iii_row, xptr.add(2 * s_x), mask_m[2], b0);
-            fma_gated!(iv_row, xptr.add(3 * s_x), mask_m[3], b0);
-            fma_gated!(v_row, xptr.add(4 * s_x), mask_m[4], b0);
-            fma_gated!(vi_row, xptr.add(5 * s_x), mask_m[5], b0);
-            fma_gated!(vii_row, xptr.add(6 * s_x), mask_m[6], b0);
-            fma_gated!(viii_row, xptr.add(7 * s_x), mask_m[7], b0);
+            mfma_accum!(mask_t[0], row0, xptr, b0);
+            mfma_accum!(mask_t[1], row1, xptr.add(s_x), b0);
+            mfma_accum!(mask_t[2], row2, xptr.add(2 * s_x), b0);
+            mfma_accum!(mask_t[3], row3, xptr.add(3 * s_x), b0);
+            mfma_accum!(mask_t[4], row4, xptr.add(4 * s_x), b0);
+            mfma_accum!(mask_t[5], row5, xptr.add(5 * s_x), b0);
+            mfma_accum!(mask_t[6], row6, xptr.add(6 * s_x), b0);
+            mfma_accum!(mask_t[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
         let mut mask_t = mask_m;
         for k in 0..threshold {
             let b0 = mask_load(yptr, mask_n);
             yptr = yptr.add(s_y);
-            fma_gated!(i_row, xptr, mask_t[0], b0);
-            fma_gated!(ii_row, xptr.add(s_x), mask_t[1], b0);
-            fma_gated!(iii_row, xptr.add(2 * s_x), mask_t[2], b0);
-            fma_gated!(iv_row, xptr.add(3 * s_x), mask_t[3], b0);
-            fma_gated!(v_row, xptr.add(4 * s_x), mask_t[4], b0);
-            fma_gated!(vi_row, xptr.add(5 * s_x), mask_t[5], b0);
-            fma_gated!(vii_row, xptr.add(6 * s_x), mask_t[6], b0);
-            fma_gated!(viii_row, xptr.add(7 * s_x), mask_t[7], b0);
+            mfma_accum!(mask_t[0], row0, xptr, b0);
+            mfma_accum!(mask_t[1], row1, xptr.add(s_x), b0);
+            mfma_accum!(mask_t[2], row2, xptr.add(2 * s_x), b0);
+            mfma_accum!(mask_t[3], row3, xptr.add(3 * s_x), b0);
+            mfma_accum!(mask_t[4], row4, xptr.add(4 * s_x), b0);
+            mfma_accum!(mask_t[5], row5, xptr.add(5 * s_x), b0);
+            mfma_accum!(mask_t[6], row6, xptr.add(6 * s_x), b0);
+            mfma_accum!(mask_t[7], row7, xptr.add(7 * s_x), b0);
             mask_t[k] = 0;
             xptr = xptr.add(1);
         }
-        mask_store_ctrl(tptr, mask_n, i_row, mask_m[0]);
-        mask_store_ctrl(tptr.add(s_t * 4), mask_n, v_row, mask_m[4]);
-        mask_store_ctrl(tptr.add(s_t), mask_n, ii_row, mask_m[1]);
-        mask_store_ctrl(tptr.add(s_t * 5), mask_n, vi_row, mask_m[5]);
-        mask_store_ctrl(tptr.add(s_t * 2), mask_n, iii_row, mask_m[2]);
-        mask_store_ctrl(tptr.add(s_t * 6), mask_n, vii_row, mask_m[6]);
-        mask_store_ctrl(tptr.add(s_t * 3), mask_n, iv_row, mask_m[3]);
-        mask_store_ctrl(tptr.add(s_t * 7), mask_n, viii_row, mask_m[7]);
+        mask_store_ctrl(mask_m[0], mask_n, tptr, row0);
+        mask_store_ctrl(mask_m[1], mask_n, tptr.add(s_t), row1);
+        mask_store_ctrl(mask_m[2], mask_n, tptr.add(s_t * 2), row2);
+        mask_store_ctrl(mask_m[3], mask_n, tptr.add(s_t * 3), row3);
+        mask_store_ctrl(mask_m[4], mask_n, tptr.add(s_t * 4), row4);
+        mask_store_ctrl(mask_m[5], mask_n, tptr.add(s_t * 5), row5);
+        mask_store_ctrl(mask_m[6], mask_n, tptr.add(s_t * 6), row6);
+        mask_store_ctrl(mask_m[7], mask_n, tptr.add(s_t * 7), row7);
     }
 }
 #[target_feature(enable = "avx,avx2,fma")]
@@ -96,14 +96,14 @@ pub fn kernel_imult_ut_unalligned(
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
-        let mut i_row = mask_load(tptr, mask_n);
-        let mut v_row = mask_load(tptr.add(s_t * 4), mask_n);
-        let mut ii_row = mask_load(tptr.add(s_t), mask_n);
-        let mut vi_row = mask_load(tptr.add(s_t * 5), mask_n);
-        let mut iii_row = mask_load(tptr.add(s_t * 2), mask_n);
-        let mut vii_row = mask_load(tptr.add(s_t * 6), mask_n);
-        let mut iv_row = mask_load(tptr.add(s_t * 3), mask_n);
-        let mut viii_row = mask_load(tptr.add(s_t * 7), mask_n);
+        let mut row0 = mask_load(mask_n, tptr);
+        let mut row1 = mask_load(mask_n, tptr.add(s_t));
+        let mut row2 = mask_load(mask_n, tptr.add(s_t * 2));
+        let mut row3 = mask_load(mask_n, tptr.add(s_t * 3));
+        let mut row4 = mask_load(mask_n, tptr.add(s_t * 4));
+        let mut row5 = mask_load(mask_n, tptr.add(s_t * 5));
+        let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
+        let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
         let mask_m = MASK[m];
         let mut mask_t = MASK[0];
         let threshold = m.min(p);
@@ -111,14 +111,14 @@ pub fn kernel_imult_ut_unalligned(
             mask_t[k] = mask_m[k];
             let b0 = mask_load(yptr, mask_n);
             yptr = yptr.add(s_y);
-            fma_gated!(i_row, xptr, mask_t[0], b0);
-            fma_gated!(ii_row, xptr.add(s_x), mask_t[1], b0);
-            fma_gated!(iii_row, xptr.add(2 * s_x), mask_t[2], b0);
-            fma_gated!(iv_row, xptr.add(3 * s_x), mask_t[3], b0);
-            fma_gated!(v_row, xptr.add(4 * s_x), mask_t[4], b0);
-            fma_gated!(vi_row, xptr.add(5 * s_x), mask_t[5], b0);
-            fma_gated!(vii_row, xptr.add(6 * s_x), mask_t[6], b0);
-            fma_gated!(viii_row, xptr.add(7 * s_x), mask_t[7], b0);
+            mfma_accum!(mask_t[0], row0, xptr, b0);
+            mfma_accum!(mask_t[1], row1, xptr.add(s_x), b0);
+            mfma_accum!(mask_t[2], row2, xptr.add(2 * s_x), b0);
+            mfma_accum!(mask_t[3], row3, xptr.add(3 * s_x), b0);
+            mfma_accum!(mask_t[4], row4, xptr.add(4 * s_x), b0);
+            mfma_accum!(mask_t[5], row5, xptr.add(5 * s_x), b0);
+            mfma_accum!(mask_t[6], row6, xptr.add(6 * s_x), b0);
+            mfma_accum!(mask_t[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
         for k in threshold..p {
@@ -126,24 +126,24 @@ pub fn kernel_imult_ut_unalligned(
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
             let b0 = mask_load(yptr, mask_n);
             yptr = yptr.add(s_y);
-            fma_gated!(i_row, xptr, mask_m[0], b0);
-            fma_gated!(ii_row, xptr.add(s_x), mask_m[1], b0);
-            fma_gated!(iii_row, xptr.add(2 * s_x), mask_m[2], b0);
-            fma_gated!(iv_row, xptr.add(3 * s_x), mask_m[3], b0);
-            fma_gated!(v_row, xptr.add(4 * s_x), mask_m[4], b0);
-            fma_gated!(vi_row, xptr.add(5 * s_x), mask_m[5], b0);
-            fma_gated!(vii_row, xptr.add(6 * s_x), mask_m[6], b0);
-            fma_gated!(viii_row, xptr.add(7 * s_x), mask_m[7], b0);
+            mfma_accum!(mask_m[0], row0, xptr, b0);
+            mfma_accum!(mask_m[1], row1, xptr.add(s_x), b0);
+            mfma_accum!(mask_m[2], row2, xptr.add(2 * s_x), b0);
+            mfma_accum!(mask_m[3], row3, xptr.add(3 * s_x), b0);
+            mfma_accum!(mask_m[4], row4, xptr.add(4 * s_x), b0);
+            mfma_accum!(mask_m[5], row5, xptr.add(5 * s_x), b0);
+            mfma_accum!(mask_m[6], row6, xptr.add(6 * s_x), b0);
+            mfma_accum!(mask_m[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
-        mask_store_ctrl(tptr, mask_n, i_row, mask_m[0]);
-        mask_store_ctrl(tptr.add(s_t * 4), mask_n, v_row, mask_m[4]);
-        mask_store_ctrl(tptr.add(s_t), mask_n, ii_row, mask_m[1]);
-        mask_store_ctrl(tptr.add(s_t * 5), mask_n, vi_row, mask_m[5]);
-        mask_store_ctrl(tptr.add(s_t * 2), mask_n, iii_row, mask_m[2]);
-        mask_store_ctrl(tptr.add(s_t * 6), mask_n, vii_row, mask_m[6]);
-        mask_store_ctrl(tptr.add(s_t * 3), mask_n, iv_row, mask_m[3]);
-        mask_store_ctrl(tptr.add(s_t * 7), mask_n, viii_row, mask_m[7]);
+        mask_store_ctrl(mask_m[0], mask_n, tptr, row0);
+        mask_store_ctrl(mask_m[1], mask_n, tptr.add(s_t), row1);
+        mask_store_ctrl(mask_m[2], mask_n, tptr.add(s_t * 2), row2);
+        mask_store_ctrl(mask_m[3], mask_n, tptr.add(s_t * 3), row3);
+        mask_store_ctrl(mask_m[4], mask_n, tptr.add(s_t * 4), row4);
+        mask_store_ctrl(mask_m[5], mask_n, tptr.add(s_t * 5), row5);
+        mask_store_ctrl(mask_m[6], mask_n, tptr.add(s_t * 6), row6);
+        mask_store_ctrl(mask_m[7], mask_n, tptr.add(s_t * 7), row7);
     }
 }
 #[cfg(test)]

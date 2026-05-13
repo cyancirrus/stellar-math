@@ -18,12 +18,12 @@ pub const MASK:[[i32;8];9] = [
 
 pub static ZEROS: [f32; 8] = [0f32; 8];
 #[inline(always)]
-pub unsafe fn mask_load(ptr: *const f32, mask: __m256i) -> __m256 {
+pub unsafe fn mask_load(mask: __m256i, ptr: *const f32) -> __m256 {
     _mm256_maskload_ps(ptr, mask)
     // _mm256_and_ps(_mm256_loadu_ps(ptr), _mm256_castsi256_ps(mask))
 }
 #[inline(always)]
-pub unsafe fn mask_load_ctrl(ptr: *const f32, mask: __m256i, ctrl: i32) -> __m256 {
+pub unsafe fn mask_load_ctrl(ctrl: i32, mask: __m256i, ptr: *const f32) -> __m256 {
     unsafe {
         let safe_ptr = if ctrl != 0 { ptr } else { ZEROS.as_ptr() };
         mask_load(safe_ptr, mask)
@@ -38,7 +38,7 @@ pub unsafe fn mask_store(tgt: *mut f32, mask: __m256i, data: __m256) {
     }
 }
 #[inline(always)]
-pub unsafe fn mask_store_ctrl(tgt: *mut f32, mask: __m256i, data: __m256, ctrl: i32) {
+pub unsafe fn mask_store_ctrl(ctrl: i32, mask: __m256i, tgt: *mut f32, data: __m256) {
     if ctrl != 0 {
         mask_store(tgt, mask, data);
     }
