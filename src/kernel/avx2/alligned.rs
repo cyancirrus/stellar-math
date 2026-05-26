@@ -1,8 +1,11 @@
+use crate::arch::SIMD_WIDTH;
+use crate::kernel::avx2::constants::{MASK, cfma_accum, fma_accum, mask_load, mask_store_ctrl};
 use std::arch::x86_64::{
     _mm256_add_ps, _mm256_broadcast_ss, _mm256_castpd_ps, _mm256_castps_pd, _mm256_fmadd_ps,
     _mm256_loadu_ps, _mm256_permute2f128_ps, _mm256_setzero_ps, _mm256_storeu_ps,
     _mm256_unpackhi_pd, _mm256_unpackhi_ps, _mm256_unpacklo_pd, _mm256_unpacklo_ps,
 };
+use stellar_macros::{kernel_mult_alligned, kernel_mult_unalligned};
 macro_rules! fma_accum {
     ($acc:expr, $cptr:expr, $data:expr) => {
         $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$cptr), $data, $acc);
@@ -18,61 +21,7 @@ pub fn kernel_imult_simd_aligned(
     s_y: usize,
     s_t: usize,
 ) {
-    // Sum[K] Union[I] { g^i = aik b^k }
-    // excels at processing panels of data ie 8 x K * K x 8;
-    unsafe {
-        let mut row0 = _mm256_loadu_ps(tptr);
-        let mut row4 = _mm256_loadu_ps(tptr.add(s_t * 4));
-        let mut row1 = _mm256_loadu_ps(tptr.add(s_t));
-        let mut row5 = _mm256_loadu_ps(tptr.add(s_t * 5));
-        let mut row2 = _mm256_loadu_ps(tptr.add(s_t * 2));
-        let mut row6 = _mm256_loadu_ps(tptr.add(s_t * 6));
-        let mut row3 = _mm256_loadu_ps(tptr.add(s_t * 3));
-        let mut row7 = _mm256_loadu_ps(tptr.add(s_t * 7));
-        for _ in 0..p >> 1 {
-            let b0 = _mm256_loadu_ps(yptr);
-            let b1 = _mm256_loadu_ps(yptr.add(s_y));
-            yptr = yptr.add(s_y + s_y);
-            // _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
-            fma_accum!(row0, xptr, b0);
-            fma_accum!(row4, xptr.add(4 * s_x + 1), b1);
-            fma_accum!(row1, xptr.add(s_x), b0);
-            fma_accum!(row5, xptr.add(5 * s_x + 1), b1);
-            fma_accum!(row2, xptr.add(2 * s_x), b0);
-            fma_accum!(row6, xptr.add(6 * s_x + 1), b1);
-            fma_accum!(row3, xptr.add(3 * s_x), b0);
-            fma_accum!(row7, xptr.add(7 * s_x + 1), b1);
-
-            fma_accum!(row0, xptr.add(1), b1);
-            fma_accum!(row4, xptr.add(4 * s_x), b0);
-            fma_accum!(row1, xptr.add(s_x + 1), b1);
-            fma_accum!(row5, xptr.add(5 * s_x), b0);
-            fma_accum!(row2, xptr.add(2 * s_x + 1), b1);
-            fma_accum!(row6, xptr.add(6 * s_x), b0);
-            fma_accum!(row3, xptr.add(3 * s_x + 1), b1);
-            fma_accum!(row7, xptr.add(7 * s_x), b0);
-            xptr = xptr.add(2);
-        }
-        if p & 1 == 1 {
-            let b = _mm256_loadu_ps(yptr);
-            fma_accum!(row0, xptr, b);
-            fma_accum!(row4, xptr.add(4 * s_x), b);
-            fma_accum!(row1, xptr.add(s_x), b);
-            fma_accum!(row5, xptr.add(5 * s_x), b);
-            fma_accum!(row2, xptr.add(2 * s_x), b);
-            fma_accum!(row6, xptr.add(6 * s_x), b);
-            fma_accum!(row3, xptr.add(3 * s_x), b);
-            fma_accum!(row7, xptr.add(7 * s_x), b);
-        }
-        _mm256_storeu_ps(tptr, row0);
-        _mm256_storeu_ps(tptr.add(s_t * 4), row4);
-        _mm256_storeu_ps(tptr.add(s_t), row1);
-        _mm256_storeu_ps(tptr.add(s_t * 5), row5);
-        _mm256_storeu_ps(tptr.add(s_t * 2), row2);
-        _mm256_storeu_ps(tptr.add(s_t * 6), row6);
-        _mm256_storeu_ps(tptr.add(s_t * 3), row3);
-        _mm256_storeu_ps(tptr.add(s_t * 7), row7);
-    }
+    kernel_mult_alligned!(xptr, yptr, tptr, SIMD_WIDTH, p, SIMD_WIDTH, s_x, s_y, s_t);
 }
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_mult_simd_aligned(
