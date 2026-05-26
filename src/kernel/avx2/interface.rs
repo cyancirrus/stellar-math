@@ -1,5 +1,5 @@
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-use stellar_macros::{kernel_lmult_lower_tri, kernel_mult_alligned, kernel_mult_unalligned};
+use stellar_macros::{kernel_mult_alligned, kernel_mult_unalligned};
 use crate::arch::SIMD_WIDTH;
 use crate::kernel::avx2::{alligned, triangle, unalligned};
 use crate::kernel::avx2::constants::{MASK, cfma_accum, fma_accum, mask_load, mask_store_ctrl};
