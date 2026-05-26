@@ -1,13 +1,5 @@
-use crate::kernel::avx2::constants::{MASK, mask_load, mask_store_ctrl};
+use crate::kernel::avx2::constants::{MASK, cfma_accum, mask_load, mask_store_ctrl};
 use std::arch::x86_64::{__m256i, _mm256_broadcast_ss, _mm256_fmadd_ps, _mm256_loadu_si256};
-macro_rules! mfma_accum {
-    ($ctrl:expr, $acc:expr, $ptr:expr, $data:expr) => {
-        if $ctrl != 0 {
-            $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$ptr), $data, $acc);
-            // $acc = _mm256_fmadd_ps(_mm256_set1_ps(*$ptr), $b, $acc);
-        }
-    };
-}
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_imult_lt_unalligned(
     mut xptr: *const f32,
@@ -40,28 +32,28 @@ pub fn kernel_imult_lt_unalligned(
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
-            mfma_accum!(mask_m[0], row0, xptr, b0);
-            mfma_accum!(mask_m[1], row1, xptr.add(s_x), b0);
-            mfma_accum!(mask_m[2], row2, xptr.add(2 * s_x), b0);
-            mfma_accum!(mask_m[3], row3, xptr.add(3 * s_x), b0);
-            mfma_accum!(mask_m[4], row4, xptr.add(4 * s_x), b0);
-            mfma_accum!(mask_m[5], row5, xptr.add(5 * s_x), b0);
-            mfma_accum!(mask_m[6], row6, xptr.add(6 * s_x), b0);
-            mfma_accum!(mask_m[7], row7, xptr.add(7 * s_x), b0);
+            row0 = cfma_accum(mask_m[0], row0, xptr, b0);
+            row1 = cfma_accum(mask_m[1], row1, xptr.add(s_x), b0);
+            row2 = cfma_accum(mask_m[2], row2, xptr.add(2 * s_x), b0);
+            row3 = cfma_accum(mask_m[3], row3, xptr.add(3 * s_x), b0);
+            row4 = cfma_accum(mask_m[4], row4, xptr.add(4 * s_x), b0);
+            row5 = cfma_accum(mask_m[5], row5, xptr.add(5 * s_x), b0);
+            row6 = cfma_accum(mask_m[6], row6, xptr.add(6 * s_x), b0);
+            row7 = cfma_accum(mask_m[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
         let mut mask_t = mask_m;
         for k in 0..threshold {
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
-            mfma_accum!(mask_t[0], row0, xptr, b0);
-            mfma_accum!(mask_t[1], row1, xptr.add(s_x), b0);
-            mfma_accum!(mask_t[2], row2, xptr.add(2 * s_x), b0);
-            mfma_accum!(mask_t[3], row3, xptr.add(3 * s_x), b0);
-            mfma_accum!(mask_t[4], row4, xptr.add(4 * s_x), b0);
-            mfma_accum!(mask_t[5], row5, xptr.add(5 * s_x), b0);
-            mfma_accum!(mask_t[6], row6, xptr.add(6 * s_x), b0);
-            mfma_accum!(mask_t[7], row7, xptr.add(7 * s_x), b0);
+            row0 = cfma_accum(mask_t[0], row0, xptr, b0);
+            row1 = cfma_accum(mask_t[1], row1, xptr.add(s_x), b0);
+            row2 = cfma_accum(mask_t[2], row2, xptr.add(2 * s_x), b0);
+            row3 = cfma_accum(mask_t[3], row3, xptr.add(3 * s_x), b0);
+            row4 = cfma_accum(mask_t[4], row4, xptr.add(4 * s_x), b0);
+            row5 = cfma_accum(mask_t[5], row5, xptr.add(5 * s_x), b0);
+            row6 = cfma_accum(mask_t[6], row6, xptr.add(6 * s_x), b0);
+            row7 = cfma_accum(mask_t[7], row7, xptr.add(7 * s_x), b0);
             mask_t[k] = 0;
             xptr = xptr.add(1);
         }
@@ -107,14 +99,14 @@ pub fn kernel_imult_ut_unalligned(
             mask_t[k] = mask_m[k];
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
-            mfma_accum!(mask_t[0], row0, xptr, b0);
-            mfma_accum!(mask_t[1], row1, xptr.add(s_x), b0);
-            mfma_accum!(mask_t[2], row2, xptr.add(2 * s_x), b0);
-            mfma_accum!(mask_t[3], row3, xptr.add(3 * s_x), b0);
-            mfma_accum!(mask_t[4], row4, xptr.add(4 * s_x), b0);
-            mfma_accum!(mask_t[5], row5, xptr.add(5 * s_x), b0);
-            mfma_accum!(mask_t[6], row6, xptr.add(6 * s_x), b0);
-            mfma_accum!(mask_t[7], row7, xptr.add(7 * s_x), b0);
+            row0 = cfma_accum(mask_t[0], row0, xptr, b0);
+            row1 = cfma_accum(mask_t[1], row1, xptr.add(s_x), b0);
+            row2 = cfma_accum(mask_t[2], row2, xptr.add(2 * s_x), b0);
+            row3 = cfma_accum(mask_t[3], row3, xptr.add(3 * s_x), b0);
+            row4 = cfma_accum(mask_t[4], row4, xptr.add(4 * s_x), b0);
+            row5 = cfma_accum(mask_t[5], row5, xptr.add(5 * s_x), b0);
+            row6 = cfma_accum(mask_t[6], row6, xptr.add(6 * s_x), b0);
+            row7 = cfma_accum(mask_t[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
         for _k in threshold..p {
@@ -122,14 +114,14 @@ pub fn kernel_imult_ut_unalligned(
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
-            mfma_accum!(mask_m[0], row0, xptr, b0);
-            mfma_accum!(mask_m[1], row1, xptr.add(s_x), b0);
-            mfma_accum!(mask_m[2], row2, xptr.add(2 * s_x), b0);
-            mfma_accum!(mask_m[3], row3, xptr.add(3 * s_x), b0);
-            mfma_accum!(mask_m[4], row4, xptr.add(4 * s_x), b0);
-            mfma_accum!(mask_m[5], row5, xptr.add(5 * s_x), b0);
-            mfma_accum!(mask_m[6], row6, xptr.add(6 * s_x), b0);
-            mfma_accum!(mask_m[7], row7, xptr.add(7 * s_x), b0);
+            row0 = cfma_accum(mask_m[0], row0, xptr, b0);
+            row1 = cfma_accum(mask_m[1], row1, xptr.add(s_x), b0);
+            row2 = cfma_accum(mask_m[2], row2, xptr.add(2 * s_x), b0);
+            row3 = cfma_accum(mask_m[3], row3, xptr.add(3 * s_x), b0);
+            row4 = cfma_accum(mask_m[4], row4, xptr.add(4 * s_x), b0);
+            row5 = cfma_accum(mask_m[5], row5, xptr.add(5 * s_x), b0);
+            row6 = cfma_accum(mask_m[6], row6, xptr.add(6 * s_x), b0);
+            row7 = cfma_accum(mask_m[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
         mask_store_ctrl(mask_m[0], mask_n, tptr, row0);

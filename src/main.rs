@@ -17,12 +17,11 @@
 use std::ptr::copy_nonoverlapping;
 use stellar::algebra::bmethods::pack;
 use stellar::arch::SIMD_WIDTH;
+#[cfg(all(feature = "avx2", target_arch = "x86_64"))]
+use stellar::kernel::avx2::constants::{MASK, cfma_accum, fma_accum, mask_load, mask_store_ctrl};
 use stellar::random::generation::generate_random_matrix;
-// use stellar_macros::{avx2_pack_simd_line, avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned};
-use stellar_macros::{
-    avx2_pack_simd_line, avx2_pack_simd_line_alligned, avx2_pack_simd_line_unalligned,
-    kernel_mult_alligned,
-};
+#[cfg(all(feature = "avx2", target_arch = "x86_64"))]
+use stellar_macros::{kernel_lmult_lower_tri, kernel_mult_alligned, kernel_mult_unalligned};
 #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // const LC: usize = 48;
@@ -36,13 +35,6 @@ use std::arch::x86_64::{
     _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskload_ps, _mm256_maskstore_ps,
     _mm256_setzero_ps, _mm256_storeu_ps, _mm256_stream_ps,
 };
-
-macro_rules! fma_accum {
-    ($acc:expr, $cptr:expr, $data:expr) => {
-        $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$cptr), $data, $acc);
-    };
-}
-
 #[inline(always)]
 #[cfg(not(any(feature = "avx2")))]
 fn default_mult(bptr: *mut f32, dptr: *const f32, re: usize, se: usize, s_b: usize, s_d: usize) {
@@ -51,9 +43,9 @@ fn default_mult(bptr: *mut f32, dptr: *const f32, re: usize, se: usize, s_b: usi
     }
 }
 
-pub fn kernel_mult(
-    xptr: *const f32,
-    yptr: *const f32,
+pub fn kernel_umult(
+    mut xptr: *const f32,
+    mut yptr: *mut f32,
     tptr: *mut f32,
     m: usize,
     p: usize,
@@ -62,13 +54,45 @@ pub fn kernel_mult(
     s_y: usize,
     s_t: usize,
 ) {
-    unsafe {
-        #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-        kernel_mult_alligned!(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-        #[cfg(not(any(feature = "avx2")))]
-        {}
-        // default_mult(bptr, dptr, re, se, PC, s_d);
-    }
+    #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
+    kernel_mult_unalligned!(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+    #[cfg(not(any(feature = "avx2")))]
+    println!("hey run it with flag for arch");
+    // default_mult(bptr, dptr, re, se, PC, s_d);
 }
+// pub fn kernel_mult(
+//     mut xptr: *const f32,
+//     mut yptr: *mut f32,
+//     tptr: *mut f32,
+//     m: usize,
+//     p: usize,
+//     n: usize,
+//     s_x: usize,
+//     s_y: usize,
+//     s_t: usize,
+// ) {
+//     #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
+//     kernel_mult_alligned!(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+//     #[cfg(not(any(feature = "avx2")))]
+//     println!("hey run it with flag for arch");
+//     // default_mult(bptr, dptr, re, se, PC, s_d);
+// }
+// pub fn kernel_lmult_lt(
+//     mut xptr: *const f32,
+//     mut yptr: *mut f32,
+//     tptr: *mut f32,
+//     m: usize,
+//     p: usize,
+//     n: usize,
+//     s_x: usize,
+//     s_y: usize,
+//     s_t: usize,
+// ) {
+//     #[cfg(all(feature = "avx2", target_arch = "x86_64"))]
+//     kernel_lmult_lower_tri!(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+//     #[cfg(not(any(feature = "avx2")))]
+//     println!("hey run it with flag for arch");
+//     // default_mult(bptr, dptr, re, se, PC, s_d);
+// }
 
 fn main() {}
