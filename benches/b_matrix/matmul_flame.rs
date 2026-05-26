@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use crate::sharedvars::{L_MATRIX_DIMS, M_MATRIX_DIMS, S_MATRIX_ALIGNED, S_MATRIX_UNALIGNED};
 use pprof::ProfilerGuard;
 use pprof::ProfilerGuardBuilder;

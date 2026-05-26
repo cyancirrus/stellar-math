@@ -18,9 +18,7 @@ pub fn kernel_imult_safe(
     s_y: usize,
     s_t: usize,
 ) {
-    unsafe {
-        kernel_mult_unalligned!(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-    }
+    kernel_mult_unalligned!(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
 }
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_mult_safe(
