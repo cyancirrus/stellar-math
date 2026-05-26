@@ -1,11 +1,10 @@
-use crate::arch::SIMD_WIDTH;
-use crate::kernel::avx2::constants::{MASK, cfma_accum, fma_accum, mask_load, mask_store_ctrl};
+use crate::kernel::avx2::constants::fma_accum;
 use std::arch::x86_64::{
     _mm256_add_ps, _mm256_broadcast_ss, _mm256_castpd_ps, _mm256_castps_pd, _mm256_fmadd_ps,
     _mm256_loadu_ps, _mm256_permute2f128_ps, _mm256_setzero_ps, _mm256_storeu_ps,
     _mm256_unpackhi_pd, _mm256_unpackhi_ps, _mm256_unpacklo_pd, _mm256_unpacklo_ps,
 };
-use stellar_macros::{kernel_mult_alligned, kernel_mult_unalligned};
+use stellar_macros::kernel_mult_alligned;
 macro_rules! fma_accum {
     ($acc:expr, $cptr:expr, $data:expr) => {
         $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$cptr), $data, $acc);

@@ -1,13 +1,5 @@
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::avx2::constants::{MASK, cfma_accum, fma_accum, mask_load, mask_store_ctrl};
 use crate::kernel::avx2::{alligned, triangle, unalligned};
-use std::arch::x86_64::{
-    __m256, __m256i, _mm256_and_ps, _mm256_blendv_ps, _mm256_broadcast_ss, _mm256_castsi256_ps,
-    _mm256_fmadd_ps, _mm256_loadu_ps, _mm256_loadu_si256, _mm256_maskload_ps, _mm256_maskstore_ps,
-    _mm256_setzero_ps, _mm256_storeu_ps, _mm256_stream_ps,
-};
-#[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-use stellar_macros::{kernel_mult_alligned, kernel_mult_unalligned};
 // #[inline(always)]
 // pub fn kernel_mult_simd(
 //     mut xptr: *const f32,

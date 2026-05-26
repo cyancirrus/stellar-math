@@ -1,22 +1,11 @@
+#[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use crate::kernel::avx2::constants::{
-    MASK, cfma_accum, fma_accum, mask_load, mask_load_ctrl, mask_store, mask_store_ctrl,
+    MASK, cfma_accum, mask_load, mask_load_ctrl, mask_store, mask_store_ctrl,
 };
 use std::arch::x86_64::{
-    __m256i, _mm256_add_ps, _mm256_fmadd_ps, _mm256_loadu_si256, _mm256_maskload_ps,
-    _mm256_set1_ps, _mm256_setzero_ps,
+    __m256i, _mm256_add_ps, _mm256_loadu_si256, _mm256_maskload_ps, _mm256_setzero_ps,
 };
-#[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-use stellar_macros::{kernel_mult_alligned, kernel_mult_unalligned};
-
-macro_rules! mfa_accum {
-    // macro instead of fn: avoids &mut _mm256 which can force stack spill via pointer indirection
-    ($mask_bit:expr, $acc:expr, $ptr:expr, $data:expr) => {
-        if $mask_bit != 0 {
-            // $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$ptr), $data, $acc);
-            $acc = _mm256_fmadd_ps(_mm256_set1_ps(*$ptr), $data, $acc);
-        }
-    };
-}
+use stellar_macros::kernel_mult_unalligned;
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_imult_safe(
     mut xptr: *const f32,
@@ -65,14 +54,14 @@ pub fn kernel_mult_safe(
             // _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
             // _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
             // start with existing t for accumulation
-            acc0 = mfa_accum(mask_p[0], acc0, xptr, row0);
-            acc1 = mfa_accum(mask_p[4], acc1, xptr.add(4), row4);
-            acc0 = mfa_accum(mask_p[1], acc0, xptr.add(1), row1);
-            acc1 = mfa_accum(mask_p[5], acc1, xptr.add(5), row5);
-            acc0 = mfa_accum(mask_p[2], acc0, xptr.add(2), row2);
-            acc1 = mfa_accum(mask_p[6], acc1, xptr.add(6), row6);
-            acc0 = mfa_accum(mask_p[3], acc0, xptr.add(3), row3);
-            acc1 = mfa_accum(mask_p[7], acc1, xptr.add(7), row7);
+            acc0 = cfma_accum(mask_p[0], acc0, xptr, row0);
+            acc1 = cfma_accum(mask_p[4], acc1, xptr.add(4), row4);
+            acc0 = cfma_accum(mask_p[1], acc0, xptr.add(1), row1);
+            acc1 = cfma_accum(mask_p[5], acc1, xptr.add(5), row5);
+            acc0 = cfma_accum(mask_p[2], acc0, xptr.add(2), row2);
+            acc1 = cfma_accum(mask_p[6], acc1, xptr.add(6), row6);
+            acc0 = cfma_accum(mask_p[3], acc0, xptr.add(3), row3);
+            acc1 = cfma_accum(mask_p[7], acc1, xptr.add(7), row7);
             mask_store(mask_n, tptr, _mm256_add_ps(acc1, acc0));
             xptr = xptr.add(s_x);
             tptr = tptr.add(s_t);

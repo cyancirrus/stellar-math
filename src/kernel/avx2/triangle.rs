@@ -1,5 +1,5 @@
 use crate::kernel::avx2::constants::{MASK, cfma_accum, mask_load, mask_store_ctrl};
-use std::arch::x86_64::{__m256i, _mm256_broadcast_ss, _mm256_fmadd_ps, _mm256_loadu_si256};
+use std::arch::x86_64::{__m256i, _mm256_loadu_si256};
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_imult_lt_unalligned(
     mut xptr: *const f32,
