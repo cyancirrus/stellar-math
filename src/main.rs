@@ -16,22 +16,21 @@
 
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
-use std::cell::RefCell;
-use stellar::algebra::ndmethods::basic_mult;
-use stellar::arch::SIMD_WIDTH;
-use stellar::equality::approximate::approx_vector_eq;
-use stellar::kernel::matkerns::{kernel_lt_mult, kernel_mult};
-use stellar::random::generation::generate_random_matrix;
-use stellar::structure::ndarray::NdArray;
-#[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-use stellar::kernel::avx2::constants::MASK;
 use std::arch::x86_64::{
     _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_broadcast_ss, _mm256_castpd_ps,
     _mm256_castps_pd, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps, _mm256_mask_load_ps,
     _mm256_permute2f128_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
     _mm256_unpackhi_pd, _mm256_unpackhi_ps, _mm256_unpacklo_pd, _mm256_unpacklo_ps,
-
 };
+use std::cell::RefCell;
+use stellar::algebra::ndmethods::basic_mult;
+use stellar::arch::SIMD_WIDTH;
+use stellar::equality::approximate::approx_vector_eq;
+#[cfg(all(feature = "avx2", target_arch = "x86_64"))]
+use stellar::kernel::avx2::constants::MASK;
+use stellar::kernel::matkerns::{kernel_lt_mult, kernel_mult};
+use stellar::random::generation::generate_random_matrix;
+use stellar::structure::ndarray::NdArray;
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // NOTE: could set these as cache sizes so threads reflect the amount of work
 // const LC: usize = 64;
@@ -166,7 +165,10 @@ pub fn tensor_lt_contraction(
             // for j in (0..=i).step_by(SIMD_WIDTH) {
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-                if g_i + i == g_k {
+                if g_i + i + SIMD_WIDTH < g_k {
+                    // largest x index is less than the start of the column
+                } else if g_i + i + SIMD_WIDTH <= g_k + p {
+                    // largest x index is less than the furthest y index
                     println!("in the triangle kernel");
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
@@ -179,10 +181,10 @@ pub fn tensor_lt_contraction(
                         s_y,
                         s_t,
                     )
-                } else {
-                    println!("before {t_d:?}");
-                // } else if g_i + i >= g_k {
-                    println!("HELLO!");
+                // } else {
+                } else if g_i + i + SIMD_WIDTH > g_k + p {
+                // } else if g_i + i + SIMD_WIDTH >= g_k + p {
+                    println!("dense kernel");
                     kernel_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -195,6 +197,7 @@ pub fn tensor_lt_contraction(
                         s_t,
                     )
                 }
+                // implicit pass on if above the diagonal
             }
             toffset += dt;
             xoffset += dx;
@@ -204,21 +207,21 @@ pub fn tensor_lt_contraction(
 fn test_gemm_equivalence() {
     let ikj = [
         // (2, 2, 1),
-        (2, 9, 1),
-        // (1, 9, 1),
-        // (4, 8, 1),
-        // (1, 2, 1),
-        // (1, 1, 1),
-        // (8, 1, 1),
-        // (1, 8, 1),
-        // (1, 1, 8),
-        // (6, 4, 8),
-        // (6, 8, 4),
-        // (8, 4, 6),
-        // (4, 8, 6),
-        // (4, 6, 8),
-        // (8, 6, 4),
-        // (8, 8, 8),
+        // (2, 10, 1),
+        (1, 9, 1),
+        (4, 8, 1),
+        (1, 2, 1),
+        (1, 1, 1),
+        (8, 1, 1),
+        (1, 8, 1),
+        (1, 1, 8),
+        (6, 4, 8),
+        (6, 8, 4),
+        (8, 4, 6),
+        (4, 8, 6),
+        (4, 6, 8),
+        (8, 6, 4),
+        (8, 8, 8),
         // (16, 16, 16),
         // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
         // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
@@ -246,11 +249,11 @@ fn filter_lower_triangle(a: &mut NdArray) {
     let (rows, cols) = (a.dims[0], a.dims[1]);
     let d = &mut a.data;
     let t = cols.min(rows);
-    let s = rows.saturating_sub(cols) ;
+    let s = rows.saturating_sub(cols);
     // don't remove from last row
     for i in 1..t {
-        for j in 0..i  {
-            d[(rows - i  - s) * cols - j - 1] = 0f32;
+        for j in 0..i {
+            d[(rows - i - s) * cols - j - 1] = 0f32;
         }
     }
 }
@@ -276,15 +279,13 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
 
 // macro for simd pack unrolling/pack_simd
 fn main() {
-
     // let mut d_mat = generate_random_matrix(8, 64);
     // let mut d= d_mat.data.as_mut_ptr();
     // let mut b = vec![0f32; MC * PC].as_mut_ptr();
     // assert!(PC % SIMD_WIDTH == 0);
-    // unsafe { 
-    //     pack_simd!(MC, PC, d, b, PC, 64); 
+    // unsafe {
+    //     pack_simd!(MC, PC, d, b, PC, 64);
     // }
-
 
     test_gemm_equivalence();
 }
