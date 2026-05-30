@@ -157,7 +157,7 @@ pub fn tensor_lt_contraction(
             let ii_end = SIMD_WIDTH.min(m - i);
             // for j in (0..=i).step_by(SIMD_WIDTH) {
             for j in (0..n).step_by(SIMD_WIDTH) {
-                // println!("multiple inner loops");
+                println!("multiple inner loops");
                 let jj_end = SIMD_WIDTH.min(n - j);
                 if g_i + i == g_k {
                     kernel_lt_mult(
@@ -193,10 +193,8 @@ pub fn tensor_lt_contraction(
 }
 fn test_gemm_equivalence() {
     let ikj = [
-        // (2, 16, 2),
-        // (16, 32, 16),
-        // (32, 64, 32),
-        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        // (256, 256, 256),
+        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
         (4, 8, 1),
         (1, 2, 1),
         (1, 1, 1),
@@ -208,19 +206,19 @@ fn test_gemm_equivalence() {
         (8, 4, 6),
         (4, 8, 6),
         (4, 6, 8),
-        // (8, 6, 4),
-        // (8, 8, 8),
-        // (16, 16, 16),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        // (256, 1024, 512),
-        // (512, 512, 512),
-        // (1024, 64, 1024),
+        (8, 6, 4),
+        (8, 8, 8),
+        (16, 16, 16),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        (256, 1024, 512),
+        (512, 512, 512),
+        (1024, 64, 1024),
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
