@@ -167,8 +167,9 @@ pub fn tensor_lt_contraction(
                 let jj_end = SIMD_WIDTH.min(n - j);
                 if g_i + i + SIMD_WIDTH < g_k {
                     // largest x index is less than the start of the column
-                // } else if g_i + i + SIMD_WIDTH <= g_k + p {
-                } else if g_i + i  <= g_k + p {
+                }
+                // else {
+                else if g_i + i <= g_k + p {
                     // largest x index is less than the furthest y index
                     println!("in the triangle kernel");
                     kernel_lt_mult(
@@ -182,9 +183,8 @@ pub fn tensor_lt_contraction(
                         s_y,
                         s_t,
                     )
-                } else {
-                // } else if g_i + i + SIMD_WIDTH >= g_k + p {
-                // } else if g_i + i + SIMD_WIDTH >= g_k + p {
+                }
+                else if g_i + i + SIMD_WIDTH >= g_k + p {
                     println!("dense kernel");
                     kernel_mult(
                         x_d.get_unchecked(xoffset..),
