@@ -168,7 +168,7 @@ pub fn tensor_lt_contraction(
                 let jj_end = SIMD_WIDTH.min(n - j);
                 if g_i + i == g_k {
                     println!("in the triangle kernel");
-                    kernel_mult(
+                    kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
@@ -183,7 +183,7 @@ pub fn tensor_lt_contraction(
                     println!("before {t_d:?}");
                 // } else if g_i + i >= g_k {
                     println!("HELLO!");
-                    kernel_lt_mult(
+                    kernel_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
