@@ -167,7 +167,23 @@ pub fn tensor_lt_contraction(
                 let jj_end = SIMD_WIDTH.min(n - j);
                 if g_i + i + SIMD_WIDTH < g_k {
                     // largest x index is less than the start of the column
-                } else if g_i + i + SIMD_WIDTH > g_k + p {
+                // } else if g_i + i + SIMD_WIDTH <= g_k + p {
+                } else if g_i + i  <= g_k + p {
+                    // largest x index is less than the furthest y index
+                    println!("in the triangle kernel");
+                    kernel_lt_mult(
+                        x_d.get_unchecked(xoffset..),
+                        y_d.get_unchecked(j..),
+                        t_d.get_unchecked_mut(toffset + j..),
+                        ii_end,
+                        p,
+                        jj_end,
+                        s_x,
+                        s_y,
+                        s_t,
+                    )
+                } else {
+                // } else if g_i + i + SIMD_WIDTH >= g_k + p {
                 // } else if g_i + i + SIMD_WIDTH >= g_k + p {
                     println!("dense kernel");
                     kernel_mult(
@@ -182,37 +198,6 @@ pub fn tensor_lt_contraction(
                         s_t,
                     )
                 }
-                 else if g_i + i + SIMD_WIDTH <= g_k + p {
-                    // largest x index is less than the furthest y index
-                    println!("in the triangle kernel");
-                    kernel_lt_mult(
-                        x_d.get_unchecked(xoffset..),
-                        y_d.get_unchecked(j..),
-                        t_d.get_unchecked_mut(toffset + j..),
-                        ii_end,
-                        p,
-                        jj_end,
-                        s_x,
-                        s_y,
-                        s_t,
-                    )
-                }
-                // } else {
-                // } else if g_i + i + SIMD_WIDTH > g_k + p {
-                // // } else if g_i + i + SIMD_WIDTH >= g_k + p {
-                //     println!("dense kernel");
-                //     kernel_mult(
-                //         x_d.get_unchecked(xoffset..),
-                //         y_d.get_unchecked(j..),
-                //         t_d.get_unchecked_mut(toffset + j..),
-                //         ii_end,
-                //         p,
-                //         jj_end,
-                //         s_x,
-                //         s_y,
-                //         s_t,
-                //     )
-                // }
                 // implicit pass on if above the diagonal
             }
             toffset += dt;
@@ -223,7 +208,7 @@ pub fn tensor_lt_contraction(
 fn test_gemm_equivalence() {
     let ikj = [
         // (2, 2, 1),
-        // (2, 10, 1),
+        (2, 10, 1),
         (1, 9, 1),
         (4, 8, 1),
         (1, 2, 1),
@@ -238,7 +223,7 @@ fn test_gemm_equivalence() {
         (4, 6, 8),
         (8, 6, 4),
         (8, 8, 8),
-        // (16, 16, 16),
+        (16, 16, 16),
         // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
         // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
         // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
