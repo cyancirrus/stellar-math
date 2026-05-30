@@ -1,4 +1,3 @@
-#[cfg(all(feature = "avx2", target_arch = "x86_64"))]
 use crate::kernel::avx2::constants::{
     MASK, cfma_accum, mask_load, mask_load_ctrl, mask_store, mask_store_ctrl,
 };
