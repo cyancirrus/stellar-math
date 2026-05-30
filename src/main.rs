@@ -83,8 +83,9 @@ pub fn tensor_lt_block(
                         t_accum.fill(0f32);
                         // println!("t_accum {t_accum:?}");
                         yoffset = 0;
-                        for pc in (0..t_bound).step_by(PC) {
-                            // for pc in (0..p).step_by(PC) {
+                        // for pc in (0..t_bound).step_by(PC) {
+                        for pc in (0..p).step_by(PC) {
+                            println!("stepping!");
                             let pa = diff_min(p, pc, PC);
                             yend = pa * s_y;
                             // println!("x_pack before {x_pack:?}");
@@ -153,13 +154,20 @@ pub fn tensor_lt_contraction(
         let mut toffset = 0;
         let dx = SIMD_WIDTH * s_x;
         let dt = SIMD_WIDTH * s_t;
+        println!("---------------------------");
+        println!("---------------------------");
+        println!("---------------------------");
+        println!("p {p:?}");
+        println!("---------------------------");
+        println!("---------------------------");
+        println!("---------------------------");
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
             // for j in (0..=i).step_by(SIMD_WIDTH) {
             for j in (0..n).step_by(SIMD_WIDTH) {
-                println!("multiple inner loops");
                 let jj_end = SIMD_WIDTH.min(n - j);
                 if g_i + i == g_k {
+                    println!("in the triangle kernel");
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -171,8 +179,10 @@ pub fn tensor_lt_contraction(
                         s_y,
                         s_t,
                     )
-                // } else {
-                } else if g_i + i >= g_k {
+                } else {
+                    println!("before {t_d:?}");
+                // } else if g_i + i >= g_k {
+                    println!("HELLO!");
                     kernel_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -193,32 +203,34 @@ pub fn tensor_lt_contraction(
 }
 fn test_gemm_equivalence() {
     let ikj = [
-        // (256, 256, 256),
+        (2, 9, 1),
+        // (1, 9, 1),
+        // (4, 8, 1),
+        // (1, 2, 1),
+        // (1, 1, 1),
+        // (8, 1, 1),
+        // (1, 8, 1),
+        // (1, 1, 8),
+        // (6, 4, 8),
+        // (6, 8, 4),
+        // (8, 4, 6),
+        // (4, 8, 6),
+        // (4, 6, 8),
+        // (8, 6, 4),
+        // (8, 8, 8),
+        // (16, 16, 16),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
         // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        (4, 8, 1),
-        (1, 2, 1),
-        (1, 1, 1),
-        (8, 1, 1),
-        (1, 8, 1),
-        (1, 1, 8),
-        (6, 4, 8),
-        (6, 8, 4),
-        (8, 4, 6),
-        (4, 8, 6),
-        (4, 6, 8),
-        (8, 6, 4),
-        (8, 8, 8),
-        (16, 16, 16),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        (256, 1024, 512),
-        (512, 512, 512),
-        (1024, 64, 1024),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        // (256, 256, 256),
+        // (256, 1024, 512),
+        // (512, 512, 512),
+        // (1024, 64, 1024),
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
@@ -246,7 +258,7 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut x_base = x.clone();
     filter_lower_triangle(&mut x_base);
-    // println!("x_base {x_base:?}");
+    println!("x_base {x_base:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
     tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
