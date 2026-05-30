@@ -34,10 +34,14 @@ use std::arch::x86_64::{
 };
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // NOTE: could set these as cache sizes so threads reflect the amount of work
-const LC: usize = 64;
-const MC: usize = 64;
-const PC: usize = 256;
-const NC: usize = 128;
+// const LC: usize = 64;
+// const MC: usize = 64;
+// const PC: usize = 256;
+// const NC: usize = 128;
+const LC: usize = 8;
+const MC: usize = 8;
+const PC: usize = 8;
+const NC: usize = 8;
 
 #[inline(always)]
 fn diff_min(x: usize, b: usize, t: usize) -> usize {
@@ -57,6 +61,7 @@ pub fn tensor_lt_block(
     s_y: usize,
     s_t: usize,
 ) {
+    // println!("s_x {s_x:}, s_y: {s_y:}, s_t: {s_t:}");
     // suffix c: chunk, suffix a: actual
     t_d.par_chunks_mut(LC * n)
         .zip(x_d.par_chunks(LC * p))
@@ -76,13 +81,16 @@ pub fn tensor_lt_block(
                     for nc in (0..n).step_by(NC) {
                         let na = diff_min(n, nc, NC);
                         t_accum.fill(0f32);
+                        // println!("t_accum {t_accum:?}");
                         yoffset = 0;
                         for pc in (0..t_bound).step_by(PC) {
                             // for pc in (0..p).step_by(PC) {
                             let pa = diff_min(p, pc, PC);
                             yend = pa * s_y;
+                            // println!("x_pack before {x_pack:?}");
                             pack(&x[xoffset + pc..xoffset + xend], x_pack, ma, pa, PC, s_x);
                             pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
+                            // println!("x_pack after {x_pack:?}");
                             tensor_lt_contraction(
                                 &x_pack, &y_pack, t_accum, lc, pc, ma, pa, na, PC, NC, NC,
                             );
@@ -149,6 +157,7 @@ pub fn tensor_lt_contraction(
             let ii_end = SIMD_WIDTH.min(m - i);
             // for j in (0..=i).step_by(SIMD_WIDTH) {
             for j in (0..n).step_by(SIMD_WIDTH) {
+                // println!("multiple inner loops");
                 let jj_end = SIMD_WIDTH.min(n - j);
                 if g_i + i == g_k {
                     kernel_lt_mult(
@@ -184,20 +193,24 @@ pub fn tensor_lt_contraction(
 }
 fn test_gemm_equivalence() {
     let ikj = [
-        // (256, 256, 256),
+        (2, 16, 2),
+        // (16, 32, 16),
+        // (32, 64, 32),
         // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        // (4, 8, 1),
+        // (1, 2, 1),
         // (1, 1, 1),
         // (8, 1, 1),
         // (1, 8, 1),
         // (1, 1, 8),
         // (6, 4, 8),
         // (6, 8, 4),
-        // (4, 6, 8),
-        // (4, 8, 6),
         // (8, 4, 6),
+        // (4, 8, 6),
+        // (4, 6, 8),
         // (8, 6, 4),
-        (8, 8, 8),
-        (16, 16, 16),
+        // (8, 8, 8),
+        // (16, 16, 16),
         // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
         // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
         // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
@@ -214,12 +227,19 @@ fn test_gemm_equivalence() {
         test_lower_equivalence_mkn(i, k, j);
     }
 }
+/// * * * * * * * 0 0 0
+/// * * * * * * * * 0 0
+/// * * * * * * * * * 0
+/// * * * * * * * * * *
 fn filter_lower_triangle(a: &mut NdArray) {
     let (rows, cols) = (a.dims[0], a.dims[1]);
     let d = &mut a.data;
-    for i in 0..rows {
-        for j in i + 1..cols {
-            d[i * cols + j] = 0f32;
+    let t = cols.min(rows);
+    let s = rows.saturating_sub(cols) ;
+    // don't remove from last row
+    for i in 1..t {
+        for j in 0..i  {
+            d[(rows - i  - s) * cols - j - 1] = 0f32;
         }
     }
 }
@@ -228,13 +248,15 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut x_base = x.clone();
     filter_lower_triangle(&mut x_base);
+    // println!("x_base {x_base:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
-    tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, m, p, n);
+    tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     let inspect = NdArray {
         dims: vec![m, n],
         data: result.clone(),
     };
+    println!("y {y:?}");
     println!("expected {expected:?}");
     println!("actual {inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));

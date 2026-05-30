@@ -15,6 +15,8 @@ pub fn kernel_imult_lt_unalligned(
     // Sum[K] Union[I] { g^i = aik b^k }
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
+        // println!("s_x {s_x:}, s_y: {s_y:}, s_t: {s_t:}");
+
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
         let mut row0 = mask_load(mask_n, tptr);
@@ -26,11 +28,21 @@ pub fn kernel_imult_lt_unalligned(
         let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
         let threshold = m.min(p);
+        // let threshold = m.max(p);
+        // println!("-------------------");
+        // println!("m {m:}, p: {p:}, n: {n:}");
+        // println!("-------------------");
+        // println!("threshold {:?}", threshold);
+        // println!("mask_n {:?}", MASK[n]);
+        // println!("mask_m {:?}", MASK[m]);
+        // println!("-------------------");
         let mask_m = MASK[m];
         for _k in threshold..p {
+            // println!("main");
             // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
             // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
             let b0 = mask_load(mask_n, yptr);
+            // println!("b0 {b0:?}");
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_m[0], row0, xptr, b0);
             row1 = cfma_accum(mask_m[1], row1, xptr.add(s_x), b0);
@@ -44,7 +56,9 @@ pub fn kernel_imult_lt_unalligned(
         }
         let mut mask_t = mask_m;
         for k in 0..threshold {
+            // println!("boundary");
             let b0 = mask_load(mask_n, yptr);
+            // println!("b0 {b0:?}");
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
             row1 = cfma_accum(mask_t[1], row1, xptr.add(s_x), b0);
