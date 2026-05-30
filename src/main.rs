@@ -203,6 +203,7 @@ pub fn tensor_lt_contraction(
 }
 fn test_gemm_equivalence() {
     let ikj = [
+        // (2, 2, 1),
         (2, 9, 1),
         // (1, 9, 1),
         // (4, 8, 1),
@@ -261,8 +262,8 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
     println!("x_base {x_base:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
-    // tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
+    // tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     let inspect = NdArray {
         dims: vec![m, n],
         data: result.clone(),
