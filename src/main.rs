@@ -167,21 +167,6 @@ pub fn tensor_lt_contraction(
                 let jj_end = SIMD_WIDTH.min(n - j);
                 if g_i + i + SIMD_WIDTH < g_k {
                     // largest x index is less than the start of the column
-                } else if g_i + i + SIMD_WIDTH <= g_k + p {
-                    // largest x index is less than the furthest y index
-                    println!("in the triangle kernel");
-                    kernel_lt_mult(
-                        x_d.get_unchecked(xoffset..),
-                        y_d.get_unchecked(j..),
-                        t_d.get_unchecked_mut(toffset + j..),
-                        ii_end,
-                        p,
-                        jj_end,
-                        s_x,
-                        s_y,
-                        s_t,
-                    )
-                // } else {
                 } else if g_i + i + SIMD_WIDTH > g_k + p {
                 // } else if g_i + i + SIMD_WIDTH >= g_k + p {
                     println!("dense kernel");
@@ -197,6 +182,37 @@ pub fn tensor_lt_contraction(
                         s_t,
                     )
                 }
+                 else if g_i + i + SIMD_WIDTH <= g_k + p {
+                    // largest x index is less than the furthest y index
+                    println!("in the triangle kernel");
+                    kernel_lt_mult(
+                        x_d.get_unchecked(xoffset..),
+                        y_d.get_unchecked(j..),
+                        t_d.get_unchecked_mut(toffset + j..),
+                        ii_end,
+                        p,
+                        jj_end,
+                        s_x,
+                        s_y,
+                        s_t,
+                    )
+                }
+                // } else {
+                // } else if g_i + i + SIMD_WIDTH > g_k + p {
+                // // } else if g_i + i + SIMD_WIDTH >= g_k + p {
+                //     println!("dense kernel");
+                //     kernel_mult(
+                //         x_d.get_unchecked(xoffset..),
+                //         y_d.get_unchecked(j..),
+                //         t_d.get_unchecked_mut(toffset + j..),
+                //         ii_end,
+                //         p,
+                //         jj_end,
+                //         s_x,
+                //         s_y,
+                //         s_t,
+                //     )
+                // }
                 // implicit pass on if above the diagonal
             }
             toffset += dt;
