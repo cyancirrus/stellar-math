@@ -38,18 +38,7 @@ pub fn kernel_lt_mult_simd(
     unsafe {
         if d <= 0 {
             println!("***** tail *******");
-            triangle::kernel_lmult_lt_tail(
-                xptr,
-                yptr,
-                tptr,
-                d as usize + 1,
-                m,
-                p,
-                n,
-                s_x,
-                s_y,
-                s_t,
-            );
+            triangle::lmult_lt_tail(xptr, yptr, tptr, -d as usize, m, p, n, s_x, s_y, s_t);
         } else if (d as usize) < p {
             println!("***** triangle ******");
             triangle::kernel_imult_lt_unalligned(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);

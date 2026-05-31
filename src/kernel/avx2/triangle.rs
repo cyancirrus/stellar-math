@@ -2,7 +2,7 @@ use crate::kernel::avx2::constants::{MASK, cfma_accum, mask_load, mask_store_ctr
 use std::arch::x86_64::{__m256i, _mm256_loadu_si256};
 
 // d : diagonal
-pub fn kernel_lmult_lt_tail(
+pub fn lmult_lt_tail(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -14,6 +14,7 @@ pub fn kernel_lmult_lt_tail(
     s_y: usize,
     s_t: usize,
 ) {
+    println!("p: {p:}, d {d:?}");
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
@@ -26,9 +27,10 @@ pub fn kernel_lmult_lt_tail(
         let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
         let mut mask_t = MASK[m];
-        for idx in 0..d {
+        for idx in 0..=d {
             mask_t[idx] = 0;
         }
+        println!("mask_t {mask_t:?}");
         let mask_m = mask_t;
         for k in 0..p {
             let b0 = mask_load(mask_n, yptr);
@@ -70,6 +72,7 @@ pub fn kernel_imult_lt_unalligned(
     // Sum[K] Union[I] { g^i = aik b^k }
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
+        println!("what is p {p:?}");
         // println!("s_x {s_x:}, s_y: {s_y:}, s_t: {s_t:}");
 
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
@@ -83,6 +86,7 @@ pub fn kernel_imult_lt_unalligned(
         let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
         let threshold = m.min(p);
+        println!("threshold {threshold:?}");
         // let threshold = m.max(p);
         // println!("-------------------");
         // println!("m {m:}, p: {p:}, n: {n:}");
