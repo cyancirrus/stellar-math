@@ -64,67 +64,39 @@ pub fn tensor_lt_block(
     // suffix c: chunk, suffix a: actual
     let d_0 = (p - (p.min(m) - 1)) as isize;
     println!("d_0 : {d_0:}");
-    t_d.par_chunks_mut(LC * n)
-        .zip(x_d.par_chunks(LC * p))
+    t_d.par_chunks_mut(MC * n)
+        .zip(x_d.par_chunks(MC * p))
         .enumerate()
         .for_each(|(lc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
                 let lc = lc_idx * LC;
-                let mut d = d_0 - lc as isize;
+                let d = d_0 + lc as isize;
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let (dx, dt, dy) = (MC * s_x, MC * s_t, PC * s_y);
-                let (mut xend, mut yend, mut tend);
-                let (mut xoffset, mut yoffset, mut toffset) = (0, 0, 0);
+                let dy = PC * s_y;
+                let (xend, mut yend, tend);
                 let rows = x.len() / s_x;
-                for mc in (0..rows).step_by(MC) {
-                    let ma = diff_min(rows, mc, MC);
-                    let t_bound = lc + mc + ma;
-                    (xend, tend) = (ma * s_x, ma * s_t);
-                    for nc in (0..n).step_by(NC) {
-                        let na = diff_min(n, nc, NC);
-                        t_accum.fill(0f32);
-                        // println!("t_accum {t_accum:?}");
-                        yoffset = 0;
-                        // for pc in (0..t_bound).step_by(PC) {
-                        for pc in (0..p).step_by(PC) {
-                            println!("stepping!");
-                            let pa = diff_min(p, pc, PC);
-                            yend = pa * s_y;
-                            // println!("x_pack before {x_pack:?}");
-                            pack(&x[xoffset + pc..xoffset + xend], x_pack, ma, pa, PC, s_x);
-                            pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
-                            // println!("x_pack after {x_pack:?}");
-                            // tensor_lt_contraction(
-                            //     &x_pack, &y_pack, t_accum, lc, pc, ma, pa, na, PC, NC, NC,
-                            // );
-                            tensor_lt_contraction(
-                                &x_pack,
-                                &y_pack,
-                                t_accum,
-                                lc,
-                                pc,
-                                d,
-                                ma,
-                                pa,
-                                na,
-                                PC,
-                                NC,
-                                NC,
-                            );
-                            yoffset += dy;
-                        }
-                        // unpack
-                        pack(
-                            &t_accum,
-                            &mut t[toffset + nc..toffset + tend],
-                            ma,
-                            na,
-                            s_y,
-                            NC,
+                let ma = rows;
+                (xend, tend) = (ma * s_x, ma * s_t);
+                for nc in (0..n).step_by(NC) {
+                    let na = diff_min(n, nc, NC);
+                    t_accum.fill(0f32);
+                    // println!("t_accum {t_accum:?}");
+                    let mut yoffset = 0;
+                    for pc in (0..p).step_by(PC) {
+                        println!("stepping!");
+                        let pa = diff_min(p, pc, PC);
+                        yend = pa * s_y;
+                        // println!("x_pack before {x_pack:?}");
+                        pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
+                        pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
+                        // println!("x_pack after {x_pack:?}");
+                        tensor_lt_contraction(
+                            &x_pack, &y_pack, t_accum, lc, pc, d, ma, pa, na, PC, NC, NC,
                         );
+                        yoffset += dy;
                     }
-                    xoffset += dx;
-                    toffset += dt;
+                    // unpack
+                    pack(&t_accum, &mut t[nc..tend], ma, na, s_y, NC);
                 }
             })
         });
@@ -182,7 +154,7 @@ pub fn tensor_lt_contraction(
                 if d + (ii_end as isize) < (g_k as isize) {
                     println!("EXITING EARLY");
                 }
-                if d + (ii_end as isize) >= g_k as isize{
+                if d + (ii_end as isize) >= g_k as isize {
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -205,8 +177,7 @@ pub fn tensor_lt_contraction(
 }
 fn test_gemm_equivalence() {
     let ikj = [
-        (9, 8, 8),
-
+        (8, 9, 8),
         (2, 2, 1),
         (2, 9, 1),
         (2, 10, 1),
@@ -224,14 +195,14 @@ fn test_gemm_equivalence() {
         (4, 6, 8),
         (8, 6, 4),
         (8, 8, 8),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
         // (16, 16, 16),
         // (256, 256, 256),
         // (256, 1024, 512),
