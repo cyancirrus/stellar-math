@@ -41,7 +41,7 @@ pub fn kernel_lt_mult_simd(
             triangle::lmult_lt_tail(xptr, yptr, tptr, -d as usize, m, p, n, s_x, s_y, s_t);
         } else if (d as usize) < p {
             println!("***** triangle ******");
-            triangle::kernel_imult_lt_unalligned(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+            triangle::lmult_lt_tri(xptr, yptr, tptr, d as usize, m, p, n, s_x, s_y, s_t);
         } else {
             println!("***** dense ******");
             unalligned::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);

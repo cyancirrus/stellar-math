@@ -58,10 +58,11 @@ pub fn lmult_lt_tail(
 }
 
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn kernel_imult_lt_unalligned(
+pub fn lmult_lt_tri(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
+    d: usize,
     m: usize,
     p: usize,
     n: usize,
@@ -86,7 +87,7 @@ pub fn kernel_imult_lt_unalligned(
         let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
         let threshold = m.min(p);
-        println!("threshold {threshold:?}");
+        println!("delta {d:?}, threshold {threshold:?}");
         // let threshold = m.max(p);
         // println!("-------------------");
         // println!("m {m:}, p: {p:}, n: {n:}");
@@ -96,10 +97,8 @@ pub fn kernel_imult_lt_unalligned(
         // println!("mask_m {:?}", MASK[m]);
         // println!("-------------------");
         let mask_m = MASK[m];
-        for _k in threshold..p {
-            // println!("main");
-            // _mm_prefetch(yptr.add(s_y) as *const i8, _MM_HINT_T0);
-            // _mm_prefetch(xptr.add(4 * s_x) as *const i8, _MM_HINT_T0);
+        // for _k in m..p + d  {
+        for _k in 0..d  {
             let b0 = mask_load(mask_n, yptr);
             // println!("b0 {b0:?}");
             yptr = yptr.add(s_y);
@@ -114,8 +113,9 @@ pub fn kernel_imult_lt_unalligned(
             xptr = xptr.add(1);
         }
         let mut mask_t = mask_m;
-        for k in 0..threshold {
-            // println!("boundary");
+        for k in 0..p - d {
+            mask_t[k] = 0;
+            println!("boundary");
             let b0 = mask_load(mask_n, yptr);
             // println!("b0 {b0:?}");
             yptr = yptr.add(s_y);
@@ -127,7 +127,6 @@ pub fn kernel_imult_lt_unalligned(
             row5 = cfma_accum(mask_t[5], row5, xptr.add(5 * s_x), b0);
             row6 = cfma_accum(mask_t[6], row6, xptr.add(6 * s_x), b0);
             row7 = cfma_accum(mask_t[7], row7, xptr.add(7 * s_x), b0);
-            mask_t[k] = 0;
             xptr = xptr.add(1);
         }
         mask_store_ctrl(mask_m[0], mask_n, tptr, row0);
