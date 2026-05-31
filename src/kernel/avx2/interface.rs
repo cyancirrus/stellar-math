@@ -26,6 +26,7 @@ pub fn kernel_lt_mult_simd(
     xptr: *const f32,
     yptr: *const f32,
     tptr: *mut f32,
+    d: isize,
     m: usize,
     p: usize,
     n: usize,
@@ -33,7 +34,17 @@ pub fn kernel_lt_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
+    println!("d {d:?}");
     unsafe {
-        triangle::kernel_imult_lt_unalligned(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        if d <= 0 {
+            println!("***** tail *******");
+            triangle::kernel_lmult_lt_tail(xptr, yptr, tptr, d as usize + 1, m, p, n, s_x, s_y, s_t);
+        } else if (d as usize) < p {
+            println!("***** triangle ******");
+            triangle::kernel_imult_lt_unalligned(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        } else {
+            println!("***** dense ******");
+            unalligned::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        }
     }
 }
