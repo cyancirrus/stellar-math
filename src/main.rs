@@ -204,7 +204,7 @@ fn test_gemm_equivalence() {
         (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
         (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
         (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        // (16, 16, 16),
+        (16, 16, 16),
         // (256, 256, 256),
         // (256, 1024, 512),
         // (512, 512, 512),
