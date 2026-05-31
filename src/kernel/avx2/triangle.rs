@@ -14,7 +14,7 @@ pub fn lmult_lt_tail(
     s_y: usize,
     s_t: usize,
 ) {
-    println!("p: {p:}, d {d:?}");
+    // println!("p: {p:}, d {d:?}");
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
@@ -30,7 +30,7 @@ pub fn lmult_lt_tail(
         for idx in 0..=d {
             mask_t[idx] = 0;
         }
-        println!("mask_t {mask_t:?}");
+        // println!("mask_t {mask_t:?}");
         let mask_m = mask_t;
         for k in 0..p {
             let b0 = mask_load(mask_n, yptr);
@@ -73,7 +73,7 @@ pub fn lmult_lt_tri(
     // Sum[K] Union[I] { g^i = aik b^k }
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
-        println!("what is p {p:?}");
+        // println!("what is p {p:?}");
         // println!("s_x {s_x:}, s_y: {s_y:}, s_t: {s_t:}");
 
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
@@ -87,7 +87,7 @@ pub fn lmult_lt_tri(
         let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
         let threshold = m.min(p);
-        println!("delta {d:?}, threshold {threshold:?}");
+        // println!("delta {d:?}, threshold {threshold:?}");
         // let threshold = m.max(p);
         // println!("-------------------");
         // println!("m {m:}, p: {p:}, n: {n:}");
