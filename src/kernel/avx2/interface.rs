@@ -34,7 +34,7 @@ pub fn kernel_lt_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
-    println!("d {d:?}");
+    println!("TRAINGLE KERNEL D {d:?}");
     unsafe {
         if d <= 0 {
             println!("***** tail *******");

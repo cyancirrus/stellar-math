@@ -148,18 +148,21 @@ pub fn tensor_lt_contraction(
         println!("---------------------------");
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
-            println!("i {i:}, ii {ii_end:}, g_k {g_k:}, p: {p:}");
             for j in (0..n).step_by(SIMD_WIDTH) {
+                println!("i {i:}, ii {ii_end:}, g_k {g_k:}, p: {p:}, j: {j:}");
                 let jj_end = SIMD_WIDTH.min(n - j);
-                if d + (ii_end as isize) < (g_k as isize) {
-                    println!("EXITING EARLY");
-                }
-                if d + (ii_end as isize) >= g_k as isize {
+                // if d + (ii_end as isize) <= (g_k as isize) + j as isize + g_k as isize{
+                // if d + (ii_end as isize) <= (g_k as isize) + j as isize + g_k as isize{
+                //     println!("EXITING EARLY");
+                //     continue;
+                // }
+                if d + (ii_end as isize) > g_k as isize + 1 {
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
-                        d as isize - g_k as isize,
+                        // d as isize - g_k as isize,
+                        d as isize - g_k as isize - j as isize,
                         ii_end,
                         p,
                         jj_end,
@@ -168,10 +171,10 @@ pub fn tensor_lt_contraction(
                         s_t,
                     )
                 }
-                d += SIMD_WIDTH as isize;
                 toffset += dt;
                 xoffset += dx;
             }
+            d += SIMD_WIDTH as isize;
         }
     }
 }
@@ -262,4 +265,5 @@ fn main() {
     // }
 
     test_gemm_equivalence();
+    println!("success");
 }

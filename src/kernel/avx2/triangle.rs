@@ -97,7 +97,6 @@ pub fn lmult_lt_tri(
         // println!("mask_m {:?}", MASK[m]);
         // println!("-------------------");
         let mask_m = MASK[m];
-        // for _k in m..p + d  {
         for _k in 0..d  {
             let b0 = mask_load(mask_n, yptr);
             // println!("b0 {b0:?}");
@@ -115,7 +114,7 @@ pub fn lmult_lt_tri(
         let mut mask_t = mask_m;
         for k in 0..p - d {
             mask_t[k] = 0;
-            println!("boundary");
+            // println!("boundary");
             let b0 = mask_load(mask_n, yptr);
             // println!("b0 {b0:?}");
             yptr = yptr.add(s_y);
