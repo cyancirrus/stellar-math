@@ -96,7 +96,7 @@ pub fn tensor_lt_block(
                         yoffset += dy;
                     }
                     // unpack
-                    pack(&t_accum, &mut t[nc..tend], ma, na, s_y, NC);
+                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
             })
         });
