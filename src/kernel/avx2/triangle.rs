@@ -81,7 +81,7 @@ pub fn lmult_lt_tri(
     // Sum[K] Union[I] { g^i = aik b^k }
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
-        //println!("what is p {p:?}, d {d:?}");
+        println!("what is p {p:?}, d {d:?}");
         // //println!("s_x {s_x:}, s_y: {s_y:}, s_t: {s_t:}");
 
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
@@ -113,7 +113,7 @@ pub fn lmult_lt_tri(
             xptr = xptr.add(1);
         }
         let mut mask_t = mask_m;
-        for k in 0..p - d {
+        for k in 0..(p - d).min(8) {
             mask_t[k] = 0;
             // //println!("inside the boundary");
             let b0 = mask_load(mask_n, yptr);

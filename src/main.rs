@@ -37,10 +37,10 @@ const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // const MC: usize = 64;
 // const PC: usize = 256;
 // const NC: usize = 128;
-const LC: usize = 8;
-const MC: usize = 8;
-const PC: usize = 8;
-const NC: usize = 8;
+const LC: usize = 16;
+const MC: usize = 16;
+const PC: usize = 16;
+const NC: usize = 16;
 
 #[inline(always)]
 fn diff_min(x: usize, b: usize, t: usize) -> usize {
@@ -176,13 +176,13 @@ pub fn tensor_lt_contraction(
 }
 fn test_gemm_equivalence() {
     let ikj = [
+        (32, 32, 32),
+        (16, 16, 16),
         (8, 9, 8),
         (3, 9, 1),
         (6, 4, 8),
         (9, 16, 9),
         (9, 16, 8),
-        (32, 32, 32),
-        (16, 16, 16),
         (8, 8, 9),
         (2, 9, 1),
         (2, 2, 1),
@@ -210,13 +210,13 @@ fn test_gemm_equivalence() {
         (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
         (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
         (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        // // (256, 256, 256),
-        // // (256, 1024, 512),
-        // // (512, 512, 512),
-        // // (1024, 64, 1024),
+        (256, 256, 256),
+        (256, 1024, 512),
+        (512, 512, 512),
+        (1024, 64, 1024),
     ];
     for (i, k, j) in ikj {
-        //println!("(i: {i:?}, k: {k:?}, j: {j:})");
+        println!("(i: {i:?}, k: {k:?}, j: {j:})");
         test_lower_equivalence_mkn(i, k, j);
     }
 }
