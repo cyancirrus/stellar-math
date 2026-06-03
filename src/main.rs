@@ -15,23 +15,13 @@
 
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
-use std::arch::x86_64::{
-    _MM_HINT_T0, _mm_prefetch, _mm256_add_ps, _mm256_broadcast_ss, _mm256_castpd_ps,
-    _mm256_castps_pd, _mm256_fmadd_ps, _mm256_load_ps, _mm256_loadu_ps, _mm256_mask_load_ps,
-    _mm256_permute2f128_ps, _mm256_set1_ps, _mm256_setzero_ps, _mm256_storeu_ps,
-    _mm256_unpackhi_pd, _mm256_unpackhi_ps, _mm256_unpacklo_pd, _mm256_unpacklo_ps,
-};
 use std::cell::RefCell;
 use stellar::algebra::ndmethods::basic_mult;
 use stellar::arch::SIMD_WIDTH;
 use stellar::equality::approximate::approx_vector_eq;
-#[cfg(all(feature = "avx2", target_arch = "x86_64"))]
-use stellar::kernel::avx2::constants::MASK;
-use stellar::kernel::matkerns::{kernel_lt_mult, kernel_mult};
+use stellar::kernel::matkerns::kernel_lt_mult;
 use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
-const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
-// NOTE: could set these as cache sizes so threads reflect the amount of work
 // const MC: usize = 64;
 // const PC: usize = 256;
 // const NC: usize = 128;
@@ -245,7 +235,7 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let mut result = vec![0f32; m * n];
     tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     // tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
-    let inspect = NdArray {
+    let _inspect = NdArray {
         dims: vec![m, n],
         data: result.clone(),
     };

@@ -147,5 +147,4 @@ mod test_avx2_kernels {
     use crate::random::generation::generate_random_matrix;
     use crate::structure::ndarray::NdArray;
     const BLOCK_AVX2: usize = 8;
-
 }
