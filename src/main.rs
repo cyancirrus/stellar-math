@@ -242,7 +242,6 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut x_base = x.clone();
     filter_lower_triangle(&mut x_base);
-    //println!("x_base {x_base:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
     tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
@@ -251,9 +250,6 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    ////println!("y {y:?}");
-    //println!("expected {expected:?}");
-    //println!("actual {inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 
