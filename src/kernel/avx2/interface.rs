@@ -34,13 +34,18 @@ pub fn kernel_lt_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
+    let pre = (-d).max(0) as usize;
+    let pro = d.max(0) as usize;
+    let pos = if d <= 0 {
+        (m - pre)
+    } else if d < p as isize {
+        (p.wrapping_sub(pro)).min(SIMD_WIDTH)
+    } else { 0 };
     unsafe {
-        if d <= 0 {
-            triangle::lmult_lt_tail(xptr, yptr, tptr, -d as usize, m, m.wrapping_add(d as usize), n, s_x, s_y, s_t);
-        } else if (d as usize) < p {
-            triangle::lmult_lt_tri(xptr, yptr, tptr, d as usize, m, p, n, s_x, s_y, s_t);
+        if pos > 0 {
+            triangle::lmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
-            unalligned::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+            kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
     }
 }

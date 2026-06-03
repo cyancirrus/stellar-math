@@ -33,12 +33,12 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // NOTE: could set these as cache sizes so threads reflect the amount of work
-const MC: usize = 64;
-const PC: usize = 256;
-const NC: usize = 128;
-// const MC: usize = 16;
-// const PC: usize = 64;
-// const NC: usize = 32;
+// const MC: usize = 64;
+// const PC: usize = 256;
+// const NC: usize = 128;
+const MC: usize = 16;
+const PC: usize = 32;
+const NC: usize = 16;
 
 #[inline(always)]
 fn diff_min(x: usize, b: usize, t: usize) -> usize {
@@ -83,8 +83,20 @@ pub fn tensor_lt_block(
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_lt_contraction(
-                            &x_pack, &y_pack, t_accum, lc, pc, d, ma, pa, na, PC, NC, NC,
+                            &x_pack,
+                            &y_pack,
+                            t_accum,
+                            d - pc as isize,
+                            ma,
+                            pa,
+                            na,
+                            PC,
+                            NC,
+                            NC,
                         );
+                        // tensor_lt_contraction(
+                        //     &x_pack, &y_pack, t_accum, lc, pc, d, ma, pa, na, PC, NC, NC,
+                        // );
                         yoffset += dy;
                     }
                     // unpack
@@ -120,9 +132,7 @@ pub fn tensor_lt_contraction(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    g_i: usize,
-    g_k: usize,
-    mut d: isize,
+    mut g_d: isize,
     m: usize,
     p: usize,
     n: usize,
@@ -139,12 +149,12 @@ pub fn tensor_lt_contraction(
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-                if d + (ii_end as isize) > g_k as isize + 1 {
+                if g_d + (ii_end as isize) > 0 {
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
-                        d as isize - g_k as isize,
+                        g_d,
                         ii_end,
                         p,
                         jj_end,
@@ -156,18 +166,19 @@ pub fn tensor_lt_contraction(
             }
             toffset += dt;
             xoffset += dx;
-            d += SIMD_WIDTH as isize;
+            g_d += SIMD_WIDTH as isize;
         }
     }
 }
 fn test_gemm_equivalence() {
     let ikj = [
+        (9, 16, 9),
         (32, 32, 32),
+        (1, 1, 1),
         (16, 16, 16),
         (8, 9, 8),
         (3, 9, 1),
         (6, 4, 8),
-        (9, 16, 9),
         (9, 16, 8),
         (8, 8, 9),
         (2, 9, 1),
@@ -203,7 +214,6 @@ fn test_gemm_equivalence() {
         (MC, PC + 1, NC),
         (MC, PC - 1, NC),
         (MC, PC, NC),
-
         (256, 256, 256),
         (256, 1024, 512),
         (512, 512, 512),

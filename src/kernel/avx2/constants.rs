@@ -2,7 +2,7 @@
 use std::arch::x86_64::{
     __m256, __m256i, _mm256_broadcast_ss, _mm256_fmadd_ps, _mm256_maskload_ps, _mm256_maskstore_ps,
 };
-pub const SIMD_WIDTH:usize = 8;
+pub const SIMD_WIDTH: usize = 8;
 #[rustfmt::skip]
 pub const MASK:[[i32;8];9] = [
     [ 0,  0,  0,  0,  0,  0,  0,  0],
