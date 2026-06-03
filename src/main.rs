@@ -37,10 +37,10 @@ const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // const MC: usize = 64;
 // const PC: usize = 256;
 // const NC: usize = 128;
-const LC: usize = 16;
-const MC: usize = 16;
-const PC: usize = 16;
-const NC: usize = 16;
+const LC: usize = 8;
+const MC: usize = 8;
+const PC: usize = 8;
+const NC: usize = 8;
 
 #[inline(always)]
 fn diff_min(x: usize, b: usize, t: usize) -> usize {
@@ -60,10 +60,10 @@ pub fn tensor_lt_block(
     s_y: usize,
     s_t: usize,
 ) {
-    // println!("s_x {s_x:}, s_y: {s_y:}, s_t: {s_t:}");
+    // //println!("s_x {s_x:}, s_y: {s_y:}, s_t: {s_t:}");
     // suffix c: chunk, suffix a: actual
     let d_0 = (p - (p.min(m) - 1)) as isize;
-    // println!("d_0 : {d_0:}");
+    // //println!("d_0 : {d_0:}");
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
@@ -80,16 +80,16 @@ pub fn tensor_lt_block(
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     t_accum.fill(0f32);
-                    // println!("t_accum {t_accum:?}");
+                    // //println!("t_accum {t_accum:?}");
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
-                        // println!("stepping!");
+                        // //println!("stepping!");
                         let pa = diff_min(p, pc, PC);
                         yend = pa * s_y;
-                        // println!("x_pack before {x_pack:?}");
+                        // //println!("x_pack before {x_pack:?}");
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
-                        // println!("x_pack after {x_pack:?}");
+                        // //println!("x_pack after {x_pack:?}");
                         tensor_lt_contraction(
                             &x_pack, &y_pack, t_accum, lc, pc, d, ma, pa, na, PC, NC, NC,
                         );
@@ -143,14 +143,14 @@ pub fn tensor_lt_contraction(
         let mut toffset = 0;
         let dx = SIMD_WIDTH * s_x;
         let dt = SIMD_WIDTH * s_t;
-        // println!("---------------------------");
-        // println!("p {p:}, d {d:}");
-        // println!("---------------------------");
+        // //println!("---------------------------");
+        // //println!("p {p:}, d {d:}");
+        // //println!("---------------------------");
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-                println!("i {i:}, ii {ii_end:}, g_k {g_k:}, p: {p:}, j: {j:}, jj: {jj_end:}");
+                //println!("i {i:}, ii {ii_end:}, g_k {g_k:}, p: {p:}, j: {j:}, jj: {jj_end:}");
                 if d + (ii_end as isize) > g_k as isize + 1 {
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
@@ -158,14 +158,15 @@ pub fn tensor_lt_contraction(
                         t_d.get_unchecked_mut(toffset + j..),
                         d as isize - g_k as isize,
                         ii_end,
-                        p,
+                        // p.min((d as usize).wrapping_sub(g_k) ),
+                        p.min(d as usize + ii_end),
                         jj_end,
                         s_x,
                         s_y,
                         s_t,
                     )
                 } else {
-                    // println!("early exit");
+                    // //println!("early exit");
                 }
             }
             toffset += dt;
@@ -176,39 +177,40 @@ pub fn tensor_lt_contraction(
 }
 fn test_gemm_equivalence() {
     let ikj = [
-        (8, 8, 9),
-        (3, 9, 1),
-        (2, 9, 1),
-        (2, 2, 1),
-        (2, 9, 1),
-        (2, 10, 1),
-        (1, 9, 1),
-        (4, 8, 1),
-        (1, 2, 1),
-        (1, 1, 1),
-        (8, 1, 1),
-        (1, 8, 1),
-        (1, 1, 8),
-        (6, 4, 8),
-        (6, 8, 4),
-        (8, 4, 6),
-        (4, 8, 6),
-        (4, 6, 8),
-        (8, 6, 4),
-        (8, 8, 8),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        (16, 16, 16),
-        (256, 256, 256),
-        (256, 1024, 512),
-        (512, 512, 512),
-        (1024, 64, 1024),
+        (32, 32, 32),
+        // (16, 16, 16),
+        // (8, 8, 9),
+        // (3, 9, 1),
+        // (2, 9, 1),
+        // (2, 2, 1),
+        // (2, 9, 1),
+        // (2, 10, 1),
+        // (1, 9, 1),
+        // (4, 8, 1),
+        // (1, 2, 1),
+        // (1, 1, 1),
+        // (8, 1, 1),
+        // (1, 8, 1),
+        // (1, 1, 8),
+        // (6, 4, 8),
+        // (6, 8, 4),
+        // (8, 4, 6),
+        // (4, 8, 6),
+        // (4, 6, 8),
+        // (8, 6, 4),
+        // (8, 8, 8),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        // (256, 256, 256),
+        // (256, 1024, 512),
+        // (512, 512, 512),
+        // (1024, 64, 1024),
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
@@ -236,7 +238,7 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut x_base = x.clone();
     filter_lower_triangle(&mut x_base);
-    // println!("x_base {x_base:?}");
+    // //println!("x_base {x_base:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
     tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
@@ -245,9 +247,9 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    println!("y {y:?}");
-    println!("expected {expected:?}");
-    println!("actual {inspect:?}");
+    //println!("y {y:?}");
+    //println!("expected {expected:?}");
+    //println!("actual {inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 
