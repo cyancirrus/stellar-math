@@ -52,7 +52,6 @@ pub fn lmult_lt_tail(
         mask_store_ctrl(mask_m[5], mask_n, tptr.add(s_t * 5), row5);
         mask_store_ctrl(mask_m[6], mask_n, tptr.add(s_t * 6), row6);
         mask_store_ctrl(mask_m[7], mask_n, tptr.add(s_t * 7), row7);
-        // //println!("row7 {row7:?}");
     }
 }
 
@@ -82,7 +81,6 @@ pub fn lmult_lt_tri(
         let mut row5 = mask_load(mask_n, tptr.add(s_t * 5));
         let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
-        let threshold = m.min(p);
         let mask_m = MASK[m];
         for _k in 0..d  {
             let b0 = mask_load(mask_n, yptr);
