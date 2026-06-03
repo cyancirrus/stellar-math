@@ -1,9 +1,9 @@
+use crate::algebra::bmethods::{diff_min, pack};
+use crate::arch::SIMD_WIDTH;
+use crate::kernel::matkerns::kernel_lt_mult;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
-use crate::arch::SIMD_WIDTH;
-use crate::kernel::matkerns::kernel_lt_mult;
-use crate::algebra::bmethods::{diff_min, pack};
 // const MC: usize = 64;
 // const PC: usize = 256;
 // const NC: usize = 128;
@@ -136,12 +136,12 @@ pub fn tensor_lt_contraction(
 }
 #[cfg(test)]
 #[cfg(feature = "avx2")]
-mod test_lower_triangular_dispatch{
+mod test_lower_triangular_dispatch {
     use super::*;
-    use stellar::algebra::ndmethods::basic_mult;
-    use stellar::equality::approximate::approx_vector_eq;
-    use stellar::random::generation::generate_random_matrix;
-    use stellar::structure::ndarray::NdArray;
+    use crate::algebra::ndmethods::basic_mult;
+    use crate::equality::approximate::approx_vector_eq;
+    use crate::random::generation::generate_random_matrix;
+    use crate::structure::ndarray::NdArray;
     #[test]
     fn test_gemm_equivalence() {
         let ikj = [
