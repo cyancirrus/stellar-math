@@ -21,7 +21,7 @@ pub fn kernel_mult_simd(
         }
     }
 }
-#[inline(always)]
+// #[inline(always)]
 pub fn kernel_lt_mult_simd(
     xptr: *const f32,
     yptr: *const f32,

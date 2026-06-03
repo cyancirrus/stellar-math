@@ -94,9 +94,6 @@ pub fn tensor_lt_block(
                             NC,
                             NC,
                         );
-                        // tensor_lt_contraction(
-                        //     &x_pack, &y_pack, t_accum, lc, pc, d, ma, pa, na, PC, NC, NC,
-                        // );
                         yoffset += dy;
                     }
                     // unpack
