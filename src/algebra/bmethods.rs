@@ -1,4 +1,3 @@
-#![allow(unused)]
 use crate::arch::SIMD_WIDTH;
 use crate::kernel::matkerns::kernel_mult;
 use crate::structure::ndarray::NdArray;
@@ -40,7 +39,7 @@ pub fn tensor_kernel_into(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 }
 /// (x - b).min(t)
 #[inline(always)]
-fn diff_min(x: usize, b: usize, t: usize) -> usize {
+pub fn diff_min(x: usize, b: usize, t: usize) -> usize {
     if x - b < t { x - b } else { t }
 }
 
@@ -51,7 +50,7 @@ pub fn tensor_blockkern(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    m: usize,
+    _m: usize,
     p: usize,
     n: usize,
     s_x: usize,
