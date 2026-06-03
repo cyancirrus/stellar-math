@@ -30,13 +30,18 @@ pub fn lmult_lt_tail(
         for idx in 0..d {
             mask_t[idx] = 0;
         }
-        let mask_m = mask_t;
+        println!("row7 {row7:?}");
+        let mut mask_m = mask_t;
+        // mask_m[d] = 0;
+        println!("mask_m {mask_m:?}");
         // for k in d..p {
-        for k in d..p  {
-            mask_t[k ] = 0;
+        // for k in d..p  {
+        for k in d..p + d  {
+            mask_t[k] = 0;
             println!("tail mask_t {mask_t:?}");
             // println!("tail");
             let b0 = mask_load(mask_n, yptr);
+            println!("b0 {b0:?}");
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
             row1 = cfma_accum(mask_t[1], row1, xptr.add(s_x), b0);
@@ -56,6 +61,7 @@ pub fn lmult_lt_tail(
         mask_store_ctrl(mask_m[5], mask_n, tptr.add(s_t * 5), row5);
         mask_store_ctrl(mask_m[6], mask_n, tptr.add(s_t * 6), row6);
         mask_store_ctrl(mask_m[7], mask_n, tptr.add(s_t * 7), row7);
+        println!("row7 {row7:?}");
     }
 }
 
@@ -89,16 +95,8 @@ pub fn lmult_lt_tri(
         let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
         let threshold = m.min(p);
-        println!("row0 {row0:?}");
-        // println!("delta {d:?}, threshold {threshold:?}");
-        // let threshold = m.max(p);
-        // println!("-------------------");
         // println!("m {m:}, p: {p:}, n: {n:}");
-        // println!("-------------------");
-        // println!("threshold {:?}", threshold);
         println!("mask_n {:?}", MASK[n]);
-        // println!("mask_m {:?}", MASK[m]);
-        // println!("-------------------");
         let mask_m = MASK[m];
         for _k in 0..d  {
             let b0 = mask_load(mask_n, yptr);

@@ -150,11 +150,6 @@ pub fn tensor_lt_contraction(
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-            
-                let num = (d - g_k as isize + ii_end as isize) as usize;
-
-
-
                 println!("i {i:}, ii {ii_end:}, g_k {g_k:}, p: {p:}, j: {j:}, jj: {jj_end:}");
                 if d + (ii_end as isize) > g_k as isize + 1 {
                     kernel_lt_mult(
@@ -164,16 +159,13 @@ pub fn tensor_lt_contraction(
                         d as isize - g_k as isize,
                         ii_end,
                         p,
-                        // p.min(((d as isize - g_k as isize ) as usize).wrapping_add( ii_end)),
-                        // p.min(((d as isize - g_k as isize ) as usize).wrapping_add( ii_end)),
-                        // p.min( d as usize - g_k as usize + ii_end),
                         jj_end,
                         s_x,
                         s_y,
                         s_t,
                     )
                 } else {
-                    // //println!("early exit");
+                    println!("early exit");
                 }
             }
             toffset += dt;
@@ -184,6 +176,7 @@ pub fn tensor_lt_contraction(
 }
 fn test_gemm_equivalence() {
     let ikj = [
+        (8, 9, 8),
         (3, 9, 1),
         (6, 4, 8),
         (9, 16, 9),
