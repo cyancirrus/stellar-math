@@ -37,7 +37,7 @@ pub fn kernel_lt_mult_simd(
     let pre = (-d).max(0) as usize;
     let pro = d.max(0) as usize;
     let pos = if d <= 0 {
-        (m - pre)
+        m - pre 
     } else if d < p as isize {
         (p.wrapping_sub(pro)).min(SIMD_WIDTH)
     } else { 0 };

@@ -1,4 +1,4 @@
-use crate::kernel::avx2::constants::{MASK, SIMD_WIDTH, cfma_accum, mask_load, mask_store_ctrl};
+use crate::kernel::avx2::constants::{MASK, cfma_accum, mask_load, mask_store_ctrl};
 use std::arch::x86_64::{__m256i, _mm256_loadu_si256};
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn lmult_lt(
@@ -9,7 +9,7 @@ pub fn lmult_lt(
     pro: usize,
     pos: usize,
     m: usize,
-    p: usize,
+    _p: usize,
     n: usize,
     s_x: usize,
     s_y: usize,
