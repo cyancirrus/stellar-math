@@ -33,14 +33,12 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // NOTE: could set these as cache sizes so threads reflect the amount of work
-// const LC: usize = 64;
-// const MC: usize = 64;
-// const PC: usize = 256;
-// const NC: usize = 128;
-const LC: usize = 16;
-const MC: usize = 16;
-const PC: usize = 16;
-const NC: usize = 16;
+const MC: usize = 64;
+const PC: usize = 256;
+const NC: usize = 128;
+// const MC: usize = 16;
+// const PC: usize = 64;
+// const NC: usize = 32;
 
 #[inline(always)]
 fn diff_min(x: usize, b: usize, t: usize) -> usize {
@@ -60,16 +58,14 @@ pub fn tensor_lt_block(
     s_y: usize,
     s_t: usize,
 ) {
-    // ////println!("s_x {s_x:}, s_y: {s_y:}, s_t: {s_t:}");
     // suffix c: chunk, suffix a: actual
     let d_0 = (p - (p.min(m) - 1)) as isize;
-    // ////println!("d_0 : {d_0:}");
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
         .for_each(|(lc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
-                let lc = lc_idx * LC;
+                let lc = lc_idx * MC;
                 let d = d_0 + lc as isize;
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let dy = PC * s_y;
@@ -80,16 +76,12 @@ pub fn tensor_lt_block(
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     t_accum.fill(0f32);
-                    // ////println!("t_accum {t_accum:?}");
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
-                        // ////println!("stepping!");
                         let pa = diff_min(p, pc, PC);
                         yend = pa * s_y;
-                        // ////println!("x_pack before {x_pack:?}");
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
-                        // ////println!("x_pack after {x_pack:?}");
                         tensor_lt_contraction(
                             &x_pack, &y_pack, t_accum, lc, pc, d, ma, pa, na, PC, NC, NC,
                         );
@@ -143,14 +135,10 @@ pub fn tensor_lt_contraction(
         let mut toffset = 0;
         let dx = SIMD_WIDTH * s_x;
         let dt = SIMD_WIDTH * s_t;
-        // ////println!("---------------------------");
-        // ////println!("p {p:}, d {d:}");
-        // ////println!("---------------------------");
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-                //println!("i {i:}, ii {ii_end:}, g_k {g_k:}, p: {p:}, j: {j:}, jj: {jj_end:}");
                 if d + (ii_end as isize) > g_k as isize + 1 {
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
@@ -164,8 +152,6 @@ pub fn tensor_lt_contraction(
                         s_y,
                         s_t,
                     )
-                } else {
-                    //println!("early exit");
                 }
             }
             toffset += dt;
@@ -210,6 +196,14 @@ fn test_gemm_equivalence() {
         (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
         (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
         (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        (MC + 1, PC, NC + 1),
+        (MC + 1, PC, NC - 1),
+        (MC + 1, PC, NC),
+        (MC - 1, PC, NC),
+        (MC, PC + 1, NC),
+        (MC, PC - 1, NC),
+        (MC, PC, NC),
+
         (256, 256, 256),
         (256, 1024, 512),
         (512, 512, 512),
