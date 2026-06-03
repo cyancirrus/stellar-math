@@ -14,7 +14,7 @@ pub fn lmult_lt_tail(
     s_y: usize,
     s_t: usize,
 ) {
-    // println!("p: {p:}, d {d:?}");
+    println!("p: {p:}, d {d:?}");
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
         let mask_n = _mm256_loadu_si256(mask_n_ptr);
@@ -27,12 +27,15 @@ pub fn lmult_lt_tail(
         let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
         let mut mask_t = MASK[m];
-        for idx in 0..=d {
+        for idx in 0..d {
             mask_t[idx] = 0;
         }
-        // println!("mask_t {mask_t:?}");
         let mask_m = mask_t;
-        for k in 0..p {
+        // for k in d..p {
+        for k in d..p  {
+            mask_t[k ] = 0;
+            println!("tail mask_t {mask_t:?}");
+            // println!("tail");
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
@@ -43,7 +46,6 @@ pub fn lmult_lt_tail(
             row5 = cfma_accum(mask_t[5], row5, xptr.add(5 * s_x), b0);
             row6 = cfma_accum(mask_t[6], row6, xptr.add(6 * s_x), b0);
             row7 = cfma_accum(mask_t[7], row7, xptr.add(7 * s_x), b0);
-            mask_t[k + d] = 0;
             xptr = xptr.add(1);
         }
         mask_store_ctrl(mask_m[0], mask_n, tptr, row0);
@@ -113,8 +115,7 @@ pub fn lmult_lt_tri(
             xptr = xptr.add(1);
         }
         let mut mask_t = mask_m;
-        for k in 0..p - d + 1 {
-            println!("inside the boundary");
+        for k in 0..p - d {
             mask_t[k] = 0;
             // println!("inside the boundary");
             let b0 = mask_load(mask_n, yptr);
@@ -130,7 +131,7 @@ pub fn lmult_lt_tri(
             row7 = cfma_accum(mask_t[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
-        println!("row0 {row0:?}");
+        // println!("row0 {row0:?}");
         mask_store_ctrl(mask_m[0], mask_n, tptr, row0);
         mask_store_ctrl(mask_m[1], mask_n, tptr.add(s_t), row1);
         mask_store_ctrl(mask_m[2], mask_n, tptr.add(s_t * 2), row2);

@@ -150,7 +150,12 @@ pub fn tensor_lt_contraction(
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-                //println!("i {i:}, ii {ii_end:}, g_k {g_k:}, p: {p:}, j: {j:}, jj: {jj_end:}");
+            
+                let num = (d - g_k as isize + ii_end as isize) as usize;
+
+
+
+                println!("i {i:}, ii {ii_end:}, g_k {g_k:}, p: {p:}, j: {j:}, jj: {jj_end:}");
                 if d + (ii_end as isize) > g_k as isize + 1 {
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
@@ -158,8 +163,10 @@ pub fn tensor_lt_contraction(
                         t_d.get_unchecked_mut(toffset + j..),
                         d as isize - g_k as isize,
                         ii_end,
-                        // p.min((d as usize).wrapping_sub(g_k) ),
-                        p.min(d as usize + ii_end),
+                        p,
+                        // p.min(((d as isize - g_k as isize ) as usize).wrapping_add( ii_end)),
+                        // p.min(((d as isize - g_k as isize ) as usize).wrapping_add( ii_end)),
+                        // p.min( d as usize - g_k as usize + ii_end),
                         jj_end,
                         s_x,
                         s_y,
@@ -177,10 +184,13 @@ pub fn tensor_lt_contraction(
 }
 fn test_gemm_equivalence() {
     let ikj = [
+        (3, 9, 1),
+        (6, 4, 8),
+        (9, 16, 9),
+        (9, 16, 8),
         (32, 32, 32),
         (16, 16, 16),
         (8, 8, 9),
-        (3, 9, 1),
         (2, 9, 1),
         (2, 2, 1),
         (2, 9, 1),
@@ -199,18 +209,18 @@ fn test_gemm_equivalence() {
         (4, 6, 8),
         (8, 6, 4),
         (8, 8, 8),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        // (256, 256, 256),
-        // (256, 1024, 512),
-        // (512, 512, 512),
-        // (1024, 64, 1024),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        // // (256, 256, 256),
+        // // (256, 1024, 512),
+        // // (512, 512, 512),
+        // // (1024, 64, 1024),
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
@@ -238,7 +248,7 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut x_base = x.clone();
     filter_lower_triangle(&mut x_base);
-    // //println!("x_base {x_base:?}");
+    println!("x_base {x_base:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
     tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
@@ -248,8 +258,8 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
         data: result.clone(),
     };
     //println!("y {y:?}");
-    //println!("expected {expected:?}");
-    //println!("actual {inspect:?}");
+    println!("expected {expected:?}");
+    println!("actual {inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 
