@@ -37,10 +37,10 @@ const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 // const MC: usize = 64;
 // const PC: usize = 256;
 // const NC: usize = 128;
-const LC: usize = 8;
-const MC: usize = 8;
-const PC: usize = 8;
-const NC: usize = 8;
+const LC: usize = 16;
+const MC: usize = 16;
+const PC: usize = 16;
+const NC: usize = 16;
 
 #[inline(always)]
 fn diff_min(x: usize, b: usize, t: usize) -> usize {
@@ -149,15 +149,14 @@ pub fn tensor_lt_contraction(
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
-                // println!("i {i:}, ii {ii_end:}, g_k {g_k:}, p: {p:}, j: {j:}");
                 let jj_end = SIMD_WIDTH.min(n - j);
+                println!("i {i:}, ii {ii_end:}, g_k {g_k:}, p: {p:}, j: {j:}, jj: {jj_end:}");
                 if d + (ii_end as isize) > g_k as isize + 1 {
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
                         d as isize - g_k as isize,
-                        // d as isize - g_k as isize - j as isize,
                         ii_end,
                         p,
                         jj_end,
@@ -165,16 +164,19 @@ pub fn tensor_lt_contraction(
                         s_y,
                         s_t,
                     )
+                } else {
+                    // println!("early exit");
                 }
-                toffset += dt;
-                xoffset += dx;
             }
+            toffset += dt;
+            xoffset += dx;
             d += SIMD_WIDTH as isize;
         }
     }
 }
 fn test_gemm_equivalence() {
     let ikj = [
+        (8, 8, 9),
         (3, 9, 1),
         (2, 9, 1),
         (2, 2, 1),
@@ -243,9 +245,9 @@ fn test_lower_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    // println!("y {y:?}");
-    // println!("expected {expected:?}");
-    // println!("actual {inspect:?}");
+    println!("y {y:?}");
+    println!("expected {expected:?}");
+    println!("actual {inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 

@@ -37,13 +37,13 @@ pub fn kernel_lt_mult_simd(
     // println!("TRAINGLE KERNEL D {d:?}");
     unsafe {
         if d <= 0 {
-            // println!("***** tail *******");
+            println!("***** tail *******");
             triangle::lmult_lt_tail(xptr, yptr, tptr, -d as usize, m, p, n, s_x, s_y, s_t);
         } else if (d as usize) < p {
-            // println!("***** triangle ******");
+            println!("***** triangle ******");
             triangle::lmult_lt_tri(xptr, yptr, tptr, d as usize, m, p, n, s_x, s_y, s_t);
         } else {
-            // println!("***** dense ******");
+            println!("***** dense ******");
             unalligned::kernel_imult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
     }
