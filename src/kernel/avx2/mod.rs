@@ -1,5 +1,6 @@
 pub mod alligned;
 pub mod constants;
 pub mod interface;
-pub mod triangle;
+pub mod ltriangle;
+pub mod rtriangle;
 pub mod unalligned;

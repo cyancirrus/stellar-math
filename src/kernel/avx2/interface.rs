@@ -1,5 +1,5 @@
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::avx2::{alligned, triangle, unalligned};
+use crate::kernel::avx2::{alligned, ltriangle, unalligned};
 // #[inline(always)]
 pub fn kernel_mult_simd(
     xptr: *const f32,
@@ -45,7 +45,7 @@ pub fn kernel_lt_mult_simd(
     };
     unsafe {
         if pos > 0 {
-            triangle::lmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+            ltriangle::lmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }

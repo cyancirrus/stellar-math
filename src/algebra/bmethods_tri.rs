@@ -4,12 +4,9 @@ use crate::kernel::matkerns::kernel_lt_mult;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
-// const MC: usize = 64;
-// const PC: usize = 256;
-// const NC: usize = 128;
-const MC: usize = 16;
-const PC: usize = 32;
-const NC: usize = 16;
+const MC: usize = 64;
+const PC: usize = 256;
+const NC: usize = 128;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -69,29 +66,6 @@ pub fn tensor_lt_block(
             })
         });
 }
-/// # pack transfers a copy of data from d to pack
-/// * to inverse simply exchange d and b
-/// - d ~ M(r, s)
-///
-/// * d: contains the source data of x sliced to begin at mc
-/// * b: contains the target pack for the outer iteration loop
-/// * re: size of the r-block
-/// * se: size of the s-block
-/// * s_b: stride of block
-/// * s_d: stride of the matrix d
-// #[inline(always)]
-// fn pack(d: &[f32], b: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usize) {
-//     unsafe {
-//         let mut doffset = 0;
-//         let mut boffset = 0;
-//         for _ in 0..re {
-//             b.get_unchecked_mut(boffset..boffset + se)
-//                 .copy_from_slice(&d.get_unchecked(doffset..doffset + se));
-//             boffset += s_b;
-//             doffset += s_d;
-//         }
-//     }
-// }
 pub fn tensor_lt_contraction(
     x_d: &[f32],
     y_d: &[f32],
@@ -114,6 +88,49 @@ pub fn tensor_lt_contraction(
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
                 if g_d + (ii_end as isize) > 0 {
+                    kernel_lt_mult(
+                        x_d.get_unchecked(xoffset..),
+                        y_d.get_unchecked(j..),
+                        t_d.get_unchecked_mut(toffset + j..),
+                        g_d,
+                        ii_end,
+                        p,
+                        jj_end,
+                        s_x,
+                        s_y,
+                        s_t,
+                    )
+                }
+            }
+            toffset += dt;
+            xoffset += dx;
+            g_d += SIMD_WIDTH as isize;
+        }
+    }
+}
+pub fn tensor_ut_contraction(
+    x_d: &[f32],
+    y_d: &[f32],
+    t_d: &mut [f32],
+    mut g_d: isize,
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    // should be g_i
+    unsafe {
+        let mut xoffset = 0;
+        let mut toffset = 0;
+        let dx = SIMD_WIDTH * s_x;
+        let dt = SIMD_WIDTH * s_t;
+        for i in (0..m).step_by(SIMD_WIDTH) {
+            let ii_end = SIMD_WIDTH.min(m - i);
+            for j in (0..n).step_by(SIMD_WIDTH) {
+                let jj_end = SIMD_WIDTH.min(n - j);
+                if g_d  <= (p as isize) {
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
