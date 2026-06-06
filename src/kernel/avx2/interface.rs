@@ -76,24 +76,25 @@ pub fn kernel_ut_mult_simd(
     // println!("---------------------");
     // println!("m {m:}, p: {p:}, n: {n:}"); 
     // println!(" - - - - - - - - - - ");
-    // println!("d_pos {d_pos:}");
-    // println!("d_neg {d_neg:}");
-    // println!(" - - - - - - - - - - ");
-    // println!("pre {pre:}");
-    // println!("pos {pos:}");
-    println!("p {p:}, d_pos: {d_pos:}, pos: {pos:}");
+    println!("d_pos {d_pos:}");
+    println!("d_neg {d_neg:}");
+    println!(" - - - - - - - - - - ");
+    println!("pre {pre:}");
+    println!("pos {pos:}");
+    println!("** p: {p:}, d_pos: {d_pos:}, pos: {pos:}");
     let pro = p - d_pos - pos;
-    // println!("pro {pro:}");
-    // println!("---------------------");
+    println!("pro {pro:}");
+    println!("---------------------");
     unsafe {
         p = p - d_pos;
         xptr = xptr.add(d_pos);
         yptr = yptr.add(d_pos * s_y);
         // tptr = tptr.add(d_pos);
         if pos > 0 {
+            println!("triangle");
             ltriangle::lmult_ut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
-            // println!("dense");
+            println!("dense");
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
     }

@@ -24,8 +24,8 @@ const MC: usize = 64;
 const PC: usize = 256;
 const NC: usize = 128;
 // const MC: usize = 16;
-// const PC: usize = 32;
-// const NC: usize = 8;
+// const PC: usize = 16;
+// const NC: usize = 16;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -111,14 +111,14 @@ pub fn tensor_ut_contraction(
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
                 // if d_sub + j + p >= d_add {
-                if d_sub + j + p > d_add {
+                if d_sub + p > d_add {
                     kernel_ut_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
                         d_add,
                         // d_sub,
-                        d_sub + j,
+                        d_sub,
                         ii_end,
                         p,
                         jj_end,
@@ -146,8 +146,9 @@ pub fn tensor_ut_contraction(
     // #[test]
     fn test_gemm_equivalence() {
         let ikj = [
+            // (128, 128, 128)
             // (2, 12, 2),
-            (16, 16, 16),
+            // (16, 16, 16),
             // (9, 16, 8),
             // (9, 16, 9),
             // (32, 32, 32),
@@ -194,7 +195,7 @@ pub fn tensor_ut_contraction(
             // (MC, PC, NC),
             // (256, 256, 256),
             // (256, 1024, 512),
-            // (512, 512, 512),
+            (512, 512, 512),
             // (1024, 64, 1024),
         ];
         for (i, k, j) in ikj {
@@ -222,8 +223,6 @@ pub fn tensor_ut_contraction(
             d_plus += 1;
         }
     }
-
-
     fn upper_equivalence_mkn(m: usize, p: usize, n: usize) {
         let x = generate_random_matrix(m, p);
         let y = generate_random_matrix(p, n);
