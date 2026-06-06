@@ -68,12 +68,20 @@ pub fn kernel_ut_mult_simd(
     } else {
         (0, d_sub - d_add)
     };
+    // // pre-allign left boundary point
+    // let pre = d_neg.min(m);
+    // // handle triangle part of upper triangular
+    // let pos = (p - d_pos.min(p)).min(m);
+    // // process the dense part
+    // let pro = p - d_pos - pos;
+    println!("m {m:}, p: {p:}, n: {n:}"); 
     // pre-allign left boundary point
     let pre = d_neg.min(m);
     // handle triangle part of upper triangular
     let pos = (p - d_pos.min(p)).min(m);
     // process the dense part
     let pro = p - d_pos - pos;
+
 
     
     println!("d_pos {d_pos:}");
