@@ -111,7 +111,7 @@ pub fn tensor_ut_contraction(
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
                 // if d_sub + j + p >= d_add {
-                if d_sub + j + p >= d_add {
+                if d_sub + j + p > d_add {
                     kernel_ut_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
