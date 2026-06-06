@@ -73,25 +73,15 @@ pub fn kernel_ut_mult_simd(
     // handle triangle part of upper triangular
     let pos = (p - p.min(d_pos)).min(m - pre);
     // process the dense part
-    // println!("---------------------");
-    // println!("m {m:}, p: {p:}, n: {n:}"); 
-    // println!(" - - - - - - - - - - ");
-    // println!("d_pos {d_pos:}");
-    // println!("d_neg {d_neg:}");
-    // println!(" - - - - - - - - - - ");
-    // println!("pre {pre:}");
-    // println!("pos {pos:}");
-    // println!("** p: {p:}, d_pos: {d_pos:}, pos: {pos:}");
     let pro = p - d_pos - pos;
-    // println!("pro {pro:}");
-    // println!("---------------------");
     unsafe {
         p = p - d_pos;
+        // index into specific column it's still outerproduct so same target
         xptr = xptr.add(d_pos);
+        // index down for target row of y for outer product
         yptr = yptr.add(d_pos * s_y);
-        // tptr = tptr.add(d_pos);
+        // tptr  is constant
         if pos > 0 {
-            // println!("triangle");
             ltriangle::lmult_ut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
             // println!("dense");

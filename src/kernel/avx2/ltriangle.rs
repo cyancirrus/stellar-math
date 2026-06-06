@@ -100,17 +100,14 @@ pub fn lmult_ut(
         let mut row5 = mask_load(mask_n, tptr.add(s_t * 5));
         let mut row6 = mask_load(mask_n, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n, tptr.add(s_t * 7));
-        // println!("row0 {row0:?}");
         let mut mask_t = MASK[0];
         for idx in 0..pre {
             mask_t[idx] = -1;
         }
-        // exit early for disappearing contractions
+        // handle the triangle portion
         for k in 0..pos {
             mask_t[k + pre] = -1;
             let b0 = mask_load(mask_n, yptr);
-            // println!("this val {:?}", *xptr);
-            // println!("y_vec {:?}", b0);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
             row1 = cfma_accum(mask_t[1], row1, xptr.add(s_x), b0);
@@ -122,7 +119,6 @@ pub fn lmult_ut(
             row7 = cfma_accum(mask_t[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
-        // let mask_m = mask_t;
         for _k in 0..pro {
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
@@ -136,7 +132,6 @@ pub fn lmult_ut(
             row7 = cfma_accum(mask_t[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
-        // println!("row0 {row0:?}");
         mask_store_ctrl(mask_t[0], mask_n, tptr, row0);
         mask_store_ctrl(mask_t[1], mask_n, tptr.add(s_t), row1);
         mask_store_ctrl(mask_t[2], mask_n, tptr.add(s_t * 2), row2);
