@@ -49,7 +49,7 @@ pub fn tensor_ut_block(
         .for_each(|(lc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
                 let lc = lc_idx * MC;
-                let d_add = lc;
+                let d_add = lc; //
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let dy = PC * s_y;
                 let (xend, mut yend, tend);
@@ -70,7 +70,7 @@ pub fn tensor_ut_block(
                             &y_pack,
                             t_accum,
                             d_add,
-                            d_sub,
+                            d_sub + pc,
                             ma,
                             pa,
                             na,
@@ -105,14 +105,15 @@ pub fn tensor_ut_contraction(
         let dx = SIMD_WIDTH * s_x;
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
+            println!("xoffset {xoffset:?}");
+            println!("toffset {toffset:?}");
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
                 // println!("d_add {d_add:}\nd_sub {d_sub:}\nj {j:}\np {p:}");
-                // diag <= x_j + p
-                // (d_add - d_sub) <= x_j + p;
-                // d_add <= d_sub + x_j + p;
-                if d_sub + j +  p >= d_add {
+                // if d_sub + j +  p >= d_add {
+                if d_sub + j + p >= d_add {
+                    println!("process");
                     kernel_ut_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -126,6 +127,8 @@ pub fn tensor_ut_contraction(
                         s_y,
                         s_t,
                     )
+                } else {
+                    println!("exit early");
                 }
             }
             toffset += dt;
@@ -146,10 +149,11 @@ pub fn tensor_ut_contraction(
     // #[test]
     fn test_gemm_equivalence() {
         let ikj = [
+            (2, 12, 2),
             (16, 16, 16),
             (9, 16, 8),
             (9, 16, 9),
-            // (32, 32, 32),
+            (32, 32, 32),
             
             (9, 8, 8),
             (8, 1, 1),
@@ -244,8 +248,6 @@ pub fn tensor_ut_contraction(
 // }
 
 fn main() {
-    let mut a = generate_random_matrix(2, 5);
-    filter_upper_triangle(& mut a);
-    println!("a {a:?}");
     test_gemm_equivalence();
+    println!("success");
 }

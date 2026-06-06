@@ -1,5 +1,5 @@
-use crate::kernel::avx2::constants::{MASK, cfma_accum, mask_load, mask_store_ctrl};
-use std::arch::x86_64::{__m256i, _mm256_loadu_si256};
+// use crate::kernel::avx2::constants::{MASK, cfma_accum, mask_load, mask_store_ctrl};
+// use std::arch::x86_64::{__m256i, _mm256_loadu_si256};
 // #[target_feature(enable = "avx,avx2,fma")]
 // pub fn rmult_lt(
 //     mut xptr: *const f32,

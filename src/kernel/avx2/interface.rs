@@ -92,6 +92,7 @@ pub fn kernel_ut_mult_simd(
         if pos > 0 {
             ltriangle::lmult_ut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
+            println!("dense");
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
     }
