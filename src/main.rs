@@ -20,9 +20,12 @@ use stellar::kernel::matkerns::kernel_ut_mult;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
-const MC: usize = 64;
-const PC: usize = 256;
-const NC: usize = 128;
+// const MC: usize = 64;
+// const PC: usize = 256;
+// const NC: usize = 128;
+const MC: usize = 16;
+const PC: usize = 16;
+const NC: usize = 16;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -105,12 +108,11 @@ pub fn tensor_ut_contraction(
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-                println!("d_add {d_add:}\nd_sub {d_sub:}\nj {j:}\np {p:}");
+                // println!("d_add {d_add:}\nd_sub {d_sub:}\nj {j:}\np {p:}");
                 // diag <= x_j + p
                 // (d_add - d_sub) <= x_j + p;
                 // d_add <= d_sub + x_j + p;
                 if d_sub + j +  p >= d_add {
-                    println!("hello we going");
                     kernel_ut_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -144,9 +146,9 @@ pub fn tensor_ut_contraction(
     // #[test]
     fn test_gemm_equivalence() {
         let ikj = [
-            // (16, 16, 16),
-            // (9, 16, 8),
-            // (9, 16, 9),
+            (16, 16, 16),
+            (9, 16, 8),
+            (9, 16, 9),
             // (32, 32, 32),
             
             (9, 8, 8),
@@ -175,14 +177,14 @@ pub fn tensor_ut_contraction(
             (8, 6, 4),
             (8, 8, 8),
 
-            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-            // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-            // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-            // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-            // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
             // (MC + 1, PC, NC + 1),
             // (MC + 1, PC, NC - 1),
             // (MC + 1, PC, NC),
@@ -228,6 +230,7 @@ pub fn tensor_ut_contraction(
         let mut x_base = x.clone();
         filter_upper_triangle(&mut x_base);
         println!("x_base {x_base:?}");
+        println!("y_base {y:?}");
         let expected = basic_mult(&x_base, &y);
         let mut result = vec![0f32; m * n];
         tensor_ut_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
