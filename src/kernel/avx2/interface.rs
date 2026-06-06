@@ -21,7 +21,6 @@ pub fn kernel_mult_simd(
         }
     }
 }
-// #[inline(always)]
 pub fn kernel_lt_mult_simd(
     xptr: *const f32,
     yptr: *const f32,
@@ -46,6 +45,47 @@ pub fn kernel_lt_mult_simd(
     unsafe {
         if pos > 0 {
             ltriangle::lmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+        } else {
+            kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        }
+    }
+}
+pub fn kernel_ut_mult_simd(
+    xptr: *const f32,
+    yptr: *const f32,
+    tptr: *mut f32,
+    d_add: usize,
+    d_sub: usize,
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    let (d_pos, d_neg) = if d_add > d_sub {
+        (d_add - d_sub, 0 )
+    } else {
+        (0, d_sub - d_add)
+    };
+    // pre-allign left boundary point
+    let pre = d_neg.min(m);
+    // handle triangle part of upper triangular
+    let pos = (p - d_pos.min(p)).min(m);
+    // process the dense part
+    let pro = p - d_pos - pos;
+
+    
+    println!("d_pos {d_pos:}");
+    println!("d_neg {d_neg:}");
+    // 
+    println!("pre {pre:}");
+    println!("pos {pos:}");
+    println!("pro {pro:}");
+    unsafe {
+        if pos > 0 {
+            // ltriangle::lmult_ut(xptr.add(pre), yptr, tptr, pre, pro, pos, m, p - pre, n, s_x, s_y, s_t);
+            ltriangle::lmult_ut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
