@@ -73,7 +73,6 @@ pub fn kernel_ut_mult_simd(
     // handle triangle part of upper triangular
     let pos = (p - p.min(d_pos)).min(m - pre);
     // process the dense part
-    let pro = p - d_pos - pos;
     // println!("---------------------");
     // println!("m {m:}, p: {p:}, n: {n:}"); 
     // println!(" - - - - - - - - - - ");
@@ -82,6 +81,8 @@ pub fn kernel_ut_mult_simd(
     // println!(" - - - - - - - - - - ");
     // println!("pre {pre:}");
     // println!("pos {pos:}");
+    println!("p {p:}, d_pos: {d_pos:}, pos: {pos:}");
+    let pro = p - d_pos - pos;
     // println!("pro {pro:}");
     // println!("---------------------");
     unsafe {

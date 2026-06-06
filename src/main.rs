@@ -20,12 +20,12 @@ use stellar::kernel::matkerns::kernel_ut_mult;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
-const MC: usize = 64;
-const PC: usize = 256;
-const NC: usize = 128;
-// const MC: usize = 16;
-// const PC: usize = 32;
-// const NC: usize = 8;
+// const MC: usize = 64;
+// const PC: usize = 256;
+// const NC: usize = 128;
+const MC: usize = 16;
+const PC: usize = 32;
+const NC: usize = 8;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -117,7 +117,8 @@ pub fn tensor_ut_contraction(
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
                         d_add,
-                        d_sub,
+                        // d_sub,
+                        d_sub + j,
                         ii_end,
                         p,
                         jj_end,
@@ -145,55 +146,54 @@ pub fn tensor_ut_contraction(
     // #[test]
     fn test_gemm_equivalence() {
         let ikj = [
-            // (2, 12, 2),
-            // (16, 16, 16),
-            // (9, 16, 8),
-            // (9, 16, 9),
-            // (32, 32, 32),
-            
-            // (9, 8, 8),
-            // (8, 1, 1),
-            // (8, 8, 8),
-            // (6, 4, 8),
-            // (2, 2, 1),
-            // (2, 9, 1),
-            // (1, 1, 1),
-            // (8, 9, 8),
-            // (3, 9, 1),
-            // (8, 8, 9),
-            // (2, 9, 1),
-            // (2, 10, 1),
-            // (1, 9, 1),
-            // (4, 8, 1),
-            // (1, 2, 1),
-            // (1, 1, 1),
-            // (1, 8, 1),
-            // (1, 1, 8),
-            // (6, 4, 8),
-            // (6, 8, 4),
-            // (8, 4, 6),
-            // (4, 8, 6),
-            // (4, 6, 8),
-            // (8, 6, 4),
-            // (8, 8, 8),
+            (2, 12, 2),
+            (16, 16, 16),
+            (9, 16, 8),
+            (9, 16, 9),
+            (32, 32, 32),
+            (9, 8, 8),
+            (8, 1, 1),
+            (8, 8, 8),
+            (6, 4, 8),
+            (2, 2, 1),
+            (2, 9, 1),
+            (1, 1, 1),
+            (8, 9, 8),
+            (3, 9, 1),
+            (8, 8, 9),
+            (2, 9, 1),
+            (2, 10, 1),
+            (1, 9, 1),
+            (4, 8, 1),
+            (1, 2, 1),
+            (1, 1, 1),
+            (1, 8, 1),
+            (1, 1, 8),
+            (6, 4, 8),
+            (6, 8, 4),
+            (8, 4, 6),
+            (4, 8, 6),
+            (4, 6, 8),
+            (8, 6, 4),
+            (8, 8, 8),
 
-            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-            // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-            // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-            // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-            // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-            // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-            // (MC + 1, PC, NC + 1),
-            // (MC + 1, PC, NC - 1),
-            // (MC + 1, PC, NC),
-            // (MC - 1, PC, NC),
-            // (MC, PC + 1, NC),
-            // (MC, PC - 1, NC),
-            // (MC, PC, NC),
-            // (256, 256, 256),
-            // (256, 1024, 512),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+            (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+            (MC + 1, PC, NC + 1),
+            (MC + 1, PC, NC - 1),
+            (MC + 1, PC, NC),
+            (MC - 1, PC, NC),
+            (MC, PC + 1, NC),
+            (MC, PC - 1, NC),
+            (MC, PC, NC),
+            (256, 256, 256),
+            (256, 1024, 512),
             (512, 512, 512),
             // (1024, 64, 1024),
         ];
