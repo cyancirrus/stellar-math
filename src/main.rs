@@ -105,15 +105,12 @@ pub fn tensor_ut_contraction(
         let dx = SIMD_WIDTH * s_x;
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
-            println!("xoffset {xoffset:?}");
-            println!("toffset {toffset:?}");
+            // println!("xoffset {xoffset:?}");
+            // println!("toffset {toffset:?}");
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-                // println!("d_add {d_add:}\nd_sub {d_sub:}\nj {j:}\np {p:}");
-                // if d_sub + j +  p >= d_add {
                 if d_sub + j + p >= d_add {
-                    println!("process");
                     kernel_ut_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -127,8 +124,6 @@ pub fn tensor_ut_contraction(
                         s_y,
                         s_t,
                     )
-                } else {
-                    println!("exit early");
                 }
             }
             toffset += dt;
@@ -196,10 +191,10 @@ pub fn tensor_ut_contraction(
             (MC, PC + 1, NC),
             (MC, PC - 1, NC),
             (MC, PC, NC),
-            // (256, 256, 256),
-            // (256, 1024, 512),
-            // (512, 512, 512),
-            // (1024, 64, 1024),
+            (256, 256, 256),
+            (256, 1024, 512),
+            (512, 512, 512),
+            (1024, 64, 1024),
         ];
         for (i, k, j) in ikj {
             println!("(i: {i:?}, k: {k:?}, j: {j:})");
@@ -233,8 +228,8 @@ pub fn tensor_ut_contraction(
         let y = generate_random_matrix(p, n);
         let mut x_base = x.clone();
         filter_upper_triangle(&mut x_base);
-        println!("x_base {x_base:?}");
-        println!("y_base {y:?}");
+        // println!("x_base {x_base:?}");
+        // println!("y_base {y:?}");
         let expected = basic_mult(&x_base, &y);
         let mut result = vec![0f32; m * n];
         tensor_ut_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
@@ -242,7 +237,7 @@ pub fn tensor_ut_contraction(
             dims: vec![m, n],
             data: result.clone(),
         };
-        println!("expected {expected:?}\nresult {inspect:?}");
+        // println!("expected {expected:?}\nresult {inspect:?}");
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
     }
 // }
