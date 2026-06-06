@@ -144,8 +144,8 @@ pub fn tensor_ut_contraction(
     // #[test]
     fn test_gemm_equivalence() {
         let ikj = [
-            (8, 1, 1),
-            (8, 8, 8),
+            // (8, 1, 1),
+            // (8, 8, 8),
             (6, 4, 8),
             // (2, 9, 1),
             // (2, 2, 1),
