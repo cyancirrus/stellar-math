@@ -23,9 +23,9 @@ use std::cell::RefCell;
 // const MC: usize = 64;
 // const PC: usize = 256;
 // const NC: usize = 128;
-const MC: usize = 16;
-const PC: usize = 16;
-const NC: usize = 16;
+const MC: usize = 8;
+const PC: usize = 8;
+const NC: usize = 8;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
