@@ -31,18 +31,17 @@ pub fn tensor_lt_block(
         .for_each(|(mc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let dy = PC * s_y;
                 let d_add = d_0 + mc_idx * MC;
-                let (xend, mut yend, tend);
+                let dy = PC * s_y;
                 let ma = x.len() / s_x;
-                (xend, tend) = (ma * s_x, ma * s_t);
+                let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     t_accum.fill(0f32);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
-                        yend = pa * s_y;
+                        let yend = pa * s_y;
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_lt_contraction(
@@ -112,7 +111,7 @@ pub fn tensor_ut_block(
     s_t: usize,
 ) {
     // suffix c: chunk, suffix a: actual
-    let d_sub = if m > p { m - p } else { 0 };
+    let d_sub = m.saturating_sub(p);
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
@@ -121,16 +120,15 @@ pub fn tensor_ut_block(
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let d_add = mc_idx * MC; //
                 let dy = PC * s_y;
-                let (xend, mut yend, tend);
                 let ma = x.len() / s_x;
-                (xend, tend) = (ma * s_x, ma * s_t);
+                let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     t_accum.fill(0f32);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
-                        yend = pa * s_y;
+                        let yend = pa * s_y;
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_ut_contraction(
