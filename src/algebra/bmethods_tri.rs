@@ -24,14 +24,14 @@ pub fn tensor_lt_block(
 ) {
     // diagonal
     // suffix c: chunk, suffix a: actual
-    let d_0 = p - p.min(m) + 1;
+    let d_add = p - p.min(m) + 1;
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
         .for_each(|(mc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let d_add = d_0 + mc_idx * MC;
+                let d_add = d_add + mc_idx * MC;
                 let dy = PC * s_y;
                 let ma = x.len() / s_x;
                 let (xend, tend) = (ma * s_x, ma * s_t);
