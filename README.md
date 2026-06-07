@@ -95,6 +95,8 @@ cargo test --features="avx2" --lib test_kernel_block
 
 ```check generated proc macros
 cargo expand --features avx2 --bin stellar
+cargo expand --lib --features avx2 kernel::avx2::alligned 
+
 ```
 
 

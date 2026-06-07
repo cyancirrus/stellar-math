@@ -23,14 +23,14 @@ pub fn tensor_lt_block(
     s_t: usize,
 ) {
     // suffix c: chunk, suffix a: actual
-    let d_0 = (p - (p.min(m) - 1)) as isize;
+    let d_0 = p - (p.min(m) - 1);
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
         .for_each(|(lc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
                 let lc = lc_idx * MC;
-                let d = d_0 + lc as isize;
+                let d = d_0 + lc;
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let dy = PC * s_y;
                 let (xend, mut yend, tend);
@@ -50,7 +50,9 @@ pub fn tensor_lt_block(
                             &x_pack,
                             &y_pack,
                             t_accum,
-                            d - pc as isize,
+                            d,
+                            pc,
+                            (d - pc) as isize,
                             ma,
                             pa,
                             na,
@@ -70,7 +72,9 @@ pub fn tensor_lt_contraction(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    mut g_d: isize,
+    mut d_add:usize,
+    d_sub:usize,
+    g_d: isize,
     m: usize,
     p: usize,
     n: usize,
@@ -87,11 +91,14 @@ pub fn tensor_lt_contraction(
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-                if g_d + (ii_end as isize) > 0 {
+                // if g_d + (ii_end as isize) > 0 {
+                if d_add + ii_end > d_sub {
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
+                        d_add,
+                        d_sub,
                         g_d,
                         ii_end,
                         p,
@@ -104,7 +111,8 @@ pub fn tensor_lt_contraction(
             }
             toffset += dt;
             xoffset += dx;
-            g_d += SIMD_WIDTH as isize;
+            // g_d += SIMD_WIDTH as isize;
+            d_add += SIMD_WIDTH;
         }
     }
 }

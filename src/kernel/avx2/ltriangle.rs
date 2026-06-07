@@ -32,21 +32,21 @@ pub fn lmult_lt(
         for idx in 0..pre {
             mask_t[idx] = 0;
         }
-        let mask_m = mask_t;
         for _k in 0..pro {
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
-            row0 = cfma_accum(mask_m[0], row0, xptr, b0);
-            row1 = cfma_accum(mask_m[1], row1, xptr.add(s_x), b0);
-            row2 = cfma_accum(mask_m[2], row2, xptr.add(2 * s_x), b0);
-            row3 = cfma_accum(mask_m[3], row3, xptr.add(3 * s_x), b0);
-            row4 = cfma_accum(mask_m[4], row4, xptr.add(4 * s_x), b0);
-            row5 = cfma_accum(mask_m[5], row5, xptr.add(5 * s_x), b0);
-            row6 = cfma_accum(mask_m[6], row6, xptr.add(6 * s_x), b0);
-            row7 = cfma_accum(mask_m[7], row7, xptr.add(7 * s_x), b0);
+            row0 = cfma_accum(mask_t[0], row0, xptr, b0);
+            row1 = cfma_accum(mask_t[1], row1, xptr.add(s_x), b0);
+            row2 = cfma_accum(mask_t[2], row2, xptr.add(2 * s_x), b0);
+            row3 = cfma_accum(mask_t[3], row3, xptr.add(3 * s_x), b0);
+            row4 = cfma_accum(mask_t[4], row4, xptr.add(4 * s_x), b0);
+            row5 = cfma_accum(mask_t[5], row5, xptr.add(5 * s_x), b0);
+            row6 = cfma_accum(mask_t[6], row6, xptr.add(6 * s_x), b0);
+            row7 = cfma_accum(mask_t[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
         // exit early for disappearing contractions
+        let mask_m = mask_t;
         for k in 0..pos {
             mask_t[k + pre] = 0;
             let b0 = mask_load(mask_n, yptr);
