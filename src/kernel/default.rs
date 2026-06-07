@@ -91,7 +91,6 @@ pub fn kernel_lt_mult_simd(
     mut tptr: *mut f32,
     _: usize,
     _: usize,
-    _: isize,
     m: usize,
     p: usize,
     n: usize,

@@ -27,7 +27,6 @@ pub fn kernel_lt_mult_simd(
     tptr: *mut f32,
     d_add: usize,
     d_sub: usize,
-    d: isize,
     m: usize,
     p: usize,
     n: usize,
@@ -40,20 +39,10 @@ pub fn kernel_lt_mult_simd(
     let pos = if d_sub > d_add {
         m - pre
     } else if d_add < p + d_sub {
-        // (p.wrapping_sub(pro)).min(SIMD_WIDTH)
         (p.wrapping_sub(pro)).min(SIMD_WIDTH)
     } else {
         0
     };
-    // let pre = (-d).max(0) as usize;
-    // let pro = d.max(0) as usize;
-    // let pos = if d <= 0 {
-    //     m - pre
-    // } else if d < p as isize {
-    //     (p.wrapping_sub(pro)).min(SIMD_WIDTH)
-    // } else {
-    //     0
-    // };
     unsafe {
         if pos > 0 {
             ltriangle::lmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);

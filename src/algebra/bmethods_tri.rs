@@ -52,7 +52,6 @@ pub fn tensor_lt_block(
                             t_accum,
                             d,
                             pc,
-                            (d as isize - pc as isize),
                             ma,
                             pa,
                             na,
@@ -74,7 +73,6 @@ pub fn tensor_lt_contraction(
     t_d: &mut [f32],
     mut d_add:usize,
     d_sub:usize,
-    mut g_d: isize,
     m: usize,
     p: usize,
     n: usize,
@@ -91,7 +89,6 @@ pub fn tensor_lt_contraction(
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-                // if g_d + (ii_end as isize) > 0 {
                 if d_add + ii_end > d_sub {
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
@@ -99,7 +96,6 @@ pub fn tensor_lt_contraction(
                         t_d.get_unchecked_mut(toffset + j..),
                         d_add,
                         d_sub,
-                        g_d,
                         ii_end,
                         p,
                         jj_end,
@@ -111,7 +107,6 @@ pub fn tensor_lt_contraction(
             }
             toffset += dt;
             xoffset += dx;
-            g_d += SIMD_WIDTH as isize;
             d_add += SIMD_WIDTH;
         }
     }
