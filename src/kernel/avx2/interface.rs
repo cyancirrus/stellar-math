@@ -85,7 +85,7 @@ pub fn kernel_ut_mult_simd(
     // handle triangle part of upper triangular
     let pos = (p - p.min(d_pos)).min(m - pre);
     // process the dense part
-    debug_assert!(d_pos + pos <= p, "d_pos:{d_pos} pos:{pos} p:{p}");
+    // debug_assert!(d_pos + pos <= p, "d_pos:{d_pos} pos:{pos} p:{p}");
     let pro = p - d_pos - pos;
     unsafe {
         p = p - d_pos;

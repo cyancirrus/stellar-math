@@ -23,7 +23,7 @@ pub fn tensor_lt_block(
     s_t: usize,
 ) {
     // suffix c: chunk, suffix a: actual
-    let d_0 = p - (p.min(m) - 1);
+    let d_0 = p - p.min(m) + 1;
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
@@ -52,7 +52,7 @@ pub fn tensor_lt_block(
                             t_accum,
                             d,
                             pc,
-                            (d - pc) as isize,
+                            (d as isize - pc as isize),
                             ma,
                             pa,
                             na,
@@ -74,7 +74,7 @@ pub fn tensor_lt_contraction(
     t_d: &mut [f32],
     mut d_add:usize,
     d_sub:usize,
-    g_d: isize,
+    mut g_d: isize,
     m: usize,
     p: usize,
     n: usize,
@@ -111,7 +111,7 @@ pub fn tensor_lt_contraction(
             }
             toffset += dt;
             xoffset += dx;
-            // g_d += SIMD_WIDTH as isize;
+            g_d += SIMD_WIDTH as isize;
             d_add += SIMD_WIDTH;
         }
     }
