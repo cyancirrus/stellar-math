@@ -22,20 +22,19 @@ pub fn tensor_lt_block(
     s_y: usize,
     s_t: usize,
 ) {
+    // diagonal
     // suffix c: chunk, suffix a: actual
     let d_0 = p - p.min(m) + 1;
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
-        .for_each(|(lc_idx, (t, x))| {
+        .for_each(|(mc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
-                let lc = lc_idx * MC;
-                let d = d_0 + lc;
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let dy = PC * s_y;
+                let d_add = d_0 + mc_idx * MC;
                 let (xend, mut yend, tend);
-                let rows = x.len() / s_x;
-                let ma = rows;
+                let ma = x.len() / s_x;
                 (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
@@ -47,7 +46,7 @@ pub fn tensor_lt_block(
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_lt_contraction(
-                            &x_pack, &y_pack, t_accum, d, pc, ma, pa, na, PC, NC, NC,
+                            &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, PC, NC, NC,
                         );
                         yoffset += dy;
                     }
@@ -117,15 +116,13 @@ pub fn tensor_ut_block(
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
-        .for_each(|(lc_idx, (t, x))| {
+        .for_each(|(mc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
-                let lc = lc_idx * MC;
-                let d_add = lc; //
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
+                let d_add = mc_idx * MC; //
                 let dy = PC * s_y;
                 let (xend, mut yend, tend);
-                let rows = x.len() / s_x;
-                let ma = rows;
+                let ma = x.len() / s_x;
                 (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
