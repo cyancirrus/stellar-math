@@ -118,7 +118,7 @@ pub fn tensor_ut_block(
         .for_each(|(mc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let d_add = mc_idx * MC; //
+                let d_add = mc_idx * MC;
                 let dy = PC * s_y;
                 let ma = x.len() / s_x;
                 let (xend, tend) = (ma * s_x, ma * s_t);
