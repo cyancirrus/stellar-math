@@ -79,7 +79,7 @@ pub fn lmult_ut(
     pre: usize,
     pro: usize,
     pos: usize,
-    m: usize,
+    _m: usize,
     _p: usize,
     n: usize,
     s_x: usize,
