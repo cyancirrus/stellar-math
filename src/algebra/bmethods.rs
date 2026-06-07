@@ -60,33 +60,26 @@ pub fn tensor_blockkern(
         .for_each(|(t, x)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let  dy = PC * s_y;
+                let dy = PC * s_y;
                 let (xend, mut yend, tend);
                 let rows = x.len() / s_x;
-                    let ma = rows;
-                    (xend, tend) = (ma * s_x, ma * s_t);
-                    for nc in (0..n).step_by(NC) {
-                        let na = diff_min(n, nc, NC);
-                        t_accum.fill(0f32);
-                        let mut yoffset = 0;
-                        for pc in (0..p).step_by(PC) {
-                            let pa = diff_min(p, pc, PC);
-                            yend = pa * s_y;
-                            pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
-                            pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
-                            tensor_contraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
-                            yoffset += dy;
-                        }
-                        // unpack
-                        pack(
-                            &t_accum,
-                            &mut t[nc..tend],
-                            ma,
-                            na,
-                            s_t,
-                            NC,
-                        );
+                let ma = rows;
+                (xend, tend) = (ma * s_x, ma * s_t);
+                for nc in (0..n).step_by(NC) {
+                    let na = diff_min(n, nc, NC);
+                    t_accum.fill(0f32);
+                    let mut yoffset = 0;
+                    for pc in (0..p).step_by(PC) {
+                        let pa = diff_min(p, pc, PC);
+                        yend = pa * s_y;
+                        pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
+                        pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
+                        tensor_contraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
+                        yoffset += dy;
                     }
+                    // unpack
+                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                }
             })
         });
 }

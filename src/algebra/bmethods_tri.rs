@@ -47,17 +47,7 @@ pub fn tensor_lt_block(
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_lt_contraction(
-                            &x_pack,
-                            &y_pack,
-                            t_accum,
-                            d,
-                            pc,
-                            ma,
-                            pa,
-                            na,
-                            PC,
-                            NC,
-                            NC,
+                            &x_pack, &y_pack, t_accum, d, pc, ma, pa, na, PC, NC, NC,
                         );
                         yoffset += dy;
                     }
@@ -71,8 +61,8 @@ pub fn tensor_lt_contraction(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    mut d_add:usize,
-    d_sub:usize,
+    mut d_add: usize,
+    d_sub: usize,
     m: usize,
     p: usize,
     n: usize,
@@ -87,9 +77,9 @@ pub fn tensor_lt_contraction(
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
-            for j in (0..n).step_by(SIMD_WIDTH) {
-                let jj_end = SIMD_WIDTH.min(n - j);
-                if d_add + ii_end > d_sub {
+            if d_add + ii_end > d_sub {
+                for j in (0..n).step_by(SIMD_WIDTH) {
+                    let jj_end = SIMD_WIDTH.min(n - j);
                     kernel_lt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -187,9 +177,9 @@ pub fn tensor_ut_contraction(
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
-            for j in (0..n).step_by(SIMD_WIDTH) {
-                let jj_end = SIMD_WIDTH.min(n - j);
-                if d_sub + p > d_add {
+            if d_sub + p > d_add {
+                for j in (0..n).step_by(SIMD_WIDTH) {
+                    let jj_end = SIMD_WIDTH.min(n - j);
                     kernel_ut_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -285,11 +275,13 @@ mod test_left_lower_and_upper_triangular_dispatch {
         // i - (m - n);
         let (m, n) = (a.dims[0], a.dims[1]);
         let data = &mut a.data;
-        let mut d_sub = if m > n { m - n } else { 0 }; 
+        let mut d_sub = if m > n { m - n } else { 0 };
         let mut d_plus = 0;
         for i in 0..m {
             for j in 0..n {
-                if j + d_sub >= d_plus { break; }
+                if j + d_sub >= d_plus {
+                    break;
+                }
                 data[i * n + j] = 0f32;
             }
             d_plus += 1;

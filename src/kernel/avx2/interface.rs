@@ -36,9 +36,9 @@ pub fn kernel_lt_mult_simd(
 ) {
     let d_pos = d_add.saturating_sub(d_sub);
     let d_neg = d_sub.saturating_sub(d_add);
-    // preprocess the diagonal when on boundary 
+    // preprocess the diagonal when on boundary
     let pre = d_neg;
-    // process the diagonal when occurred in range 
+    // process the diagonal when occurred in range
     let pro = d_pos;
     // process the dense part
     debug_assert!(m >= d_neg, "m {m:}, d_neg: {d_neg:}");

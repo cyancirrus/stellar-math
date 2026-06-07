@@ -13,5 +13,4 @@
 // 2. Blog redesign       ← makes everything else findable
 // 3. Triangle kernel     ← 2hrs, unblocks LQ block
 // 4. Trait refactor      ← important but least urgent
-fn main() {
-}
+fn main() {}
