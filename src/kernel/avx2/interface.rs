@@ -108,8 +108,9 @@ pub fn kernel_rlt_mult_simd(
     let pro = p.saturating_sub(pos);
     
     // let pre = d_pos ;
-    // let pos = (n - pre).min(p );
+    // let pos = (n.saturating_sub(pre)).min(p );
     // let pro = p.saturating_sub(pos);
+    println!("d_pos {d_pos:?}, d_neg {d_neg:?}");
     println!("pre {pre:}, pro: {pro:}, pos: {pos:}");
     unsafe {
         // xptr = xptr.add(pre);
