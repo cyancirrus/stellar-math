@@ -95,7 +95,7 @@ pub fn tensor_rlt_contraction(
             let jj_end = SIMD_WIDTH.min(n - j);
             // println!("hello");
             // println!("j {j:?}");
-            if d_add + jj_end > d_sub {
+            if d_add + jj_end >= d_sub {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
                     kernel_rlt_mult(
