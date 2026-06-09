@@ -216,6 +216,7 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let x = generate_random_matrix(m, p);
     let y = generate_random_matrix(p, n);
     let mut y_base = y.clone();
+    println!("y_base {y_base:?");
     filter_lower_triangle(&mut y_base);
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
