@@ -1,6 +1,7 @@
 // negative 1 is twos complement so all bits active
 use std::arch::x86_64::{
-    __m256, __m256i, _mm256_broadcast_ss, _mm256_fmadd_ps, _mm256_maskload_ps, _mm256_maskstore_ps, _mm256_loadu_si256
+    __m256, __m256i, _mm256_broadcast_ss, _mm256_fmadd_ps, _mm256_loadu_si256, _mm256_maskload_ps,
+    _mm256_maskstore_ps,
 };
 pub const SIMD_WIDTH: usize = 8;
 #[rustfmt::skip]
@@ -72,7 +73,5 @@ pub fn fma_accum(acc: __m256, sclr: *const f32, bout: __m256) -> __m256 {
 }
 #[inline(always)]
 pub unsafe fn feed_register(arr: &[i32; 8]) -> __m256i {
-    unsafe {
-    _mm256_loadu_si256(arr.as_ptr()  as *const __m256i)
-    }
+    unsafe { _mm256_loadu_si256(arr.as_ptr() as *const __m256i) }
 }

@@ -103,10 +103,10 @@ pub fn kernel_rlt_mult_simd(
     let d_pos = d_add.saturating_sub(d_sub + 1);
     let d_neg = d_sub.saturating_sub(d_add);
     // pre-allign left boundary point
-    let pre = d_pos ;
-    let pos = (n.saturating_sub(pre)).min(p );
+    let pre = d_pos;
+    let pos = (n.saturating_sub(pre)).min(p);
     let pro = p.saturating_sub(pos);
-    
+
     // let pre = d_pos ;
     // let pos = (n.saturating_sub(pre)).min(p );
     // let pro = p.saturating_sub(pos);

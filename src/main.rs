@@ -95,9 +95,11 @@ pub fn tensor_rlt_contraction(
             let jj_end = SIMD_WIDTH.min(n - j);
             // println!("hello");
             // println!("j {j:?}");
-            if d_add + jj_end >= d_sub {
-                for i in (0..m).step_by(SIMD_WIDTH) {
-                    let ii_end = SIMD_WIDTH.min(m - i);
+            // if d_add + jj_end > d_sub {
+            for i in (0..m).step_by(SIMD_WIDTH) {
+                let ii_end = SIMD_WIDTH.min(m - i);
+                // if d_add + jj_end > d_sub {
+                if d_add + ii_end > d_sub {
                     kernel_rlt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -114,6 +116,8 @@ pub fn tensor_rlt_contraction(
                     toffset += dt;
                     xoffset += dx;
                 }
+                // } else {
+                //     println!("d_add {d_add:?}, jj_end {jj_end:?}, d_sub {d_sub:?}");
             }
             d_sub += SIMD_WIDTH;
         }
@@ -126,7 +130,6 @@ use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
         (8, 8, 9),
-        
         (1, 1, 8),
         (1, 8, 1),
         (6, 4, 8),
@@ -145,7 +148,6 @@ fn test_gemm_equivalence() {
         (8, 6, 4),
         (2, 9, 1),
         (2, 10, 1),
-
         (9, 16, 8),
         (9, 16, 9),
         (32, 32, 32),
@@ -233,5 +235,5 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 fn main() {
-    test_gemm_equivalence();    
+    test_gemm_equivalence();
 }
