@@ -124,8 +124,7 @@ use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
         (1, 1, 8),
-        // (1, 8, 1),
-
+        (1, 8, 1),
         (6, 4, 8),
         (8, 8, 8),
         (2, 2, 1),
@@ -141,6 +140,7 @@ fn test_gemm_equivalence() {
         (4, 8, 6),
         (4, 6, 8),
         (8, 6, 4),
+        
         (8, 8, 9),
         (2, 9, 1),
         (2, 10, 1),
