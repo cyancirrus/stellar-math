@@ -8,13 +8,11 @@ pub struct SingularValueDecomp {
     pub s: NdArray,
     pub v: NdArray,
 }
-
 impl SingularValueDecomp {
     pub fn new(u: NdArray, s: NdArray, v: NdArray) -> Self {
         Self { s, u, v }
     }
 }
-
 pub fn full_givens_iteration(
     mut u: NdArray,
     mut s: NdArray,
