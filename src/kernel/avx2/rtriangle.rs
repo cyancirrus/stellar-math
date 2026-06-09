@@ -1,6 +1,4 @@
-use crate::kernel::avx2::constants::{
-    MASK, cfma_accum, feed_register, mask_load, mask_store_ctrl,
-};
+use crate::kernel::avx2::constants::{MASK, cfma_accum, feed_register, mask_load, mask_store_ctrl};
 
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn rmult_lt(
