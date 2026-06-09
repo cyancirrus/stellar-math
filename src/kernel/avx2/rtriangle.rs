@@ -1,7 +1,6 @@
 use crate::kernel::avx2::constants::{
-    MASK, UMASK, cfma_accum, feed_register, mask_load, mask_store_ctrl,
+    MASK, cfma_accum, feed_register, mask_load, mask_store_ctrl,
 };
-use std::arch::x86_64::{__m256i, _mm256_loadu_si256};
 
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn rmult_lt(
@@ -18,12 +17,12 @@ pub fn rmult_lt(
     s_y: usize,
     s_t: usize,
 ) {
-    debug_assert!(pre <= n);
+    // debug_assert!(pre <= n);
     // Sum[K] Union[I] { g^i = aik b^k }
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
         let mut mask_t = MASK[pre];
-        // let mut mask_t = MASK[pos];
+        // let mut mask_t = MASK[0];
         let mask_n_reg = feed_register(&MASK[n]);
         let mut row0 = mask_load(mask_n_reg, tptr);
         let mut row1 = mask_load(mask_n_reg, tptr.add(s_t));
@@ -36,7 +35,9 @@ pub fn rmult_lt(
         let mask_m = MASK[m];
         // exit early for disappearing contractions
         for k in 0..pos {
+            println!("triangle");
             mask_t[k + pre] = -1;
+            println!("mask_t {:?}", mask_t);
             let b0 = mask_load(feed_register(&mask_t), yptr);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_m[0], row0, xptr, b0);

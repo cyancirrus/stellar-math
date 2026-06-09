@@ -101,34 +101,28 @@ pub fn kernel_rlt_mult_simd(
     s_t: usize,
 ) {
     let d_pos = d_add.saturating_sub(d_sub + 1);
-    let d_neg = d_sub.saturating_sub(d_add);
+    let d_neg = (1 + d_sub).saturating_sub(d_add);
     // pre-allign left boundary point
     let pre = d_pos;
     let pos = (n.saturating_sub(pre)).min(p);
-    let pro = p.saturating_sub(pos);
+    let pro = p.saturating_sub(pos + d_neg );
 
     // let pre = d_pos ;
     // let pos = (n.saturating_sub(pre)).min(p );
     // let pro = p.saturating_sub(pos);
-    println!("---------------------");
-    println!("m: {m:}, p {p:}, n: {n:}");
-    println!("---------------------");
-    println!("d_pos {d_pos:?}, d_neg {d_neg:?}");
-    println!("pre {pre:}, pro: {pro:}, pos: {pos:}");
     unsafe {
-        // p = pre.saturating_sub(p);
-        // pre = pre.min(p);
-        // xptr = xptr.add(pre);
-        // yptr = yptr.add(pre * s_y);
-        // // index into specific column it's still outerproduct so same target
-        // xptr = xptr.add(d_pos);
-        // // index down for target row of y for outer product
-        // yptr = yptr.add(d_pos * s_y);
-        // // tptr is constant ie target output vectors are fixed
-        // if pos != 0 {
-        if pos + pre != 0 {
+        p = pre.saturating_sub(d_neg);
+        xptr = xptr.add(d_neg);
+        yptr = yptr.add(d_neg * s_y);
+        println!("---------------------");
+        println!("m: {m:}, p {p:}, n: {n:}");
+        println!("---------------------");
+        println!("d_pos {d_pos:?}, d_neg {d_neg:?}");
+        println!("pre {pre:}, pro: {pro:}, pos: {pos:}");
+        if pos != 0 {
             println!("TRIANGLE");
             rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+            // rtriangle::rmult_lt(xptr, yptr, tptr, 7, 0, 1, m, p, n, s_x, s_y, s_t);
         } else {
             // let m = 0;
             // let p = 1;
