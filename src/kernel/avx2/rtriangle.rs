@@ -35,13 +35,9 @@ pub fn rmult_lt(
         let mut row7 = mask_load(mask_n_reg, tptr.add(s_t * 7));
         let mask_m = MASK[m];
         // exit early for disappearing contractions
-        // for k in 0..pos {
         for k in 0..pos {
-            println!("hello");
             mask_t[k + pre] = -1;
             let b0 = mask_load(feed_register(&mask_t), yptr);
-            println!("b0 {b0:?}");
-            println!("b0 {b0:?}");
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_m[0], row0, xptr, b0);
             row1 = cfma_accum(mask_m[1], row1, xptr.add(s_x), b0);

@@ -110,25 +110,29 @@ pub fn kernel_rlt_mult_simd(
     // let pre = d_pos ;
     // let pos = (n.saturating_sub(pre)).min(p );
     // let pro = p.saturating_sub(pos);
+    println!("---------------------");
+    println!("m: {m:}, p {p:}, n: {n:}");
+    println!("---------------------");
     println!("d_pos {d_pos:?}, d_neg {d_neg:?}");
     println!("pre {pre:}, pro: {pro:}, pos: {pos:}");
     unsafe {
+        // p = pre.saturating_sub(p);
+        // pre = pre.min(p);
         // xptr = xptr.add(pre);
         // yptr = yptr.add(pre * s_y);
-        // p = p - d_pos;
         // // index into specific column it's still outerproduct so same target
         // xptr = xptr.add(d_pos);
         // // index down for target row of y for outer product
         // yptr = yptr.add(d_pos * s_y);
         // // tptr is constant ie target output vectors are fixed
-        if pos != 0 {
+        // if pos != 0 {
+        if pos + pre != 0 {
             println!("TRIANGLE");
             rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
             // let m = 0;
             // let p = 1;
             // let n = 0;
-            println!("m: {m:}, p {p:}, n: {n:}");
             println!("DENSE");
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }

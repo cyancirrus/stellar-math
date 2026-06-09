@@ -76,7 +76,7 @@ pub fn tensor_rlt_contraction(
     y_d: &[f32],
     t_d: &mut [f32],
     mut d_add: usize,
-    d_sub: usize,
+    mut d_sub: usize,
     m: usize,
     p: usize,
     n: usize,
@@ -89,13 +89,15 @@ pub fn tensor_rlt_contraction(
         let dt = SIMD_WIDTH * s_t;
         // if d_add + ii_end > d_sub {
         for j in (0..n).step_by(SIMD_WIDTH) {
+            println!("y {:?}", &y_d[j..j + 10]);
             let mut xoffset = 0;
             let mut toffset = 0;
             let jj_end = SIMD_WIDTH.min(n - j);
+            // println!("hello");
+            // println!("j {j:?}");
             if d_add + jj_end > d_sub {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
-                    println!("hello");
                     kernel_rlt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -113,7 +115,7 @@ pub fn tensor_rlt_contraction(
                     xoffset += dx;
                 }
             }
-            d_add += SIMD_WIDTH;
+            d_sub += SIMD_WIDTH;
         }
     }
 }
@@ -216,8 +218,8 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let x = generate_random_matrix(m, p);
     let y = generate_random_matrix(p, n);
     let mut y_base = y.clone();
-    filter_lower_triangle(&mut y_base);
     println!("y_base {y_base:?}");
+    filter_lower_triangle(&mut y_base);
     println!("x_base {x:?}");
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
