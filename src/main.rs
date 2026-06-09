@@ -18,12 +18,14 @@ use std::cell::RefCell;
 use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
 use stellar::kernel::matkerns::{kernel_rlt_mult, kernel_ut_mult};
-// const MC: usize = 64;
-// const PC: usize = 256;
-// const NC: usize = 128;
-const MC: usize = 8;
-const PC: usize = 8;
-const NC: usize = 8;
+// PROD PARAMS
+const MC: usize = 64;
+const PC: usize = 256;
+const NC: usize = 128;
+// DEBUG PARAMS
+// const MC: usize = 8;
+// const PC: usize = 8;
+// const NC: usize = 8;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -64,6 +66,8 @@ pub fn tensor_rlt_block(
                         // tensor_rlt_contraction(
                         //     &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, PC, NC, NC,
                         // );
+                        // println!("mc_idx {mc_idx:?}");
+                        // println!("d_add: {d_add:?}, pc: {pc:}, nc: {nc:}, pa: {pa:}, {na:}");
                         tensor_rlt_contraction(
                             &x_pack,
                             &y_pack,
@@ -102,15 +106,14 @@ pub fn tensor_rlt_contraction(
         let dx = SIMD_WIDTH * s_x;
         let dt = SIMD_WIDTH * s_t;
         for j in (0..n).step_by(SIMD_WIDTH) {
-            println!("y {:?}", &y_d[j..j + 8]);
+            // println!("y {:?}", &y_d[j..j + 8]);
             let mut xoffset = 0;
             let mut toffset = 0;
             let jj_end = SIMD_WIDTH.min(n - j);
             // println!("hello");
             // println!("j {j:?}");
             if d_add + j + p >= d_sub {
-            // if d_add + j + jj_end + p >= d_sub {
-                println!("executing!");
+                // println!("executing!");
                 // if d_add + jj_end + m > d_sub {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
@@ -130,9 +133,8 @@ pub fn tensor_rlt_contraction(
                     toffset += dt;
                     xoffset += dx;
                 }
-            } else {
-                println!("skipping!");
-                println!("d_add: {d_add:?}, j: {j:}, jj_end {jj_end:}, d_sub {d_sub:}");
+            // } else {
+            //     println!("skipping!");
             }
             d_sub += SIMD_WIDTH;
         }
@@ -144,46 +146,53 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        (32, 32, 32),
+        (32, 512, 32),
+        // (256, 1024, 512),
+        // (128, 512, 32),
+        // (32, 32, 32),
+        // (16, 16, 16),
+        // (16, 16, 16),
+        // (16, 16, 16),
+        // (16, 16, 16),
+        // (16, 16, 16),
         
-        (8, 9, 8),
-        (1, 1, 8),
-        (8, 8, 8),
-        (8, 8, 9),
-        (1, 8, 1),
-        (6, 4, 8),
-        (2, 2, 1),
-        (1, 1, 1),
-        (3, 9, 1),
-        (4, 8, 1),
-        (1, 2, 1),
-        (8, 1, 1),
-        (6, 8, 4),
-        (8, 4, 6),
-        (4, 8, 6),
-        (4, 6, 8),
-        (8, 6, 4),
-        (2, 9, 1),
-        (2, 10, 1),
-        (9, 16, 8),
-        (9, 16, 9),
-        (16, 16, 16),
-        (1, 9, 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        (MC + 1, PC, NC + 1),
-        (MC + 1, PC, NC - 1),
-        (MC + 1, PC, NC),
-        (MC - 1, PC, NC),
-        (MC, PC + 1, NC),
-        (MC, PC - 1, NC),
-        (MC, PC, NC),
+        // (8, 9, 8),
+        // (1, 1, 8),
+        // (8, 8, 8),
+        // (8, 8, 9),
+        // (1, 8, 1),
+        // (6, 4, 8),
+        // (2, 2, 1),
+        // (1, 1, 1),
+        // (3, 9, 1),
+        // (4, 8, 1),
+        // (1, 2, 1),
+        // (8, 1, 1),
+        // (6, 8, 4),
+        // (8, 4, 6),
+        // (4, 8, 6),
+        // (4, 6, 8),
+        // (8, 6, 4),
+        // (2, 9, 1),
+        // (2, 10, 1),
+        // (9, 16, 8),
+        // (9, 16, 9),
+        // (1, 9, 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        // (MC + 1, PC, NC + 1),
+        // (MC + 1, PC, NC - 1),
+        // (MC + 1, PC, NC),
+        // (MC - 1, PC, NC),
+        // (MC, PC + 1, NC),
+        // (MC, PC - 1, NC),
+        // (MC, PC, NC),
 
         // (256, 256, 256),
         // (256, 1024, 512),
@@ -238,8 +247,8 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut y_base = y.clone();
     filter_lower_triangle(&mut y_base);
-    println!("y_base {y_base:?}");
-    println!("x_base {x:?}");
+    // println!("y_base {y_base:?}");
+    // println!("x_base {x:?}");
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
     tensor_rlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
@@ -247,8 +256,8 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    println!("expected {expected:?}");
-    println!("actual {_inspect:?}");
+    // println!("expected {expected:?}");
+    // println!("actual {_inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 fn main() {

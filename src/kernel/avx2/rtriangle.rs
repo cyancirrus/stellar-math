@@ -19,9 +19,9 @@ pub fn rmult_lt(
     // Sum[K] Union[I] { g^i = aik b^k }
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
-        let mut mask_t = MASK[pre];
-        // let mut mask_t = MASK[0];
         let mask_n_reg = feed_register(&MASK[n]);
+        let mask_m = MASK[m];
+        let mut mask_t = MASK[pre];
         let mut row0 = mask_load(mask_n_reg, tptr);
         let mut row1 = mask_load(mask_n_reg, tptr.add(s_t));
         let mut row2 = mask_load(mask_n_reg, tptr.add(s_t * 2));
@@ -30,7 +30,6 @@ pub fn rmult_lt(
         let mut row5 = mask_load(mask_n_reg, tptr.add(s_t * 5));
         let mut row6 = mask_load(mask_n_reg, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n_reg, tptr.add(s_t * 7));
-        let mask_m = MASK[m];
         // exit early for disappearing contractions
         for k in 0..pos {
             // println!("triangle");
