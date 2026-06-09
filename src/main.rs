@@ -123,6 +123,8 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
+        (8, 8, 9),
+        
         (1, 1, 8),
         (1, 8, 1),
         (6, 4, 8),
@@ -134,17 +136,14 @@ fn test_gemm_equivalence() {
         (4, 8, 1),
         (1, 2, 1),
         (8, 1, 1),
-
         (6, 8, 4),
         (8, 4, 6),
         (4, 8, 6),
         (4, 6, 8),
         (8, 6, 4),
-        
-        (8, 8, 9),
         (2, 9, 1),
         (2, 10, 1),
-        (2, 9, 1),
+
         (9, 16, 8),
         (9, 16, 9),
         (32, 32, 32),
@@ -217,8 +216,9 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let x = generate_random_matrix(m, p);
     let y = generate_random_matrix(p, n);
     let mut y_base = y.clone();
-    // println!("y_base {y_base:?}");
     filter_lower_triangle(&mut y_base);
+    println!("y_base {y_base:?}");
+    println!("x_base {x:?}");
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
     tensor_rlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
