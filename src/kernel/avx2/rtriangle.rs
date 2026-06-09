@@ -18,11 +18,12 @@ pub fn rmult_lt(
     s_y: usize,
     s_t: usize,
 ) {
-    debug_assert!(pre <= m);
+    debug_assert!(pre <= n);
     // Sum[K] Union[I] { g^i = aik b^k }
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
         let mut mask_t = MASK[pre];
+        // let mut mask_t = MASK[pos];
         let mask_n_reg = feed_register(&MASK[n]);
         let mut row0 = mask_load(mask_n_reg, tptr);
         let mut row1 = mask_load(mask_n_reg, tptr.add(s_t));
@@ -34,9 +35,13 @@ pub fn rmult_lt(
         let mut row7 = mask_load(mask_n_reg, tptr.add(s_t * 7));
         let mask_m = MASK[m];
         // exit early for disappearing contractions
+        // for k in 0..pos {
         for k in 0..pos {
+            println!("hello");
             mask_t[k + pre] = -1;
             let b0 = mask_load(feed_register(&mask_t), yptr);
+            println!("b0 {b0:?}");
+            println!("b0 {b0:?}");
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_m[0], row0, xptr, b0);
             row1 = cfma_accum(mask_m[1], row1, xptr.add(s_x), b0);
@@ -49,6 +54,7 @@ pub fn rmult_lt(
             xptr = xptr.add(1);
         }
         for _k in 0..pro {
+            println!("in main loop");
             let b0 = mask_load(mask_n_reg, yptr);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_m[0], row0, xptr, b0);

@@ -100,25 +100,74 @@ pub fn kernel_rlt_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
-    let d_pos = d_add.saturating_sub(d_sub);
+    let d_pos = d_add.saturating_sub(d_sub + 1);
     let d_neg = d_sub.saturating_sub(d_add);
     // pre-allign left boundary point
-    let pre = p.min(d_neg);
-    // handle triangle part of upper triangular
-    let pos = (n - n.min(d_pos)).min(p - pre);
-    // process the dense part
-    debug_assert!(d_pos + pos <= p, "d_pos: {d_pos}, pos:{pos}, p:{p}");
-    let pro = p - d_pos - pos;
+    let pre = d_pos ;
+    let pos = (n - pre).min(p );
+    let pro = p.saturating_sub(pos);
+    
+    // let pre = d_pos ;
+    // let pos = (n - pre).min(p );
+    // let pro = p.saturating_sub(pos);
+    println!("pre {pre:}, pro: {pro:}, pos: {pos:}");
     unsafe {
-        p = p - d_pos;
-        // index into specific column it's still outerproduct so same target
-        xptr = xptr.add(d_pos);
-        // index down for target row of y for outer product
-        yptr = yptr.add(d_pos * s_y);
+        // xptr = xptr.add(pre);
+        // yptr = yptr.add(pre * s_y);
+        // p = p - d_pos;
+        // // index into specific column it's still outerproduct so same target
+        // xptr = xptr.add(d_pos);
+        // // index down for target row of y for outer product
+        // yptr = yptr.add(d_pos * s_y);
+        // // tptr is constant ie target output vectors are fixed
         if pos != 0 {
+            println!("TRIANGLE");
             rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
+            // let m = 0;
+            // let p = 1;
+            // let n = 0;
+            println!("m: {m:}, p {p:}, n: {n:}");
+            println!("DENSE");
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
     }
 }
+// pub fn kernel_rlt_mult_simd(
+//     mut xptr: *const f32,
+//     mut yptr: *const f32,
+//     tptr: *mut f32,
+//     d_add: usize,
+//     d_sub: usize,
+//     m: usize,
+//     mut p: usize,
+//     n: usize,
+//     s_x: usize,
+//     s_y: usize,
+//     s_t: usize,
+// ) {
+//     let d_pos = d_add.saturating_sub(d_sub + 1);
+//     let d_neg = d_sub.saturating_sub(d_add);
+//     // pre-allign left boundary point
+//     // let pre = p.min(d_neg);
+//     let pre = d_neg;
+//     println!("pre {pre:}, d_pos {d_pos:}");
+//     // handle triangle part of upper triangular
+//     let pos = (n - n.min(d_pos)).min(p - pre);
+//     // process the dense part
+//     debug_assert!(d_pos + pos <= p, "d_pos: {d_pos}, pos:{pos}, p:{p}");
+//     let pro = p - d_pos - pos;
+//     unsafe {
+//         if pos != 0 {
+//             println!("mult, pre {pre:}, pro: {pro:}, pos: {pos:}");
+//             rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+//         } else {
+//             // let m = 0;
+//             // let p = 1;
+//             // let n = 0;
+//             println!("m: {m:}, p {p:}, n: {n:}");
+//             println!("dense");
+//             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+//         }
+//     }
+// }

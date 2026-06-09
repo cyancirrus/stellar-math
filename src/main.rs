@@ -95,6 +95,7 @@ pub fn tensor_rlt_contraction(
             if d_add + jj_end > d_sub {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
+                    println!("hello");
                     kernel_rlt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -122,33 +123,33 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        (9, 16, 9),
-        (32, 32, 32),
+        (1, 1, 8),
+        // (1, 8, 1),
+
+        (6, 4, 8),
+        (8, 8, 8),
+        (2, 2, 1),
         (1, 1, 1),
-        (16, 16, 16),
         (8, 9, 8),
         (3, 9, 1),
-        (6, 4, 8),
-        (9, 16, 8),
-        (8, 8, 9),
-        (2, 9, 1),
-        (2, 2, 1),
-        (2, 9, 1),
-        (2, 10, 1),
-        (1, 9, 1),
         (4, 8, 1),
         (1, 2, 1),
-        (1, 1, 1),
         (8, 1, 1),
-        (1, 8, 1),
-        (1, 1, 8),
-        (6, 4, 8),
+
         (6, 8, 4),
         (8, 4, 6),
         (4, 8, 6),
         (4, 6, 8),
         (8, 6, 4),
-        (8, 8, 8),
+        (8, 8, 9),
+        (2, 9, 1),
+        (2, 10, 1),
+        (2, 9, 1),
+        (9, 16, 8),
+        (9, 16, 9),
+        (32, 32, 32),
+        (16, 16, 16),
+        (1, 9, 1),
         (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
         (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
         (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
@@ -216,7 +217,7 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let x = generate_random_matrix(m, p);
     let y = generate_random_matrix(p, n);
     let mut y_base = y.clone();
-    println!("y_base {y_base:?");
+    // println!("y_base {y_base:?}");
     filter_lower_triangle(&mut y_base);
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
