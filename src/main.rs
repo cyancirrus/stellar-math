@@ -183,7 +183,7 @@ fn test_gemm_equivalence() {
         (16, 32, 16),
     ];
     for (i, k, j) in ikj {
-        // println!("(i: {i:?}, k: {k:?}, j: {j:})");
+        println!("(i: {i:?}, k: {k:?}, j: {j:})");
         rlower_equivalence_mkn(i, k, j);
     }
 }
