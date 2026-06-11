@@ -117,7 +117,7 @@ pub fn kernel_rlt_mult_simd(
         // * * *
         xptr = xptr.add(d_neg);
         yptr = yptr.add(d_neg * s_y);
-        p = p.min(p.saturating_sub(d_neg));
+        p = p.saturating_sub(d_neg);
         if pos != 0 {
             rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {

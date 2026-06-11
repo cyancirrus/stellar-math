@@ -58,11 +58,6 @@ pub fn tensor_rlt_block(
                         let yend = pa * s_y;
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
-                        // tensor_rlt_contraction(
-                        //     &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, PC, NC, NC,
-                        // );
-                        // println!("mc_idx {mc_idx:?}");
-                        // println!("d_add: {d_add:?}, pc: {pc:}, nc: {nc:}, pa: {pa:}, {na:}");
                         tensor_rlt_contraction(
                             &x_pack,
                             &y_pack,
@@ -101,19 +96,13 @@ pub fn tensor_rlt_contraction(
         let dx = SIMD_WIDTH * s_x;
         let dt = SIMD_WIDTH * s_t;
         for j in (0..n).step_by(SIMD_WIDTH) {
-            // println!("y {:?}", &y_d[j..j + 8]);
             let mut xoffset = 0;
             let mut toffset = 0;
             let jj_end = SIMD_WIDTH.min(n - j);
-            // println!("hello");
-            // println!("j {j:?}");
-            if d_add + p > d_sub + 1{
-                // println!("executing!");
-                // if d_add + jj_end + m > d_sub {
+            // indexes the first zero 
+            if d_add + p > d_sub + 1 {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
-                    // println!("xoffset {:?}, val {:?}", xoffset, x_d[xoffset]);
-                    // println!("toffset {:?}, val {:?}", j, t_d[j]);
                     kernel_rlt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -130,8 +119,6 @@ pub fn tensor_rlt_contraction(
                     toffset += dt;
                     xoffset += dx;
                 }
-            // } else {
-            //     println!("skipping!");
             }
             d_sub += SIMD_WIDTH;
         }
@@ -144,15 +131,14 @@ use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
         (1, 25, 9),
-        (16, 32, 16),
         (32, 64, 32),
         (32, 32, 32),
         (1, 26, 10),
         (9, 16, 9),
         (16, 16, 16),
-        
         (8, 9, 8),
         (1, 1, 8),
+        (16, 32, 16),
         (8, 8, 8),
         (1, 8, 1),
         (6, 4, 8),
@@ -194,9 +180,10 @@ fn test_gemm_equivalence() {
         (256, 1024, 512),
         (512, 512, 512),
         (1024, 64, 1024),
+        (16, 32, 16),
     ];
     for (i, k, j) in ikj {
-        println!("(i: {i:?}, k: {k:?}, j: {j:})");
+        // println!("(i: {i:?}, k: {k:?}, j: {j:})");
         rlower_equivalence_mkn(i, k, j);
     }
 }
