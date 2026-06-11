@@ -118,8 +118,6 @@ pub fn kernel_rlt_mult_simd(
         xptr = xptr.add(d_neg);
         yptr = yptr.add(d_neg * s_y);
         p = p.min(p.saturating_sub(d_neg));
-        // p = p.min(pre.saturating_sub(d_neg));
-        // if pos != 0 {
         if pos != 0 {
             rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
@@ -127,40 +125,3 @@ pub fn kernel_rlt_mult_simd(
         }
     }
 }
-// pub fn kernel_rlt_mult_simd(
-//     mut xptr: *const f32,
-//     mut yptr: *const f32,
-//     tptr: *mut f32,
-//     d_add: usize,
-//     d_sub: usize,
-//     m: usize,
-//     mut p: usize,
-//     n: usize,
-//     s_x: usize,
-//     s_y: usize,
-//     s_t: usize,
-// ) {
-//     let d_pos = d_add.saturating_sub(d_sub + 1);
-//     let d_neg = (1 + d_sub).saturating_sub(d_add);
-//     // pre-allign left boundary point
-//     let pre = d_pos;
-//     let pos = (n.saturating_sub(pre)).min(p);
-//     let pro = p.saturating_sub(pos + d_neg);
-//     unsafe {
-//         // // println!("---------------------");
-//         // // println!("m: {m:}, p {p:}, n: {n:}");
-//         // // println!("---------------------");
-//         // // println!("d_pos {d_pos:?}, d_neg {d_neg:?}");
-//         // // println!("pre {pre:}, pro: {pro:}, pos: {pos:}");
-//         xptr = xptr.add(d_neg);
-//         yptr = yptr.add(d_neg * s_y);
-//         p = p.min(pre.saturating_sub(d_neg));
-//         if pos != 0 {
-//             // // println!("TRIANGLE");
-//             rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
-//         } else {
-//             // // println!("DENSE");
-//             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-//         }
-//     }
-// }

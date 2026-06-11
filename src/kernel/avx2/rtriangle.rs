@@ -30,18 +30,11 @@ pub fn rmult_lt(
         let mut row5 = mask_load(mask_n_reg, tptr.add(s_t * 5));
         let mut row6 = mask_load(mask_n_reg, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n_reg, tptr.add(s_t * 7));
-        // println!("mask_m {mask_m:?}");
-        // println!("mask_t {mask_t:?}");
-        // println!("mask_n {:?}", MASK[n]);
         // exit early for disappearing contractions
-        // println!("pos {pos:?}, pre {pre:}");
         for k in 0..pos {
-            // // println!("triangle");
             mask_t[k + pre] = -1;
-            // println!("mask_t {mask_t:?}");
             let b0 = mask_load(feed_register(&mask_t), yptr);
             yptr = yptr.add(s_y);
-            // println!("xvalue {:?}\n b0 {b0:?}", *xptr);
             row0 = cfma_accum(mask_m[0], row0, xptr, b0);
             row1 = cfma_accum(mask_m[1], row1, xptr.add(s_x), b0);
             row2 = cfma_accum(mask_m[2], row2, xptr.add(2 * s_x), b0);
