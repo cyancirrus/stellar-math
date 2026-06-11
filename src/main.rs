@@ -124,7 +124,7 @@ pub fn tensor_rlt_contraction(
                         x_d.get_unchecked(xoffset..),
                         // y_d.get_unchecked(j..),
                         y_d.get_unchecked(j..),
-                        t_d.get_unchecked_mut(toffset..),
+                        t_d.get_unchecked_mut(toffset + j..),
                         d_add,
                         d_sub,
                         ii_end,
@@ -165,7 +165,7 @@ use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
         // (1, 26, 10),
-        (9, 16, 8),
+        (9, 16, 9),
         // (32, 32, 32),
         // (16, 16, 16),
         
