@@ -22,10 +22,6 @@ use stellar::kernel::matkerns::{kernel_rlt_mult, kernel_ut_mult};
 const MC: usize = 64;
 const PC: usize = 256;
 const NC: usize = 128;
-// DEBUG PARAMS
-// const MC: usize = 8;
-// const PC: usize = 8;
-// const NC: usize = 8;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -111,9 +107,7 @@ pub fn tensor_rlt_contraction(
             let jj_end = SIMD_WIDTH.min(n - j);
             // println!("hello");
             // println!("j {j:?}");
-            // if d_add + j  + p >= d_sub {
-            // if d_add + j  + p >= d_sub {
-            if d_add + p > d_sub {
+            if d_add + p > d_sub + 1{
                 // println!("executing!");
                 // if d_add + jj_end + m > d_sub {
                 for i in (0..m).step_by(SIMD_WIDTH) {
@@ -122,7 +116,6 @@ pub fn tensor_rlt_contraction(
                     // println!("toffset {:?}, val {:?}", j, t_d[j]);
                     kernel_rlt_mult(
                         x_d.get_unchecked(xoffset..),
-                        // y_d.get_unchecked(j..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
                         d_add,
@@ -134,20 +127,6 @@ pub fn tensor_rlt_contraction(
                         s_y,
                         s_t,
                     );
-                    // kernel_rlt_mult(
-                    //     x_d.get_unchecked(xoffset..),
-                    //     // y_d.get_unchecked(j..),
-                    //     y_d.get_unchecked(j..),
-                    //     t_d.get_unchecked_mut(j..),
-                    //     d_add,
-                    //     d_sub,
-                    //     ii_end,
-                    //     p,
-                    //     jj_end,
-                    //     s_x,
-                    //     s_y,
-                    //     s_t,
-                    // );
                     toffset += dt;
                     xoffset += dx;
                 }
@@ -164,55 +143,57 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        // (1, 26, 10),
+        (1, 25, 9),
+        (16, 32, 16),
+        (32, 64, 32),
+        (32, 32, 32),
+        (1, 26, 10),
         (9, 16, 9),
-        // (32, 32, 32),
-        // (16, 16, 16),
+        (16, 16, 16),
         
-        // (8, 9, 8),
-        // (1, 1, 8),
-        // (8, 8, 8),
-        // (1, 8, 1),
-        // (6, 4, 8),
-        // (2, 2, 1),
-        // (1, 1, 1),
-        // (3, 9, 1),
-        // (4, 8, 1),
-        // (1, 2, 1),
-        // (8, 1, 1),
-        // (6, 8, 4),
-        // (8, 4, 6),
-        // (4, 8, 6),
-        // (4, 6, 8),
-        // (8, 6, 4),
-        // (2, 9, 1),
-        // (2, 10, 1),
-        // (9, 16, 8),
-        // (9, 16, 9),
-        // (1, 9, 1),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        // (MC + 1, PC, NC + 1),
-        // (MC + 1, PC, NC - 1),
-        // (MC + 1, PC, NC),
-        // (MC - 1, PC, NC),
-        // (MC, PC + 1, NC),
-        // (MC, PC - 1, NC),
-        // (MC, PC, NC),
-
-        // (128, 512, 32),
-        // (32, 512, 32),
-        // (256, 1024, 512),
-        // (256, 256, 256),
-        // (256, 1024, 512),
-        // (512, 512, 512),
-        // (1024, 64, 1024),
+        (8, 9, 8),
+        (1, 1, 8),
+        (8, 8, 8),
+        (1, 8, 1),
+        (6, 4, 8),
+        (2, 2, 1),
+        (1, 1, 1),
+        (3, 9, 1),
+        (4, 8, 1),
+        (1, 2, 1),
+        (8, 1, 1),
+        (6, 8, 4),
+        (8, 4, 6),
+        (4, 8, 6),
+        (4, 6, 8),
+        (8, 6, 4),
+        (2, 9, 1),
+        (2, 10, 1),
+        (9, 16, 8),
+        (9, 16, 9),
+        (1, 9, 1),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        (MC + 1, PC, NC + 1),
+        (MC + 1, PC, NC - 1),
+        (MC + 1, PC, NC),
+        (MC - 1, PC, NC),
+        (MC, PC + 1, NC),
+        (MC, PC - 1, NC),
+        (MC, PC, NC),
+        (128, 512, 32),
+        (32, 512, 32),
+        (256, 1024, 512),
+        (256, 256, 256),
+        (256, 1024, 512),
+        (512, 512, 512),
+        (1024, 64, 1024),
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
@@ -262,8 +243,8 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut y_base = y.clone();
     filter_lower_triangle(&mut y_base);
-    println!("x_base {x:?}");
-    println!("y_base {y_base:?}");
+    // println!("x_base {x:?}");
+    // println!("y_base {y_base:?}");
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
     tensor_rlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
@@ -271,11 +252,16 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    println!("expected {expected:?}");
-    println!("actual {_inspect:?}");
+    // println!("expected {expected:?}");
+    // println!("actual {_inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
+// use rayon::ThreadPoolBuilder;
 fn main() {
+    // ThreadPoolBuilder::new()
+    //     .num_threads(1)
+    //     .build_global()
+    //     .expect("Failed to initialize global thread pool");
     test_gemm_equivalence();
     println!("success");
 }
