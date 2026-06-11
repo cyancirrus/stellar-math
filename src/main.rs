@@ -19,13 +19,13 @@ use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
 use stellar::kernel::matkerns::{kernel_rlt_mult, kernel_ut_mult};
 // PROD PARAMS
-// const MC: usize = 64;
-// const PC: usize = 256;
-// const NC: usize = 128;
+const MC: usize = 64;
+const PC: usize = 256;
+const NC: usize = 128;
 // DEBUG PARAMS
-const MC: usize = 8;
-const PC: usize = 8;
-const NC: usize = 8;
+// const MC: usize = 8;
+// const PC: usize = 8;
+// const NC: usize = 8;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -113,16 +113,18 @@ pub fn tensor_rlt_contraction(
             // println!("j {j:?}");
             // if d_add + j  + p >= d_sub {
             // if d_add + j  + p >= d_sub {
-            if d_add  + p > d_sub {
+            if d_add + p > d_sub {
                 // println!("executing!");
                 // if d_add + jj_end + m > d_sub {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
+                    // println!("xoffset {:?}, val {:?}", xoffset, x_d[xoffset]);
+                    // println!("toffset {:?}, val {:?}", j, t_d[j]);
                     kernel_rlt_mult(
                         x_d.get_unchecked(xoffset..),
                         // y_d.get_unchecked(j..),
-                        y_d.get_unchecked(0..),
-                        t_d.get_unchecked_mut(0 + j..),
+                        y_d.get_unchecked(j..),
+                        t_d.get_unchecked_mut(toffset..),
                         d_add,
                         d_sub,
                         ii_end,
@@ -132,6 +134,20 @@ pub fn tensor_rlt_contraction(
                         s_y,
                         s_t,
                     );
+                    // kernel_rlt_mult(
+                    //     x_d.get_unchecked(xoffset..),
+                    //     // y_d.get_unchecked(j..),
+                    //     y_d.get_unchecked(j..),
+                    //     t_d.get_unchecked_mut(j..),
+                    //     d_add,
+                    //     d_sub,
+                    //     ii_end,
+                    //     p,
+                    //     jj_end,
+                    //     s_x,
+                    //     s_y,
+                    //     s_t,
+                    // );
                     toffset += dt;
                     xoffset += dx;
                 }
@@ -149,16 +165,13 @@ use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
         // (1, 26, 10),
-        // (32, 512, 32),
-        // (256, 1024, 512),
-        // (128, 512, 32),
+        (9, 16, 8),
         // (32, 32, 32),
-        (16, 16, 16),
+        // (16, 16, 16),
         
         // (8, 9, 8),
         // (1, 1, 8),
         // (8, 8, 8),
-        // (8, 8, 9),
         // (1, 8, 1),
         // (6, 4, 8),
         // (2, 2, 1),
@@ -193,6 +206,9 @@ fn test_gemm_equivalence() {
         // (MC, PC - 1, NC),
         // (MC, PC, NC),
 
+        // (128, 512, 32),
+        // (32, 512, 32),
+        // (256, 1024, 512),
         // (256, 256, 256),
         // (256, 1024, 512),
         // (512, 512, 512),
@@ -246,8 +262,8 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut y_base = y.clone();
     filter_lower_triangle(&mut y_base);
-    // println!("y_base {y_base:?}");
-    // println!("x_base {x:?}");
+    println!("x_base {x:?}");
+    println!("y_base {y_base:?}");
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
     tensor_rlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);

@@ -107,7 +107,7 @@ pub fn kernel_rlt_mult_simd(
     // how much triangle processing to be done
     let pos = (n.saturating_sub(pre)).min(p);
     // how much dense processes to perform
-    let pro = p.saturating_sub(pos + d_neg + 1);
+    let pro = p.saturating_sub(pos + d_neg);
     unsafe {
         println!("---------------------");
         println!("m: {m:}, p {p:}, n: {n:}");
@@ -120,15 +120,15 @@ pub fn kernel_rlt_mult_simd(
         // * 0 0
         // * * 0
         // * * *
-        // xptr = xptr.add(d_neg);
+        xptr = xptr.add(d_neg);
         yptr = yptr.add(d_neg * s_y);
-        // p = p.min(pre.saturating_sub(d_neg));
+        p = p.min(pre.saturating_sub(d_neg));
         // if pos != 0 {
         if pos != 0 {
-            // println!("TRIANGLE");
+            println!("TRIANGLE");
             rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
-            // println!("DENSE");
+            println!("DENSE");
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
     }
@@ -153,19 +153,19 @@ pub fn kernel_rlt_mult_simd(
 //     let pos = (n.saturating_sub(pre)).min(p);
 //     let pro = p.saturating_sub(pos + d_neg);
 //     unsafe {
-//         // println!("---------------------");
-//         // println!("m: {m:}, p {p:}, n: {n:}");
-//         // println!("---------------------");
-//         // println!("d_pos {d_pos:?}, d_neg {d_neg:?}");
-//         // println!("pre {pre:}, pro: {pro:}, pos: {pos:}");
+//         // // println!("---------------------");
+//         // // println!("m: {m:}, p {p:}, n: {n:}");
+//         // // println!("---------------------");
+//         // // println!("d_pos {d_pos:?}, d_neg {d_neg:?}");
+//         // // println!("pre {pre:}, pro: {pro:}, pos: {pos:}");
 //         xptr = xptr.add(d_neg);
 //         yptr = yptr.add(d_neg * s_y);
 //         p = p.min(pre.saturating_sub(d_neg));
 //         if pos != 0 {
-//             // println!("TRIANGLE");
+//             // // println!("TRIANGLE");
 //             rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
 //         } else {
-//             // println!("DENSE");
+//             // // println!("DENSE");
 //             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
 //         }
 //     }
