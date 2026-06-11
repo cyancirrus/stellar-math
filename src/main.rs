@@ -19,13 +19,13 @@ use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
 use stellar::kernel::matkerns::{kernel_rlt_mult, kernel_ut_mult};
 // PROD PARAMS
-const MC: usize = 64;
-const PC: usize = 256;
-const NC: usize = 128;
+// const MC: usize = 64;
+// const PC: usize = 256;
+// const NC: usize = 128;
 // DEBUG PARAMS
-// const MC: usize = 8;
-// const PC: usize = 8;
-// const NC: usize = 8;
+const MC: usize = 8;
+const PC: usize = 8;
+const NC: usize = 8;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -43,7 +43,6 @@ pub fn tensor_rlt_block(
 ) {
     // diagonal
     // suffix c: chunk, suffix a: actual
-    // let d_add = p - p.min(m) + 1;
     let d_add = n - n.min(p) + 1;
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
@@ -112,15 +111,18 @@ pub fn tensor_rlt_contraction(
             let jj_end = SIMD_WIDTH.min(n - j);
             // println!("hello");
             // println!("j {j:?}");
-            if d_add + j + p >= d_sub {
+            // if d_add + j  + p >= d_sub {
+            // if d_add + j  + p >= d_sub {
+            if d_add  + p > d_sub {
                 // println!("executing!");
                 // if d_add + jj_end + m > d_sub {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
                     kernel_rlt_mult(
                         x_d.get_unchecked(xoffset..),
-                        y_d.get_unchecked(j..),
-                        t_d.get_unchecked_mut(toffset + j..),
+                        // y_d.get_unchecked(j..),
+                        y_d.get_unchecked(0..),
+                        t_d.get_unchecked_mut(0 + j..),
                         d_add,
                         d_sub,
                         ii_end,
@@ -146,15 +148,12 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        (32, 512, 32),
+        // (1, 26, 10),
+        // (32, 512, 32),
         // (256, 1024, 512),
         // (128, 512, 32),
         // (32, 32, 32),
-        // (16, 16, 16),
-        // (16, 16, 16),
-        // (16, 16, 16),
-        // (16, 16, 16),
-        // (16, 16, 16),
+        (16, 16, 16),
         
         // (8, 9, 8),
         // (1, 1, 8),
@@ -256,8 +255,8 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    // println!("expected {expected:?}");
-    // println!("actual {_inspect:?}");
+    println!("expected {expected:?}");
+    println!("actual {_inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 fn main() {

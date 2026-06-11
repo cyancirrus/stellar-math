@@ -22,6 +22,7 @@ pub fn rmult_lt(
         let mask_n_reg = feed_register(&MASK[n]);
         let mask_m = MASK[m];
         let mut mask_t = MASK[pre];
+        let mut mask_t = MASK[pre];
         let mut row0 = mask_load(mask_n_reg, tptr);
         let mut row1 = mask_load(mask_n_reg, tptr.add(s_t));
         let mut row2 = mask_load(mask_n_reg, tptr.add(s_t * 2));
@@ -31,9 +32,11 @@ pub fn rmult_lt(
         let mut row6 = mask_load(mask_n_reg, tptr.add(s_t * 6));
         let mut row7 = mask_load(mask_n_reg, tptr.add(s_t * 7));
         // exit early for disappearing contractions
+        println!("pos {pos:?}, pre {pre:}");
         for k in 0..pos {
             // println!("triangle");
             mask_t[k + pre] = -1;
+            println!("mask_t {mask_t:?}");
             // println!("mask_t {:?}", mask_t);
             let b0 = mask_load(feed_register(&mask_t), yptr);
             yptr = yptr.add(s_y);

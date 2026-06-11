@@ -101,23 +101,29 @@ pub fn kernel_rlt_mult_simd(
     s_t: usize,
 ) {
     let d_pos = d_add.saturating_sub(d_sub + 1);
-    let d_neg = (1 + d_sub).saturating_sub(d_add);
+    let d_neg = (d_sub + 1).saturating_sub(d_add);
     // pre how much the diagonal is shifted up and left
     let pre = d_pos;
     // how much triangle processing to be done
     let pos = (n.saturating_sub(pre)).min(p);
     // how much dense processes to perform
-    let pro = p.saturating_sub(pos + d_neg);
+    let pro = p.saturating_sub(pos + d_neg + 1);
     unsafe {
+        println!("---------------------");
+        println!("m: {m:}, p {p:}, n: {n:}");
+        println!("---------------------");
+        println!("d_pos {d_pos:?}, d_neg {d_neg:?}");
+        println!("pre {pre:}, pro: {pro:}, pos: {pos:}");
         // handle when
         // 0 0 0
         // 0 0 0
         // * 0 0
         // * * 0
         // * * *
-        xptr = xptr.add(d_neg);
+        // xptr = xptr.add(d_neg);
         yptr = yptr.add(d_neg * s_y);
-        p = p.min(pre.saturating_sub(d_neg));
+        // p = p.min(pre.saturating_sub(d_neg));
+        // if pos != 0 {
         if pos != 0 {
             // println!("TRIANGLE");
             rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
