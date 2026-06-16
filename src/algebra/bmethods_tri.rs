@@ -200,7 +200,7 @@ pub fn tensor_rlt_block(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    m: usize,
+    _m: usize,
     p: usize,
     n: usize,
     s_x: usize,
@@ -213,7 +213,7 @@ pub fn tensor_rlt_block(
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
-        .for_each(|(mc_idx, (t, x))| {
+        .for_each(|(_mc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let dy = PC * s_y;
@@ -253,7 +253,7 @@ pub fn tensor_rlt_contraction(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    mut d_add: usize,
+    d_add: usize,
     mut d_sub: usize,
     m: usize,
     p: usize,
