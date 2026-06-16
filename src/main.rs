@@ -192,7 +192,7 @@ fn test_gemm_equivalence() {
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
-        rlower_equivalence_mkn(i, k, j);
+        rupper_equivalence_mkn(i, k, j);
     }
 }
 /// Case 1 / Case 2
@@ -233,7 +233,7 @@ fn filter_lower_triangle(a: &mut NdArray) {
         }
     }
 }
-fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
+fn rupper_equivalence_mkn(m: usize, p: usize, n: usize) {
     let x = generate_random_matrix(m, p);
     let y = generate_random_matrix(p, n);
     let mut y_base = y.clone();

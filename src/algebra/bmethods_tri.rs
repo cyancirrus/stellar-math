@@ -1,6 +1,6 @@
 use crate::algebra::bmethods::{diff_min, pack};
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::matkerns::{kernel_lt_mult, kernel_rlt_mult, kernel_ut_mult};
+use crate::kernel::matkerns::{kernel_lt_mult, kernel_rlt_mult, kernel_rut_mult, kernel_ut_mult};
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
@@ -294,9 +294,106 @@ pub fn tensor_rlt_contraction(
         }
     }
 }
+pub fn tensor_rut_block(
+    x_d: &[f32],
+    y_d: &[f32],
+    t_d: &mut [f32],
+    _m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    // diagonal
+    let d_add = p - p.min(n) + 1;
+    t_d.par_chunks_mut(MC * n)
+        .zip(x_d.par_chunks(MC * p))
+        .for_each(|(t, x)| {
+            PACK.with(|workspace_cell| {
+                let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
+                let dy = PC * s_y;
+                let ma = x.len() / s_x;
+                let (xend, tend) = (ma * s_x, ma * s_t);
+                for nc in (0..n).step_by(NC) {
+                    let na = diff_min(n, nc, NC);
+                    t_accum.fill(0f32);
+                    let mut yoffset = 0;
+                    for pc in (0..p).step_by(PC) {
+                        let pa = diff_min(p, pc, PC);
+                        let yend = pa * s_y;
+                        pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
+                        pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
+                        tensor_rut_contraction(
+                            &x_pack,
+                            &y_pack,
+                            t_accum,
+                            d_add + nc,
+                            pc,
+                            ma,
+                            pa,
+                            na,
+                            PC,
+                            NC,
+                            NC,
+                        );
+                        yoffset += dy;
+                    }
+                    // unpack
+                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                }
+            })
+        });
+}
+pub fn tensor_rut_contraction(
+    x_d: &[f32],
+    y_d: &[f32],
+    t_d: &mut [f32],
+    mut d_add: usize,
+    d_sub: usize,
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    unsafe {
+        let dx = SIMD_WIDTH * s_x;
+        let dt = SIMD_WIDTH * s_t;
+        for j in (0..n).step_by(SIMD_WIDTH) {
+            let mut xoffset = 0;
+            let mut toffset = 0;
+            let jj_end = SIMD_WIDTH.min(n - j);
+            // indexes the first zero
+            // if d_add + SIMD_WIDTH  > d_sub  {
+            if d_add + jj_end > d_sub {
+                for i in (0..m).step_by(SIMD_WIDTH) {
+                    let ii_end = SIMD_WIDTH.min(m - i);
+                    kernel_rut_mult(
+                        x_d.get_unchecked(xoffset..),
+                        y_d.get_unchecked(j..),
+                        t_d.get_unchecked_mut(toffset + j..),
+                        d_add,
+                        d_sub,
+                        ii_end,
+                        p,
+                        jj_end,
+                        s_x,
+                        s_y,
+                        s_t,
+                    );
+                    toffset += dt;
+                    xoffset += dx;
+                }
+            }
+            d_add += SIMD_WIDTH;
+        }
+    }
+}
 #[cfg(test)]
 #[cfg(feature = "avx2")]
-mod test_left_lower_and_upper_triangular_dispatch {
+mod test_lower_and_upper_triangular_dispatch {
     use super::*;
     use crate::algebra::ndmethods::basic_mult;
     use crate::equality::approximate::approx_vector_eq;
@@ -357,6 +454,7 @@ mod test_left_lower_and_upper_triangular_dispatch {
             lower_equivalence_mkn(i, k, j);
             upper_equivalence_mkn(i, k, j);
             rlower_equivalence_mkn(i, k, j);
+            rupper_equivalence_mkn(i, k, j);
         }
     }
     /// Case 1 / Case 2
@@ -435,6 +533,24 @@ mod test_left_lower_and_upper_triangular_dispatch {
         let expected = basic_mult(&x, &y_base);
         let mut result = vec![0f32; m * n];
         tensor_rlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
+        let _inspect = NdArray {
+            dims: vec![m, n],
+            data: result.clone(),
+        };
+        // println!("expected {expected:?}");
+        // println!("actual {_inspect:?}");
+        assert!(approx_vector_eq(&expected.data, &result[..m * n]));
+    }
+    fn rupper_equivalence_mkn(m: usize, p: usize, n: usize) {
+        let x = generate_random_matrix(m, p);
+        let y = generate_random_matrix(p, n);
+        let mut y_base = y.clone();
+        filter_upper_triangle(&mut y_base);
+        // println!("x_base {x:?}");
+        // println!("y_base {y_base:?}");
+        let expected = basic_mult(&x, &y_base);
+        let mut result = vec![0f32; m * n];
+        tensor_rut_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
         let _inspect = NdArray {
             dims: vec![m, n],
             data: result.clone(),
