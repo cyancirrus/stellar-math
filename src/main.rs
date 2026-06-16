@@ -19,13 +19,13 @@ use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
 use stellar::kernel::matkerns::{kernel_rut_mult, kernel_ut_mult};
 // DEBUG PARAMS
-// const MC: usize = 8;
-// const PC: usize = 8;
-// const NC: usize = 8;
-// // PROD PARAMS
-const MC: usize = 64;
-const PC: usize = 256;
+const MC: usize = 32;
+const PC: usize = 24;
 const NC: usize = 128;
+// // PROD PARAMS
+// const MC: usize = 64;
+// const PC: usize = 256;
+// const NC: usize = 128;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
