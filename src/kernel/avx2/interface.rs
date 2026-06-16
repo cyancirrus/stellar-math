@@ -87,6 +87,12 @@ pub fn kernel_ut_mult_simd(
         }
     }
 }
+/// handle when
+/// 0 0 0
+/// 0 0 0
+/// * 0 0
+/// * * 0
+/// * * *
 pub fn kernel_rlt_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
@@ -109,12 +115,6 @@ pub fn kernel_rlt_mult_simd(
     // how much dense processes to perform
     let pro = p.saturating_sub(pos + d_neg);
     unsafe {
-        // handle when
-        // 0 0 0
-        // 0 0 0
-        // * 0 0
-        // * * 0
-        // * * *
         xptr = xptr.add(d_neg);
         yptr = yptr.add(d_neg * s_y);
         p = p.saturating_sub(d_neg);
@@ -125,6 +125,12 @@ pub fn kernel_rlt_mult_simd(
         }
     }
 }
+/// handle when
+/// * * *
+/// * * *
+/// 0 * *
+/// 0 0 *
+/// 0 0 0
 pub fn kernel_rut_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
@@ -145,20 +151,8 @@ pub fn kernel_rut_mult_simd(
     // how much dense processes to perform
     let pro = d_pos.min(p);
     // how much triangle processing to be done
-    // let pos = (n.saturating_sub(pre)).min(p.saturating_sub(pro));
     let pos = (n.saturating_sub(pre)).min(p - pro);
-    println!("-------------------");
-    println!("m {m:}, p: {p:}, n: {n:}");
-    println!("- - - - - - - - - -");
-    println!("d_pos: {d_pos:}, d_neg: {d_neg:}");
-    println!("pre {pre:}, pro {pro:}, pos {pos:}");
     unsafe {
-        // handle when
-        // 1 1 1
-        // 1 1 1
-        // 0 1 1
-        // 0 0 1
-        // 0 0 0
         if pos != 0 {
             rtriangle::rmult_ut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {

@@ -19,13 +19,13 @@ use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
 use stellar::kernel::matkerns::{kernel_rut_mult, kernel_ut_mult};
 // DEBUG PARAMS
-const MC: usize = 8;
-const PC: usize = 16;
-const NC: usize = 16;
+// const MC: usize = 8;
+// const PC: usize = 8;
+// const NC: usize = 8;
 // // PROD PARAMS
-// const MC: usize = 64;
-// const PC: usize = 256;
-// const NC: usize = 128;
+const MC: usize = 64;
+const PC: usize = 256;
+const NC: usize = 128;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -59,8 +59,6 @@ pub fn tensor_rut_block(
                     t_accum.fill(0f32);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
-                    // for pc in (0..p).step_by(PC) {
-                        // println!("CALLING (p, n), (pc, nc) : ({p:}, {n:}), ({pc:}, {nc:})");
                         let pa = diff_min(p, pc, PC);
                         let yend = pa * s_y;
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
@@ -107,11 +105,8 @@ pub fn tensor_rut_contraction(
             let mut toffset = 0;
             let jj_end = SIMD_WIDTH.min(n - j);
             // indexes the first zero
-            // if d_add + n > d_sub + 8 {
-            // println!("d_add {d_add:}, d_sub {d_sub:}, n: {n:}");
             if d_add + SIMD_WIDTH  > d_sub  {
                 for i in (0..m).step_by(SIMD_WIDTH) {
-                    // println!("d_add {d_add:}, d_sub {d_sub:}");
                     let ii_end = SIMD_WIDTH.min(m - i);
                     kernel_rut_mult(
                         x_d.get_unchecked(xoffset..),
@@ -187,14 +182,14 @@ fn test_gemm_equivalence() {
         (MC, PC + 1, NC),
         (MC, PC - 1, NC),
         (MC, PC, NC),
-        // (128, 512, 32),
-        // (32, 512, 32),
-        // (256, 1024, 512),
-        // (256, 256, 256),
-        // (256, 1024, 512),
-        // (512, 512, 512),
-        // (1024, 64, 1024),
-        // (16, 32, 16),
+        (128, 512, 32),
+        (32, 512, 32),
+        (256, 1024, 512),
+        (256, 256, 256),
+        (256, 1024, 512),
+        (512, 512, 512),
+        (1024, 64, 1024),
+        (16, 32, 16),
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
@@ -245,7 +240,7 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let mut y_base = y.clone();
     filter_upper_triangle(&mut y_base);
     // println!("x_base {x:?}");
-    println!("y_base {y_base:?}");
+    // println!("y_base {y_base:?}");
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
     tensor_rut_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
@@ -253,8 +248,8 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    println!("expected {expected:?}");
-    println!("actual {_inspect:?}");
+    // println!("expected {expected:?}");
+    // println!("actual {_inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 // use rayon::ThreadPoolBuilder;
