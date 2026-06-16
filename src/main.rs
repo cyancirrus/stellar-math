@@ -106,7 +106,7 @@ pub fn tensor_rut_contraction(
             let jj_end = SIMD_WIDTH.min(n - j);
             // indexes the first zero
             // if d_add + p > d_sub + 1 {
-            if d_add + n > d_sub + 1{
+            if d_add + n > d_sub +  2 {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     println!("d_add {d_add:}, d_sub {d_sub:}");
                     let ii_end = SIMD_WIDTH.min(m - i);
