@@ -138,7 +138,7 @@ pub fn kernel_rut_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
-    let d_pos = d_add.saturating_sub(d_sub );
+    let d_pos = d_add.saturating_sub(d_sub);
     let d_neg = (d_sub).saturating_sub(d_add);
     // pre how much the diagonal is shifted up and left
     let pre = d_neg;

@@ -106,8 +106,9 @@ pub fn tensor_rut_contraction(
             let jj_end = SIMD_WIDTH.min(n - j);
             // indexes the first zero
             // if d_add + p > d_sub + 1 {
-            if d_add + n > d_sub {
+            if d_add + n > d_sub + 1{
                 for i in (0..m).step_by(SIMD_WIDTH) {
+                    println!("d_add {d_add:}, d_sub {d_sub:}");
                     let ii_end = SIMD_WIDTH.min(m - i);
                     kernel_rut_mult(
                         x_d.get_unchecked(xoffset..),
@@ -136,28 +137,29 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        (1, 1, 1),
-        (8, 8, 8),
-        (8, 8, 10),
-        (8, 16, 8),
-        (1, 1, 8),
-        (1, 8, 1),
-        (6, 4, 8),
-        (2, 2, 1),
-        (3, 9, 1),
-        (4, 8, 1),
-        (1, 2, 1),
-        (8, 1, 1),
-        (6, 8, 4),
-        (8, 4, 6),
-        (4, 8, 6),
-        (4, 6, 8),
-        (8, 6, 4),
-        (2, 9, 1),
-        (2, 10, 1),
-        (9, 16, 8),
-        (9, 16, 9),
-        (1, 9, 1),
+        (8, 10, 8)
+        // (1, 1, 1),
+        // (8, 8, 8),
+        // (8, 8, 10),
+        // (8, 16, 8),
+        // (1, 1, 8),
+        // (1, 8, 1),
+        // (6, 4, 8),
+        // (2, 2, 1),
+        // (3, 9, 1),
+        // (4, 8, 1),
+        // (1, 2, 1),
+        // (8, 1, 1),
+        // (6, 8, 4),
+        // (8, 4, 6),
+        // (4, 8, 6),
+        // (4, 6, 8),
+        // (8, 6, 4),
+        // (2, 9, 1),
+        // (2, 10, 1),
+        // (9, 16, 8),
+        // (9, 16, 9),
+        // (1, 9, 1),
         // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
         // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
         // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
@@ -238,7 +240,7 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let mut y_base = y.clone();
     filter_upper_triangle(&mut y_base);
     // println!("x_base {x:?}");
-    // println!("y_base {y_base:?}");
+    println!("y_base {y_base:?}");
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
     tensor_rut_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);

@@ -112,6 +112,9 @@ pub fn rmult_ut(
             xptr = xptr.add(1);
         }
         let mut mask_t = MASK[n];
+        for k in 0..pre {
+            mask_t[k] = 0;
+        }
         for k in 0..pos {
             mask_t[k] = 0;
             let b0 = mask_load(feed_register(&mask_t), yptr);
