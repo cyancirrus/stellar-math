@@ -115,8 +115,9 @@ pub fn rmult_ut(
         for k in 0..pre {
             mask_t[k] = 0;
         }
+
         for k in 0..pos {
-            mask_t[k] = 0;
+            mask_t[k + pre] = 0;
             let b0 = mask_load(feed_register(&mask_t), yptr);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_m[0], row0, xptr, b0);
@@ -129,7 +130,6 @@ pub fn rmult_ut(
             row7 = cfma_accum(mask_m[7], row7, xptr.add(7 * s_x), b0);
             xptr = xptr.add(1);
         }
-        println!("mask_m {mask_m:?}");
         mask_store_ctrl(mask_m[0], mask_n_reg, tptr, row0);
         mask_store_ctrl(mask_m[1], mask_n_reg, tptr.add(s_t), row1);
         mask_store_ctrl(mask_m[2], mask_n_reg, tptr.add(s_t * 2), row2);

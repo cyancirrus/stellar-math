@@ -59,6 +59,7 @@ pub fn tensor_rut_block(
                     t_accum.fill(0f32);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
+                        // println!("CALLING (p, n), (pc, nc) : ({p:}, {n:}), ({pc:}, {nc:})");
                         let pa = diff_min(p, pc, PC);
                         let yend = pa * s_y;
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
@@ -106,7 +107,8 @@ pub fn tensor_rut_contraction(
             let jj_end = SIMD_WIDTH.min(n - j);
             // indexes the first zero
             // if d_add + p > d_sub + 1 {
-            if d_add + n > d_sub +  2 {
+            // if d_add + n > d_sub + 1{
+            // if d_add + n > d_sub + 1 {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     println!("d_add {d_add:}, d_sub {d_sub:}");
                     let ii_end = SIMD_WIDTH.min(m - i);
@@ -126,7 +128,7 @@ pub fn tensor_rut_contraction(
                     toffset += dt;
                     xoffset += dx;
                 }
-            }
+            // }
             d_add += SIMD_WIDTH;
         }
     }
