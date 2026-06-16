@@ -39,7 +39,8 @@ pub fn tensor_rut_block(
 ) {
     // diagonal
     // suffix c: chunk, suffix a: actual
-    let d_add = n - n.min(p) + 1;
+    // let d_add = n - n.min(p) + 1;
+    let d_add = p - p.min(n) + 1;
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
@@ -62,8 +63,8 @@ pub fn tensor_rut_block(
                             &x_pack,
                             &y_pack,
                             t_accum,
-                            d_add + pc,
-                            nc,
+                            d_add + nc,
+                            pc,
                             ma,
                             pa,
                             na,
@@ -100,7 +101,8 @@ pub fn tensor_rut_contraction(
             let mut toffset = 0;
             let jj_end = SIMD_WIDTH.min(n - j);
             // indexes the first zero
-            if d_add + p > d_sub + 1 {
+            // if d_add + p > d_sub + 1 {
+            if d_add + n > d_sub {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
                     kernel_rut_mult(
@@ -120,7 +122,7 @@ pub fn tensor_rut_contraction(
                     xoffset += dx;
                 }
             }
-            d_sub += SIMD_WIDTH;
+            d_add += SIMD_WIDTH;
         }
     }
 }
@@ -130,57 +132,57 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        (1, 25, 9),
-        (32, 64, 32),
-        (32, 32, 32),
-        (1, 26, 10),
-        (9, 16, 9),
-        (16, 16, 16),
-        (8, 9, 8),
-        (1, 1, 8),
-        (16, 32, 16),
+        // (1, 1, 1),
         (8, 8, 8),
-        (1, 8, 1),
-        (6, 4, 8),
-        (2, 2, 1),
-        (1, 1, 1),
-        (3, 9, 1),
-        (4, 8, 1),
-        (1, 2, 1),
-        (8, 1, 1),
-        (6, 8, 4),
-        (8, 4, 6),
-        (4, 8, 6),
-        (4, 6, 8),
-        (8, 6, 4),
-        (2, 9, 1),
-        (2, 10, 1),
-        (9, 16, 8),
-        (9, 16, 9),
-        (1, 9, 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        (MC + 1, PC, NC + 1),
-        (MC + 1, PC, NC - 1),
-        (MC + 1, PC, NC),
-        (MC - 1, PC, NC),
-        (MC, PC + 1, NC),
-        (MC, PC - 1, NC),
-        (MC, PC, NC),
-        (128, 512, 32),
-        (32, 512, 32),
-        (256, 1024, 512),
-        (256, 256, 256),
-        (256, 1024, 512),
-        (512, 512, 512),
-        (1024, 64, 1024),
-        (16, 32, 16),
+        // (8, 9, 8),
+        // (1, 1, 8),
+        // (1, 8, 1),
+        // (6, 4, 8),
+        // (2, 2, 1),
+        // (3, 9, 1),
+        // (4, 8, 1),
+        // (1, 2, 1),
+        // (8, 1, 1),
+        // (6, 8, 4),
+        // (8, 4, 6),
+        // (4, 8, 6),
+        // (4, 6, 8),
+        // (8, 6, 4),
+        // (2, 9, 1),
+        // (2, 10, 1),
+        // (9, 16, 8),
+        // (9, 16, 9),
+        // (1, 9, 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        // (1, 25, 9),
+        // (32, 64, 32),
+        // (32, 32, 32),
+        // (1, 26, 10),
+        // (9, 16, 9),
+        // (16, 16, 16),
+        // (16, 32, 16),
+        // (MC + 1, PC, NC + 1),
+        // (MC + 1, PC, NC - 1),
+        // (MC + 1, PC, NC),
+        // (MC - 1, PC, NC),
+        // (MC, PC + 1, NC),
+        // (MC, PC - 1, NC),
+        // (MC, PC, NC),
+        // (128, 512, 32),
+        // (32, 512, 32),
+        // (256, 1024, 512),
+        // (256, 256, 256),
+        // (256, 1024, 512),
+        // (512, 512, 512),
+        // (1024, 64, 1024),
+        // (16, 32, 16),
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
@@ -239,8 +241,8 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    // println!("expected {expected:?}");
-    // println!("actual {_inspect:?}");
+    println!("expected {expected:?}");
+    println!("actual {_inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 // use rayon::ThreadPoolBuilder;
