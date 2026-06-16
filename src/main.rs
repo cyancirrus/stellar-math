@@ -106,11 +106,9 @@ pub fn tensor_rut_contraction(
             let mut toffset = 0;
             let jj_end = SIMD_WIDTH.min(n - j);
             // indexes the first zero
-            // if d_add + p > d_sub + 1 {
-            // if d_add + n > d_sub + 1{
-            // if d_add + n > d_sub + 1 {
+            if d_add + n > d_sub + 1 {
                 for i in (0..m).step_by(SIMD_WIDTH) {
-                    println!("d_add {d_add:}, d_sub {d_sub:}");
+                    // println!("d_add {d_add:}, d_sub {d_sub:}");
                     let ii_end = SIMD_WIDTH.min(m - i);
                     kernel_rut_mult(
                         x_d.get_unchecked(xoffset..),
@@ -128,7 +126,7 @@ pub fn tensor_rut_contraction(
                     toffset += dt;
                     xoffset += dx;
                 }
-            // }
+            }
             d_add += SIMD_WIDTH;
         }
     }
@@ -242,7 +240,7 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let mut y_base = y.clone();
     filter_upper_triangle(&mut y_base);
     // println!("x_base {x:?}");
-    println!("y_base {y_base:?}");
+    // println!("y_base {y_base:?}");
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
     tensor_rut_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);

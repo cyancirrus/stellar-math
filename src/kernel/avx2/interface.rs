@@ -147,11 +147,11 @@ pub fn kernel_rut_mult_simd(
     // how much triangle processing to be done
     // let pos = (n.saturating_sub(pre)).min(p.saturating_sub(pro));
     let pos = (n.saturating_sub(pre)).min(p - pro);
-    println!("-------------------");
-    println!("m {m:}, p: {p:}, n: {n:}");
-    println!("- - - - - - - - - -");
-    println!("d_pos: {d_pos:}, d_neg: {d_neg:}");
-    println!("pre {pre:}, pro {pro:}, pos {pos:}");
+    // println!("-------------------");
+    // println!("m {m:}, p: {p:}, n: {n:}");
+    // println!("- - - - - - - - - -");
+    // println!("d_pos: {d_pos:}, d_neg: {d_neg:}");
+    // println!("pre {pre:}, pro {pro:}, pos {pos:}");
     unsafe {
         // handle when
         // 1 1 1
