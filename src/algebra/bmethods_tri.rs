@@ -212,8 +212,7 @@ pub fn tensor_rlt_block(
     let d_add = n - n.min(p);
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
-        .enumerate()
-        .for_each(|(_mc_idx, (t, x))| {
+        .for_each(|(t, x)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let dy = PC * s_y;
