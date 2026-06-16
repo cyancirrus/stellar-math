@@ -209,7 +209,7 @@ pub fn tensor_rlt_block(
 ) {
     // diagonal
     // suffix c: chunk, suffix a: actual
-    let d_add = n - n.min(p) + 1;
+    let d_add = n - n.min(p);
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
@@ -270,7 +270,7 @@ pub fn tensor_rlt_contraction(
             let mut toffset = 0;
             let jj_end = SIMD_WIDTH.min(n - j);
             // indexes the first zero
-            if d_add + p > d_sub + 1 {
+            if d_add + p > d_sub {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
                     kernel_rlt_mult(

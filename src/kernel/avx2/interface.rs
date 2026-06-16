@@ -106,8 +106,8 @@ pub fn kernel_rlt_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
-    let d_pos = d_add.saturating_sub(d_sub + 1);
-    let d_neg = (d_sub + 1).saturating_sub(d_add);
+    let d_pos = d_add.saturating_sub(d_sub);
+    let d_neg = (d_sub).saturating_sub(d_add);
     // pre how much the diagonal is shifted up and left
     let pre = d_pos;
     // how much triangle processing to be done
