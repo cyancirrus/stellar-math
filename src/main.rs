@@ -21,7 +21,7 @@ use stellar::kernel::matkerns::{kernel_rut_mult, kernel_ut_mult};
 // DEBUG PARAMS
 const MC: usize = 32;
 const PC: usize = 24;
-const NC: usize = 128;
+const NC: usize = 16;
 // // PROD PARAMS
 // const MC: usize = 64;
 // const PC: usize = 256;
@@ -42,8 +42,6 @@ pub fn tensor_rut_block(
     s_t: usize,
 ) {
     // diagonal
-    // suffix c: chunk, suffix a: actual
-    // let d_add = n - n.min(p) + 1;
     let d_add = p - p.min(n) + 1;
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
@@ -105,7 +103,8 @@ pub fn tensor_rut_contraction(
             let mut toffset = 0;
             let jj_end = SIMD_WIDTH.min(n - j);
             // indexes the first zero
-            if d_add + SIMD_WIDTH  > d_sub  {
+            // if d_add + SIMD_WIDTH  > d_sub  {
+            if d_add + jj_end > d_sub {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
                     kernel_rut_mult(
