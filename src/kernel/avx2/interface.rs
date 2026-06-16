@@ -140,13 +140,16 @@ pub fn kernel_rut_mult_simd(
 ) {
     let d_pos = d_add.saturating_sub(d_sub );
     let d_neg = (d_sub).saturating_sub(d_add);
-    
     // pre how much the diagonal is shifted up and left
     let pre = d_neg;
     // how much dense processes to perform
-    let pro = d_pos;
+    let pro = d_pos.min(p);
     // how much triangle processing to be done
+    // let pos = (n.saturating_sub(pre)).min(p.saturating_sub(pro));
     let pos = (n.saturating_sub(pre)).min(p - pro);
+    println!("-------------------");
+    println!("m {m:}, p: {p:}, n: {n:}");
+    println!("- - - - - - - - - -");
     println!("d_pos: {d_pos:}, d_neg: {d_neg:}");
     println!("pre {pre:}, pro {pro:}, pos {pos:}");
     unsafe {

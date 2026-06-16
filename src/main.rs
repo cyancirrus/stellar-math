@@ -18,10 +18,14 @@ use std::cell::RefCell;
 use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
 use stellar::kernel::matkerns::{kernel_rut_mult, kernel_ut_mult};
-// PROD PARAMS
-const MC: usize = 64;
-const PC: usize = 256;
-const NC: usize = 128;
+// DEBUG PARAMS
+const MC: usize = 8;
+const PC: usize = 8;
+const NC: usize = 8;
+// // PROD PARAMS
+// const MC: usize = 64;
+// const PC: usize = 256;
+// const NC: usize = 128;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -133,8 +137,9 @@ use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
         // (1, 1, 1),
-        (8, 8, 8),
-        // (8, 9, 8),
+        // (8, 8, 8),
+        // (8, 8, 10),
+        (8, 16, 8),
         // (1, 1, 8),
         // (1, 8, 1),
         // (6, 4, 8),
