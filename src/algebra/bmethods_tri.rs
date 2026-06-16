@@ -1,6 +1,6 @@
 use crate::algebra::bmethods::{diff_min, pack};
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::matkerns::{kernel_rlt_mult, kernel_lt_mult, kernel_ut_mult};
+use crate::kernel::matkerns::{kernel_lt_mult, kernel_rlt_mult, kernel_ut_mult};
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
@@ -269,7 +269,7 @@ pub fn tensor_rlt_contraction(
             let mut xoffset = 0;
             let mut toffset = 0;
             let jj_end = SIMD_WIDTH.min(n - j);
-            // indexes the first zero 
+            // indexes the first zero
             if d_add + p > d_sub + 1 {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);

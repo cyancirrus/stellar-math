@@ -125,3 +125,41 @@ pub fn kernel_rlt_mult_simd(
         }
     }
 }
+pub fn kernel_rut_mult_simd(
+    mut xptr: *const f32,
+    mut yptr: *const f32,
+    tptr: *mut f32,
+    d_add: usize,
+    d_sub: usize,
+    m: usize,
+    mut p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    let d_pos = d_add.saturating_sub(d_sub + 1);
+    let d_neg = (d_sub + 1).saturating_sub(d_add);
+    // pre how much the diagonal is shifted up and left
+    let pre = d_pos;
+    // how much triangle processing to be done
+    let pos = (n.saturating_sub(pre)).min(p);
+    // how much dense processes to perform
+    let pro = p.saturating_sub(pos + d_neg);
+    unsafe {
+        // handle when
+        // 0 0 0
+        // 0 0 0
+        // * 0 0
+        // * * 0
+        // * * *
+        xptr = xptr.add(d_neg);
+        yptr = yptr.add(d_neg * s_y);
+        p = p.saturating_sub(d_neg);
+        if pos != 0 {
+            rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+        } else {
+            kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        }
+    }
+}

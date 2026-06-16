@@ -178,3 +178,18 @@ pub fn kernel_rlt_mult_simd(
 ) {
     panic!("not yet implemented");
 }
+pub fn kernel_rut_mult_simd(
+    _xptr: *const f32,
+    _yptr: *const f32,
+    _tptr: *mut f32,
+    _: usize,
+    _: usize,
+    _m: usize,
+    _p: usize,
+    _n: usize,
+    _s_x: usize,
+    _s_y: usize,
+    _s_t: usize,
+) {
+    panic!("not yet implemented");
+}

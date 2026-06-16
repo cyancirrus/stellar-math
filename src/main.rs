@@ -17,7 +17,7 @@ use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
 use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
-use stellar::kernel::matkerns::{kernel_rlt_mult, kernel_ut_mult};
+use stellar::kernel::matkerns::{kernel_rut_mult, kernel_ut_mult};
 // PROD PARAMS
 const MC: usize = 64;
 const PC: usize = 256;
@@ -26,7 +26,7 @@ const NC: usize = 128;
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }
-pub fn tensor_rlt_block(
+pub fn tensor_rut_block(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
@@ -58,7 +58,7 @@ pub fn tensor_rlt_block(
                         let yend = pa * s_y;
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
-                        tensor_rlt_contraction(
+                        tensor_rut_contraction(
                             &x_pack,
                             &y_pack,
                             t_accum,
@@ -79,7 +79,7 @@ pub fn tensor_rlt_block(
             })
         });
 }
-pub fn tensor_rlt_contraction(
+pub fn tensor_rut_contraction(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
@@ -99,11 +99,11 @@ pub fn tensor_rlt_contraction(
             let mut xoffset = 0;
             let mut toffset = 0;
             let jj_end = SIMD_WIDTH.min(n - j);
-            // indexes the first zero 
+            // indexes the first zero
             if d_add + p > d_sub + 1 {
                 for i in (0..m).step_by(SIMD_WIDTH) {
                     let ii_end = SIMD_WIDTH.min(m - i);
-                    kernel_rlt_mult(
+                    kernel_rut_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
@@ -229,12 +229,12 @@ fn rlower_equivalence_mkn(m: usize, p: usize, n: usize) {
     let x = generate_random_matrix(m, p);
     let y = generate_random_matrix(p, n);
     let mut y_base = y.clone();
-    filter_lower_triangle(&mut y_base);
+    filter_upper_triangle(&mut y_base);
     // println!("x_base {x:?}");
     // println!("y_base {y_base:?}");
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
-    tensor_rlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
+    tensor_rut_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     let _inspect = NdArray {
         dims: vec![m, n],
         data: result.clone(),
