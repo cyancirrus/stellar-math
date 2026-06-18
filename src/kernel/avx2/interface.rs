@@ -71,8 +71,9 @@ pub fn kernel_tlt_mult_simd(
     // process the diagonal when occurred in range
     let pro = d_pos;
     // process the dense part
-    debug_assert!(m >= d_neg, "m {m:}, d_neg: {d_neg:}");
+    // debug_assert!(m >= d_neg, "m {m:}, d_neg: {d_neg:}");
     let pos = (p - p.min(d_pos)).min(m - d_neg);
+    // let pos = (m - m.min(d_pos)).min(p - d_neg);
     unsafe {
         if pos != 0 {
             ltriangle::lmult_tlt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);

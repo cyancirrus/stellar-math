@@ -45,28 +45,35 @@ pub fn tensor_tlt_block(
     // suffix c: chunk, suffix a: actual
     let d_add = p - p.min(m) + 1;
     t_d.par_chunks_mut(MC * n)
-        .zip(x_d.par_chunks(MC * p))
+        // .zip(x_d.par_chunks(MC * p))
         .enumerate()
-        .for_each(|(mc_idx, (t, x))| {
+        // .for_each(|(mc_idx, (t, x))| {
+        .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let d_add = d_add + mc_idx * MC;
                 let dy = PC * s_y;
-                let ma = x.len() / s_x;
+                let d_xt = PC * s_x;
+                // let ma = x.len() / s_x;
+                let ma = (m - mc_idx * MC).min(PC);
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     t_accum.fill(0f32);
+                    let mut xoffset = 0;
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
                         let yend = pa * s_y;
-                        pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
+                        // pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
+                        // pack transpose?
+                        pack(&x_d[xoffset..], x_pack, pa, ma, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_tlt_contraction(
                             &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, PC, NC, NC,
                         );
                         yoffset += dy;
+                        xoffset += d_xt;
                     }
                     // unpack
                     pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
@@ -90,7 +97,7 @@ pub fn tensor_tlt_contraction(
     unsafe {
         let mut xoffset = 0;
         let mut toffset = 0;
-        let dx = SIMD_WIDTH * s_x;
+        let dx = SIMD_WIDTH;
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
@@ -226,12 +233,13 @@ fn filter_lower_triangle(a: &mut NdArray) {
 fn rupper_equivalence_mkn(m: usize, p: usize, n: usize) {
     let x = generate_random_matrix(m, p);
     let y = generate_random_matrix(p, n);
-    let mut y_base = y.clone();
-    filter_upper_triangle(&mut y_base);
-    // println!("x_base {x:?}");
-    // println!("y_base {y_base:?}");
-    let expected = basic_mult(&x, &y_base);
+    let mut x_base = x.clone();
+    filter_lower_triangle(&mut x_base);
+    x_base.transpose();
+    println!("x_base {x_base:?}");
+    let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
+    // tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     let _inspect = NdArray {
         dims: vec![m, n],

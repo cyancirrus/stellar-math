@@ -108,12 +108,12 @@ pub fn lmult_tlt(
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
             row1 = cfma_accum(mask_t[1], row1, xptr.add(1), b0);
-            row2 = cfma_accum(mask_t[2], row2, xptr.add(s_x + 2), b0);
-            row3 = cfma_accum(mask_t[3], row3, xptr.add(s_x + 3), b0);
-            row4 = cfma_accum(mask_t[4], row4, xptr.add(s_x + 4), b0);
-            row5 = cfma_accum(mask_t[5], row5, xptr.add(s_x + 5), b0);
-            row6 = cfma_accum(mask_t[6], row6, xptr.add(s_x + 6), b0);
-            row7 = cfma_accum(mask_t[7], row7, xptr.add(s_x + 7), b0);
+            row2 = cfma_accum(mask_t[2], row2, xptr.add(2), b0);
+            row3 = cfma_accum(mask_t[3], row3, xptr.add(3), b0);
+            row4 = cfma_accum(mask_t[4], row4, xptr.add(4), b0);
+            row5 = cfma_accum(mask_t[5], row5, xptr.add(5), b0);
+            row6 = cfma_accum(mask_t[6], row6, xptr.add(6), b0);
+            row7 = cfma_accum(mask_t[7], row7, xptr.add(7), b0);
             xptr = xptr.add(s_x);
         }
         // exit early for disappearing contractions
@@ -123,13 +123,13 @@ pub fn lmult_tlt(
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
-            row1 = cfma_accum(mask_t[1], row1, xptr.add(s_x), b0);
-            row2 = cfma_accum(mask_t[2], row2, xptr.add(s_x + 2), b0);
-            row3 = cfma_accum(mask_t[3], row3, xptr.add(s_x + 3), b0);
-            row4 = cfma_accum(mask_t[4], row4, xptr.add(s_x + 4), b0);
-            row5 = cfma_accum(mask_t[5], row5, xptr.add(s_x + 5), b0);
-            row6 = cfma_accum(mask_t[6], row6, xptr.add(s_x + 6), b0);
-            row7 = cfma_accum(mask_t[7], row7, xptr.add(s_x + 7), b0);
+            row1 = cfma_accum(mask_t[1], row1, xptr.add(1), b0);
+            row2 = cfma_accum(mask_t[2], row2, xptr.add(2), b0);
+            row3 = cfma_accum(mask_t[3], row3, xptr.add(3), b0);
+            row4 = cfma_accum(mask_t[4], row4, xptr.add(4), b0);
+            row5 = cfma_accum(mask_t[5], row5, xptr.add(5), b0);
+            row6 = cfma_accum(mask_t[6], row6, xptr.add(6), b0);
+            row7 = cfma_accum(mask_t[7], row7, xptr.add(7), b0);
             xptr = xptr.add(s_x);
         }
         mask_store_ctrl(mask_m[0], mask_n, tptr, row0);
