@@ -115,6 +115,7 @@ pub fn rmult_ut(
         for k in 0..pre {
             mask_t[k] = 0;
         }
+        // hoist this out to an and opperation
         for k in 0..pos {
             mask_t[k + pre] = 0;
             let b0 = mask_load(feed_register(&mask_t), yptr);
