@@ -118,7 +118,7 @@ pub fn lmult_tlt(
             row5 = cfma_accum(mask_t[5], row5, xptr.add(5), b0);
             row6 = cfma_accum(mask_t[6], row6, xptr.add(6), b0);
             row7 = cfma_accum(mask_t[7], row7, xptr.add(7), b0);
-            println!("row0 {row0:?}, xptr {:?}", *xptr);
+            println!("s_x: {s_x:?}, row0 {row0:?}, xptr {:?}", *xptr);
             xptr = xptr.add(s_x);
         }
         // exit early for disappearing contractions
