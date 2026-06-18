@@ -104,6 +104,7 @@ pub fn lmult_tlt(
             mask_t[idx] = 0;
         }
         for _k in 0..pro {
+            println!("dense processing");
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
@@ -120,6 +121,7 @@ pub fn lmult_tlt(
         let mask_m = mask_t;
         for k in 0..pos {
             mask_t[k + pre] = 0;
+            println!("mask_t {mask_t:?}");
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
