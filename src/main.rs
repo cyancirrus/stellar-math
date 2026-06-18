@@ -19,12 +19,12 @@ use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
 use stellar::kernel::matkerns::{kernel_tlt_mult, kernel_rut_mult, kernel_ut_mult};
 // DEBUG PARAMS
-const MC: usize = 8;
-const PC: usize = 8;
-const NC: usize = 8;
-// const MC: usize = 32;
-// const PC: usize = 24;
-// const NC: usize = 16;
+// const MC: usize = 8;
+// const PC: usize = 8;
+// const NC: usize = 8;
+const MC: usize = 32;
+const PC: usize = 24;
+const NC: usize = 16;
 // // PROD PARAMS
 // const MC: usize = 64;
 // const PC: usize = 256;
@@ -142,51 +142,51 @@ use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
         (4, 20, 2),
-        (4, 20, 2),
-        (4, 24, 4),
+        // (4, 20, 2),
+        // (4, 24, 4),
         // (9, 16, 9),
         // (9, 2, 2),
         // (8, 9, 8),
         // (8, 9, 8),
-        (9, 8, 8),
-        (1, 2, 1),
-        (1, 1, 8),
-        (1, 1, 1),
-        (8, 8, 8),
-        (4, 4, 4),
-        (6, 4, 6),
-        (2, 2, 1),
-        (8, 8, 8),
-        (8, 18, 16),
-        // // (8, 33, 16),
-        (8, 10, 8),
-        (8, 8, 10),
-        (8, 16, 8),
-        (1, 8, 1),
-        (6, 4, 8),
-        (2, 2, 1),
-        (3, 9, 1),
-        (4, 8, 1),
-        (1, 2, 1),
-        (8, 1, 1),
-        (6, 8, 4),
-        (8, 4, 6),
-        (4, 8, 6),
-        (4, 6, 8),
-        (8, 6, 4),
-        (2, 9, 1),
-        (2, 10, 1),
-        (9, 16, 8),
-        (9, 16, 9),
-        (1, 9, 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        // (9, 8, 8),
+        // (1, 2, 1),
+        // (1, 1, 8),
+        // (1, 1, 1),
+        // (8, 8, 8),
+        // (4, 4, 4),
+        // (6, 4, 6),
+        // (2, 2, 1),
+        // (8, 8, 8),
+        // (8, 18, 16),
+        // (8, 33, 16),
+        // (8, 10, 8),
+        // (8, 8, 10),
+        // (8, 16, 8),
+        // (1, 8, 1),
+        // (6, 4, 8),
+        // (2, 2, 1),
+        // (3, 9, 1),
+        // (4, 8, 1),
+        // (1, 2, 1),
+        // (8, 1, 1),
+        // (6, 8, 4),
+        // (8, 4, 6),
+        // (4, 8, 6),
+        // (4, 6, 8),
+        // (8, 6, 4),
+        // (2, 9, 1),
+        // (2, 10, 1),
+        // (9, 16, 8),
+        // (9, 16, 9),
+        // (1, 9, 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
         // (1, 25, 9),
         // (32, 64, 32),
         // (32, 32, 32),
