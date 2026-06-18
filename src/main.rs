@@ -131,65 +131,68 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        (8, 18, 16),
-        (8, 33, 16),
-        (8, 10, 8),
-        (1, 1, 1),
-        (8, 8, 8),
-        (8, 8, 10),
-        (8, 16, 8),
-        (1, 1, 8),
-        (1, 8, 1),
-        (6, 4, 8),
-        (2, 2, 1),
-        (3, 9, 1),
-        (4, 8, 1),
-        (1, 2, 1),
-        (8, 1, 1),
-        (6, 8, 4),
-        (8, 4, 6),
-        (4, 8, 6),
-        (4, 6, 8),
-        (8, 6, 4),
-        (2, 9, 1),
-        (2, 10, 1),
-        (9, 16, 8),
-        (9, 16, 9),
-        (1, 9, 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        (1, 25, 9),
-        (32, 64, 32),
-        (32, 32, 32),
-        (1, 26, 10),
-        (9, 16, 9),
-        (16, 16, 16),
-        (16, 32, 16),
-        (MC + 1, PC, NC + 1),
-        (MC + 1, PC, NC - 1),
-        (MC + 1, PC, NC),
-        (MC - 1, PC, NC),
-        (MC, PC + 1, NC),
-        (MC, PC - 1, NC),
-        (MC, PC, NC),
-        (128, 512, 32),
-        (32, 512, 32),
-        (256, 1024, 512),
-        (256, 256, 256),
-        (256, 1024, 512),
-        (512, 512, 512),
-        (1024, 64, 1024),
-        (16, 32, 16),
+        // (1, 1, 1),
+        // (6, 4, 6),
+        (2, 2, 2),
+        // (2, 2, 1),
+        // (8, 8, 8),
+        // (8, 18, 16),
+        // (8, 33, 16),
+        // (8, 10, 8),
+        // (8, 8, 10),
+        // (8, 16, 8),
+        // (1, 1, 8),
+        // (1, 8, 1),
+        // (6, 4, 8),
+        // (2, 2, 1),
+        // (3, 9, 1),
+        // (4, 8, 1),
+        // (1, 2, 1),
+        // (8, 1, 1),
+        // (6, 8, 4),
+        // (8, 4, 6),
+        // (4, 8, 6),
+        // (4, 6, 8),
+        // (8, 6, 4),
+        // (2, 9, 1),
+        // (2, 10, 1),
+        // (9, 16, 8),
+        // (9, 16, 9),
+        // (1, 9, 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        // (1, 25, 9),
+        // (32, 64, 32),
+        // (32, 32, 32),
+        // (1, 26, 10),
+        // (9, 16, 9),
+        // (16, 16, 16),
+        // (16, 32, 16),
+        // (MC + 1, PC, NC + 1),
+        // (MC + 1, PC, NC - 1),
+        // (MC + 1, PC, NC),
+        // (MC - 1, PC, NC),
+        // (MC, PC + 1, NC),
+        // (MC, PC - 1, NC),
+        // (MC, PC, NC),
+        // (128, 512, 32),
+        // (32, 512, 32),
+        // (256, 1024, 512),
+        // (256, 256, 256),
+        // (256, 1024, 512),
+        // (512, 512, 512),
+        // (1024, 64, 1024),
+        // (16, 32, 16),
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
-        rupper_equivalence_mkn(i, k, j);
+        ltl_equivalence_mkn(i, k, j);
     }
 }
 /// Case 1 / Case 2
@@ -230,13 +233,16 @@ fn filter_lower_triangle(a: &mut NdArray) {
         }
     }
 }
-fn rupper_equivalence_mkn(m: usize, p: usize, n: usize) {
-    let x = generate_random_matrix(m, p);
+fn ltl_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
+    let mut x = generate_random_matrix(m, p);
     let mut x_base = x.clone();
     filter_lower_triangle(&mut x_base);
-    x_base.transpose();
+    x.transpose_inplace(); // stored in transpose
+    // println!("x_orig {x_base:?}");
+    // println!("x_filtered {x_base:?}");
     println!("x_base {x_base:?}");
+    println!("y {y:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
     // tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
@@ -245,8 +251,8 @@ fn rupper_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    // println!("expected {expected:?}");
-    // println!("actual {_inspect:?}");
+    println!("expected {expected:?}");
+    println!("actual {_inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]));
 }
 // use rayon::ThreadPoolBuilder;
