@@ -64,7 +64,7 @@ pub fn tensor_tlt_block(
                 // how many columns 
                 // let ma = (m - mc_idx * PC).min(MC);
                 println!("m {m:}, p: {p:}, mc_idx {mc_idx:}, PC: {PC:}");
-                let ma = (m - mc_idx * MC).min(MC);
+                let ma = (m - mc_idx * MC).min(PC);
                 // let ma = (m - mc_idx * PC).min(MC);
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
