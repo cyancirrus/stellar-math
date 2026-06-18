@@ -64,6 +64,7 @@ pub fn kernel_tlt_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
+    // TODO: no transpose implementation yet
     let d_pos = d_add.saturating_sub(d_sub);
     let d_neg = d_sub.saturating_sub(d_add);
     // preprocess the diagonal when on boundary
@@ -73,17 +74,12 @@ pub fn kernel_tlt_mult_simd(
     // process the dense part
     // debug_assert!(m >= d_neg, "m {m:}, d_neg: {d_neg:}");
     let pos = (p - p.min(d_pos)).min(m - d_neg);
-    // let pos = (m - m.min(d_pos)).min(p - d_neg);
-    // println!("m {m:}, p {p:}, n {n:}"); 
-    // println!("d_pos {d_pos:?}, d_neg {d_neg:?}"); 
-    // println!("pre {pre:}, pro {pro:}, pos {pos:}");
     unsafe {
-    //     // if pos != 0 {
-            ltriangle::lmult_tlt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
-    //     // } else {
-    //     // TODO: no transpose implementation yet
-    //     //     kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-    //     // }
+        // if pos != 0 {
+        ltriangle::lmult_tlt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+        // } else {
+        //     kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        // }
     }
 }
 pub fn kernel_ut_mult_simd(

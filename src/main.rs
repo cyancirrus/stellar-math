@@ -17,19 +17,23 @@ use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
 use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
-use stellar::kernel::matkerns::{kernel_tlt_mult, kernel_rut_mult, kernel_ut_mult};
-// DEBUG PARAMS
-const MC: usize = 8;
-const PC: usize = 8;
-const NC: usize = 8;
-// const MC: usize = 32;
+use stellar::kernel::matkerns::{kernel_rut_mult, kernel_tlt_mult, kernel_ut_mult};
+// // DEBUG PARAMS
+// const MC: usize = 8;
+// const PC: usize = 16;
+// const NC: usize = 8;
+
+// const MC: usize = 8;
+// const PC: usize = 8;
+// const NC: usize = 8;
+//
 // const MC: usize = 32;
 // const PC: usize = 24;
 // const NC: usize = 16;
 // // PROD PARAMS
-// const MC: usize = 64;
-// const PC: usize = 256;
-// const NC: usize = 128;
+const MC: usize = 64;
+const PC: usize = 256;
+const NC: usize = 128;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -49,41 +53,27 @@ pub fn tensor_tlt_block(
     // suffix c: chunk, suffix a: actual
     let d_add = p - p.min(m) + 1;
     t_d.par_chunks_mut(MC * n)
-        // .zip(x_d.par_chunks(MC * p))
         .enumerate()
         .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                // 
-                // let d_add = d_add + mc_idx * MC;
                 let d_add = d_add + mc_idx * MC;
                 let dy = PC * s_y;
-                // let d_xt = PC * s_x;
                 let d_xt = PC * s_x;
-                // let ma = x.len() / s_x;
-                // how many columns 
-                // let ma = (m - mc_idx * PC).min(MC);
-                // println!("m {m:}, p: {p:}, mc_idx {mc_idx:}, PC: {PC:}");
-                let ma = (m - mc_idx * MC).min(MC);
-                // let ma = (m - mc_idx * PC).min(MC);
-                let (xend, tend) = (ma * s_x, ma * s_t);
+                // let ma = (m - mc_idx * MC).min(MC);
+                let ma = diff_min(m, mc_idx * MC, MC);
+                // let (xend, tend) = (ma * s_x, ma * s_t);
+                let tend = ma * s_t;
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     t_accum.fill(0f32);
-                    // x_pack.fill(0f32);
-
+                    // base column offset
                     let mut xoffset = mc_idx * MC;
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
                         let yend = pa * s_y;
-                        // pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
-                        // pack transpose?
-                        // println!("pa: {pa:}, ma: {ma:}");
-                        // println!("xoffset: {xoffset:?}");
-                        // pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
                         pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
-                        // println!("x_pack {x_pack:?}");
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_tlt_contraction(
                             &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, MC, NC, NC,
@@ -91,7 +81,6 @@ pub fn tensor_tlt_block(
                         yoffset += dy;
                         xoffset += d_xt;
                     }
-                    // return ;
                     // unpack
                     pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
@@ -118,11 +107,9 @@ pub fn tensor_tlt_contraction(
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
-            if d_add + ii_end > d_sub { 
-            // if true { 
+            if d_add + ii_end > d_sub {
                 for j in (0..n).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(n - j);
-                    // println!("calling");
                     kernel_tlt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -273,8 +260,7 @@ fn ltl_equivalence_mkn(m: usize, p: usize, n: usize) {
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
     // tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
-    // QUESTION s_x = m?
-    // tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
+    // m, n, n b/c X is s tored in it's transposed state
     tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, m, n, n);
     let _inspect = NdArray {
         dims: vec![m, n],
@@ -282,7 +268,10 @@ fn ltl_equivalence_mkn(m: usize, p: usize, n: usize) {
     };
     // println!("expected {expected:?}");
     // println!("actual {_inspect:?}");
-    assert!(approx_vector_eq(&expected.data, &result[..m * n]), "FAILURE WAS ({m:}, {p:}, {n:})");
+    assert!(
+        approx_vector_eq(&expected.data, &result[..m * n]),
+        "FAILURE WAS ({m:}, {p:}, {n:})"
+    );
 }
 // use rayon::ThreadPoolBuilder;
 fn main() {

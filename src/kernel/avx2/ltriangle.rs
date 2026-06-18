@@ -86,7 +86,9 @@ pub fn lmult_tlt(
     s_y: usize,
     s_t: usize,
 ) {
+    // let s = a';
     // Sum[K] Union[I] { g^i = aik b^k }
+    // Sum[K] Union[I] { g^i = ski b^k }
     // excels at processing panels of data ie 8 x K * K x 8;
     unsafe {
         let mask_n_ptr = MASK[n].as_ptr() as *const __m256i;
@@ -103,11 +105,7 @@ pub fn lmult_tlt(
         for idx in 0..pre {
             mask_t[idx] = 0;
         }
-        // println!("mask_n {mask_n:?}");
-        // println!("mask_n {:?}", MASK[n]);
         for _k in 0..pro {
-            // println!("dense processing");
-            // println!("mask_t {mask_t:?}");
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
@@ -118,15 +116,12 @@ pub fn lmult_tlt(
             row5 = cfma_accum(mask_t[5], row5, xptr.add(5), b0);
             row6 = cfma_accum(mask_t[6], row6, xptr.add(6), b0);
             row7 = cfma_accum(mask_t[7], row7, xptr.add(7), b0);
-            // println!("s_x: {s_x:?}, row0 {row0:?}, xptr {:?}", *xptr);
             xptr = xptr.add(s_x);
         }
         // exit early for disappearing contractions
         let mask_m = mask_t;
         for k in 0..pos {
             mask_t[k + pre] = 0;
-            // println!("mask_t {mask_t:?}");
-            // println!("val {:?}", *xptr.add(2));
             let b0 = mask_load(mask_n, yptr);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
