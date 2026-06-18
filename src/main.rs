@@ -24,7 +24,7 @@ use stellar::kernel::matkerns::{kernel_tlt_mult, kernel_rut_mult, kernel_ut_mult
 // const NC: usize = 8;
 // const MC: usize = 32;
 const MC: usize = 32;
-const PC: usize = 32;
+const PC: usize = 64;
 // const NC: usize = 16;
 const NC: usize = 16;
 // // PROD PARAMS
