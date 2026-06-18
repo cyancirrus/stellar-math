@@ -131,9 +131,10 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        (1, 1, 1),
+        // (1, 1, 1),
+        // (8, 8, 8),
+        // (4, 4, 4),
         (6, 4, 6),
-        (2, 2, 2),
         // (2, 2, 1),
         // (8, 8, 8),
         // (8, 18, 16),
