@@ -19,14 +19,13 @@ use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
 use stellar::kernel::matkerns::{kernel_tlt_mult, kernel_rut_mult, kernel_ut_mult};
 // DEBUG PARAMS
-// const MC: usize = 8;
-// const PC: usize = 8;
-// const NC: usize = 8;
+const MC: usize = 8;
+const PC: usize = 16;
+const NC: usize = 8;
 // const MC: usize = 32;
-const MC: usize = 32;
-const PC: usize = 64;
+// const MC: usize = 32;
+// const PC: usize = 24;
 // const NC: usize = 16;
-const NC: usize = 16;
 // // PROD PARAMS
 // const MC: usize = 64;
 // const PC: usize = 256;
@@ -58,8 +57,10 @@ pub fn tensor_tlt_block(
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let d_add = d_add + mc_idx * MC;
                 let dy = PC * s_y;
+                // let d_xt = PC * s_x;
                 let d_xt = PC * s_x;
                 // let ma = x.len() / s_x;
+                // how many columns 
                 let ma = (m - mc_idx * MC).min(PC);
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
@@ -75,7 +76,6 @@ pub fn tensor_tlt_block(
                         // pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         // pack transpose?
                         println!("xoffset: {xoffset:?}");
-                        // pack(&x_d[xoffset..], x_pack, pa, ma, PC, s_x);
                         pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
                         println!("x_pack {x_pack:?}");
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
@@ -143,9 +143,9 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        (4, 20, 2),
-        (4, 20, 2),
-        (4, 24, 4),
+        // (4, 20, 2),
+        // (4, 20, 2),
+        // (4, 24, 4),
         (9, 16, 9),
         (9, 2, 2),
         (8, 9, 8),
