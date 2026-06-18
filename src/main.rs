@@ -62,7 +62,10 @@ pub fn tensor_tlt_block(
                 let d_xt = PC * s_x;
                 // let ma = x.len() / s_x;
                 // how many columns 
-                let ma = (m - mc_idx * MC).min(PC);
+                // let ma = (m - mc_idx * PC).min(MC);
+                println!("m {m:}, p: {p:}, mc_idx {mc_idx:}, PC: {PC:}");
+                let ma = (m - mc_idx * MC).min(MC);
+                // let ma = (m - mc_idx * PC).min(MC);
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
@@ -76,7 +79,9 @@ pub fn tensor_tlt_block(
                         let yend = pa * s_y;
                         // pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         // pack transpose?
+                        println!("pa: {pa:}, ma: {ma:}");
                         println!("xoffset: {xoffset:?}");
+                        // pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
                         pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
                         println!("x_pack {x_pack:?}");
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
@@ -86,6 +91,7 @@ pub fn tensor_tlt_block(
                         yoffset += dy;
                         xoffset += d_xt;
                     }
+                    // return ;
                     // unpack
                     pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
