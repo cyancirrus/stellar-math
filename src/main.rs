@@ -19,9 +19,12 @@ use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
 use stellar::kernel::matkerns::{kernel_tlt_mult, kernel_rut_mult, kernel_ut_mult};
 // DEBUG PARAMS
-const MC: usize = 32;
-const PC: usize = 24;
-const NC: usize = 16;
+const MC: usize = 8;
+const PC: usize = 8;
+const NC: usize = 8;
+// const MC: usize = 32;
+// const PC: usize = 24;
+// const NC: usize = 16;
 // // PROD PARAMS
 // const MC: usize = 64;
 // const PC: usize = 256;
@@ -60,14 +63,19 @@ pub fn tensor_tlt_block(
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     t_accum.fill(0f32);
-                    let mut xoffset = 0;
+                    // x_pack.fill(0f32);
+
+                    let mut xoffset = mc_idx * MC;
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
                         let yend = pa * s_y;
                         // pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         // pack transpose?
-                        pack(&x_d[xoffset..], x_pack, pa, ma, PC, s_x);
+                        println!("xoffset: {xoffset:?}");
+                        // pack(&x_d[xoffset..], x_pack, pa, ma, PC, s_x);
+                        pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
+                        println!("x_pack {x_pack:?}");
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_tlt_contraction(
                             &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, PC, NC, NC,
@@ -101,9 +109,11 @@ pub fn tensor_tlt_contraction(
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
-            if d_add + ii_end > d_sub {
+            if d_add + ii_end > d_sub { 
+            // if true { 
                 for j in (0..n).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(n - j);
+                    println!("calling");
                     kernel_tlt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -131,8 +141,14 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        (8, 9, 8),
-        (9, 8, 8),
+        (4, 20, 2),
+        // (4, 20, 2),
+        // (4, 24, 4),
+        // // (9, 16, 9),
+        // // (9, 2, 2),
+        // // (8, 9, 8),
+        // // (8, 9, 8),
+        // (9, 8, 8),
         // (1, 2, 1),
         // (1, 1, 8),
         // (1, 1, 1),
@@ -142,7 +158,7 @@ fn test_gemm_equivalence() {
         // (2, 2, 1),
         // (8, 8, 8),
         // (8, 18, 16),
-        // (8, 33, 16),
+        // // // (8, 33, 16),
         // (8, 10, 8),
         // (8, 8, 10),
         // (8, 16, 8),
@@ -243,20 +259,21 @@ fn ltl_equivalence_mkn(m: usize, p: usize, n: usize) {
     let mut x_base = x.clone();
     filter_lower_triangle(&mut x_base);
     x.transpose_inplace(); // stored in transpose
-    // println!("x_base {x_base:?}");
+    println!("x_base {x_base:?}");
     // println!("y {y:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
     // tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     // QUESTION s_x = m?
+    // tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, m, n, n);
     let _inspect = NdArray {
         dims: vec![m, n],
         data: result.clone(),
     };
-    // println!("expected {expected:?}");
-    // println!("actual {_inspect:?}");
-    assert!(approx_vector_eq(&expected.data, &result[..m * n]));
+    println!("expected {expected:?}");
+    println!("actual {_inspect:?}");
+    assert!(approx_vector_eq(&expected.data, &result[..m * n]), "FAILURE WAS ({m:}, {p:}, {n:})");
 }
 // use rayon::ThreadPoolBuilder;
 fn main() {

@@ -69,19 +69,21 @@ pub fn kernel_tlt_mult_simd(
     // preprocess the diagonal when on boundary
     let pre = d_neg;
     // process the diagonal when occurred in range
-    let pro = d_pos;
+    let pro = d_pos.min(p);
     // process the dense part
     // debug_assert!(m >= d_neg, "m {m:}, d_neg: {d_neg:}");
     let pos = (p - p.min(d_pos)).min(m - d_neg);
     // let pos = (m - m.min(d_pos)).min(p - d_neg);
+    println!("m {m:}, p {p:}, n {n:}"); 
+    println!("d_pos {d_pos:?}, d_neg {d_neg:?}"); 
     println!("pre {pre:}, pro {pro:}, pos {pos:}");
     unsafe {
-        // if pos != 0 {
+    //     // if pos != 0 {
             ltriangle::lmult_tlt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
-            // to implement something here
-        // } else {
-        //     kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-        // }
+    //     // } else {
+    //     // TODO: no transpose implementation yet
+    //     //     kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+    //     // }
     }
 }
 pub fn kernel_ut_mult_simd(
