@@ -20,7 +20,7 @@ use stellar::arch::SIMD_WIDTH;
 use stellar::kernel::matkerns::{kernel_tlt_mult, kernel_rut_mult, kernel_ut_mult};
 // DEBUG PARAMS
 const MC: usize = 8;
-const PC: usize = 16;
+const PC: usize = 8;
 const NC: usize = 8;
 // const MC: usize = 32;
 // const MC: usize = 32;
@@ -63,8 +63,8 @@ pub fn tensor_tlt_block(
                 // let ma = x.len() / s_x;
                 // how many columns 
                 // let ma = (m - mc_idx * PC).min(MC);
-                println!("m {m:}, p: {p:}, mc_idx {mc_idx:}, PC: {PC:}");
-                let ma = (m - mc_idx * MC).min(PC);
+                // println!("m {m:}, p: {p:}, mc_idx {mc_idx:}, PC: {PC:}");
+                let ma = (m - mc_idx * MC).min(MC);
                 // let ma = (m - mc_idx * PC).min(MC);
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
@@ -79,11 +79,11 @@ pub fn tensor_tlt_block(
                         let yend = pa * s_y;
                         // pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         // pack transpose?
-                        println!("pa: {pa:}, ma: {ma:}");
-                        println!("xoffset: {xoffset:?}");
+                        // println!("pa: {pa:}, ma: {ma:}");
+                        // println!("xoffset: {xoffset:?}");
                         // pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
                         pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
-                        println!("x_pack {x_pack:?}");
+                        // println!("x_pack {x_pack:?}");
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_tlt_contraction(
                             &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, MC, NC, NC,
@@ -122,7 +122,7 @@ pub fn tensor_tlt_contraction(
             // if true { 
                 for j in (0..n).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(n - j);
-                    println!("calling");
+                    // println!("calling");
                     kernel_tlt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
@@ -150,9 +150,9 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
-        // (4, 20, 2),
-        // (4, 20, 2),
-        // (4, 24, 4),
+        (4, 20, 2),
+        (4, 20, 2),
+        (4, 24, 4),
         (9, 16, 9),
         (9, 2, 2),
         (8, 9, 8),
@@ -210,14 +210,14 @@ fn test_gemm_equivalence() {
         (MC, PC + 1, NC),
         (MC, PC - 1, NC),
         (MC, PC, NC),
-        // (128, 512, 32),
-        // (32, 512, 32),
-        // (256, 1024, 512),
-        // (256, 256, 256),
-        // (256, 1024, 512),
-        // (512, 512, 512),
-        // (1024, 64, 1024),
-        // (16, 32, 16),
+        (128, 512, 32),
+        (32, 512, 32),
+        (256, 1024, 512),
+        (256, 256, 256),
+        (256, 1024, 512),
+        (512, 512, 512),
+        (1024, 64, 1024),
+        (16, 32, 16),
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
@@ -268,7 +268,7 @@ fn ltl_equivalence_mkn(m: usize, p: usize, n: usize) {
     let mut x_base = x.clone();
     filter_lower_triangle(&mut x_base);
     x.transpose_inplace(); // stored in transpose
-    println!("x_base {x_base:?}");
+    // println!("x_base {x_base:?}");
     // println!("y {y:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
@@ -280,8 +280,8 @@ fn ltl_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    println!("expected {expected:?}");
-    println!("actual {_inspect:?}");
+    // println!("expected {expected:?}");
+    // println!("actual {_inspect:?}");
     assert!(approx_vector_eq(&expected.data, &result[..m * n]), "FAILURE WAS ({m:}, {p:}, {n:})");
 }
 // use rayon::ThreadPoolBuilder;
