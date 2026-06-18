@@ -17,7 +17,7 @@ use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
 use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
-use stellar::kernel::matkerns::{kernel_rut_mult, kernel_ut_mult};
+use stellar::kernel::matkerns::{kernel_tlt_mult, kernel_rut_mult, kernel_ut_mult};
 // DEBUG PARAMS
 const MC: usize = 32;
 const PC: usize = 24;
@@ -30,7 +30,7 @@ const NC: usize = 16;
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }
-pub fn tensor_rut_block(
+pub fn tensor_tlt_block(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
@@ -42,13 +42,15 @@ pub fn tensor_rut_block(
     s_t: usize,
 ) {
     // diagonal
-    let d_add = p - p.min(n) + 1;
+    // suffix c: chunk, suffix a: actual
+    let d_add = p - p.min(m) + 1;
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .enumerate()
         .for_each(|(mc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
+                let d_add = d_add + mc_idx * MC;
                 let dy = PC * s_y;
                 let ma = x.len() / s_x;
                 let (xend, tend) = (ma * s_x, ma * s_t);
@@ -61,18 +63,8 @@ pub fn tensor_rut_block(
                         let yend = pa * s_y;
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
-                        tensor_rut_contraction(
-                            &x_pack,
-                            &y_pack,
-                            t_accum,
-                            d_add + nc,
-                            pc,
-                            ma,
-                            pa,
-                            na,
-                            PC,
-                            NC,
-                            NC,
+                        tensor_tlt_contraction(
+                            &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, PC, NC, NC,
                         );
                         yoffset += dy;
                     }
@@ -82,12 +74,12 @@ pub fn tensor_rut_block(
             })
         });
 }
-pub fn tensor_rut_contraction(
+pub fn tensor_tlt_contraction(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
     mut d_add: usize,
-    mut d_sub: usize,
+    d_sub: usize,
     m: usize,
     p: usize,
     n: usize,
@@ -96,18 +88,16 @@ pub fn tensor_rut_contraction(
     s_t: usize,
 ) {
     unsafe {
+        let mut xoffset = 0;
+        let mut toffset = 0;
         let dx = SIMD_WIDTH * s_x;
         let dt = SIMD_WIDTH * s_t;
-        for j in (0..n).step_by(SIMD_WIDTH) {
-            let mut xoffset = 0;
-            let mut toffset = 0;
-            let jj_end = SIMD_WIDTH.min(n - j);
-            // indexes the first zero
-            // if d_add + SIMD_WIDTH  > d_sub  {
-            if d_add + jj_end > d_sub {
-                for i in (0..m).step_by(SIMD_WIDTH) {
-                    let ii_end = SIMD_WIDTH.min(m - i);
-                    kernel_rut_mult(
+        for i in (0..m).step_by(SIMD_WIDTH) {
+            let ii_end = SIMD_WIDTH.min(m - i);
+            if d_add + ii_end > d_sub {
+                for j in (0..n).step_by(SIMD_WIDTH) {
+                    let jj_end = SIMD_WIDTH.min(n - j);
+                    kernel_tlt_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
@@ -119,11 +109,11 @@ pub fn tensor_rut_contraction(
                         s_x,
                         s_y,
                         s_t,
-                    );
-                    toffset += dt;
-                    xoffset += dx;
+                    )
                 }
             }
+            toffset += dt;
+            xoffset += dx;
             d_add += SIMD_WIDTH;
         }
     }
@@ -242,7 +232,7 @@ fn rupper_equivalence_mkn(m: usize, p: usize, n: usize) {
     // println!("y_base {y_base:?}");
     let expected = basic_mult(&x, &y_base);
     let mut result = vec![0f32; m * n];
-    tensor_rut_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
+    tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     let _inspect = NdArray {
         dims: vec![m, n],
         data: result.clone(),

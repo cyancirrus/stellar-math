@@ -21,7 +21,6 @@ pub fn kernel_mult_simd(
         default::kernel_mult_scalar(x, y, t, m, p, n, s_x, s_y, s_t);
     }
 }
-
 #[inline(always)]
 pub fn kernel_lt_mult_simd(
     mut xptr: *const f32,
@@ -37,6 +36,22 @@ pub fn kernel_lt_mult_simd(
     s_t: usize,
 ) {
     default::kernel_lt_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+}
+#[inline(always)]
+pub fn kernel_tlt_mult_simd(
+    mut xptr: *const f32,
+    yptr: *const f32,
+    mut tptr: *mut f32,
+    d_add: usize,
+    d_sub: usize,
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    default::kernel_tlt_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
 }
 #[inline(always)]
 pub fn kernel_rlt_mult_simd(
