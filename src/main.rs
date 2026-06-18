@@ -51,10 +51,11 @@ pub fn tensor_tlt_block(
     t_d.par_chunks_mut(MC * n)
         // .zip(x_d.par_chunks(MC * p))
         .enumerate()
-        // .for_each(|(mc_idx, (t, x))| {
         .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
+                // 
+                // let d_add = d_add + mc_idx * MC;
                 let d_add = d_add + mc_idx * MC;
                 let dy = PC * s_y;
                 // let d_xt = PC * s_x;
