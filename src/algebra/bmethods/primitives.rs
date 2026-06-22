@@ -2,7 +2,6 @@ use crate::arch::SIMD_WIDTH;
 use crate::kernel::matkerns::kernel_mult;
 use rayon::prelude::*;
 
-const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 
 /// # pack transfers a copy of data from d to pack
 /// * to inverse simply exchange d and b
