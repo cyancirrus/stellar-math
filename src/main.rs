@@ -52,18 +52,19 @@ pub fn tensor_tblockkern(
 ) {
     // suffix c: chunk, suffix a: actual
     t_d.par_chunks_mut(MC * n)
-        .zip(x_d.par_chunks(MC * p))
-        .for_each(|(t, x)| {
+        .enumerate()
+        .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
+                let d_add = mc_idx * MC;
                 let dy = PC * s_y;
-                let (xend, mut yend, tend);
-                let rows = x.len() / s_x;
-                let ma = rows;
-                (xend, tend) = (ma * s_x, ma * s_t);
+                let d_xt = PC * s_x;
+                let ma = diff_min(m, mc_idx * MC, MC);
+                let tend = ma * s_t;
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     t_accum.fill(0f32);
+                    let mut xoffset = mc_idx * MC;
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
@@ -72,6 +73,7 @@ pub fn tensor_tblockkern(
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_tcontraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
                         yoffset += dy;
+                        xoffset += d_xt;
                     }
                     // unpack
                     pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
@@ -93,7 +95,7 @@ pub fn tensor_contraction(
     unsafe {
         let mut xoffset = 0;
         let mut toffset = 0;
-        let dx = SIMD_WIDTH * s_x;
+        let dx = SIMD_WIDTH;
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
