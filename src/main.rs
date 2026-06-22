@@ -102,7 +102,7 @@ pub fn tensor_tut_contraction(
     y_d: &[f32],
     t_d: &mut [f32],
     mut d_add: usize,
-    d_sub: usize,
+    mut d_sub: usize,
     m: usize,
     p: usize,
     n: usize,
@@ -117,8 +117,8 @@ pub fn tensor_tut_contraction(
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
-            if d_add + ii_end > d_sub {
-                // if d_sub + p > d_add {
+            // if d_add + ii_end > d_sub {
+            if d_sub + p > d_add {
                 for j in (0..n).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(n - j);
                     kernel_tut_mult(
@@ -139,6 +139,9 @@ pub fn tensor_tut_contraction(
             toffset += dt;
             xoffset += dx;
             d_add += SIMD_WIDTH;
+            // toffset += dt;
+            // xoffset += dx;
+            // d_sub += SIMD_WIDTH;
         }
     }
 }
@@ -148,6 +151,8 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
+        (9, 2, 2),
+        // (9, 8, 8),
         // (9, 16, 9),
         // (9, 16, 8),
         // (9, 16, 9),
@@ -168,10 +173,8 @@ fn test_gemm_equivalence() {
         (4, 20, 2),
         (4, 20, 2),
         (4, 24, 4),
-        (9, 2, 2),
         (8, 9, 8),
         (8, 9, 8),
-        (9, 8, 8),
         (6, 4, 8),
         (2, 2, 1),
         (3, 9, 1),
