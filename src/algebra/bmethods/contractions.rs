@@ -1,4 +1,3 @@
-#![allow(unused)]
 use crate::arch::SIMD_WIDTH;
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;

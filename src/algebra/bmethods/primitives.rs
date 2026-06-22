@@ -1,4 +1,3 @@
-#![allow(unused)]
 use crate::arch::SIMD_WIDTH;
 use crate::kernel::matkerns::{kernel_mult, kernel_tmult};
 use crate::structure::ndarray::NdArray;

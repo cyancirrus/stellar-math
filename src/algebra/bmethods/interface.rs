@@ -1,4 +1,3 @@
-#![allow(unused)]
 use crate::arch::SIMD_WIDTH;
 use crate::kernel::matkerns::{kernel_mult, kernel_tmult};
 use crate::structure::ndarray::NdArray;
@@ -67,7 +66,7 @@ pub fn tensor_tkernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 pub fn tensor_lt_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
-    let (d_add, d_sub) = (p - p.min(m) + 1, 0 );
+    let (d_add, d_sub) = (p - p.min(m) + 1, 0);
     if m <= MINIKERN_GATE && n <= MINIKERN_GATE {
         tensor_lt_contraction(&x.data, &y.data, target, d_add, d_sub, m, p, n, p, n, n);
     } else {
@@ -89,7 +88,7 @@ pub fn tensor_ut_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 pub fn tensor_rlt_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
-    let (d_add, d_sub) = (n - n.min(p), 0 );
+    let (d_add, d_sub) = (n - n.min(p), 0);
     if m <= MINIKERN_GATE && n <= MINIKERN_GATE {
         tensor_rlt_contraction(&x.data, &y.data, target, d_add, d_sub, m, p, n, p, n, n);
     } else {
@@ -100,7 +99,7 @@ pub fn tensor_rlt_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 pub fn tensor_rut_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
-    let (d_add, d_sub) = (p - p.min(n) + 1, 0 );
+    let (d_add, d_sub) = (p - p.min(n) + 1, 0);
     if m <= MINIKERN_GATE && n <= MINIKERN_GATE {
         tensor_rut_contraction(&x.data, &y.data, target, d_add, d_sub, m, p, n, p, n, n);
     } else {
@@ -111,7 +110,7 @@ pub fn tensor_rut_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 pub fn tensor_tlt_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[0], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[1], y.dims[0], y.dims[1]);
-    let (d_add, d_sub) = (p - p.min(m) + 1, 0 );
+    let (d_add, d_sub) = (p - p.min(m) + 1, 0);
     if m <= MINIKERN_GATE && n <= MINIKERN_GATE {
         tensor_tlt_contraction(&x.data, &y.data, target, d_add, d_sub, m, p, n, m, n, n);
     } else {
@@ -138,7 +137,7 @@ mod test_kernel_block {
     use crate::equality::approximate::approx_vector_eq;
     use crate::random::generation::generate_random_matrix;
     use crate::structure::ndarray::NdArray;
-    
+
     const MC: usize = 16;
     const PC: usize = 32;
     const NC: usize = 64;
@@ -262,7 +261,7 @@ mod test_kernel_block {
 }
 #[cfg(test)]
 #[cfg(feature = "avx2")]
-mod test_kernel_trapezoids{
+mod test_kernel_trapezoids {
     use super::*;
     use crate::algebra::ndmethods::basic_mult;
     use crate::equality::approximate::approx_vector_eq;
