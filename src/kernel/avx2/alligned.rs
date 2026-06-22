@@ -4,7 +4,7 @@ use std::arch::x86_64::{
     _mm256_loadu_ps, _mm256_permute2f128_ps, _mm256_setzero_ps, _mm256_storeu_ps,
     _mm256_unpackhi_pd, _mm256_unpackhi_ps, _mm256_unpacklo_pd, _mm256_unpacklo_ps,
 };
-use stellar_macros::kernel_mult_alligned;
+use stellar_macros::{kernel_mult_alligned, kernel_tmult_alligned};
 macro_rules! fma_accum {
     ($acc:expr, $cptr:expr, $data:expr) => {
         $acc = _mm256_fmadd_ps(_mm256_broadcast_ss(&*$cptr), $data, $acc);
@@ -21,6 +21,18 @@ pub fn kernel_imult_simd_aligned(
     s_t: usize,
 ) {
     kernel_mult_alligned!(xptr, yptr, tptr, SIMD_WIDTH, p, SIMD_WIDTH, s_x, s_y, s_t);
+}
+#[target_feature(enable = "avx,avx2,fma")]
+pub fn kernel_tmult_simd_aligned(
+    mut xptr: *const f32,
+    mut yptr: *const f32,
+    tptr: *mut f32,
+    p: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    kernel_tmult_alligned!(xptr, yptr, tptr, SIMD_WIDTH, p, SIMD_WIDTH, s_x, s_y, s_t);
 }
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_mult_simd_aligned(
