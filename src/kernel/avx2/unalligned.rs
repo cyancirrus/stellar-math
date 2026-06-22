@@ -5,7 +5,6 @@ use std::arch::x86_64::{
     __m256i, _mm256_add_ps, _mm256_loadu_si256, _mm256_maskload_ps, _mm256_setzero_ps,
 };
 use stellar_macros::{kernel_mult_unalligned, kernel_tmult_unalligned};
-// use stellar_macros::{kernel_mult_unalligned};
 #[target_feature(enable = "avx,avx2,fma")]
 pub fn kernel_imult_safe(
     mut xptr: *const f32,
@@ -80,53 +79,6 @@ pub fn kernel_mult_safe(
         }
     }
 }
-// #[target_feature(enable = "avx,avx2,fma")]
-// pub fn kernel_tmult_safe(
-//     mut xptr: *const f32,
-//     mut yptr: *const f32,
-//     tptr: *mut f32,
-//     m: usize,
-//     p: usize,
-//     n: usize,
-//     s_x: usize,
-//     s_y: usize,
-//     s_t: usize,
-// ) {
-//     unsafe {
-//         let mut mask_m = MASK[m];
-//         let mut mask_nptr = MASK[n].as_ptr() as *const __m256i;
-//         let mut mask_n = _mm256_loadu_si256(mask_nptr);
-//         let mut m0 = mask_load(mask_n, tptr);
-//         let mut m1 = mask_load(mask_n, tptr.add(s_t));
-//         let mut m2 = mask_load(mask_n, tptr.add(s_t * 2usize));
-//         let mut m3 = mask_load(mask_n, tptr.add(s_t * 3usize));
-//         let mut m4 = mask_load(mask_n, tptr.add(s_t * 4usize));
-//         let mut m5 = mask_load(mask_n, tptr.add(s_t * 5usize));
-//         let mut m6 = mask_load(mask_n, tptr.add(s_t * 6usize));
-//         let mut m7 = mask_load(mask_n, tptr.add(s_t * 7usize));
-//         for _ in 0..p {
-//             let mut b0 = mask_load(mask_n, yptr);
-//             m0 = cfma_accum(mask_m[0usize], m0, xptr, b0);
-//             m1 = cfma_accum(mask_m[1usize], m1, xptr.add(1), b0);
-//             m2 = cfma_accum(mask_m[2usize], m2, xptr.add(2usize), b0);
-//             m3 = cfma_accum(mask_m[3usize], m3, xptr.add(3usize), b0);
-//             m4 = cfma_accum(mask_m[4usize], m4, xptr.add(4usize), b0);
-//             m5 = cfma_accum(mask_m[5usize], m5, xptr.add(5usize), b0);
-//             m6 = cfma_accum(mask_m[6usize], m6, xptr.add(6usize), b0);
-//             m7 = cfma_accum(mask_m[7usize], m7, xptr.add(7usize), b0);
-//             yptr = yptr.add(s_y);
-//             xptr = xptr.add(s_x);
-//         }
-//         mask_store_ctrl(mask_m[0usize], mask_n, tptr, m0);
-//         mask_store_ctrl(mask_m[1usize], mask_n, tptr.add(s_t), m1);
-//         mask_store_ctrl(mask_m[2usize], mask_n, tptr.add(s_t * 2usize), m2);
-//         mask_store_ctrl(mask_m[3usize], mask_n, tptr.add(s_t * 3usize), m3);
-//         mask_store_ctrl(mask_m[4usize], mask_n, tptr.add(s_t * 4usize), m4);
-//         mask_store_ctrl(mask_m[5usize], mask_n, tptr.add(s_t * 5usize), m5);
-//         mask_store_ctrl(mask_m[6usize], mask_n, tptr.add(s_t * 6usize), m6);
-//         mask_store_ctrl(mask_m[7usize], mask_n, tptr.add(s_t * 7usize), m7);
-//     };
-// }
 #[cfg(test)]
 #[allow(dead_code, unused_imports, unused)]
 mod test_safe_kernels {
