@@ -24,17 +24,17 @@ use stellar::kernel::matkerns::{kernel_rut_mult, kernel_tut_mult, kernel_ut_mult
 // const PC: usize = 16;
 // const NC: usize = 8;
 
-const MC: usize = 8;
-const PC: usize = 8;
-const NC: usize = 8;
+// const MC: usize = 8;
+// const PC: usize = 8;
+// const NC: usize = 8;
 //
 // const MC: usize = 32;
 // const PC: usize = 24;
 // const NC: usize = 16;
 // // PROD PARAMS
-// const MC: usize = 64;
-// const PC: usize = 256;
-// const NC: usize = 128;
+const MC: usize = 64;
+const PC: usize = 256;
+const NC: usize = 128;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -270,8 +270,8 @@ fn ltu_equivalence_mkn(m: usize, p: usize, n: usize) {
     // filter_lower_triangle(&mut x_base);
     filter_upper_triangle(&mut x_base);
     x.transpose_inplace(); // stored in transpose
-    println!("x_base {x_base:?}");
-    println!("y {y:?}");
+    // println!("x_base {x_base:?}");
+    // println!("y {y:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
     // m, n, n b/c X is s tored in it's transposed state
@@ -280,8 +280,8 @@ fn ltu_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    println!("expected {expected:?}");
-    println!("actual {_inspect:?}");
+    // println!("expected {expected:?}");
+    // println!("actual {_inspect:?}");
     assert!(
         approx_vector_eq(&expected.data, &result[..m * n]),
         "FAILURE WAS ({m:}, {p:}, {n:})"

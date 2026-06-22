@@ -252,7 +252,7 @@ pub fn lmult_tut(
         for k in 0..pos {
             mask_t[k + pre] = -1;
             let b0 = mask_load(mask_n, yptr);
-            println!("mask {mask_t:?}");
+            // println!("mask {mask_t:?}");
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_t[0], row0, xptr, b0);
             row1 = cfma_accum(mask_t[1], row1, xptr.add(1), b0);
