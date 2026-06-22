@@ -547,7 +547,7 @@ pub fn tensor_tut_contraction(
     y_d: &[f32],
     t_d: &mut [f32],
     mut d_add: usize,
-    mut d_sub: usize,
+    d_sub: usize,
     m: usize,
     p: usize,
     n: usize,
