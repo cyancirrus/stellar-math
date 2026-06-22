@@ -18,7 +18,7 @@ use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
 use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
-use stellar::kernel::matkerns::{kernel_rut_mult, kernel_tut_mult, kernel_ut_mult};
+use stellar::kernel::matkerns::{kernel_rut_mult, kernel_tut_mult, kernel_ut_mult, kernel_tmult};
 // // DEBUG PARAMS
 // const MC: usize = 8;
 // const PC: usize = 16;
@@ -28,13 +28,13 @@ use stellar::kernel::matkerns::{kernel_rut_mult, kernel_tut_mult, kernel_ut_mult
 // const PC: usize = 8;
 // const NC: usize = 8;
 //
-// const MC: usize = 32;
-// const PC: usize = 24;
-// const NC: usize = 16;
+const MC: usize = 32;
+const PC: usize = 24;
+const NC: usize = 16;
 // // PROD PARAMS
-const MC: usize = 64;
-const PC: usize = 256;
-const NC: usize = 128;
+// const MC: usize = 64;
+// const PC: usize = 256;
+// const NC: usize = 128;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -43,7 +43,7 @@ pub fn tensor_tblockkern(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    _m: usize,
+    m: usize,
     p: usize,
     n: usize,
     s_x: usize,
@@ -56,7 +56,6 @@ pub fn tensor_tblockkern(
         .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let d_add = mc_idx * MC;
                 let dy = PC * s_y;
                 let d_xt = PC * s_x;
                 let ma = diff_min(m, mc_idx * MC, MC);
@@ -68,10 +67,10 @@ pub fn tensor_tblockkern(
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
-                        yend = pa * s_y;
-                        pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
-                        pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
-                        tensor_tcontraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
+                        let yend = pa * s_y;
+                        pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
+                        pack(&y_d[yoffset + nc..], y_pack, pa, na, NC, s_y);
+                        tensor_tcontraction(&x_pack, &y_pack, t_accum, ma, pa, na, MC, NC, NC);
                         yoffset += dy;
                         xoffset += d_xt;
                     }
@@ -81,7 +80,7 @@ pub fn tensor_tblockkern(
             })
         });
 }
-pub fn tensor_contraction(
+pub fn tensor_tcontraction(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
@@ -92,6 +91,7 @@ pub fn tensor_contraction(
     s_y: usize,
     s_t: usize,
 ) {
+    // println!("x_d {x_d:?}");
     unsafe {
         let mut xoffset = 0;
         let mut toffset = 0;
@@ -101,7 +101,7 @@ pub fn tensor_contraction(
             let ii_end = SIMD_WIDTH.min(m - i);
             for j in (0..n).step_by(SIMD_WIDTH) {
                 let jj_end = SIMD_WIDTH.min(n - j);
-                kernel_mult(
+                kernel_tmult(
                     x_d.get_unchecked(xoffset..),
                     y_d.get_unchecked(j..),
                     t_d.get_unchecked_mut(toffset + j..),
@@ -124,6 +124,8 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
+        (4, 2, 1),
+        (8, 2, 1),
         (9, 2, 2),
         (9, 8, 8),
         (9, 16, 9),
@@ -240,8 +242,7 @@ fn ltu_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut x = generate_random_matrix(m, p);
     let mut x_base = x.clone();
-    x_base.transpose_inplace();
-    // filter_lower_triangle(&mut x_base);
+    x.transpose_inplace();
     // println!("x_base {x_base:?}");
     // println!("y {y:?}");
     let expected = basic_mult(&x_base, &y);

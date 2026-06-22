@@ -113,8 +113,6 @@ pub fn kernel_tmult_safe(
     };
 }
 
-
-
 #[cfg(test)]
 #[allow(dead_code, unused_imports, unused)]
 mod test_safe_kernels {

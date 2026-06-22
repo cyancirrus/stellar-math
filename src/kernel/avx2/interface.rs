@@ -22,7 +22,7 @@ pub fn kernel_mult_simd(
     }
 }
 #[inline]
-pub fn kernel_mult_simd(
+pub fn kernel_tmult_simd(
     xptr: *const f32,
     yptr: *const f32,
     tptr: *mut f32,
@@ -33,12 +33,14 @@ pub fn kernel_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
+    // println!("m, p, n :: ({m:},{p:},{n:})");
+    // println!("s_x: {s_x:?}");
     // happens over k-contraction needs the imult kernel
     unsafe {
         // if (m | n) & (SIMD_WIDTH - 1) == 0 {
         //     alligned::kernel_imult_simd_aligned(xptr, yptr, tptr, p, s_x, s_y, s_t);
         // } else {
-            unalligned::kernel_tmult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        unalligned::kernel_tmult_safe(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         // }
     }
 }
