@@ -52,7 +52,6 @@ pub fn tensor_tut_block(
 ) {
     // diagonal
     // suffix c: chunk, suffix a: actual
-    // let d_add = p - p.min(m) + 1;
     let d_sub = m.saturating_sub(p);
     t_d.par_chunks_mut(MC * n)
         .enumerate()
@@ -63,7 +62,6 @@ pub fn tensor_tut_block(
                 let dy = PC * s_y;
                 let d_xt = PC * s_x;
                 let ma = diff_min(m, mc_idx * MC, MC);
-                // let (xend, tend) = (ma * s_x, ma * s_t);
                 let tend = ma * s_t;
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
@@ -117,7 +115,6 @@ pub fn tensor_tut_contraction(
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
-            // if d_add + ii_end > d_sub {
             if d_sub + p > d_add {
                 for j in (0..n).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(n - j);
@@ -139,9 +136,6 @@ pub fn tensor_tut_contraction(
             toffset += dt;
             xoffset += dx;
             d_add += SIMD_WIDTH;
-            // toffset += dt;
-            // xoffset += dx;
-            // d_sub += SIMD_WIDTH;
         }
     }
 }

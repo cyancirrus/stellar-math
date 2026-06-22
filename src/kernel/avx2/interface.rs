@@ -138,7 +138,7 @@ pub fn kernel_tut_mult_simd(
     let pre = m.min(d_neg);
     // handle triangle part of upper triangular
     let pos = (p - p.min(d_pos)).min(m - pre);
-
+    // process dense part
     let pro = p.saturating_sub(d_pos + pos);
     unsafe {
         p = p - d_pos;
@@ -146,11 +146,6 @@ pub fn kernel_tut_mult_simd(
         xptr = xptr.add(d_pos * s_x);
         // index down for target row of y for outer product
         yptr = yptr.add(d_pos * s_y);
-        // println!("---------------");
-        // println!("m {m:}, p {p:}, n: {n:}");
-        // println!("d_pos {d_pos:}, d_neg {d_neg:}");
-        // println!("pre {pre:}, pro {pro:}, pos: {pos:}");
-        // println!("---------------");
         // if pos != 0 {
         ltriangle::lmult_tut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         // } else {
