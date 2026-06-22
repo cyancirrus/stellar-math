@@ -33,8 +33,6 @@ pub fn kernel_tmult_simd(
     s_y: usize,
     s_t: usize,
 ) {
-    // println!("m, p, n :: ({m:},{p:},{n:})");
-    // println!("s_x: {s_x:?}");
     // happens over k-contraction needs the imult kernel
     unsafe {
         // if (m | n) & (SIMD_WIDTH - 1) == 0 {
@@ -87,7 +85,6 @@ pub fn kernel_tlt_mult_simd(
     s_y: usize,
     s_t: usize,
 ) {
-    // TODO: no transpose implementation yet
     let d_pos = d_add.saturating_sub(d_sub);
     let d_neg = d_sub.saturating_sub(d_add);
     // preprocess the diagonal when on boundary
@@ -98,11 +95,11 @@ pub fn kernel_tlt_mult_simd(
     // debug_assert!(m >= d_neg, "m {m:}, d_neg: {d_neg:}");
     let pos = (p - p.min(d_pos)).min(m - d_neg);
     unsafe {
-        // if pos != 0 {
-        ltriangle::lmult_tlt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
-        // } else {
-        //     kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-        // }
+        if pos != 0 {
+            ltriangle::lmult_tlt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+        } else {
+            kernel_tmult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        }
     }
 }
 pub fn kernel_ut_mult_simd(
@@ -168,11 +165,11 @@ pub fn kernel_tut_mult_simd(
         xptr = xptr.add(d_pos * s_x);
         // index down for target row of y for outer product
         yptr = yptr.add(d_pos * s_y);
-        // if pos != 0 {
-        ltriangle::lmult_tut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
-        // } else {
-        //     kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-        // }
+        if pos != 0 {
+            ltriangle::lmult_tut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+        } else {
+            kernel_tmult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        }
     }
 }
 /// handle when
