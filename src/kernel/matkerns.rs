@@ -40,6 +40,31 @@ pub fn kernel_mult(
         s_t,
     );
 }
+/// (X')'Y
+#[inline(never)]
+pub fn kernel_tmult(
+    x: &[f32],
+    y: &[f32],
+    t: &mut [f32],
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    kernel_tmult_simd(
+        x.as_ptr(),
+        y.as_ptr(),
+        t.as_mut_ptr(),
+        m,
+        p,
+        n,
+        s_x,
+        s_y,
+        s_t,
+    );
+}
 #[inline(never)]
 pub fn kernel_lt_mult(
     x: &[f32],

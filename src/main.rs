@@ -39,55 +39,39 @@ const NC: usize = 128;
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }
-pub fn tensor_tut_block(
+pub fn tensor_tblockkern(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    m: usize,
+    _m: usize,
     p: usize,
     n: usize,
     s_x: usize,
     s_y: usize,
     s_t: usize,
 ) {
-    // diagonal
     // suffix c: chunk, suffix a: actual
-    let d_sub = m.saturating_sub(p);
     t_d.par_chunks_mut(MC * n)
-        .enumerate()
-        .for_each(|(mc_idx, t)| {
+        .zip(x_d.par_chunks(MC * p))
+        .for_each(|(t, x)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let d_add = mc_idx * MC;
                 let dy = PC * s_y;
-                let d_xt = PC * s_x;
-                let ma = diff_min(m, mc_idx * MC, MC);
-                let tend = ma * s_t;
+                let (xend, mut yend, tend);
+                let rows = x.len() / s_x;
+                let ma = rows;
+                (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     t_accum.fill(0f32);
-                    // base column offset
-                    let mut xoffset = mc_idx * MC;
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
-                        pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
-                        pack(&y_d[yoffset + nc..], y_pack, pa, na, NC, s_y);
-                        tensor_tut_contraction(
-                            &x_pack,
-                            &y_pack,
-                            t_accum,
-                            d_add,
-                            d_sub + pc,
-                            ma,
-                            pa,
-                            na,
-                            MC,
-                            NC,
-                            NC,
-                        );
+                        yend = pa * s_y;
+                        pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
+                        pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
+                        tensor_tcontraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
                         yoffset += dy;
-                        xoffset += d_xt;
                     }
                     // unpack
                     pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
@@ -95,12 +79,10 @@ pub fn tensor_tut_block(
             })
         });
 }
-pub fn tensor_tut_contraction(
+pub fn tensor_contraction(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    mut d_add: usize,
-    mut d_sub: usize,
     m: usize,
     p: usize,
     n: usize,
@@ -111,31 +93,26 @@ pub fn tensor_tut_contraction(
     unsafe {
         let mut xoffset = 0;
         let mut toffset = 0;
-        let dx = SIMD_WIDTH;
+        let dx = SIMD_WIDTH * s_x;
         let dt = SIMD_WIDTH * s_t;
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
-            if d_sub + p > d_add {
-                for j in (0..n).step_by(SIMD_WIDTH) {
-                    let jj_end = SIMD_WIDTH.min(n - j);
-                    kernel_tut_mult(
-                        x_d.get_unchecked(xoffset..),
-                        y_d.get_unchecked(j..),
-                        t_d.get_unchecked_mut(toffset + j..),
-                        d_add,
-                        d_sub,
-                        ii_end,
-                        p,
-                        jj_end,
-                        s_x,
-                        s_y,
-                        s_t,
-                    )
-                }
+            for j in (0..n).step_by(SIMD_WIDTH) {
+                let jj_end = SIMD_WIDTH.min(n - j);
+                kernel_mult(
+                    x_d.get_unchecked(xoffset..),
+                    y_d.get_unchecked(j..),
+                    t_d.get_unchecked_mut(toffset + j..),
+                    ii_end,
+                    p,
+                    jj_end,
+                    s_x,
+                    s_y,
+                    s_t,
+                );
             }
             toffset += dt;
             xoffset += dx;
-            d_add += SIMD_WIDTH;
         }
     }
 }
@@ -261,15 +238,14 @@ fn ltu_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut x = generate_random_matrix(m, p);
     let mut x_base = x.clone();
+    x_base.transpose_inplace();
     // filter_lower_triangle(&mut x_base);
-    filter_upper_triangle(&mut x_base);
-    x.transpose_inplace(); // stored in transpose
     // println!("x_base {x_base:?}");
     // println!("y {y:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
     // m, n, n b/c X is s tored in it's transposed state
-    tensor_tut_block(&x.data, &y.data, &mut result, m, p, n, m, n, n);
+    tensor_tblockkern(&x.data, &y.data, &mut result, m, p, n, m, n, n);
     let _inspect = NdArray {
         dims: vec![m, n],
         data: result.clone(),
