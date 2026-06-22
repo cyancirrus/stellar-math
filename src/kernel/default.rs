@@ -49,15 +49,15 @@ pub fn kernel_mult_simd(
 }
 #[inline(always)]
 pub fn kernel_tmult_simd(
-    mut xptr: *const f32,
-    mut yptr: *const f32,
-    mut tptr: *mut f32,
-    m: usize,
-    p: usize,
-    n: usize,
-    s_x: usize,
-    s_y: usize,
-    s_t: usize,
+    _xptr: *const f32,
+    _yptr: *const f32,
+    _tptr: *mut f32,
+    _m: usize,
+    _p: usize,
+    _n: usize,
+    _s_x: usize,
+    _s_y: usize,
+    _s_t: usize,
 ) {
     panic!("not yet implemented");
 }
