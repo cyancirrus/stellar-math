@@ -1,6 +1,5 @@
 use crate::arch::SIMD_WIDTH;
 use crate::structure::ndarray::NdArray;
-use rayon::prelude::*;
 #[rustfmt::skip]
 use crate::algebra::bmethods::contractions::{
     tensor_contraction,

@@ -1,5 +1,4 @@
 use crate::arch::SIMD_WIDTH;
-use rayon::prelude::*;
 #[rustfmt::skip]
 use crate::kernel::matkerns::{
     kernel_lt_mult,

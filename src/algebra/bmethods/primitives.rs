@@ -1,6 +1,5 @@
 use crate::arch::SIMD_WIDTH;
 use crate::kernel::matkerns::kernel_mult;
-use rayon::prelude::*;
 
 
 /// # pack transfers a copy of data from d to pack

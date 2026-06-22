@@ -1,5 +1,4 @@
 use crate::algebra::bmethods::primitives::{diff_min, pack};
-use crate::arch::SIMD_WIDTH;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
@@ -14,9 +13,6 @@ use crate::algebra::bmethods::contractions::{
     tensor_tut_contraction,
     tensor_ut_contraction,
 };
-
-const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
-// FASTEST
 const MC: usize = 40;
 const PC: usize = 160;
 const NC: usize = 120;
