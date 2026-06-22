@@ -120,13 +120,13 @@ pub fn kernel_ut_mult_simd(
     }
 }
 pub fn kernel_tut_mult_simd(
-    xptr: *const f32,
-    yptr: *const f32,
+    mut xptr: *const f32,
+    mut yptr: *const f32,
     tptr: *mut f32,
     d_add: usize,
     d_sub: usize,
     m: usize,
-    p: usize,
+    mut p: usize,
     n: usize,
     s_x: usize,
     s_y: usize,
@@ -140,9 +140,17 @@ pub fn kernel_tut_mult_simd(
     let pos = (p - p.min(d_pos)).min(m - pre);
 
     let pro = p.saturating_sub(d_pos + pos);
-    // println!("d_pos {d_pos:}, d_neg {d_neg:}");
-    println!("pre {pre:}, pro {pro:}, pos: {pos:}");
     unsafe {
+        p = p - d_pos;
+        // index into specific column it's still outerproduct so same target
+        xptr = xptr.add(d_pos * s_x);
+        // index down for target row of y for outer product
+        yptr = yptr.add(d_pos * s_y);
+        println!("---------------");
+        println!("m {m:}, p {p:}, n: {n:}");
+        println!("d_pos {d_pos:}, d_neg {d_neg:}");
+        println!("pre {pre:}, pro {pro:}, pos: {pos:}");
+        println!("---------------");
         // if pos != 0 {
         ltriangle::lmult_tut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         // } else {

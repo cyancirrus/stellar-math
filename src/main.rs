@@ -24,17 +24,17 @@ use stellar::kernel::matkerns::{kernel_rut_mult, kernel_tut_mult, kernel_ut_mult
 // const PC: usize = 16;
 // const NC: usize = 8;
 
-// const MC: usize = 8;
-// const PC: usize = 8;
-// const NC: usize = 8;
+const MC: usize = 8;
+const PC: usize = 8;
+const NC: usize = 8;
 //
 // const MC: usize = 32;
 // const PC: usize = 24;
 // const NC: usize = 16;
 // // PROD PARAMS
-const MC: usize = 64;
-const PC: usize = 256;
-const NC: usize = 128;
+// const MC: usize = 64;
+// const PC: usize = 256;
+// const NC: usize = 128;
 
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
@@ -287,12 +287,12 @@ fn ltu_equivalence_mkn(m: usize, p: usize, n: usize) {
         "FAILURE WAS ({m:}, {p:}, {n:})"
     );
 }
-// use rayon::ThreadPoolBuilder;
+use rayon::ThreadPoolBuilder;
 fn main() {
-    // ThreadPoolBuilder::new()
-    //     .num_threads(1)
-    //     .build_global()
-    //     .expect("Failed to initialize global thread pool");
+    ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build_global()
+        .expect("Failed to initialize global thread pool");
     test_gemm_equivalence();
     println!("success");
 }
