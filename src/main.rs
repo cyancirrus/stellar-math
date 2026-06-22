@@ -152,10 +152,10 @@ use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
         (9, 2, 2),
-        // (9, 8, 8),
-        // (9, 16, 9),
-        // (9, 16, 8),
-        // (9, 16, 9),
+        (9, 8, 8),
+        (9, 16, 9),
+        (9, 16, 8),
+        (9, 16, 9),
         (1, 1, 1),
         (8, 8, 8),
         (1, 2, 1),
@@ -289,10 +289,10 @@ fn ltu_equivalence_mkn(m: usize, p: usize, n: usize) {
 }
 use rayon::ThreadPoolBuilder;
 fn main() {
-    ThreadPoolBuilder::new()
-        .num_threads(1)
-        .build_global()
-        .expect("Failed to initialize global thread pool");
+    // ThreadPoolBuilder::new()
+    //     .num_threads(1)
+    //     .build_global()
+    //     .expect("Failed to initialize global thread pool");
     test_gemm_equivalence();
     println!("success");
 }
