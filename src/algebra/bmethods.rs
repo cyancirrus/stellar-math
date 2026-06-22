@@ -1,5 +1,5 @@
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::matkerns::kernel_mult;
+use crate::kernel::matkerns::{kernel_mult, kernel_tmult};
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
@@ -174,9 +174,87 @@ pub fn tensor_minikern(x_d: &[f32], y_d: &[f32], t_d: &mut [f32], m: usize, p: u
         }
     }
 }
+pub fn tensor_tblockkern(
+    x_d: &[f32],
+    y_d: &[f32],
+    t_d: &mut [f32],
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    // suffix c: chunk, suffix a: actual
+    t_d.par_chunks_mut(MC * n)
+        .enumerate()
+        .for_each(|(mc_idx, t)| {
+            PACK.with(|workspace_cell| {
+                let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
+                let dy = PC * s_y;
+                let d_xt = PC * s_x;
+                let ma = diff_min(m, mc_idx * MC, MC);
+                let tend = ma * s_t;
+                for nc in (0..n).step_by(NC) {
+                    let na = diff_min(n, nc, NC);
+                    t_accum.fill(0f32);
+                    let mut xoffset = mc_idx * MC;
+                    let mut yoffset = 0;
+                    for pc in (0..p).step_by(PC) {
+                        let pa = diff_min(p, pc, PC);
+                        pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
+                        pack(&y_d[yoffset + nc..], y_pack, pa, na, NC, s_y);
+                        tensor_tcontraction(&x_pack, &y_pack, t_accum, ma, pa, na, MC, NC, NC);
+                        yoffset += dy;
+                        xoffset += d_xt;
+                    }
+                    // unpack
+                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                }
+            })
+        });
+}
+pub fn tensor_tcontraction(
+    x_d: &[f32],
+    y_d: &[f32],
+    t_d: &mut [f32],
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    // println!("x_d {x_d:?}");
+    unsafe {
+        let mut xoffset = 0;
+        let mut toffset = 0;
+        let dx = SIMD_WIDTH;
+        let dt = SIMD_WIDTH * s_t;
+        for i in (0..m).step_by(SIMD_WIDTH) {
+            let ii_end = SIMD_WIDTH.min(m - i);
+            for j in (0..n).step_by(SIMD_WIDTH) {
+                let jj_end = SIMD_WIDTH.min(n - j);
+                kernel_tmult(
+                    x_d.get_unchecked(xoffset..),
+                    y_d.get_unchecked(j..),
+                    t_d.get_unchecked_mut(toffset + j..),
+                    ii_end,
+                    p,
+                    jj_end,
+                    s_x,
+                    s_y,
+                    s_t,
+                );
+            }
+            toffset += dt;
+            xoffset += dx;
+        }
+    }
+}
 #[cfg(test)]
 mod test_kernel_block {
-    use crate::algebra::bmethods::{tensor_blockkern, tensor_contraction};
+    use super::*;
     use crate::algebra::ndmethods::basic_mult;
     use crate::arch::SIMD_WIDTH;
     use crate::equality::approximate::approx_vector_eq;
@@ -257,10 +335,11 @@ mod test_kernel_block {
         ];
         for (i, k, j) in ikj {
             println!("(i: {i:?}, k: {k:?}, j: {j:})");
-            test_blockkern_equivalence_mkn(i, k, j);
+            matmul_equivalence(i, k, j);
+            tmatmul_equivalence(i, k, j);
         }
     }
-    fn test_blockkern_equivalence_mkn(m: usize, k: usize, n: usize) {
+    fn matmul_equivalence(m: usize, k: usize, n: usize) {
         let x = generate_random_matrix(m, k);
         let y = generate_random_matrix(k, n);
         let mut result = vec![0f32; m * n];
@@ -273,5 +352,27 @@ mod test_kernel_block {
         println!("expected {expected:?}");
         println!("actual {inspect:?}");
         assert!(approx_vector_eq(&expected.data, &result[..m * n]));
+    }
+    fn tmatmul_equivalence(m: usize, p: usize, n: usize) {
+        let y = generate_random_matrix(p, n);
+        let mut x = generate_random_matrix(m, p);
+        let mut x_base = x.clone();
+        x.transpose_inplace();
+        // println!("x_base {x_base:?}");
+        // println!("y {y:?}");
+        let expected = basic_mult(&x_base, &y);
+        let mut result = vec![0f32; m * n];
+        // m, n, n b/c X is s tored in it's transposed state
+        tensor_tblockkern(&x.data, &y.data, &mut result, m, p, n, m, n, n);
+        let _inspect = NdArray {
+            dims: vec![m, n],
+            data: result.clone(),
+        };
+        // println!("expected {expected:?}");
+        // println!("actual {_inspect:?}");
+        assert!(
+            approx_vector_eq(&expected.data, &result[..m * n]),
+            "FAILURE WAS ({m:}, {p:}, {n:})"
+        );
     }
 }
