@@ -1,5 +1,4 @@
 pub mod bmethods;
-pub mod bmethods_tri;
 pub mod fourier;
 pub mod math;
 pub mod ndmethods;

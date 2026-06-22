@@ -1,6 +1,7 @@
 #![allow(unused_imports)]
 use crate::sharedvars::{
-    L_MAT10S_DIMS, L_MATRIX_DIMS, M_MAT10_DIMS, M_MATRIX_DIMS, S_MATRIX_ALLIGNED, S_MATRIX_UNALLIGNED,
+    L_MAT10S_DIMS, L_MATRIX_DIMS, M_MAT10_DIMS, M_MATRIX_DIMS, S_MATRIX_ALLIGNED,
+    S_MATRIX_UNALLIGNED,
 };
 use criterion::{BenchmarkId, Criterion, Throughput};
 use faer::linalg::matmul::matmul;

@@ -37,7 +37,7 @@ pub fn kernel_tmult_simd_unalligned(
 #[allow(dead_code, unused_imports, unused)]
 mod test_safe_kernels {
     use super::*;
-    use crate::algebra::bmethods::tensor_blockkern;
+    use crate::algebra::bmethods::blocks::tensor_block;
     use crate::algebra::ndmethods::basic_mult;
     use crate::arch::SIMD_WIDTH;
     use crate::equality::approximate::approx_vector_eq;
