@@ -9,6 +9,7 @@
 //
 // value sanity start working on the LX async vision with the queue
 
+// 0. solve packing
 // 1. Animate demo        ← most legible to employers
 // 2. Blog redesign       ← makes everything else findable
 // 3. Triangle kernel     ← 2hrs, unblocks LQ block
@@ -60,7 +61,6 @@ pub fn tensor_tlt_block(
                 let d_add = d_add + mc_idx * MC;
                 let dy = PC * s_y;
                 let d_xt = PC * s_x;
-                // let ma = (m - mc_idx * MC).min(MC);
                 let ma = diff_min(m, mc_idx * MC, MC);
                 // let (xend, tend) = (ma * s_x, ma * s_t);
                 let tend = ma * s_t;
@@ -72,9 +72,10 @@ pub fn tensor_tlt_block(
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
-                        let yend = pa * s_y;
+                        // let yend = pa * s_y;
                         pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
-                        pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
+                        // pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
+                        pack(&y_d[yoffset + nc..], y_pack, pa, na, NC, s_y);
                         tensor_tlt_contraction(
                             &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, MC, NC, NC,
                         );

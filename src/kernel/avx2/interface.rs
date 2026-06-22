@@ -1,6 +1,7 @@
 use crate::arch::SIMD_WIDTH;
 use crate::kernel::avx2::{alligned, ltriangle, rtriangle, unalligned};
 // #[inline(always)]
+#[inline]
 pub fn kernel_mult_simd(
     xptr: *const f32,
     yptr: *const f32,
@@ -157,11 +158,15 @@ pub fn kernel_rlt_mult_simd(
     }
 }
 /// handle when
+/// case 1
 /// * * *
 /// * * *
 /// 0 * *
 /// 0 0 *
-/// 0 0 0
+/// case 2
+/// * * * * *
+/// 0 * * * * 
+/// 0 0 * * * 
 pub fn kernel_rut_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
