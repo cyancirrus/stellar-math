@@ -1,6 +1,8 @@
 use crate::algebra::bmethods::{diff_min, pack};
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::matkerns::{kernel_lt_mult,kernel_tlt_mult,  kernel_rlt_mult, kernel_rut_mult, kernel_ut_mult};
+use crate::kernel::matkerns::{
+    kernel_lt_mult, kernel_rlt_mult, kernel_rut_mult, kernel_tlt_mult, kernel_ut_mult,
+};
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 use std::cell::RefCell;

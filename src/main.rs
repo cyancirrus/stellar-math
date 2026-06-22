@@ -18,7 +18,7 @@ use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
 use stellar::algebra::bmethods::{diff_min, pack};
 use stellar::arch::SIMD_WIDTH;
-use stellar::kernel::matkerns::{kernel_rut_mult, kernel_tlt_mult, kernel_ut_mult};
+use stellar::kernel::matkerns::{kernel_rut_mult, kernel_tut_mult, kernel_ut_mult};
 // // DEBUG PARAMS
 // const MC: usize = 8;
 // const PC: usize = 16;
@@ -39,7 +39,7 @@ const NC: usize = 128;
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }
-pub fn tensor_tlt_block(
+pub fn tensor_tut_block(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
@@ -52,13 +52,14 @@ pub fn tensor_tlt_block(
 ) {
     // diagonal
     // suffix c: chunk, suffix a: actual
-    let d_add = p - p.min(m) + 1;
+    // let d_add = p - p.min(m) + 1;
+    let d_sub = m.saturating_sub(p);
     t_d.par_chunks_mut(MC * n)
         .enumerate()
         .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
-                let d_add = d_add + mc_idx * MC;
+                let d_add = mc_idx * MC;
                 let dy = PC * s_y;
                 let d_xt = PC * s_x;
                 let ma = diff_min(m, mc_idx * MC, MC);
@@ -72,12 +73,20 @@ pub fn tensor_tlt_block(
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
-                        // let yend = pa * s_y;
                         pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
-                        // pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         pack(&y_d[yoffset + nc..], y_pack, pa, na, NC, s_y);
-                        tensor_tlt_contraction(
-                            &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, MC, NC, NC,
+                        tensor_tut_contraction(
+                            &x_pack,
+                            &y_pack,
+                            t_accum,
+                            d_add,
+                            d_sub + pc,
+                            ma,
+                            pa,
+                            na,
+                            MC,
+                            NC,
+                            NC,
                         );
                         yoffset += dy;
                         xoffset += d_xt;
@@ -88,7 +97,7 @@ pub fn tensor_tlt_block(
             })
         });
 }
-pub fn tensor_tlt_contraction(
+pub fn tensor_tut_contraction(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
@@ -109,9 +118,10 @@ pub fn tensor_tlt_contraction(
         for i in (0..m).step_by(SIMD_WIDTH) {
             let ii_end = SIMD_WIDTH.min(m - i);
             if d_add + ii_end > d_sub {
+                // if d_sub + p > d_add {
                 for j in (0..n).step_by(SIMD_WIDTH) {
                     let jj_end = SIMD_WIDTH.min(n - j);
-                    kernel_tlt_mult(
+                    kernel_tut_mult(
                         x_d.get_unchecked(xoffset..),
                         y_d.get_unchecked(j..),
                         t_d.get_unchecked_mut(toffset + j..),
@@ -138,6 +148,8 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
+        (1, 1, 1),
+        (8, 8, 8),
         (4, 20, 2),
         (4, 20, 2),
         (4, 24, 4),
@@ -148,8 +160,6 @@ fn test_gemm_equivalence() {
         (9, 8, 8),
         (1, 2, 1),
         (1, 1, 8),
-        (1, 1, 1),
-        (8, 8, 8),
         (4, 4, 4),
         (6, 4, 6),
         (2, 2, 1),
@@ -209,7 +219,7 @@ fn test_gemm_equivalence() {
     ];
     for (i, k, j) in ikj {
         println!("(i: {i:?}, k: {k:?}, j: {j:})");
-        ltl_equivalence_mkn(i, k, j);
+        ltu_equivalence_mkn(i, k, j);
     }
 }
 /// Case 1 / Case 2
@@ -250,19 +260,19 @@ fn filter_lower_triangle(a: &mut NdArray) {
         }
     }
 }
-fn ltl_equivalence_mkn(m: usize, p: usize, n: usize) {
+fn ltu_equivalence_mkn(m: usize, p: usize, n: usize) {
     let y = generate_random_matrix(p, n);
     let mut x = generate_random_matrix(m, p);
     let mut x_base = x.clone();
-    filter_lower_triangle(&mut x_base);
+    // filter_lower_triangle(&mut x_base);
+    filter_upper_triangle(&mut x_base);
     x.transpose_inplace(); // stored in transpose
     // println!("x_base {x_base:?}");
     // println!("y {y:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
-    // tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
     // m, n, n b/c X is s tored in it's transposed state
-    tensor_tlt_block(&x.data, &y.data, &mut result, m, p, n, m, n, n);
+    tensor_tut_block(&x.data, &y.data, &mut result, m, p, n, m, n, n);
     let _inspect = NdArray {
         dims: vec![m, n],
         data: result.clone(),

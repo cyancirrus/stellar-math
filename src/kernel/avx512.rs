@@ -85,6 +85,22 @@ pub fn kernel_rut_mult_simd(
 ) {
     default::kernel_rut_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
 }
+#[inline(always)]
+pub fn kernel_tut_mult_simd(
+    mut xptr: *const f32,
+    yptr: *const f32,
+    mut tptr: *mut f32,
+    d_add: usize,
+    d_sub: usize,
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    default::kernel_tut_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+}
 #[target_feature(enable = "avx512f,fma")]
 pub fn kernel_mult_simd_aligned(
     mut xptr: *const f32,
