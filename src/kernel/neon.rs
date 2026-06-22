@@ -14,13 +14,13 @@ pub fn kernel_mult_simd(
     s_t: usize,
 ) {
     if (m | p | n) & (SIMD_WIDTH - 1) == 0 {
-        kernel_mult_simd_aligned(x, y, t, m, s_x, s_y, s_t);
+        kernel_mult_simd_alligned(x, y, t, m, s_x, s_y, s_t);
     } else {
         kernel_mult_scalar(x, y, t, m, p, n, s_x, s_y, s_t);
     }
 }
 
-pub fn kernel_mult_simd_aligned(
+pub fn kernel_mult_simd_alligned(
     mut xptr: *const f32,
     mut yptr: *const f32,
     mut tptr: *mut f32,

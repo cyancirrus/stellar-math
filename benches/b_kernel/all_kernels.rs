@@ -20,7 +20,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     #[cfg(feature = "avx2")]
     group.bench_function("AVX2 Kernel", |b_inner| {
         b_inner.iter(|| unsafe {
-            avx2::alligned::kernel_mult_simd_aligned(
+            avx2::alligned::kernel_mult_simd_alligned(
                 black_box(a.as_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
@@ -32,23 +32,9 @@ pub fn benchmark_kernels(c: &mut Criterion) {
         });
     });
     #[cfg(feature = "avx2")]
-    group.bench_function("AVX2 Contraction Kernel", |b_inner| {
-        b_inner.iter(|| unsafe {
-            avx2::alligned::kernel_imult_simd_aligned(
-                black_box(a.as_mut_ptr()),
-                black_box(b.as_ptr()),
-                black_box(c_out.as_mut_ptr()),
-                SIMD_WIDTH,
-                stride,
-                stride,
-                stride,
-            )
-        });
-    });
-    #[cfg(feature = "avx2")]
     group.bench_function("AVX2 Kernel General Shape", |b_inner| {
         b_inner.iter(|| unsafe {
-            avx2::unalligned::kernel_mult_safe(
+            avx2::unalligned::kernel_mult_simd_unalligned(
                 black_box(a.as_mut_ptr()),
                 black_box(b.as_ptr()),
                 black_box(c_out.as_mut_ptr()),
@@ -61,54 +47,38 @@ pub fn benchmark_kernels(c: &mut Criterion) {
             )
         });
     });
-    #[cfg(feature = "avx2")]
-    group.bench_function("AVX2 Kernel Contraction General Shape", |b_inner| {
-        b_inner.iter(|| unsafe {
-            avx2::unalligned::kernel_imult_safe(
-                black_box(a.as_mut_ptr()),
-                black_box(b.as_ptr()),
-                black_box(c_out.as_mut_ptr()),
-                SIMD_WIDTH,
-                SIMD_WIDTH,
-                SIMD_WIDTH,
-                stride,
-                stride,
-                stride,
-            )
-        });
-    });
-    #[cfg(feature = "avx2")]
-    group.bench_function("AVX2 Kernel LT General Shape", |b_inner| {
-        b_inner.iter(|| unsafe {
-            avx2::triangle::kernel_imult_lt_unalligned(
-                black_box(a.as_mut_ptr()),
-                black_box(b.as_ptr()),
-                black_box(c_out.as_mut_ptr()),
-                SIMD_WIDTH,
-                SIMD_WIDTH,
-                SIMD_WIDTH,
-                stride,
-                stride,
-                stride,
-            )
-        });
-    });
-    #[cfg(feature = "avx2")]
-    group.bench_function("AVX2 Kernel UT General Shape", |b_inner| {
-        b_inner.iter(|| unsafe {
-            avx2::triangle::kernel_imult_ut_unalligned(
-                black_box(a.as_mut_ptr()),
-                black_box(b.as_ptr()),
-                black_box(c_out.as_mut_ptr()),
-                SIMD_WIDTH,
-                SIMD_WIDTH,
-                SIMD_WIDTH,
-                stride,
-                stride,
-                stride,
-            )
-        });
-    });
+    // #[cfg(feature = "avx2")]
+    // group.bench_function("AVX2 Kernel LT General Shape", |b_inner| {
+    //     b_inner.iter(|| unsafe {
+    //         avx2::triangle::kernel_mult_lt_unalligned(
+    //             black_box(a.as_mut_ptr()),
+    //             black_box(b.as_ptr()),
+    //             black_box(c_out.as_mut_ptr()),
+    //             SIMD_WIDTH,
+    //             SIMD_WIDTH,
+    //             SIMD_WIDTH,
+    //             stride,
+    //             stride,
+    //             stride,
+    //         )
+    //     });
+    // });
+    // #[cfg(feature = "avx2")]
+    // group.bench_function("AVX2 Kernel UT General Shape", |b_inner| {
+    //     b_inner.iter(|| unsafe {
+    //         avx2::triangle::kernel_mult_ut_unalligned(
+    //             black_box(a.as_mut_ptr()),
+    //             black_box(b.as_ptr()),
+    //             black_box(c_out.as_mut_ptr()),
+    //             SIMD_WIDTH,
+    //             SIMD_WIDTH,
+    //             SIMD_WIDTH,
+    //             stride,
+    //             stride,
+    //             stride,
+    //         )
+    //     });
+    // });
     group.bench_function("Scalar Kernel", |b_inner| {
         b_inner.iter(|| {
             default::kernel_mult_scalar(

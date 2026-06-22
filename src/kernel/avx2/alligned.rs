@@ -11,7 +11,7 @@ macro_rules! fma_accum {
     };
 }
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn kernel_imult_simd_aligned(
+pub fn kernel_mult_simd_alligned(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -23,7 +23,7 @@ pub fn kernel_imult_simd_aligned(
     kernel_mult_alligned!(xptr, yptr, tptr, SIMD_WIDTH, p, SIMD_WIDTH, s_x, s_y, s_t);
 }
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn kernel_tmult_simd_aligned(
+pub fn kernel_tmult_simd_alligned(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -33,47 +33,6 @@ pub fn kernel_tmult_simd_aligned(
     s_t: usize,
 ) {
     kernel_tmult_alligned!(xptr, yptr, tptr, SIMD_WIDTH, p, SIMD_WIDTH, s_x, s_y, s_t);
-}
-#[target_feature(enable = "avx,avx2,fma")]
-pub fn kernel_mult_simd_aligned(
-    mut xptr: *const f32,
-    yptr: *const f32,
-    mut tptr: *mut f32,
-    m: usize,
-    s_x: usize,
-    s_y: usize,
-    s_t: usize,
-) {
-    // excels at tall x matrix and wide y
-    unsafe {
-        let row0 = _mm256_loadu_ps(yptr);
-        let row4 = _mm256_loadu_ps(yptr.add(s_y * 4));
-        let row1 = _mm256_loadu_ps(yptr.add(s_y));
-        let row5 = _mm256_loadu_ps(yptr.add(s_y * 5));
-        let row2 = _mm256_loadu_ps(yptr.add(s_y * 2));
-        let row6 = _mm256_loadu_ps(yptr.add(s_y * 6));
-        let row3 = _mm256_loadu_ps(yptr.add(s_y * 3));
-        let row7 = _mm256_loadu_ps(yptr.add(s_y * 7));
-        // t is being passed in
-        for _ in 0..m {
-            let mut acc1 = _mm256_loadu_ps(tptr);
-            let mut acc0 = _mm256_setzero_ps();
-            // _mm_prefetch(xptr.add(s_x) as *const i8, _MM_HINT_T0);
-            // _mm_prefetch(tptr.add(s_t) as *const i8, _MM_HINT_T0);
-            // start with existing t for accumulation
-            fma_accum!(acc0, xptr, row0);
-            fma_accum!(acc1, xptr.add(4), row4);
-            fma_accum!(acc0, xptr.add(1), row1);
-            fma_accum!(acc1, xptr.add(5), row5);
-            fma_accum!(acc0, xptr.add(2), row2);
-            fma_accum!(acc1, xptr.add(6), row6);
-            fma_accum!(acc0, xptr.add(3), row3);
-            fma_accum!(acc1, xptr.add(7), row7);
-            _mm256_storeu_ps(tptr, _mm256_add_ps(acc1, acc0));
-            xptr = xptr.add(s_x);
-            tptr = tptr.add(s_t);
-        }
-    }
 }
 #[rustfmt::skip]
 #[target_feature(enable = "avx,fma")]
@@ -139,21 +98,7 @@ mod test_avx2_kernels {
             let mut y_simd = y.data.clone();
             let mut w = vec![0f32; 8 * 8];
             let mut t = vec![0f32; m * n];
-            kernel_imult_simd_aligned(
-                x_simd.as_ptr(),
-                y_simd.as_ptr(),
-                t.as_mut_ptr(),
-                m,
-                s_x,
-                s_y,
-                s_z,
-            );
-            assert!(approx_vector_eq(&expect.data, &t));
-            let mut x_simd = x.data.clone();
-            let mut y_simd = y.data.clone();
-            let mut w = vec![0f32; 8 * 8];
-            let mut t = vec![0f32; m * n];
-            kernel_mult_simd_aligned(
+            kernel_mult_simd_alligned(
                 x_simd.as_ptr(),
                 y_simd.as_ptr(),
                 t.as_mut_ptr(),
