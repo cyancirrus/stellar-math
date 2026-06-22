@@ -1,9 +1,6 @@
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::matkerns::{kernel_mult, kernel_tmult};
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
-use rayon::slice::ParallelSlice;
-use std::cell::RefCell;
 #[rustfmt::skip]
 use crate::algebra::bmethods::contractions::{
     tensor_contraction,

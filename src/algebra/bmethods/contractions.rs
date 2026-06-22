@@ -1,8 +1,5 @@
 use crate::arch::SIMD_WIDTH;
-use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
-use rayon::slice::ParallelSlice;
-use std::cell::RefCell;
 #[rustfmt::skip]
 use crate::kernel::matkerns::{
     kernel_lt_mult,

@@ -1,7 +1,5 @@
 use crate::algebra::bmethods::primitives::{diff_min, pack};
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::matkerns::{kernel_mult, kernel_tmult};
-use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 use rayon::slice::ParallelSlice;
 use std::cell::RefCell;
@@ -111,8 +109,8 @@ pub fn tensor_lt_block(
     y_d: &[f32],
     t_d: &mut [f32],
     d_add: usize,
-    d_sub: usize,
-    m: usize,
+    _d_sub: usize,
+    _m: usize,
     p: usize,
     n: usize,
     s_x: usize,
@@ -156,9 +154,9 @@ pub fn tensor_ut_block(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    d_add: usize,
+    _d_add: usize,
     d_sub: usize,
-    m: usize,
+    _m: usize,
     p: usize,
     n: usize,
     s_x: usize,
@@ -212,7 +210,7 @@ pub fn tensor_rlt_block(
     y_d: &[f32],
     t_d: &mut [f32],
     d_add: usize,
-    d_sub: usize,
+    _d_sub: usize,
     _m: usize,
     p: usize,
     n: usize,
@@ -266,7 +264,7 @@ pub fn tensor_rut_block(
     y_d: &[f32],
     t_d: &mut [f32],
     d_add: usize,
-    d_sub: usize,
+    _d_sub: usize,
     _m: usize,
     p: usize,
     n: usize,
@@ -319,7 +317,7 @@ pub fn tensor_tlt_block(
     y_d: &[f32],
     t_d: &mut [f32],
     d_add: usize,
-    d_sub: usize,
+    _d_sub: usize,
     m: usize,
     p: usize,
     n: usize,
@@ -369,7 +367,7 @@ pub fn tensor_tut_block(
     x_d: &[f32],
     y_d: &[f32],
     t_d: &mut [f32],
-    d_add: usize,
+    _d_add: usize,
     d_sub: usize,
     m: usize,
     p: usize,

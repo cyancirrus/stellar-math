@@ -1,9 +1,6 @@
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::matkerns::{kernel_mult, kernel_tmult};
-use crate::structure::ndarray::NdArray;
+use crate::kernel::matkerns::kernel_mult;
 use rayon::prelude::*;
-use rayon::slice::ParallelSlice;
-use std::cell::RefCell;
 
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 
