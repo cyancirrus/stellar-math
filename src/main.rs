@@ -12,5 +12,4 @@
 // 0. solve packing
 // 1. Animate demo        ← most legible to employers
 // 2. Blog redesign       ← makes everything else findable
-fn main() {
-}
+fn main() {}
