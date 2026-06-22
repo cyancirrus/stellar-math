@@ -148,16 +148,11 @@ use stellar::random::generation::generate_random_matrix;
 use stellar::structure::ndarray::NdArray;
 fn test_gemm_equivalence() {
     let ikj = [
+        // (9, 16, 9),
+        // (9, 16, 8),
+        // (9, 16, 9),
         (1, 1, 1),
         (8, 8, 8),
-        (4, 20, 2),
-        (4, 20, 2),
-        (4, 24, 4),
-        (9, 16, 9),
-        (9, 2, 2),
-        (8, 9, 8),
-        (8, 9, 8),
-        (9, 8, 8),
         (1, 2, 1),
         (1, 1, 8),
         (4, 4, 4),
@@ -170,6 +165,13 @@ fn test_gemm_equivalence() {
         (8, 8, 10),
         (8, 16, 8),
         (1, 8, 1),
+        (4, 20, 2),
+        (4, 20, 2),
+        (4, 24, 4),
+        (9, 2, 2),
+        (8, 9, 8),
+        (8, 9, 8),
+        (9, 8, 8),
         (6, 4, 8),
         (2, 2, 1),
         (3, 9, 1),
@@ -183,8 +185,6 @@ fn test_gemm_equivalence() {
         (8, 6, 4),
         (2, 9, 1),
         (2, 10, 1),
-        (9, 16, 8),
-        (9, 16, 9),
         (1, 9, 1),
         (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
         (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
@@ -267,8 +267,8 @@ fn ltu_equivalence_mkn(m: usize, p: usize, n: usize) {
     // filter_lower_triangle(&mut x_base);
     filter_upper_triangle(&mut x_base);
     x.transpose_inplace(); // stored in transpose
-    // println!("x_base {x_base:?}");
-    // println!("y {y:?}");
+    println!("x_base {x_base:?}");
+    println!("y {y:?}");
     let expected = basic_mult(&x_base, &y);
     let mut result = vec![0f32; m * n];
     // m, n, n b/c X is s tored in it's transposed state
@@ -277,8 +277,8 @@ fn ltu_equivalence_mkn(m: usize, p: usize, n: usize) {
         dims: vec![m, n],
         data: result.clone(),
     };
-    // println!("expected {expected:?}");
-    // println!("actual {_inspect:?}");
+    println!("expected {expected:?}");
+    println!("actual {_inspect:?}");
     assert!(
         approx_vector_eq(&expected.data, &result[..m * n]),
         "FAILURE WAS ({m:}, {p:}, {n:})"

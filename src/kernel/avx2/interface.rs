@@ -83,37 +83,6 @@ pub fn kernel_tlt_mult_simd(
         // }
     }
 }
-pub fn kernel_tut_mult_simd(
-    xptr: *const f32,
-    yptr: *const f32,
-    tptr: *mut f32,
-    d_add: usize,
-    d_sub: usize,
-    m: usize,
-    p: usize,
-    n: usize,
-    s_x: usize,
-    s_y: usize,
-    s_t: usize,
-) {
-    // TODO: no transpose implementation yet
-    let d_pos = d_add.saturating_sub(d_sub);
-    let d_neg = d_sub.saturating_sub(d_add);
-    // preprocess the diagonal when on boundary
-    let pre = d_neg;
-    // process the diagonal when occurred in range
-    let pro = d_pos.min(p);
-    // process the dense part
-    // debug_assert!(m >= d_neg, "m {m:}, d_neg: {d_neg:}");
-    let pos = (p - p.min(d_pos)).min(m - d_neg);
-    unsafe {
-        // if pos != 0 {
-        ltriangle::lmult_tut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
-        // } else {
-        //     kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
-        // }
-    }
-}
 pub fn kernel_ut_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
@@ -148,6 +117,37 @@ pub fn kernel_ut_mult_simd(
         } else {
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
+    }
+}
+pub fn kernel_tut_mult_simd(
+    xptr: *const f32,
+    yptr: *const f32,
+    tptr: *mut f32,
+    d_add: usize,
+    d_sub: usize,
+    m: usize,
+    p: usize,
+    n: usize,
+    s_x: usize,
+    s_y: usize,
+    s_t: usize,
+) {
+    let d_pos = d_add.saturating_sub(d_sub);
+    let d_neg = d_sub.saturating_sub(d_add);
+    // pre-allign left boundary point
+    let pre = m.min(d_neg);
+    // handle triangle part of upper triangular
+    let pos = (p - p.min(d_pos)).min(m - pre);
+
+    let pro = p.saturating_sub(d_pos + pos);
+    // println!("d_pos {d_pos:}, d_neg {d_neg:}");
+    println!("pre {pre:}, pro {pro:}, pos: {pos:}");
+    unsafe {
+        // if pos != 0 {
+        ltriangle::lmult_tut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+        // } else {
+        //     kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
+        // }
     }
 }
 /// handle when
