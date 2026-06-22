@@ -19,7 +19,6 @@ use crate::algebra::bmethods::contractions::{
 };
 
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
-// NOTE: could set these as cache sizes so threads reflect the amount of work
 // FASTEST
 const MC: usize = 40;
 const PC: usize = 160;
@@ -612,7 +611,7 @@ mod test_lower_and_upper_triangular_dispatch {
     /// * * *  / 0 * * *
     /// 0 * *  /
     /// 0 0 *  /
-    fn filter_upper_triangle(a: &mut NdArray) {
+    fn filter_upper_trapezoid(a: &mut NdArray) {
         // i - (m - n);
         let (m, n) = (a.dims[0], a.dims[1]);
         let data = &mut a.data;
@@ -632,7 +631,7 @@ mod test_lower_and_upper_triangular_dispatch {
     /// * * * * * * * * 0 0
     /// * * * * * * * * * 0
     /// * * * * * * * * * *
-    fn filter_lower_triangle(a: &mut NdArray) {
+    fn filter_lower_trapezoid(a: &mut NdArray) {
         let (rows, cols) = (a.dims[0], a.dims[1]);
         let d = &mut a.data;
         let t = cols.min(rows);
@@ -648,7 +647,7 @@ mod test_lower_and_upper_triangular_dispatch {
         let x = generate_random_matrix(m, p);
         let y = generate_random_matrix(p, n);
         let mut x_base = x.clone();
-        filter_lower_triangle(&mut x_base);
+        filter_lower_trapezoid(&mut x_base);
         let expected = basic_mult(&x_base, &y);
         let mut result = vec![0f32; m * n];
         tensor_lt_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
@@ -665,7 +664,7 @@ mod test_lower_and_upper_triangular_dispatch {
         let x = generate_random_matrix(m, p);
         let y = generate_random_matrix(p, n);
         let mut x_base = x.clone();
-        filter_upper_triangle(&mut x_base);
+        filter_upper_trapezoid(&mut x_base);
         let expected = basic_mult(&x_base, &y);
         let mut result = vec![0f32; m * n];
         tensor_ut_block(&x.data, &y.data, &mut result, m, p, n, p, n, n);
@@ -682,7 +681,7 @@ mod test_lower_and_upper_triangular_dispatch {
         let x = generate_random_matrix(m, p);
         let y = generate_random_matrix(p, n);
         let mut y_base = y.clone();
-        filter_lower_triangle(&mut y_base);
+        filter_lower_trapezoid(&mut y_base);
         // println!("x_base {x:?}");
         // println!("y_base {y_base:?}");
         let expected = basic_mult(&x, &y_base);
@@ -701,7 +700,7 @@ mod test_lower_and_upper_triangular_dispatch {
         let x = generate_random_matrix(m, p);
         let y = generate_random_matrix(p, n);
         let mut y_base = y.clone();
-        filter_upper_triangle(&mut y_base);
+        filter_upper_trapezoid(&mut y_base);
         // println!("x_base {x:?}");
         // println!("y_base {y_base:?}");
         let expected = basic_mult(&x, &y_base);
@@ -722,7 +721,7 @@ mod test_lower_and_upper_triangular_dispatch {
         let y = generate_random_matrix(p, n);
         let mut x = generate_random_matrix(m, p);
         let mut x_base = x.clone();
-        filter_lower_triangle(&mut x_base);
+        filter_lower_trapezoid(&mut x_base);
         x.transpose_inplace(); // stored in transpose
         // println!("x_base {x_base:?}");
         // println!("y {y:?}");
@@ -746,8 +745,8 @@ mod test_lower_and_upper_triangular_dispatch {
         let y = generate_random_matrix(p, n);
         let mut x = generate_random_matrix(m, p);
         let mut x_base = x.clone();
-        // filter_lower_triangle(&mut x_base);
-        filter_upper_triangle(&mut x_base);
+        // filter_lower_trapezoid(&mut x_base);
+        filter_upper_trapezoid(&mut x_base);
         x.transpose_inplace(); // stored in transpose
         // println!("x_base {x_base:?}");
         // println!("y {y:?}");

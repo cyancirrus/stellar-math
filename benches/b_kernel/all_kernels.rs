@@ -50,7 +50,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     // #[cfg(feature = "avx2")]
     // group.bench_function("AVX2 Kernel LT General Shape", |b_inner| {
     //     b_inner.iter(|| unsafe {
-    //         avx2::triangle::kernel_mult_lt_unalligned(
+    //         avx2::trapezoid::kernel_mult_lt_unalligned(
     //             black_box(a.as_mut_ptr()),
     //             black_box(b.as_ptr()),
     //             black_box(c_out.as_mut_ptr()),
@@ -66,7 +66,7 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     // #[cfg(feature = "avx2")]
     // group.bench_function("AVX2 Kernel UT General Shape", |b_inner| {
     //     b_inner.iter(|| unsafe {
-    //         avx2::triangle::kernel_mult_ut_unalligned(
+    //         avx2::trapezoid::kernel_mult_ut_unalligned(
     //             black_box(a.as_mut_ptr()),
     //             black_box(b.as_ptr()),
     //             black_box(c_out.as_mut_ptr()),

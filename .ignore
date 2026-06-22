@@ -5,3 +5,4 @@ examples/*
 *.bu
 *_bu.rs
 Cargo.lock
+benches/*

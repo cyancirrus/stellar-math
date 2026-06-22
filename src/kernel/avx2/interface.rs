@@ -1,5 +1,5 @@
 use crate::arch::SIMD_WIDTH;
-use crate::kernel::avx2::{alligned, ltriangle, rtriangle, unalligned};
+use crate::kernel::avx2::{alligned, ltrapezoid, rtrapezoid, unalligned};
 #[inline]
 pub fn kernel_mult_simd(
     xptr: *const f32,
@@ -66,7 +66,7 @@ pub fn kernel_lt_mult_simd(
     let pos = (p - p.min(d_pos)).min(m - d_neg);
     unsafe {
         if pos != 0 {
-            ltriangle::lmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+            ltrapezoid::lmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
@@ -96,7 +96,7 @@ pub fn kernel_tlt_mult_simd(
     let pos = (p - p.min(d_pos)).min(m - d_neg);
     unsafe {
         if pos != 0 {
-            ltriangle::lmult_tlt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+            ltrapezoid::lmult_tlt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
             kernel_tmult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
@@ -132,7 +132,7 @@ pub fn kernel_ut_mult_simd(
         yptr = yptr.add(d_pos * s_y);
         // tptr is constant ie target output vectors are fixed
         if pos != 0 {
-            ltriangle::lmult_ut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+            ltrapezoid::lmult_ut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
@@ -166,7 +166,7 @@ pub fn kernel_tut_mult_simd(
         // index down for target row of y for outer product
         yptr = yptr.add(d_pos * s_y);
         if pos != 0 {
-            ltriangle::lmult_tut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+            ltrapezoid::lmult_tut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
             kernel_tmult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
@@ -204,7 +204,7 @@ pub fn kernel_rlt_mult_simd(
         yptr = yptr.add(d_neg * s_y);
         p = p.saturating_sub(d_neg);
         if pos != 0 {
-            rtriangle::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+            rtrapezoid::rmult_lt(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
@@ -243,7 +243,7 @@ pub fn kernel_rut_mult_simd(
     let pos = (n.saturating_sub(pre)).min(p - pro);
     unsafe {
         if pos != 0 {
-            rtriangle::rmult_ut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
+            rtrapezoid::rmult_ut(xptr, yptr, tptr, pre, pro, pos, m, p, n, s_x, s_y, s_t);
         } else {
             kernel_mult_simd(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
         }
