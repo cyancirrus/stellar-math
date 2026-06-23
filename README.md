@@ -88,6 +88,24 @@ All feedback is welcome — this library is meant to evolve with community input
 
 ---
 
+## Terms for trapezoidal Kernels
+```
+L   -> lower triangular (lhs)
+U   -> upper triangular (lhs)
+R   -> right/rhs triangular
+T   -> transpose (prefix)
+LT  -> lower triangular lhs
+UT  -> upper triangular lhs
+TLT -> transpose lower triangular lhs (L'Y)
+TUT -> transpose upper triangular lhs (U'Y)
+RLT -> right lower triangular (XL)
+RUT -> right upper triangular (XU)
+```
+
+
+
+
+
 LLVM-MCA
 ``` bash to test specific test
 cargo test --features="avx2" --lib test_kernel_block
