@@ -4,7 +4,7 @@ use pprof::ProfilerGuard;
 use pprof::ProfilerGuardBuilder;
 use std::fs::File;
 use std::hint::black_box;
-use stellar::algebra::bmethods::tensor_kernel;
+use stellar::algebra::bmethods::interface::tensor_kernel;
 use stellar::random::generation::generate_random_matrix;
 
 const ITERS_PER_DIM: usize = 200;
