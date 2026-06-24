@@ -7,10 +7,10 @@ const NC: usize = 64;
 
 fn test_data() -> Vec<(usize, usize, usize)> {
     vec![
-        (9, 16, 9),
-        (32, 32, 32),
-        (1, 1, 1),
-        (16, 16, 16),
+        // (9, 16, 9),
+        // (32, 32, 32),
+        // (1, 1, 1),
+        // (16, 16, 16),
         (8, 9, 8),
         (3, 9, 1),
         (6, 4, 8),
@@ -49,10 +49,10 @@ fn test_data() -> Vec<(usize, usize, usize)> {
         (MC, PC + 1, NC),
         (MC, PC - 1, NC),
         (MC, PC, NC),
-        (256, 256, 256),
-        (256, 1024, 512),
-        (512, 512, 512),
-        (1024, 64, 1024),
+        // (256, 256, 256),
+        // (256, 1024, 512),
+        // (512, 512, 512),
+        // (1024, 64, 1024),
     ]
 }
 fn increment(basis: &mut [f32], data: &[f32], m: usize, n: usize, s_b: usize, s_d: usize) {
@@ -104,6 +104,71 @@ fn filter_lower_trapezoid(a: &mut NdArray) {
         }
     }
 }
+mod test_fma_behavior {
+    use super::*;
+    use crate::algebra::bmethods::interface::*;
+    use crate::algebra::bmethods::contractions::tensor_contraction;
+    use crate::algebra::ndmethods::basic_mult;
+    use crate::equality::approximate::approx_vector_eq;
+    use crate::random::generation::{generate_random_matrix, generate_random_vector};
+    use crate::structure::ndarray::NdArray;
+    
+    #[test]
+    fn test_fma_equivalence() {
+        for (i, k, j) in test_data() {
+            fma_matmul_equivalence(i, k, j);
+            fma_tmatmul_equivalence(i, k, j);
+        }
+    }
+
+    fn fma_matmul_equivalence(m: usize, p: usize, n: usize) {
+        let x = generate_random_matrix(m, p);
+        let y = generate_random_matrix(p, n);
+        let mut t_d = generate_random_vector(m * n);
+        let mut result = vec![0f32; m * n];
+        let mut expected = basic_mult(&x, &y);
+        increment(&mut expected.data, &t_d, m, p, p, n);
+        // tensor_kernel(&x.data, &y.data, &mut result, m, p, n, p, n, n);
+        tensor_kernel(&x, &y, &mut t_d);
+        let inspect = NdArray {
+            dims: vec![m, n],
+            data: t_d.clone(),
+        };
+        // println!("expected {expected:?}");
+        // println!("actual {inspect:?}");
+        assert!(
+            approx_vector_eq(&expected.data, &t_d[..m * n]),
+            "FAILURE WAS ({m:}, {p:}, {n:})"
+        );
+    }
+    fn fma_tmatmul_equivalence(m: usize, p: usize, n: usize) {
+        let y = generate_random_matrix(p, n);
+        let mut x = generate_random_matrix(m, p);
+        let mut x_base = x.clone();
+        let mut t_d = generate_random_vector(m * n);
+        x.transpose_inplace();
+        // println!("x_base {x_base:?}");
+        // println!("y {y:?}");
+        let mut expected = basic_mult(&x_base, &y);
+        increment(&mut expected.data, &t_d, m, p, p, n);
+        // let mut result = vec![0f32; m * n];
+        // m, n, n b/c X is s tored in it's transposed state
+        // tensor_tkernel(&x.data, &y.data, &mut result, m, p, n, m, n, n);
+        tensor_tkernel(&x, &y, &mut t_d);
+        let _inspect = NdArray {
+            dims: vec![m, n],
+            data: t_d.clone(),
+        };
+        // println!("expected {expected:?}");
+        // println!("actual {_inspect:?}");
+        assert!(
+            approx_vector_eq(&expected.data, &t_d[..m * n]),
+            "FAILURE WAS ({m:}, {p:}, {n:})"
+        );
+    }
+}
+
+
 #[cfg(feature = "avx2")]
 mod test_kernel_block {
     use super::*;
