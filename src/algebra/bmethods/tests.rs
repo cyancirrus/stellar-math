@@ -7,10 +7,10 @@ const NC: usize = 64;
 
 fn test_data() -> Vec<(usize, usize, usize)> {
     vec![
-        // (9, 16, 9),
-        // (32, 32, 32),
-        // (1, 1, 1),
-        // (16, 16, 16),
+        (9, 16, 9),
+        (32, 32, 32),
+        (1, 1, 1),
+        (16, 16, 16),
         (8, 9, 8),
         (3, 9, 1),
         (6, 4, 8),
@@ -49,10 +49,10 @@ fn test_data() -> Vec<(usize, usize, usize)> {
         (MC, PC + 1, NC),
         (MC, PC - 1, NC),
         (MC, PC, NC),
-        // (256, 256, 256),
-        // (256, 1024, 512),
-        // (512, 512, 512),
-        // (1024, 64, 1024),
+        (256, 256, 256),
+        (256, 1024, 512),
+        (512, 512, 512),
+        (1024, 64, 1024),
     ]
 }
 fn increment(basis: &mut [f32], data: &[f32], m: usize, n: usize, s_b: usize, s_d: usize) {
@@ -117,7 +117,7 @@ mod test_fma_behavior {
     fn test_fma_equivalence() {
         for (i, k, j) in test_data() {
             fma_matmul_equivalence(i, k, j);
-            // fma_tmatmul_equivalence(i, k, j);
+            fma_tmatmul_equivalence(i, k, j);
         }
     }
 
@@ -128,7 +128,6 @@ mod test_fma_behavior {
         let mut result = vec![0f32; m * n];
         let mut expected = basic_mult(&x, &y);
         increment(&mut expected.data, &t_d, m, n, n, n);
-        // tensor_kernel(&x.data, &y.data, &mut result, m, p, n, p, n, n);
         tensor_kernel(&x, &y, &mut t_d);
         let inspect = NdArray {
             dims: vec![m, n],
@@ -150,7 +149,7 @@ mod test_fma_behavior {
         // println!("x_base {x_base:?}");
         // println!("y {y:?}");
         let mut expected = basic_mult(&x_base, &y);
-        increment(&mut expected.data, &t_d, m, p, p, n);
+        increment(&mut expected.data, &t_d, m, n, n, n);
         // let mut result = vec![0f32; m * n];
         // m, n, n b/c X is s tored in it's transposed state
         // tensor_tkernel(&x.data, &y.data, &mut result, m, p, n, m, n, n);
