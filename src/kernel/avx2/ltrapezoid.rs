@@ -1,7 +1,7 @@
 use crate::kernel::avx2::constants::{MASK, cfma_accum, mask_load, mask_store_ctrl};
 use std::arch::x86_64::{__m256i, _mm256_loadu_si256};
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn lmult_lt(
+pub unsafe fn lmult_lt(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -72,7 +72,7 @@ pub fn lmult_lt(
     }
 }
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn lmult_tlt(
+pub unsafe fn lmult_tlt(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -145,7 +145,7 @@ pub fn lmult_tlt(
     }
 }
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn lmult_ut(
+pub unsafe fn lmult_ut(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -216,7 +216,7 @@ pub fn lmult_ut(
     }
 }
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn lmult_tut(
+pub unsafe fn lmult_tut(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,

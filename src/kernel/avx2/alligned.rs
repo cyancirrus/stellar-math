@@ -11,7 +11,7 @@ macro_rules! fma_accum {
     };
 }
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn kernel_mult_simd_alligned(
+pub unsafe fn kernel_mult_simd_alligned(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -23,7 +23,7 @@ pub fn kernel_mult_simd_alligned(
     kernel_mult_alligned!(xptr, yptr, tptr, SIMD_WIDTH, p, SIMD_WIDTH, s_x, s_y, s_t);
 }
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn kernel_tmult_simd_alligned(
+pub unsafe fn kernel_tmult_simd_alligned(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,

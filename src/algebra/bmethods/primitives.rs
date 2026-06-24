@@ -1,7 +1,6 @@
 use crate::arch::SIMD_WIDTH;
 use crate::kernel::matkerns::kernel_mult;
 
-
 /// # pack transfers a copy of data from d to pack
 /// * to inverse simply exchange d and b
 /// - d ~ M(r, s)

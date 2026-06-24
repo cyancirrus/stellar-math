@@ -17,7 +17,7 @@ use crate::kernel::default::{
 use crate::kernel::neon::kernel_mult_simd;
 
 #[inline(never)]
-pub fn kernel_mult(
+pub unsafe fn kernel_mult(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
@@ -42,7 +42,7 @@ pub fn kernel_mult(
 }
 /// (X')'Y
 #[inline(never)]
-pub fn kernel_tmult(
+pub unsafe fn kernel_tmult(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
@@ -66,7 +66,7 @@ pub fn kernel_tmult(
     );
 }
 #[inline(never)]
-pub fn kernel_lt_mult(
+pub unsafe fn kernel_lt_mult(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
@@ -94,7 +94,7 @@ pub fn kernel_lt_mult(
     );
 }
 #[inline(never)]
-pub fn kernel_tlt_mult(
+pub unsafe fn kernel_tlt_mult(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
@@ -122,7 +122,7 @@ pub fn kernel_tlt_mult(
     );
 }
 #[inline(never)]
-pub fn kernel_ut_mult(
+pub unsafe fn kernel_ut_mult(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
@@ -150,7 +150,7 @@ pub fn kernel_ut_mult(
     );
 }
 #[inline(never)]
-pub fn kernel_rlt_mult(
+pub unsafe fn kernel_rlt_mult(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
@@ -178,7 +178,7 @@ pub fn kernel_rlt_mult(
     );
 }
 #[inline(never)]
-pub fn kernel_rut_mult(
+pub unsafe fn kernel_rut_mult(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],
@@ -206,7 +206,7 @@ pub fn kernel_rut_mult(
     );
 }
 #[inline(never)]
-pub fn kernel_tut_mult(
+pub unsafe fn kernel_tut_mult(
     x: &[f32],
     y: &[f32],
     t: &mut [f32],

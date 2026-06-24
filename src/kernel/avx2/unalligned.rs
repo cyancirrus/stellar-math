@@ -6,7 +6,7 @@ use std::arch::x86_64::{
 };
 use stellar_macros::{kernel_mult_unalligned, kernel_tmult_unalligned};
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn kernel_mult_simd_unalligned(
+pub unsafe fn kernel_mult_simd_unalligned(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -20,7 +20,7 @@ pub fn kernel_mult_simd_unalligned(
     kernel_mult_unalligned!(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
 }
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn kernel_tmult_simd_unalligned(
+pub unsafe fn kernel_tmult_simd_unalligned(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,

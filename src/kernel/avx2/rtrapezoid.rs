@@ -1,7 +1,7 @@
 use crate::kernel::avx2::constants::{MASK, cfma_accum, feed_register, mask_load, mask_store_ctrl};
 
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn rmult_lt(
+pub unsafe fn rmult_lt(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -71,7 +71,7 @@ pub fn rmult_lt(
 }
 // // d = i - (m - n).max(0);
 #[target_feature(enable = "avx,avx2,fma")]
-pub fn rmult_ut(
+pub unsafe fn rmult_ut(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
