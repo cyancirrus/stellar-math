@@ -19,12 +19,7 @@ pub struct GaussianMixtureModel {
     pub variance: Vec<NdArray>,
 }
 
-pub fn gaussian(
-    x_bar: &mut [f32],
-    z_buf: &mut [f32],
-    det: f32,
-    lu: &LuPivotDecompose,
-) -> f32 {
+pub fn gaussian(x_bar: &mut [f32], z_buf: &mut [f32], det: f32, lu: &LuPivotDecompose) -> f32 {
     // xbar := x - mean;
     // we have x'Vx, where V := 1/ self.variance
     // solve sub problem LUx = z*; for z* and then <x, z*>

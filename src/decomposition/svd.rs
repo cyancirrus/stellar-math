@@ -15,9 +15,7 @@ pub fn golub_kahan(mut a: NdArray) -> NdArray {
     for o in 0..card {
         proj = householder_params(
             // column vector
-            (o..rows)
-                .map(|r| a.data[r * cols + o])
-                .collect(),
+            (o..rows).map(|r| a.data[r * cols + o]).collect(),
         );
         // (I - bvv')A => w := bv'A
         //  A -= vw'

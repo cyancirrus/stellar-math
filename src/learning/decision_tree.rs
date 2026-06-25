@@ -84,7 +84,7 @@ impl<'a> DecisionTree<'a> {
     pub fn _allow_params_(&self) {
         // want these for different impls must be implemented
         let _ = self.card;
-        assert!(false);
+        panic!("not yet implemented");
     }
     pub fn new(data: &'a Vec<Vec<f32>>, obs_sample: f32, dim_sample: f32) -> Self {
         if data.is_empty() || data[0].is_empty() {
@@ -107,14 +107,14 @@ impl<'a> DecisionTree<'a> {
         let card = buffer.len();
         let assign: Vec<usize> = vec![0; n_rows];
         let mut dimensions = Vec::with_capacity(dims);
-        let metadata = Metadata::derive(&buffer, &data);
+        let metadata = Metadata::derive(&buffer, data);
         let node = Node {
             prediction: metadata.predict(),
             partition: None,
         };
-        for d in 0..dims {
+        for d in data.iter().take(dims) {
             // sort indices by dimension
-            buffer.sort_by(|a, b| data[d][*a].partial_cmp(&data[d][*b]).unwrap());
+            buffer.sort_by(|a, b| d[*a].partial_cmp(&d[*b]).unwrap());
             dimensions.push(buffer.clone());
         }
         Self {
