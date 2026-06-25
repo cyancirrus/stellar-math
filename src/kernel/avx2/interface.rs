@@ -221,13 +221,13 @@ pub unsafe fn kernel_rlt_mult_simd(
 /// 0 * * * *
 /// 0 0 * * *
 pub unsafe fn kernel_rut_mult_simd(
-    mut xptr: *const f32,
-    mut yptr: *const f32,
+    xptr: *const f32,
+    yptr: *const f32,
     tptr: *mut f32,
     d_add: usize,
     d_sub: usize,
     m: usize,
-    mut p: usize,
+    p: usize,
     n: usize,
     s_x: usize,
     s_y: usize,

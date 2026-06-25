@@ -286,13 +286,3 @@ pub unsafe fn lmult_tut(
         mask_store_ctrl(mask_t[7], mask_n, tptr.add(s_t * 7), row7);
     }
 }
-#[cfg(test)]
-#[cfg(feature = "avx2")]
-mod test_avx2_kernels {
-    use super::*;
-    use crate::algebra::ndmethods::basic_mult;
-    use crate::equality::approximate::approx_vector_eq;
-    use crate::random::generation::generate_random_matrix;
-    use crate::structure::ndarray::NdArray;
-    const BLOCK_AVX2: usize = 8;
-}
