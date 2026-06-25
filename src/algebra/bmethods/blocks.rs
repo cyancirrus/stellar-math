@@ -52,11 +52,11 @@ pub fn tensor_block(
                         yend = pa * s_y;
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
-                        tensor_contraction(&x_pack, &y_pack, t_accum, ma, pa, na, PC, NC, NC);
+                        tensor_contraction(x_pack, y_pack, t_accum, ma, pa, na, PC, NC, NC);
                         yoffset += dy;
                     }
                     // unpack
-                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
             })
         });
@@ -92,12 +92,12 @@ pub fn tensor_tblock(
                         let pa = diff_min(p, pc, PC);
                         pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
                         pack(&y_d[yoffset + nc..], y_pack, pa, na, NC, s_y);
-                        tensor_tcontraction(&x_pack, &y_pack, t_accum, ma, pa, na, MC, NC, NC);
+                        tensor_tcontraction(x_pack, y_pack, t_accum, ma, pa, na, MC, NC, NC);
                         yoffset += dy;
                         xoffset += d_xt;
                     }
                     // unpack
-                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
             })
         });
@@ -138,12 +138,12 @@ pub fn tensor_lt_block(
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_lt_contraction(
-                            &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, PC, NC, NC,
+                            x_pack, y_pack, t_accum, d_add, pc, ma, pa, na, PC, NC, NC,
                         );
                         yoffset += dy;
                     }
                     // unpack
-                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
             })
         });
@@ -183,8 +183,8 @@ pub fn tensor_ut_block(
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_ut_contraction(
-                            &x_pack,
-                            &y_pack,
+                            x_pack,
+                            y_pack,
                             t_accum,
                             d_add,
                             d_sub + pc,
@@ -198,7 +198,7 @@ pub fn tensor_ut_block(
                         yoffset += dy;
                     }
                     // unpack
-                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
             })
         });
@@ -237,8 +237,8 @@ pub fn tensor_rlt_block(
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_rlt_contraction(
-                            &x_pack,
-                            &y_pack,
+                            x_pack,
+                            y_pack,
                             t_accum,
                             d_add + pc,
                             nc,
@@ -252,7 +252,7 @@ pub fn tensor_rlt_block(
                         yoffset += dy;
                     }
                     // unpack
-                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
             })
         });
@@ -290,8 +290,8 @@ pub fn tensor_rut_block(
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_rut_contraction(
-                            &x_pack,
-                            &y_pack,
+                            x_pack,
+                            y_pack,
                             t_accum,
                             d_add + nc,
                             pc,
@@ -305,7 +305,7 @@ pub fn tensor_rut_block(
                         yoffset += dy;
                     }
                     // unpack
-                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
             })
         });
@@ -350,13 +350,13 @@ pub fn tensor_tlt_block(
                         // pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         pack(&y_d[yoffset + nc..], y_pack, pa, na, NC, s_y);
                         tensor_tlt_contraction(
-                            &x_pack, &y_pack, t_accum, d_add, pc, ma, pa, na, MC, NC, NC,
+                            x_pack, y_pack, t_accum, d_add, pc, ma, pa, na, MC, NC, NC,
                         );
                         yoffset += dy;
                         xoffset += d_xt;
                     }
                     // unpack
-                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
             })
         });
@@ -398,8 +398,8 @@ pub fn tensor_tut_block(
                         pack(&x_d[xoffset..], x_pack, pa, ma, MC, s_x);
                         pack(&y_d[yoffset + nc..], y_pack, pa, na, NC, s_y);
                         tensor_tut_contraction(
-                            &x_pack,
-                            &y_pack,
+                            x_pack,
+                            y_pack,
                             t_accum,
                             d_add,
                             d_sub + pc,
@@ -414,7 +414,7 @@ pub fn tensor_tut_block(
                         xoffset += d_xt;
                     }
                     // unpack
-                    pack(&t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
             })
         });

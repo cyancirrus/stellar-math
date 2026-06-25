@@ -1,7 +1,6 @@
 #[cfg(test)]
 #[cfg(feature = "avx2")]
 mod test_fma_behavior {
-    use crate::algebra::bmethods::contractions::tensor_contraction;
     use crate::algebra::bmethods::interface::*;
     use crate::algebra::bmethods::tests::helpers::*;
     use crate::algebra::ndmethods::basic_mult;
@@ -21,14 +20,13 @@ mod test_fma_behavior {
         let x = generate_random_matrix(m, p);
         let y = generate_random_matrix(p, n);
         let mut t_d = generate_random_vector(m * n);
-        let mut result = vec![0f32; m * n];
         let mut expected = basic_mult(&x, &y);
         increment(&mut expected.data, &t_d, m, n, n, n);
         tensor_kernel(&x, &y, &mut t_d);
-        let inspect = NdArray {
-            dims: vec![m, n],
-            data: t_d.clone(),
-        };
+        // let inspect = NdArray {
+        //     dims: vec![m, n],
+        //     data: t_d.clone(),
+        // };
         // println!("expected {expected:?}");
         // println!("actual {inspect:?}");
         assert!(

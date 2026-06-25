@@ -77,7 +77,7 @@ pub fn exploration_priority(agg: &Aggregate, t: usize) -> f32 {
 /// * t -> time horizon
 pub fn max_multi_bandit(bandits: &[Bandit], aggs: &mut [Aggregate], t: usize) -> f32 {
     debug_assert_eq!(bandits.len(), aggs.len());
-    debug_assert!(bandits.len() != 0);
+    debug_assert!(bandits.is_empty());
     let n = bandits.len();
     let mut reward = 0f32;
     let mut pqueue: BinaryHeap<HeapNode> = BinaryHeap::new();
@@ -95,7 +95,7 @@ pub fn max_multi_bandit(bandits: &[Bandit], aggs: &mut [Aggregate], t: usize) ->
         a.sum += obs;
         a.square += obs * obs;
         a.count += 1f32;
-        let prio = exploration_priority(&a, k);
+        let prio = exploration_priority(a, k);
         pqueue.push(HeapNode { cat: p.cat, prio });
         reward += obs;
     }
