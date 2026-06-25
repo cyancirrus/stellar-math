@@ -1,14 +1,14 @@
 #[cfg(test)]
 #[cfg(feature = "avx2")]
 mod test_fma_behavior {
-    use crate::algebra::bmethods::tests::helpers::*;
-    use crate::algebra::bmethods::interface::*;
     use crate::algebra::bmethods::contractions::tensor_contraction;
+    use crate::algebra::bmethods::interface::*;
+    use crate::algebra::bmethods::tests::helpers::*;
     use crate::algebra::ndmethods::basic_mult;
     use crate::equality::approximate::approx_vector_eq;
     use crate::random::generation::{generate_random_matrix, generate_random_vector};
     use crate::structure::ndarray::NdArray;
-    
+
     #[test]
     fn test_fma_equivalence() {
         for (i, k, j) in test_data() {
@@ -188,4 +188,3 @@ mod test_fma_behavior {
         );
     }
 }
-

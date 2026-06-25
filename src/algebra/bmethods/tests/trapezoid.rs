@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test_kernel_trapezoids {
-    use crate::algebra::bmethods::tests::helpers::*;
     use crate::algebra::bmethods::interface::*;
+    use crate::algebra::bmethods::tests::helpers::*;
     use crate::algebra::ndmethods::basic_mult;
     use crate::equality::approximate::approx_vector_eq;
     use crate::random::generation::generate_random_matrix;
@@ -147,4 +147,3 @@ mod test_kernel_trapezoids {
         );
     }
 }
-

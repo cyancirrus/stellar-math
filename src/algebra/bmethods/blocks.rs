@@ -45,7 +45,7 @@ pub fn tensor_block(
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     // t_accum.fill(0f32);
-                    pack(&t[nc..tend],t_accum,  ma, na, NC, s_t);
+                    pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
@@ -85,7 +85,7 @@ pub fn tensor_tblock(
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     // t_accum.fill(0f32);
-                    pack(&t[nc..tend],t_accum,  ma, na, NC, s_t);
+                    pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut xoffset = mc_idx * MC;
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
