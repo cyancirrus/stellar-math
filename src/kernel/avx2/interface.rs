@@ -1,7 +1,7 @@
 use crate::arch::SIMD_WIDTH;
 use crate::kernel::avx2::{alligned, ltrapezoid, rtrapezoid, unalligned};
 #[inline]
-pub fn kernel_mult_simd(
+pub unsafe fn kernel_mult_simd(
     xptr: *const f32,
     yptr: *const f32,
     tptr: *mut f32,
@@ -22,7 +22,7 @@ pub fn kernel_mult_simd(
     }
 }
 #[inline]
-pub fn kernel_tmult_simd(
+pub unsafe fn kernel_tmult_simd(
     xptr: *const f32,
     yptr: *const f32,
     tptr: *mut f32,
@@ -42,7 +42,7 @@ pub fn kernel_tmult_simd(
         }
     }
 }
-pub fn kernel_lt_mult_simd(
+pub unsafe fn kernel_lt_mult_simd(
     xptr: *const f32,
     yptr: *const f32,
     tptr: *mut f32,
@@ -72,7 +72,7 @@ pub fn kernel_lt_mult_simd(
         }
     }
 }
-pub fn kernel_tlt_mult_simd(
+pub unsafe fn kernel_tlt_mult_simd(
     xptr: *const f32,
     yptr: *const f32,
     tptr: *mut f32,
@@ -102,7 +102,7 @@ pub fn kernel_tlt_mult_simd(
         }
     }
 }
-pub fn kernel_ut_mult_simd(
+pub unsafe fn kernel_ut_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -138,7 +138,7 @@ pub fn kernel_ut_mult_simd(
         }
     }
 }
-pub fn kernel_tut_mult_simd(
+pub unsafe fn kernel_tut_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -178,7 +178,7 @@ pub fn kernel_tut_mult_simd(
 /// * 0 0
 /// * * 0
 /// * * *
-pub fn kernel_rlt_mult_simd(
+pub unsafe fn kernel_rlt_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,
@@ -220,7 +220,7 @@ pub fn kernel_rlt_mult_simd(
 /// * * * * *
 /// 0 * * * *
 /// 0 0 * * *
-pub fn kernel_rut_mult_simd(
+pub unsafe fn kernel_rut_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
     tptr: *mut f32,

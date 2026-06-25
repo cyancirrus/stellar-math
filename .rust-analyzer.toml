@@ -1,0 +1,3 @@
+[cargo]
+features = ["avx2"]
+default-featres = ["avx2"]

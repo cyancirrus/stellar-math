@@ -10,7 +10,7 @@
 /// * stride : the number of cols in the output matrix c
 /// * offset : the outer k which will determine where we need to write
 #[inline(always)]
-pub fn kernel_mult_simd(
+pub unsafe fn kernel_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
     mut tptr: *mut f32,
@@ -62,7 +62,7 @@ pub fn kernel_tmult_simd(
     panic!("not yet implemented");
 }
 #[inline(always)]
-pub fn kernel_mult_scalar(
+pub unsafe fn kernel_mult_scalar(
     mut xptr: *const f32,
     mut yptr: *const f32,
     mut tptr: *mut f32,
@@ -99,7 +99,7 @@ pub fn kernel_mult_scalar(
         }
     }
 }
-pub fn kernel_lt_mult_simd(
+pub unsafe fn kernel_lt_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
     mut tptr: *mut f32,
@@ -138,7 +138,7 @@ pub fn kernel_lt_mult_simd(
         }
     }
 }
-pub fn kernel_ut_mult_simd(
+pub unsafe fn kernel_ut_mult_simd(
     mut xptr: *const f32,
     mut yptr: *const f32,
     mut tptr: *mut f32,

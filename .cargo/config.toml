@@ -1,0 +1,3 @@
+[build]
+# This tells cargo and rust-analyzer to enable the feature for this project
+rustflags = ["--cfg", 'feature="avx2"']
