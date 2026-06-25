@@ -1,4 +1,5 @@
 use std::fmt;
+use std::mem;
 
 #[derive(Clone)]
 pub struct NdArray {
@@ -187,9 +188,7 @@ impl NdArray {
                     data[idx] = val;
                     break;
                 }
-                let tmp = data[next];
-                data[next] = val;
-                val = tmp;
+                mem::swap(&mut data[next], &mut val);
                 curr = next;
             }
         }

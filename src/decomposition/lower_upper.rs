@@ -8,7 +8,6 @@ const EPSILON: f32 = 1e-8;
 /// * swaps: determines sign of determinant
 /// * pivots: how to get back information
 /// * matrix: what information is stored
-
 pub struct LuPivotDecompose {
     n: usize,
     swaps: usize,

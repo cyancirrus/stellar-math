@@ -20,8 +20,8 @@ pub struct GaussianMixtureModel {
 }
 
 pub fn gaussian(
-    x_bar: &mut Vec<f32>,
-    z_buf: &mut Vec<f32>,
+    x_bar: &mut [f32],
+    z_buf: &mut [f32],
     det: f32,
     lu: &LuPivotDecompose,
 ) -> f32 {
@@ -31,7 +31,7 @@ pub fn gaussian(
     debug_assert_eq!(x_bar.to_vec(), z_buf.to_vec());
     let card = x_bar.len();
     lu.solve_inplace_vec(z_buf);
-    let scaling = -dot_product(&z_buf, &x_bar) / 2f32;
+    let scaling = -dot_product(z_buf, x_bar) / 2f32;
     scaling.exp() / (2f32 * std::f32::consts::PI).powf(card as f32 / 2f32) * det.sqrt()
 }
 
@@ -47,7 +47,7 @@ fn ln_gaussian(
     debug_assert_eq!(x_bar.to_vec(), z_buf.to_vec());
     let card = x_bar.len();
     lu.solve_inplace_vec(z_buf);
-    let scaling = dot_product(&z_buf, &x_bar) / 2f32;
+    let scaling = dot_product(z_buf, x_bar) / 2f32;
     -(card as f32 / 2f32) * (2f32 * std::f32::consts::PI).ln() - 0.5f32 * ln_det - scaling
 }
 pub fn initialize_distribution(n: usize, rng: &mut ThreadRng) -> Vec<f32> {
@@ -78,7 +78,7 @@ impl GaussianMixtureModel {
     pub fn new(centroids: usize, cardinality: usize) -> Self {
         Self {
             centroids,
-            cardinality: cardinality,
+            cardinality,
             mixtures: vec![1f32 / centroids as f32; centroids],
             means: (0..centroids)
                 .map(|_| generate_random_vector(cardinality))

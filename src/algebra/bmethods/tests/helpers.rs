@@ -16,26 +16,17 @@ pub fn increment(basis: &mut [f32], data: &[f32], m: usize, n: usize, s_b: usize
         doffset += s_d;
     }
 }
-/// Case 1 / Case 2
-/// -------+---------
-/// * * *  / * * * *
-/// * * *  / 0 * * *
-/// 0 * *  /
-/// 0 0 *  /
 pub fn filter_upper_trapezoid(a: &mut NdArray) {
-    // i - (m - n);
     let (m, n) = (a.dims[0], a.dims[1]);
     let data = &mut a.data;
-    let mut d_sub = if m > n { m - n } else { 0 };
-    let mut d_plus = 0;
+    let mut d_sub = m.saturating_sub(n);
     for i in 0..m {
         for j in 0..n {
-            if j + d_sub >= d_plus {
+            if j + d_sub >= i {
                 break;
             }
             data[i * n + j] = 0f32;
         }
-        d_plus += 1;
     }
 }
 /// * * * * * * * 0 0 0
