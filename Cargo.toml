@@ -1,15 +1,9 @@
 [features]
+default = ["avx2"]
 avx2 = []
 avx512 = []
 neon = []
 
-# [lib]
-# proc-macro=true
-
-# [workspace] [ 
-#  "stellar",
-#  "stellar_macros"
-# ]
 
 
 [package]
@@ -70,3 +64,6 @@ opt-level = 3
 [profile.samply]
 inherits = "release"
 debug = true
+
+[package.metadata.clippy]
+too_many_arguments = "allow"

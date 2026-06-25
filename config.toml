@@ -1,6 +1,2 @@
 [build]
-rustflags = ["--cfg feature=\"avx2\""]
-# rustflags = ["-C", "target-cpu=native"]
-
-[cargo]
-rustflags = ["--cfg feature=\"avx2\""]
+rustflags = ["-C", "target-cpu=native"]
