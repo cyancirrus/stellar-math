@@ -16,7 +16,7 @@ use crate::algebra::bmethods::contractions::{
 const MC: usize = 40;
 const PC: usize = 160;
 const NC: usize = 120;
-
+/// Changing packing from T to t_accum.fill(0f32) causes new matrix in output buffer X * Y = T;
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }
@@ -44,7 +44,6 @@ pub fn tensor_block(
                 (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    // t_accum.fill(0f32);
                     pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
@@ -84,7 +83,6 @@ pub fn tensor_tblock(
                 let tend = ma * s_t;
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    // t_accum.fill(0f32);
                     pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut xoffset = mc_idx * MC;
                     let mut yoffset = 0;
@@ -130,7 +128,6 @@ pub fn tensor_lt_block(
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    // t_accum.fill(0f32);
                     pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
@@ -176,7 +173,6 @@ pub fn tensor_ut_block(
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    // t_accum.fill(0f32);
                     pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
@@ -231,7 +227,6 @@ pub fn tensor_rlt_block(
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    // t_accum.fill(0f32);
                     pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
@@ -285,7 +280,6 @@ pub fn tensor_rut_block(
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    // t_accum.fill(0f32);
                     pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
@@ -343,7 +337,6 @@ pub fn tensor_tlt_block(
                 let tend = ma * s_t;
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    // t_accum.fill(0f32);
                     pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     // base column offset
                     let mut xoffset = mc_idx * MC;
@@ -395,7 +388,6 @@ pub fn tensor_tut_block(
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
-                    // t_accum.fill(0f32);
                     // base column offset
                     let mut xoffset = mc_idx * MC;
                     let mut yoffset = 0;
