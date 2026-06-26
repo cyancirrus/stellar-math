@@ -60,15 +60,17 @@ pub unsafe fn mask_store_ctrl(ctrl: i32, mask: __m256i, tgt: *mut f32, data: __m
     }
 }
 #[inline(always)]
-pub fn cfma_accum(ctrl: i32, acc: __m256, sclr: *const f32, bout: __m256) -> __m256 {
+pub unsafe fn cfma_accum(ctrl: i32, acc: __m256, sclr: *const f32, bout: __m256) -> __m256 {
+    unsafe {
     if ctrl != 0 {
         fma_accum(acc, sclr, bout)
     } else {
         acc
     }
+    }
 }
 #[inline(always)]
-pub fn fma_accum(acc: __m256, sclr: *const f32, bout: __m256) -> __m256 {
+pub unsafe fn fma_accum(acc: __m256, sclr: *const f32, bout: __m256) -> __m256 {
     unsafe { _mm256_fmadd_ps(_mm256_broadcast_ss(&*sclr), bout, acc) }
 }
 #[inline(always)]

@@ -125,7 +125,7 @@ pub unsafe fn kernel_ut_mult_simd(
     debug_assert!(d_pos + pos <= p, "d_pos: {d_pos}, pos:{pos}, p:{p}");
     let pro = p - d_pos - pos;
     unsafe {
-        p = p - d_pos;
+        p -= d_pos;
         // index into specific column it's still outerproduct so same target
         xptr = xptr.add(d_pos);
         // index down for target row of y for outer product
@@ -160,7 +160,7 @@ pub unsafe fn kernel_tut_mult_simd(
     // process dense part
     let pro = p.saturating_sub(d_pos + pos);
     unsafe {
-        p = p - d_pos;
+        p -= d_pos;
         // index into specific column it's still outerproduct so same target
         xptr = xptr.add(d_pos * s_x);
         // index down for target row of y for outer product
@@ -192,7 +192,7 @@ pub unsafe fn kernel_rlt_mult_simd(
     s_t: usize,
 ) {
     let d_pos = d_add.saturating_sub(d_sub);
-    let d_neg = (d_sub).saturating_sub(d_add);
+    let d_neg = d_sub.saturating_sub(d_add);
     // pre how much the diagonal is shifted up and left
     let pre = d_pos;
     // how much triangle processing to be done
@@ -234,7 +234,7 @@ pub unsafe fn kernel_rut_mult_simd(
     s_t: usize,
 ) {
     let d_pos = d_add.saturating_sub(d_sub);
-    let d_neg = (d_sub).saturating_sub(d_add);
+    let d_neg = d_sub.saturating_sub(d_add);
     // pre how much the diagonal is shifted up and left
     let pre = d_neg;
     // how much dense processes to perform

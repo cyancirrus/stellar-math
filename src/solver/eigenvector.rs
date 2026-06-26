@@ -4,9 +4,6 @@ use crate::structure::ndarray::NdArray;
 // Tihnov
 // https://en.wikipedia.org/wiki/Ridge_regression
 
-// Learn runge kutta soon
-// https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
-
 const EPSILON: f32 = 1e-6;
 
 fn scale_identity(n: usize, c: f32) -> NdArray {
@@ -28,7 +25,7 @@ fn target_rotation_indices(matrix: &NdArray) -> (usize, usize) {
             break;
         }
     }
-    return (rswap, m - 1);
+    (rswap, m - 1)
 }
 
 fn row_swap(i: usize, j: usize, matrix: &mut NdArray) {
@@ -42,14 +39,14 @@ fn row_swap(i: usize, j: usize, matrix: &mut NdArray) {
     }
 }
 
-fn normalize(v: &mut Vec<f32>) {
+fn normalize(v: &mut [f32]) {
     let mut norm = 0f32;
-    for i in 0..v.len() {
-        norm += v[i] * v[i];
+    for vee in v.iter() {
+        norm += vee * vee;
     }
     norm = norm.sqrt();
-    for i in 0..v.len() {
-        v[i] /= norm;
+    for vee in v.iter_mut() {
+        *vee /= norm;
     }
 }
 
