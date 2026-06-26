@@ -118,7 +118,7 @@ impl NdSignal {
         let mut output = String::new();
         output.push_str("(\n");
         for i in 0..rows {
-            output.push_str("\t");
+            output.push('t');
             for j in 0..cols {
                 let idx = i * cols + j;
                 let formatted = format!("{:width$}", self.data[idx], width = max_width); // Format with the determined width
@@ -150,7 +150,7 @@ impl fmt::Debug for NdSignal {
         let mut output = String::new();
         output.push_str("(\n");
         for i in 0..rows {
-            output.push_str("\t");
+            output.push('\t');
             for j in 0..cols {
                 let idx = i * cols + j;
                 let formatted = format!("{:width$}", self.data[idx], width = max_width); // Format with the determined width

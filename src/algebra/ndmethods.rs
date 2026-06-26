@@ -1,21 +1,6 @@
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
-//fn multiply_summetric() {
-//    //TODO: Implement sketch below
-//    //
-//    // for j in (0..cols).rev()
-//    // for i in (j..rows).rev()
-//    // for k in (0..cols) {
-//    //   // store computed in the lower
-//    //   data[ i * cols + j] = data[i.min(k) * cols + k.max(i)] * data[k.min(j) * cols + j.max(k)];
-//    // }
-//    // for i in 0..rows {
-//    // for j in i+1..cols {
-//    //  data[i * cols + j] = data[j * cols + i]
-//    // }}
-//}
-
 pub fn create_identity_matrix(n: usize) -> NdArray {
     let mut data = vec![0f32; n * n];
     let dims = vec![n; 2];
@@ -84,7 +69,8 @@ pub fn tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {
     // let y_rows = y.dims[0];
     let y_cols = y.dims[1];
     let mut data: Vec<f32> = vec![0f32; x_rows * y_cols];
-    let k_end = (x_cols + blocksize - 1) / blocksize;
+    // let k_end = (x_cols + blocksize - 1) / blocksize;
+    let k_end = x_cols.div_ceil(blocksize);
     for i in (0..x_rows).step_by(blocksize) {
         let ii_end = blocksize.min(x_rows - i);
         for k in 0..k_end {

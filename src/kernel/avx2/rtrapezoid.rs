@@ -46,7 +46,6 @@ pub unsafe fn rmult_lt(
             xptr = xptr.add(1);
         }
         for _k in 0..pro {
-            // println!("in main loop");
             let b0 = mask_load(mask_n_reg, yptr);
             yptr = yptr.add(s_y);
             row0 = cfma_accum(mask_m[0], row0, xptr, b0);

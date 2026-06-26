@@ -18,7 +18,7 @@ pub fn pack(d: &[f32], b: &mut [f32], re: usize, se: usize, s_b: usize, s_d: usi
         let mut boffset = 0;
         for _ in 0..re {
             b.get_unchecked_mut(boffset..boffset + se)
-                .copy_from_slice(&d.get_unchecked(doffset..doffset + se));
+                .copy_from_slice(d.get_unchecked(doffset..doffset + se));
             boffset += s_b;
             doffset += s_d;
         }
