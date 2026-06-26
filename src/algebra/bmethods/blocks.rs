@@ -31,7 +31,7 @@ pub fn tensor_block(
     s_y: usize,
     s_t: usize,
 ) {
-    // suffix c: chunk, suffix a: actual
+    // suffix c: chunk, suffix a: actual 
     t_d.par_chunks_mut(MC * n)
         .zip(x_d.par_chunks(MC * p))
         .for_each(|(t, x)| {
