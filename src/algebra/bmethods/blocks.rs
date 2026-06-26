@@ -130,7 +130,8 @@ pub fn tensor_lt_block(
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    t_accum.fill(0f32);
+                    // t_accum.fill(0f32);
+                    pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
@@ -175,7 +176,8 @@ pub fn tensor_ut_block(
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    t_accum.fill(0f32);
+                    // t_accum.fill(0f32);
+                    pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
@@ -229,7 +231,8 @@ pub fn tensor_rlt_block(
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    t_accum.fill(0f32);
+                    // t_accum.fill(0f32);
+                    pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
@@ -282,7 +285,8 @@ pub fn tensor_rut_block(
                 let (xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    t_accum.fill(0f32);
+                    // t_accum.fill(0f32);
+                    pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
@@ -339,7 +343,8 @@ pub fn tensor_tlt_block(
                 let tend = ma * s_t;
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    t_accum.fill(0f32);
+                    // t_accum.fill(0f32);
+                    pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     // base column offset
                     let mut xoffset = mc_idx * MC;
                     let mut yoffset = 0;
@@ -389,7 +394,8 @@ pub fn tensor_tut_block(
                 let tend = ma * s_t;
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    t_accum.fill(0f32);
+                    pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
+                    // t_accum.fill(0f32);
                     // base column offset
                     let mut xoffset = mc_idx * MC;
                     let mut yoffset = 0;

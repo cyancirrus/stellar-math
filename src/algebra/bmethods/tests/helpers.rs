@@ -1,5 +1,10 @@
 use crate::structure::ndarray::NdArray;
 
+use crate::arch::SIMD_WIDTH;
+const MC: usize = 40;
+const PC: usize = 160;
+const NC: usize = 120;
+
 pub fn increment(basis: &mut [f32], data: &[f32], m: usize, n: usize, s_b: usize, s_d: usize) {
     let mut boffset = 0;
     let mut doffset = 0;
@@ -40,7 +45,6 @@ pub fn filter_lower_trapezoid(a: &mut NdArray) {
         }
     }
 }
-
 pub fn test_data() -> Vec<(usize, usize, usize)> {
     vec![
         // (9, 16, 9),
@@ -70,21 +74,21 @@ pub fn test_data() -> Vec<(usize, usize, usize)> {
         (4, 6, 8),
         (8, 6, 4),
         (8, 8, 8),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
-        // (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
-        // (MC + 1, PC, NC + 1),
-        // (MC + 1, PC, NC - 1),
-        // (MC + 1, PC, NC),
-        // (MC - 1, PC, NC),
-        // (MC, PC + 1, NC),
-        // (MC, PC - 1, NC),
-        // (MC, PC, NC),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH + 1, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH + 1, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH + 1),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH - 1, SIMD_WIDTH, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH - 1, SIMD_WIDTH),
+        (SIMD_WIDTH, SIMD_WIDTH, SIMD_WIDTH - 1),
+        (MC + 1, PC, NC + 1),
+        (MC + 1, PC, NC - 1),
+        (MC + 1, PC, NC),
+        (MC - 1, PC, NC),
+        (MC, PC + 1, NC),
+        (MC, PC - 1, NC),
+        (MC, PC, NC),
         // (256, 256, 256),
         // (256, 1024, 512),
         // (512, 512, 512),
