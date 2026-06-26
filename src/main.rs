@@ -1,4 +1,3 @@
-#![allow(unused)]
 // TODO:
 // then make the LX, async method
 // do the 16 x 16 instruction ie 512 for the tower

@@ -30,7 +30,6 @@ pub unsafe fn kernel_tmult_simd_unalligned(
     kernel_tmult_unalligned!(xptr, yptr, tptr, m, p, n, s_x, s_y, s_t);
 }
 #[cfg(test)]
-#[allow(dead_code, unused_imports, unused)]
 mod test_safe_kernels {
     use super::*;
     use crate::algebra::bmethods::blocks::tensor_block;
@@ -55,11 +54,11 @@ mod test_safe_kernels {
     fn test_mpn_dimensions(m: usize, p: usize, n: usize) {
         unsafe {
             let (s_x, s_y, s_z) = (p, n, n);
-            let mut x = generate_random_matrix(m, p);
-            let mut y = generate_random_matrix(p, n);
+            let x = generate_random_matrix(m, p);
+            let y = generate_random_matrix(p, n);
             let expect = basic_mult(&x, &y);
-            let mut x_simd = x.data.clone();
-            let mut y_simd = y.data.clone();
+            let x_simd = x.data.clone();
+            let y_simd = y.data.clone();
             let mut t = vec![0f32; m * n];
             kernel_mult_simd_unalligned(
                 x_simd.as_ptr(),
