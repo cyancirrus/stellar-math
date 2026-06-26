@@ -32,12 +32,9 @@ pub unsafe fn kernel_tmult_simd_unalligned(
 #[cfg(test)]
 mod test_safe_kernels {
     use super::*;
-    use crate::algebra::bmethods::blocks::tensor_block;
     use crate::algebra::ndmethods::basic_mult;
-    use crate::arch::SIMD_WIDTH;
     use crate::equality::approximate::approx_vector_eq;
     use crate::random::generation::generate_random_matrix;
-    use crate::structure::ndarray::NdArray;
     #[cfg(feature = "avx2")]
     #[test]
     fn test_safe_kernels_dimensions() {

@@ -1,8 +1,4 @@
-use crate::arch::SIMD_WIDTH;
 use crate::structure::ndarray::NdArray;
-const MC: usize = 16;
-const PC: usize = 32;
-const NC: usize = 64;
 
 pub fn increment(basis: &mut [f32], data: &[f32], m: usize, n: usize, s_b: usize, s_d: usize) {
     let mut boffset = 0;
@@ -18,7 +14,7 @@ pub fn increment(basis: &mut [f32], data: &[f32], m: usize, n: usize, s_b: usize
 pub fn filter_upper_trapezoid(a: &mut NdArray) {
     let (m, n) = (a.dims[0], a.dims[1]);
     let data = &mut a.data;
-    let mut d_sub = m.saturating_sub(n);
+    let d_sub = m.saturating_sub(n);
     for i in 0..m {
         for j in 0..n {
             if j + d_sub >= i {
