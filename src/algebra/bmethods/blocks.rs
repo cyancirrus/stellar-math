@@ -32,8 +32,8 @@ pub fn tensor_block(
     s_t: usize,
 ) {
     // suffix c: chunk, suffix a: actual
-    t_d.par_chunks_mut(MC * n)
-        .zip(x_d.par_chunks(MC * p))
+    t_d.par_chunks_mut(MC * s_t)
+        .zip(x_d.par_chunks(MC * s_x))
         .for_each(|(t, x)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
@@ -48,6 +48,7 @@ pub fn tensor_block(
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
+                        // let pa = diff_min(p, pc, PC);
                         yend = pa * s_y;
                         pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
@@ -72,7 +73,7 @@ pub fn tensor_tblock(
     s_t: usize,
 ) {
     // suffix c: chunk, suffix a: actual
-    t_d.par_chunks_mut(MC * n)
+    t_d.par_chunks_mut(MC * s_t)
         .enumerate()
         .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
@@ -116,8 +117,8 @@ pub fn tensor_lt_block(
     // diagonal
     // suffix c: chunk, suffix a: actual
     // let d_add = p - p.min(m) + 1;
-    t_d.par_chunks_mut(MC * n)
-        .zip(x_d.par_chunks(MC * p))
+    t_d.par_chunks_mut(MC * s_t)
+        .zip(x_d.par_chunks(MC * s_x))
         .enumerate()
         .for_each(|(mc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
@@ -161,8 +162,8 @@ pub fn tensor_ut_block(
 ) {
     // suffix c: chunk, suffix a: actual
     // let d_sub = m.saturating_sub(p);
-    t_d.par_chunks_mut(MC * n)
-        .zip(x_d.par_chunks(MC * p))
+    t_d.par_chunks_mut(MC * s_t)
+        .zip(x_d.par_chunks(MC * s_x))
         .enumerate()
         .for_each(|(mc_idx, (t, x))| {
             PACK.with(|workspace_cell| {
@@ -217,8 +218,8 @@ pub fn tensor_rlt_block(
     // diagonal
     // suffix c: chunk, suffix a: actual
     // let d_add = n - n.min(p);
-    t_d.par_chunks_mut(MC * n)
-        .zip(x_d.par_chunks(MC * p))
+    t_d.par_chunks_mut(MC * s_t)
+        .zip(x_d.par_chunks(MC * s_x))
         .for_each(|(t, x)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
@@ -270,8 +271,8 @@ pub fn tensor_rut_block(
 ) {
     // diagonal
     // let d_add = p - p.min(n) + 1;
-    t_d.par_chunks_mut(MC * n)
-        .zip(x_d.par_chunks(MC * p))
+    t_d.par_chunks_mut(MC * s_t)
+        .zip(x_d.par_chunks(MC * s_x))
         .for_each(|(t, x)| {
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
@@ -324,7 +325,7 @@ pub fn tensor_tlt_block(
     // diagonal
     // suffix c: chunk, suffix a: actual
     // let d_add = p - p.min(m) + 1;
-    t_d.par_chunks_mut(MC * n)
+    t_d.par_chunks_mut(MC * s_t)
         .enumerate()
         .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
@@ -375,7 +376,7 @@ pub fn tensor_tut_block(
     // diagonal
     // suffix c: chunk, suffix a: actual
     // let d_sub = m.saturating_sub(p);
-    t_d.par_chunks_mut(MC * n)
+    t_d.par_chunks_mut(MC * s_t)
         .enumerate()
         .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {

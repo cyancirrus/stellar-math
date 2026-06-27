@@ -9,10 +9,10 @@ const NC: usize = 120;
 pub fn pack_stride(target: &mut [f32], source: &[f32], m: usize, n: usize, s: usize) {
     for i in 0..m {
         for j in 0..s {
-            if j > n || source[i * n + j] == 0f32 {
+            if j >= n || source[i * n + j] == 0f32 {
                 target[i * s + j] = f32::INFINITY;
             } else {
-                target[i * s + j] = source[i * n + j]
+                target[i * s + j] = source[i * n + j];
             }
         }
     }
