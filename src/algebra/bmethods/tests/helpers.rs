@@ -5,6 +5,19 @@ const MC: usize = 40;
 const PC: usize = 160;
 const NC: usize = 120;
 
+/// m: rows, n: cols, s:stride
+pub fn pack_stride(target: &mut [f32], source: &[f32], m: usize, n: usize, s: usize) {
+    for i in 0..m {
+        for j in 0..s {
+            if j > n || source[i * n + j] == 0f32 {
+                target[i * s + j] = f32::INFINITY;
+            } else {
+                target[i * s + j] = source[i * n + j]
+            }
+        }
+    }
+}
+/// used to add C to X * Y ie X * Y + C for data validation
 pub fn increment(basis: &mut [f32], data: &[f32], m: usize, n: usize, s_b: usize, s_d: usize) {
     let mut boffset = 0;
     let mut doffset = 0;

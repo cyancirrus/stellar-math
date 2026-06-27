@@ -16,7 +16,7 @@ use crate::algebra::bmethods::contractions::{
 const MC: usize = 40;
 const PC: usize = 160;
 const NC: usize = 120;
-/// Changing packing from T to t_accum.fill(0f32) causes new matrix in output buffer X * Y = T;
+// Changing packing from T to t_accum.fill(0f32) causes new matrix in output buffer X * Y = T;
 thread_local! {
     static PACK: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>)> = RefCell::new((vec![0f32; MC * PC], vec![0f32; PC * NC], vec![0f32; MC * NC]));
 }

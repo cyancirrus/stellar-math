@@ -1,0 +1,54 @@
+// 1. Animate demo        ← most legible to employers
+// 2. Blog redesign       ← makes everything else findable
+// 3. check strides for kernels
+// 4. add a like a scalar mult by for the fma
+// 5. check FMA behavior for kernels
+// 6. change the pack fn to not fill 0, this only works for not FMA
+
+
+// ***** for diagonal arguments figure out what to do with d_add/d_sub when not used for stride interface
+
+
+
+// x^k ; row k of x
+// x_k ; colum k of x
+// [x^1 | x^2] ~ 2 vertically stacked rows
+// [x_1, x_2] ~ 2 columns of data horizontally stacked
+
+*
+	WY Deocmposition
+*
+A * Z;
+LQ * Z;
+L (I - WY') * Z;
+
+let Y = Y_lower + [I | 0]
+-------
+Y ~ M x K,
+T ~ K x K, // store the negative form of T into T
+Z ~ M x P;
+=>
+W ~ M x K; // call -W  temp0
+WY' ~ M x M; // orthogonal rotations makes sense
+=>
+(Y'Z) ~ K x P; // small call it temp1
+W * temp1 ; M x P // same as Z
+=>
+temp0 * temp1 + Z;
+fma(temp0, temp1, Z);
+
+temp0:
+Y * T ~ similarly pack the the first k rows of T, T ~ kxk, which ammounts to 0 fill T after packing to be M x K, with T at the top
+ie OutputBuffer ~ [T|0]; tall lower trapezoid with the top triangle to be non-pivoted T
+- after packing accumulate fma(Y_lower, T, output buffer);
+
+
+temp1:
+Y'Z => fill temp buffer with the first K rows of Z, increment left.add(1), rigth.add(s_y), p-=1,
+ie output buffer initialized [z^0 | z^1 | ...|z^k]; i.e stacked first k rows of z
+- after packing accumulate fma(Y_lower', Z, output buffer);
+
+
+finally
+pack Z into output buffer then
+fma(temp0, temp1, Z)
