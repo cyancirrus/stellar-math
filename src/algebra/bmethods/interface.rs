@@ -22,7 +22,15 @@ use crate::algebra::bmethods::blocks:: {
     tensor_tlt_block,
     tensor_tut_block,
 };
-
+#[rustfmt::skip]
+use crate::algebra::bmethods::diagonals:: {
+    diagonal_lt,
+    diagonal_ut,
+    diagonal_rlt,
+    diagonal_rut,
+    diagonal_tlt,
+    diagonal_tut,
+};
 const MINIKERN_GATE: usize = SIMD_WIDTH * SIMD_WIDTH;
 
 ///  tensor_kernel
@@ -47,56 +55,50 @@ pub fn tensor_tkernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
 pub fn tensor_lt_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
-    let (d_add, d_sub) = (p - p.min(m) + 1, 0);
+    let (d_add, d_sub) = diagonal_lt(m, p, n);
     stride_lt_kernel(&x.data, &y.data, target, d_add, d_sub, m, p, n, p, n, n);
 }
 #[inline(always)]
 pub fn tensor_ut_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
-    let (d_add, d_sub) = (0, m.saturating_sub(p));
+    let (d_add, d_sub) = diagonal_ut(m, p, n);
     stride_ut_kernel(&x.data, &y.data, target, d_add, d_sub, m, p, n, p, n, n);
 }
 #[inline(always)]
 pub fn tensor_rlt_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
-    let (d_add, d_sub) = (n - n.min(p), 0);
+    let (d_add, d_sub) = diagonal_rlt(m, p, n);
     stride_rlt_kernel(&x.data, &y.data, target, d_add, d_sub, m, p, n, p, n, n);
 }
 #[inline(always)]
 pub fn tensor_rut_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[1], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[0], y.dims[0], y.dims[1]);
-    let (d_add, d_sub) = (p - p.min(n) + 1, 0);
+    let (d_add, d_sub) = diagonal_rut(m, p, n);
     stride_rut_kernel(&x.data, &y.data, target, d_add, d_sub, m, p, n, p, n, n);
 }
 #[inline(always)]
 pub fn tensor_tlt_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[0], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[1], y.dims[0], y.dims[1]);
-    let (d_add, d_sub) = (p - p.min(m) + 1, 0);
+    let (d_add, d_sub) = diagonal_tlt(m, p, n);
+    // let (d_add, d_sub) = (p - p.min(m) + 1, 0);
     stride_tlt_kernel(&x.data, &y.data, target, d_add, d_sub, m, p, n, m, n, n);
 }
 #[inline(always)]
 pub fn tensor_tut_kernel(x: &NdArray, y: &NdArray, target: &mut [f32]) {
     debug_assert_eq!(x.dims[0], y.dims[0], "inner dimension mismatch");
     let (m, p, n) = (x.dims[1], y.dims[0], y.dims[1]);
-    let (d_add, d_sub) = (0, m.saturating_sub(p));
+    let (d_add, d_sub) = diagonal_tut(m, p, n);
     stride_tut_kernel(&x.data, &y.data, target, d_add, d_sub, m, p, n, m, n, n);
 }
 #[inline(always)]
-fn assert_stride_bounds(
-    b_x: usize,
-    b_y: usize,
-    b_t: usize,
-    s_x: usize,
-    s_y: usize,
-    s_t: usize,
-) {
-    debug_assert!( b_x <= s_x, "invaid x-stride length");
-    debug_assert!( b_y <= s_y, "invaid y-stride length");
-    debug_assert!( b_t <= s_t, "invaid t-stride length");
+fn assert_stride_bounds(b_x: usize, b_y: usize, b_t: usize, s_x: usize, s_y: usize, s_t: usize) {
+    debug_assert!(b_x <= s_x, "invaid x-stride length");
+    debug_assert!(b_y <= s_y, "invaid y-stride length");
+    debug_assert!(b_t <= s_t, "invaid t-stride length");
 }
 #[inline(always)]
 fn assert_stride_capacity(
@@ -110,9 +112,18 @@ fn assert_stride_capacity(
     s_y: usize,
     s_t: usize,
 ) {
-    debug_assert!( r_x * s_x <= x.len(), "valid x-vector not large enough for dims");
-    debug_assert!( r_y * s_y <= y.len(), "invalid y-vector not large enough for dims");
-    debug_assert!( r_t * s_t <= t.len(), "invalid t-vector not large enough for dims");
+    debug_assert!(
+        r_x * s_x <= x.len(),
+        "valid x-vector not large enough for dims"
+    );
+    debug_assert!(
+        r_y * s_y <= y.len(),
+        "invalid y-vector not large enough for dims"
+    );
+    debug_assert!(
+        r_t * s_t <= t.len(),
+        "invalid t-vector not large enough for dims"
+    );
 }
 #[rustfmt::skip]
 #[inline(always)]
@@ -127,6 +138,7 @@ pub fn stride_kernel(x: &[f32], y: &[f32], t: &mut [f32], m: usize, p: usize, n:
         tensor_block(x, y, t, m, p, n, s_x, s_y, s_t);
     }
 }
+#[rustfmt::skip]
 #[inline(always)]
 pub fn stride_tkernel(x: &[f32], y: &[f32], t: &mut [f32], m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
     #[cfg(debug_assertions)]
@@ -139,8 +151,9 @@ pub fn stride_tkernel(x: &[f32], y: &[f32], t: &mut [f32], m: usize, p: usize, n
         tensor_tblock(x, y, t, m, p, n, s_x, s_y, s_t);
     }
 }
+#[rustfmt::skip]
 #[inline(always)]
-pub fn stride_lt_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub:usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
+pub fn stride_lt_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add: usize, d_sub: usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
     #[cfg(debug_assertions)]
     assert_stride_bounds(p, n, n, s_x, s_y, s_t);
     #[cfg(debug_assertions)]
@@ -151,8 +164,9 @@ pub fn stride_lt_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub:
         tensor_lt_block(x, y, t, d_add, d_sub, m, p, n, s_x, s_y, s_t);
     }
 }
+#[rustfmt::skip]
 #[inline(always)]
-pub fn stride_ut_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub:usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
+pub fn stride_ut_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add: usize, d_sub: usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
     #[cfg(debug_assertions)]
     assert_stride_bounds(p, n, n, s_x, s_y, s_t);
     #[cfg(debug_assertions)]
@@ -163,8 +177,9 @@ pub fn stride_ut_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub:
         tensor_ut_block(x, y, t, d_add, d_sub, m, p, n, s_x, s_y, s_t);
     }
 }
+#[rustfmt::skip]
 #[inline(always)]
-pub fn stride_rlt_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub:usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
+pub fn stride_rlt_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add: usize, d_sub: usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
     #[cfg(debug_assertions)]
     assert_stride_bounds(p, n, n, s_x, s_y, s_t);
     #[cfg(debug_assertions)]
@@ -175,8 +190,9 @@ pub fn stride_rlt_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub
         tensor_rlt_block(x, y, t, d_add, d_sub, m, p, n, s_x, s_y, s_t);
     }
 }
+#[rustfmt::skip]
 #[inline(always)]
-pub fn stride_rut_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub:usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
+pub fn stride_rut_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add: usize, d_sub: usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
     #[cfg(debug_assertions)]
     assert_stride_bounds(p, n, n, s_x, s_y, s_t);
     #[cfg(debug_assertions)]
@@ -187,8 +203,9 @@ pub fn stride_rut_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub
         tensor_rut_block(x, y, t, d_add, d_sub, m, p, n, s_x, s_y, s_t);
     }
 }
+#[rustfmt::skip]
 #[inline(always)]
-pub fn stride_tlt_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub:usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
+pub fn stride_tlt_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add: usize, d_sub: usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
     #[cfg(debug_assertions)]
     assert_stride_bounds(m, n, n, s_x, s_y, s_t);
     #[cfg(debug_assertions)]
@@ -199,8 +216,9 @@ pub fn stride_tlt_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub
         tensor_tlt_block(x, y, t, d_add, d_sub, m, p, n, s_x, s_y, s_t);
     }
 }
+#[rustfmt::skip]
 #[inline(always)]
-pub fn stride_tut_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add:usize, d_sub:usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
+pub fn stride_tut_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add: usize, d_sub: usize, m: usize, p: usize, n: usize, s_x: usize, s_y: usize, s_t: usize) {
     #[cfg(debug_assertions)]
     assert_stride_bounds(m, n, n, s_x, s_y, s_t);
     #[cfg(debug_assertions)]
