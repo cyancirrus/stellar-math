@@ -52,12 +52,10 @@ impl AutumnDecomp {
             active_range -= 1;
             let tau = &mut t[p];
             let offset = p * cols;
-            let (projection, target) = h.data.split_at_mut(offset + cols);
+            let(projection, target) = h.data.split_at_mut(offset + cols);
             let projection = &mut projection[offset + p..offset + cols];
             *tau = params(projection);
-            if *tau == 0f32 {
-                continue
-            }
+            if *tau == 0f32 { continue; }
             let proj_suffix = &projection[1..];
             let split_range = proj_suffix.len();
             for i in 0..active_range {
