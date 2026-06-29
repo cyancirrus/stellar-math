@@ -11,6 +11,8 @@ pub struct AutumnDecomp {
     pub t: Vec<f32>,
 }
 
+const TOLERANCE:f32 = 1e-6;
+
 fn params(v: &mut [f32]) -> f32 {
     let mut max_element = 0f32;
     for val in v.iter() {
@@ -19,8 +21,9 @@ fn params(v: &mut [f32]) -> f32 {
             max_element = v
         };
     }
-    if max_element == 0f32 {
-        return max_element;
+    if max_element.abs() < TOLERANCE {
+        // return max_element;
+        return 0f32;
     }
     let mut magnitude_squared = 0f32;
     let inv_max_element = 1f32 / max_element;
@@ -52,6 +55,9 @@ impl AutumnDecomp {
             let (projection, target) = h.data.split_at_mut(offset + cols);
             let projection = &mut projection[offset + p..offset + cols];
             *tau = params(projection);
+            if *tau == 0f32 {
+                continue
+            }
             let proj_suffix = &projection[1..];
             let split_range = proj_suffix.len();
             for i in 0..active_range {

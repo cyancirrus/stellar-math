@@ -9,11 +9,11 @@ mod qr_decomposition {
 
     // test functions
     fn reconstruction(x: NdArray) {
-        let expected = x.clone();
+        let expect = x.clone();
         let qr = QrDecomposition::new(x);
         let mut result = qr.triangle.clone();
         qr.left_apply_q(&mut result);
-        assert!(approx_vector_eq(&result.data, &expected.data));
+        assert!(approx_vector_eq(&result.data, &expect.data));
     }
     fn random_reconstruction(n: usize) {
         let matrix = generate_random_matrix(n, n);

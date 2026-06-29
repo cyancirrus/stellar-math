@@ -333,7 +333,6 @@ impl LuPivotDecompose {
         }
     }
 }
-
 impl LuPivotDecompose {
     // Ax = b;
     // PA ~ LU;

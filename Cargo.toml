@@ -64,3 +64,4 @@ debug = true
 
 [lints.clippy]
 too_many_arguments = "allow"
+needless_range_loop = "allow"

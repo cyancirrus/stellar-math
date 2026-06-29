@@ -1,7 +1,7 @@
 use crate::algebra::ndmethods::create_identity_rectangle;
 use crate::decomposition::householder::{HouseholderReflection, householder_params};
 use crate::structure::ndarray::NdArray;
-
+const THRESHOLD: f32 = 1e-6;
 #[derive(Debug)]
 pub struct QrDecomposition {
     // Qn..Q1 * A = R;
@@ -28,6 +28,9 @@ impl QrDecomposition {
                 .collect::<Vec<f32>>();
             let proj = householder_params(column_vector);
             // x'A
+            if proj.beta.abs() < THRESHOLD {
+                continue;
+            }
             for j in o..=card {
                 for i in o..rows {
                     w[j] += proj.vector[i - o] * x.data[i * cols + j];
@@ -37,6 +40,7 @@ impl QrDecomposition {
                     x.data[i * cols + j] -= proj.vector[i - o] * w[j];
                 }
                 w[j] = 0f32;
+                // w[j] = 0f32;
             }
             projections.push(proj);
         }
@@ -66,7 +70,6 @@ impl QrDecomposition {
             triangle: x,
         }
     }
-
     pub fn projection_matrix(&self) -> NdArray {
         // Iteration is decreasing due to constraints
         // Computes H[i] <- f(Householder i, Hi-1)
@@ -84,6 +87,9 @@ impl QrDecomposition {
         // Q ~ M[i, i]
         for p in (0..card).rev() {
             let proj = &self.projections[p];
+            if proj.beta.abs() < THRESHOLD {
+                continue;
+            }
             for i in p..self.rows {
                 for j in p..self.cols {
                     w[i] += matrix.data[i * self.cols + j] * proj.vector[j - p];
@@ -97,21 +103,66 @@ impl QrDecomposition {
         }
         matrix
     }
+    // pub fn triangle_rotation(&mut self) {
+    //     // Specifically for the Schur algorithm which requires square matrices
+    //     // A' = Q'AQ = Q'(QR)Q = RQ
+    //     // RQ = R Product (I - buu');
+    //     // loop over card {
+    //     //     R -= b * (Ru)u';
+    //     //     w = Ru;
+    //     //     rij -= b * w_i * u_j;
+    //     //  }
+    //     debug_assert!(self.rows == self.cols);
+    //     let (m, n, card) = (self.rows, self.cols, self.card);
+    //     // let mut sum;
+    //     let tri = &mut self.triangle.data;
+    //     for c in 0..card {
+    //         let proj = &self.projections[c];
+    //         let pvec = &proj.vector;
+    //         let pbeta = proj.beta;
+    //         if pbeta.abs() < THRESHOLD {
+    //             continue;
+    //         }
+    //         for i in c..m {
+    //             let mut w_i = 0f32;
+    //             for j in i..n {
+    //                 w_i += tri[i * n + j] * pvec[j - c];
+    //             }
+    //             w_i *= pbeta;
+    //             for j in c..n {
+    //                 tri[i * n + j] -= w_i * pvec[j - c];
+    //             }
+    //         }
+    //     }
+    // }
     pub fn triangle_rotation(&mut self) {
         // Specifically for the Schur algorithm which requires square matrices
         // A' = Q'AQ = Q'(QR)Q = RQ
+        // RQ = R Product (I - buu');
+        // loop over card {
+        //     R -= b * (Ru)u';
+        //     w = Ru;
+        //     rij -= b * w_i * u_j;
+        //  }
         debug_assert!(self.rows == self.cols);
-        let mut sum;
-        for p in 0..self.card {
-            let proj = &self.projections[p];
-            for i in p..self.rows {
-                sum = 0f32;
-                for j in p..self.cols {
-                    sum += self.triangle.data[i * self.cols + j] * proj.vector[j - p];
+        let (m, n, card) = (self.rows, self.cols, self.card);
+        // let mut sum;
+        let tri = &mut self.triangle.data;
+        for c in 0..card {
+            let proj = &self.projections[c];
+            let pvec = &proj.vector;
+            let pbeta = proj.beta;
+            if pbeta.abs().abs() < THRESHOLD {
+                continue;
+            }
+            for i in c..m {
+                let mut w_i = 0f32;
+                for j in i..n {
+                    w_i += tri[i * n + j] * pvec[j - c];
                 }
-                sum *= proj.beta;
-                for j in p..self.cols {
-                    self.triangle.data[i * self.cols + j] -= sum * proj.vector[j - p];
+                w_i *= pbeta;
+                for j in c..n {
+                    tri[i * n + j] -= w_i * pvec[j - c];
                 }
             }
         }
@@ -124,6 +175,9 @@ impl QrDecomposition {
         for p in 0..self.card {
             let proj = &self.projections[p];
             // ( I - Bvv') is symmetric order matters
+            if proj.beta.abs() < THRESHOLD {
+                continue;
+            }
             for j in 0..tcols {
                 sum = 0f32;
                 for i in p..trows.min(self.rows) {
@@ -148,6 +202,9 @@ impl QrDecomposition {
         for p in (0..self.card).rev() {
             let proj = &self.projections[p];
             for j in 0..tcols {
+                if proj.beta.abs() < THRESHOLD {
+                    continue;
+                }
                 sum = 0f32;
                 for i in p..trows.min(self.rows) {
                     sum += proj.vector[i - p] * target.data[i * tcols + j];
@@ -169,6 +226,9 @@ impl QrDecomposition {
         let mut sum;
         for p in 0..self.card {
             let proj = &self.projections[p];
+            if proj.beta.abs() < THRESHOLD {
+                continue;
+            }
             for i in 0..trows {
                 sum = 0f32;
                 // inner product of a[i][*] and u[p]
@@ -192,6 +252,9 @@ impl QrDecomposition {
         let mut sum;
         for p in (0..self.card).rev() {
             let proj = &self.projections[p];
+            if proj.beta.abs() < THRESHOLD {
+                continue;
+            }
             for i in 0..trows {
                 sum = 0f32;
                 // inner product of a[i][*] and u[p]
@@ -214,6 +277,9 @@ impl QrDecomposition {
         for p in (0..self.card).rev() {
             scalar = 0f32;
             let proj = &self.projections[p];
+            if proj.beta.abs() < THRESHOLD {
+                continue;
+            }
             for i in p..self.rows {
                 scalar += data[i] * proj.vector[i - p];
             }

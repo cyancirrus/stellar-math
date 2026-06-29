@@ -7,7 +7,7 @@ const EPSILON: f32 = 1e-6;
 pub fn approx_scalar_eq(a: f32, b: f32) -> bool {
     (a - b).abs() < TOLERANCE
 }
-pub fn approx_vector_eq(a: &[f32], b: &[f32]) -> bool {
+pub fn approx_vector_tol_eq(a: &[f32], b: &[f32], tolerance: f32) -> bool {
     let n = a.len();
     let mut error = 0f32;
     for i in 0..n {
@@ -16,7 +16,11 @@ pub fn approx_vector_eq(a: &[f32], b: &[f32]) -> bool {
         }
         error += (a[i] - b[i]).abs();
     }
-    error / (n as f32).sqrt() < TOLERANCE
+    println!("error {error:?}");
+    error / (n as f32).sqrt() < tolerance
+}
+pub fn approx_vector_eq(a: &[f32], b: &[f32]) -> bool {
+    approx_vector_tol_eq(a, b, TOLERANCE)
 }
 pub fn approx_condition_eq(a: &[f32], b: &[f32], k: &f32) -> bool {
     let mut diff_norm = 0f32;

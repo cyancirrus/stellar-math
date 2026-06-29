@@ -115,7 +115,7 @@ cargo test --features="avx2" --lib test_kernel_block
 cargo expand --features avx2 --bin stellar
 cargo expand --lib --features avx2 kernel::avx2::alligned 
 cargo expand --lib --features avx2 kernel::avx2::unalligned 
-
+cargo test schur_decomposition
 ```
 
 
