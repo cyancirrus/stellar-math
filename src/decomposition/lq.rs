@@ -1,7 +1,7 @@
 use crate::structure::ndarray::NdArray;
 
-///  AutumnDecomp
-/// QrDecomp
+/// AutumnDecomp
+/// LQ Decomp
 ///
 /// * h: HouseholderMatrix - row major form
 /// * t: tau vector with cardinality
@@ -11,7 +11,7 @@ pub struct AutumnDecomp {
     pub t: Vec<f32>,
 }
 
-const TOLERANCE:f32 = 1e-6;
+const TOLERANCE: f32 = 1e-6;
 
 fn params(v: &mut [f32]) -> f32 {
     let mut max_element = 0f32;
@@ -52,10 +52,12 @@ impl AutumnDecomp {
             active_range -= 1;
             let tau = &mut t[p];
             let offset = p * cols;
-            let(projection, target) = h.data.split_at_mut(offset + cols);
+            let (projection, target) = h.data.split_at_mut(offset + cols);
             let projection = &mut projection[offset + p..offset + cols];
             *tau = params(projection);
-            if *tau == 0f32 { continue; }
+            if *tau == 0f32 {
+                continue;
+            }
             let proj_suffix = &projection[1..];
             let split_range = proj_suffix.len();
             for i in 0..active_range {
@@ -92,43 +94,7 @@ impl AutumnDecomp {
         }
         let h = &self.h.data;
         let t = &mut target.data;
-        let n = &self.t;
-        let mut offset = 0;
-        let workspace = &mut workspace[0..tcols];
-        for p in 0..rows {
-            let tau = n[p];
-            let h_suffix = &h[offset + p + 1..offset + cols];
-            {
-                let toffset = p * tcols;
-                workspace.copy_from_slice(&t[toffset..toffset + tcols]);
-            }
-            for i in p + 1..trows {
-                let toffset = i * tcols;
-                let t_suffix = &t[toffset..toffset + tcols];
-                let scalar = h_suffix[i - p - 1];
-                for j in 0..tcols {
-                    workspace[j] += scalar * t_suffix[j];
-                }
-            }
-            {
-                let toffset = p * tcols;
-                let t_suffix = &mut t[toffset..toffset + tcols];
-                for j in 0..tcols {
-                    let temp = tau * workspace[j];
-                    workspace[j] = temp;
-                    t_suffix[j] -= temp;
-                }
-            }
-            for i in p + 1..trows {
-                let toffset = i * tcols;
-                let t_suffix = &mut t[toffset..toffset + tcols];
-                let scalar = h_suffix[i - p - 1];
-                for j in 0..tcols {
-                    t_suffix[j] -= scalar * workspace[j];
-                }
-            }
-            offset += cols;
-        }
+        self.abcleft_apply_q(t, workspace, trows, tcols);
         if cols < trows {
             target.resize_rows(cols);
         }
@@ -147,54 +113,21 @@ impl AutumnDecomp {
         let t = &mut target.data;
         let n = &self.t;
         let workspace = &mut workspace[0..tcols];
-        let mut offset = rows * cols;
-        let mut toffset = trows * tcols;
-        let mut roffset;
-        for p in (0..rows).rev() {
-            let tau = n[p];
-            offset -= cols;
-            toffset -= tcols;
-            let h_suffix = &h[offset + p + 1..offset + cols];
-            {
-                workspace.copy_from_slice(&t[toffset..toffset + tcols]);
-            }
-            roffset = p * tcols;
-            for i in p + 1..trows {
-                roffset += tcols;
-                let t_suffix = &t[roffset..roffset + tcols];
-                let scalar = h_suffix[i - p - 1];
-                for j in 0..tcols {
-                    workspace[j] += scalar * t_suffix[j];
-                }
-            }
-            {
-                let t_suffix = &mut t[toffset..toffset + tcols];
-                for j in 0..tcols {
-                    // scale w by tao for reuse below
-                    let temp = workspace[j] * tau;
-                    workspace[j] = temp;
-                    t_suffix[j] -= temp;
-                }
-            }
-            roffset = p * tcols;
-            for i in p + 1..trows {
-                roffset += tcols;
-                let t_suffix = &mut t[roffset..roffset + tcols];
-                let scalar = h_suffix[i - p - 1];
-                for j in 0..tcols {
-                    t_suffix[j] -= scalar * workspace[j];
-                }
-            }
-        }
+        self.abcleft_apply_qt(t, workspace, trows, tcols);
         if cols < trows {
             target.resize_rows(cols);
         }
     }
     pub fn right_apply_q(&self, target: &mut NdArray, workspace: &mut [f32]) {
-        unsafe { self.right_apply_q_impl(target, workspace) }
+        unsafe {
+            let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+            let (trows, tcols) = (target.dims[0], target.dims[1]);
+            let h = &self.h.data;
+            let t = &mut target.data;
+            self.abcright_apply_q(t, workspace, trows, tcols);
+        }
+        // unsafe { self.right_apply_q_impl(target, workspace) }
     }
-
-    // #[target_feature(enable = "avx2,fma")]
     unsafe fn right_apply_q_impl(&self, target: &mut NdArray, workspace: &mut [f32]) {
         unsafe {
             let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
@@ -239,88 +172,6 @@ impl AutumnDecomp {
             }
         }
     }
-    // pub fn right_apply_q(&self, target: &mut NdArray, workspace: &mut [f32]) {
-    //     let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
-    //     let (trows, tcols) = (target.dims[0], target.dims[1]);
-    //     let h = &self.h.data;
-    //     let t = &mut target.data;
-    //     let n = &self.t;
-    //     let mut offset = rows * cols;
-    //     assert!(workspace.len() >= trows);
-    //     assert_eq!(tcols, cols);
-    //     assert_eq!(rows * cols, h.len());
-    //     assert_eq!(trows * tcols, t.len());
-    //     let mut t_ptr ;
-    //     let h_ptr = h.as_ptr();
-    //     let n_ptr = n.as_ptr();
-    //     let w_ptr = workspace.as_mut_ptr();
-
-    //     unsafe {
-    //         for p in (0..rows).rev() {
-    //             offset -= cols;
-    //             let h_suffix_ptr = h_ptr.add(offset + p + 1);
-    //             let split_range = cols - p - 1;
-    //             t_ptr = t.as_mut_ptr();
-    //             for i in 0..trows {
-    //                 let mut wi = *t_ptr.add(p);
-    //                 let dst = t_ptr.add(p + 1);
-    //                 for j in 0..split_range {
-    //                     wi += *h_suffix_ptr.add(j) * *dst.add(j);
-    //                 }
-    //                 *w_ptr.add(i) = wi;
-    //                 t_ptr = t_ptr.add(tcols);
-    //             }
-    //             t_ptr = t.as_mut_ptr();
-    //             let tau = *n_ptr.add(p);
-    //             for i in 0..trows {
-    //                 let wi = tau * *w_ptr.add(i);
-    //                 *t_ptr.add(p) -= wi;
-    //                 let dst = t_ptr.add(p + 1);
-    //                 for j in 0..split_range {
-    //                     *dst.add(j) -= wi * *h_suffix_ptr.add(j);
-    //                 }
-    //                 t_ptr = t_ptr.add(tcols);
-    //             }
-    //         }
-    //     }
-    // }
-    // pub fn right_apply_q(&self, target: &mut NdArray) {
-    //     // A * Q
-    //     let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
-    //     let (trows, tcols) = (target.dims[0], target.dims[1]);
-    //     debug_assert_eq!(tcols, cols);
-    //     if cols > tcols {
-    //         target.resize_cols(cols);
-    //     }
-    //     let h = &self.h.data;
-    //     let t = &mut target.data;
-    //     let n = &self.t;
-    //     let mut offset = rows * cols;
-    //     for p in (0..rows).rev() {
-    //         offset -= cols;
-    //         let tau = n[p];
-    //         let h_suffix = &h[offset + p + 1..offset + cols];
-    //         let split_range = h_suffix.len();
-    //         for i in 0..trows {
-    //             let roffset = i * tcols;
-    //             let mut wi = t[roffset + p];
-    //             {
-    //                 let targ_suffix = &mut t[roffset + p + 1..roffset + tcols];
-    //                 for j in 0..split_range {
-    //                     wi += h_suffix[j] * targ_suffix[j];
-    //                 }
-    //                 wi *= tau;
-    //                 for j in 0..split_range {
-    //                     targ_suffix[j] -= wi * h_suffix[j];
-    //                 }
-    //             }
-    //             t[roffset + p] -= wi;
-    //         }
-    //     }
-    //     if cols < tcols {
-    //         target.resize_cols(cols);
-    //     }
-    // }
     pub fn right_apply_qt(&self, target: &mut NdArray) {
         // A * Q'
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
@@ -331,6 +182,228 @@ impl AutumnDecomp {
         }
         let h = &self.h.data;
         let t = &mut target.data;
+        self.abcright_apply_qt(t, trows, tcols);
+        if cols < tcols {
+            target.resize_cols(cols);
+        }
+    }
+    pub fn left_apply_l(&self, target: &mut NdArray, workspace: &mut [f32]) {
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        debug_assert_eq!(rows, trows);
+        debug_assert!(workspace.len() >= tcols);
+        if rows > trows {
+            target.resize_rows(rows);
+        }
+        let h = &self.h.data;
+        let workspace = &mut workspace[..tcols];
+        let t = &mut target.data;
+        self.abcleft_apply_l(t, workspace, trows, tcols);
+        if rows < trows {
+            target.resize_rows(rows);
+        }
+    }
+    pub fn left_apply_lt(&self, target: &mut NdArray, workspace: &mut [f32]) {
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        debug_assert_eq!(rows, trows);
+        debug_assert!(workspace.len() >= tcols);
+        if rows > trows {
+            target.resize_rows(rows);
+        }
+        let h = &self.h.data;
+        let t = &mut target.data;
+        let workspace = &mut workspace[..tcols];
+        self.abcleft_apply_lt(t, workspace, trows, tcols);
+        if rows < trows {
+            target.resize_rows(rows);
+        }
+    }
+    pub fn right_apply_l(&self, target: &mut NdArray) {
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        debug_assert_eq!(tcols, rows);
+        if rows > tcols {
+            target.resize_cols(rows);
+        }
+        let t = &mut target.data;
+        self.abcright_apply_l(t, trows, tcols);
+        if rows < tcols {
+            target.resize_cols(rows);
+        }
+    }
+    pub fn right_apply_lt(&self, target: &mut NdArray) {
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        debug_assert_eq!(tcols, rows);
+        if rows > tcols {
+            target.resize_cols(rows);
+        }
+        let t = &mut target.data;
+        self.abcright_apply_lt(t, trows, tcols);
+        if rows < tcols {
+            target.resize_cols(rows);
+        }
+    }
+    pub fn ql_apply(&self, target: &mut NdArray, workspace: &mut [f32]) {
+        target.data.fill(0f32);
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        self.abcql_apply(&mut target.data, workspace, rows, cols);
+    }
+}
+impl AutumnDecomp {
+    pub fn abcleft_apply_q(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+        // Q * A
+        // implied dimension of q ~ cols x cols
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        debug_assert_eq!(cols, trows);
+        debug_assert!(workspace.len() >= tcols);
+        let h = &self.h.data;
+        let n = &self.t;
+        let mut offset = 0;
+        let workspace = &mut workspace[0..tcols];
+        // Q = product(I - tau * uu') * x
+        // => loop k { x -= b * uu'x }
+        for p in 0..rows {
+            let tau = n[p];
+            let h_suffix = &h[offset + p + 1..offset + cols];
+            // implicit 1 on the diagonal and zero the buffer of w to zero
+            {
+                let toffset = p * tcols;
+                workspace.copy_from_slice(&t[toffset..toffset + tcols]);
+            }
+            // w = u_i * x^j;
+            for i in p + 1..trows {
+                let toffset = i * tcols;
+                let t_suffix = &t[toffset..toffset + tcols];
+                // u_ij
+                let scalar = h_suffix[i - p - 1];
+                for j in 0..tcols {
+                    workspace[j] += scalar * t_suffix[j];
+                }
+            }
+            // w*' = tau * w;
+            {
+                // Q[p] Matrix Block ~ [I, 0],[0, I - tau * uu']
+                let toffset = p * tcols;
+                let t_suffix = &mut t[toffset..toffset + tcols];
+                for j in 0..tcols {
+                    let temp = tau * workspace[j];
+                    workspace[j] = temp;
+                    t_suffix[j] -= temp;
+                }
+                // x^i -= u_i * w;
+            }
+            // x_ij -= u_i * w_j;
+            for i in p + 1..trows {
+                let toffset = i * tcols;
+                let t_suffix = &mut t[toffset..toffset + tcols];
+                let scalar = h_suffix[i - p - 1];
+                for j in 0..tcols {
+                    t_suffix[j] -= scalar * workspace[j];
+                }
+            }
+            offset += cols;
+        }
+    }
+    pub fn abcleft_apply_qt(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+        // Q * A
+        // implied dimension of q ~ cols x cols
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        debug_assert_eq!(cols, trows);
+        debug_assert!(workspace.len() >= tcols);
+        let h = &self.h.data;
+        let n = &self.t;
+        let workspace = &mut workspace[0..tcols];
+        let mut offset = rows * cols;
+        let mut toffset = trows * tcols;
+        let mut roffset;
+        for p in (0..rows).rev() {
+            let tau = n[p];
+            offset -= cols;
+            toffset -= tcols;
+            let h_suffix = &h[offset + p + 1..offset + cols];
+            {
+                workspace.copy_from_slice(&t[toffset..toffset + tcols]);
+            }
+            roffset = p * tcols;
+            for i in p + 1..trows {
+                roffset += tcols;
+                let t_suffix = &t[roffset..roffset + tcols];
+                let scalar = h_suffix[i - p - 1];
+                for j in 0..tcols {
+                    workspace[j] += scalar * t_suffix[j];
+                }
+            }
+            {
+                let t_suffix = &mut t[toffset..toffset + tcols];
+                for j in 0..tcols {
+                    // scale w by tao for reuse below
+                    let temp = workspace[j] * tau;
+                    workspace[j] = temp;
+                    t_suffix[j] -= temp;
+                }
+            }
+            roffset = p * tcols;
+            for i in p + 1..trows {
+                roffset += tcols;
+                let t_suffix = &mut t[roffset..roffset + tcols];
+                let scalar = h_suffix[i - p - 1];
+                for j in 0..tcols {
+                    t_suffix[j] -= scalar * workspace[j];
+                }
+            }
+        }
+    }
+    pub fn abcright_apply_q(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+        unsafe { self.abcright_apply_q_impl(t, workspace, trows, tcols) }
+    }
+    unsafe fn abcright_apply_q_impl(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+        unsafe {
+            let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+            let h = &self.h.data;
+            let n = &self.t;
+            let mut offset = rows * cols;
+            assert!(workspace.len() >= trows);
+            assert_eq!(tcols, cols);
+            assert_eq!(rows * cols, h.len());
+            assert_eq!(trows * tcols, t.len());
+            let mut t_ptr;
+            let h_ptr = h.as_ptr();
+            let n_ptr = n.as_ptr();
+            let w_ptr = workspace.as_mut_ptr();
+            for p in (0..rows).rev() {
+                offset -= cols;
+                let h_suffix_ptr = h_ptr.add(offset + p + 1);
+                let split_range = cols - p - 1;
+                t_ptr = t.as_mut_ptr();
+                for i in 0..trows {
+                    let mut wi = *t_ptr.add(p);
+                    let dst = t_ptr.add(p + 1);
+                    for j in 0..split_range {
+                        wi += *h_suffix_ptr.add(j) * *dst.add(j);
+                    }
+                    *w_ptr.add(i) = wi;
+                    t_ptr = t_ptr.add(tcols);
+                }
+                t_ptr = t.as_mut_ptr();
+                let tau = *n_ptr.add(p);
+                for i in 0..trows {
+                    let wi = tau * *w_ptr.add(i);
+                    *t_ptr.add(p) -= wi;
+                    let dst = t_ptr.add(p + 1);
+                    for j in 0..split_range {
+                        *dst.add(j) -= wi * *h_suffix_ptr.add(j);
+                    }
+                    t_ptr = t_ptr.add(tcols);
+                }
+            }
+        }
+    }
+    pub fn abcright_apply_qt(&self, t: &mut [f32], trows:usize, tcols:usize) {
+        // A * Q'
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        let h = &self.h.data;
         let n = &self.t;
         let mut offset = 0;
         for p in 0..rows {
@@ -354,21 +427,13 @@ impl AutumnDecomp {
             }
             offset += cols;
         }
-        if cols < tcols {
-            target.resize_cols(cols);
-        }
     }
-    pub fn left_apply_l(&self, target: &mut NdArray, workspace: &mut [f32]) {
+    pub fn abcleft_apply_l(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
-        let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(rows, trows);
         debug_assert!(workspace.len() >= tcols);
-        if rows > trows {
-            target.resize_rows(rows);
-        }
         let h = &self.h.data;
         let workspace = &mut workspace[..tcols];
-        let t = &mut target.data;
         for p in (0..rows).rev() {
             let offset = p * cols;
             let h_suffix = &h[offset..=offset + p];
@@ -388,22 +453,14 @@ impl AutumnDecomp {
                 }
             }
             let toffset = p * tcols;
-            t[toffset..toffset + tcols].copy_from_slice(&workspace);
-        }
-        if rows < trows {
-            target.resize_rows(rows);
+            t[toffset..toffset + tcols].copy_from_slice(workspace);
         }
     }
-    pub fn left_apply_lt(&self, target: &mut NdArray, workspace: &mut [f32]) {
+    pub fn abcleft_apply_lt(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
-        let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(rows, trows);
         debug_assert!(workspace.len() >= tcols);
-        if rows > trows {
-            target.resize_rows(rows);
-        }
         let h = &self.h.data;
-        let t = &mut target.data;
         let workspace = &mut workspace[..tcols];
         for i in 0..rows {
             let offset = i * cols;
@@ -426,18 +483,10 @@ impl AutumnDecomp {
                 }
             }
         }
-        if rows < trows {
-            target.resize_rows(rows);
-        }
     }
-    pub fn right_apply_l(&self, target: &mut NdArray) {
+    pub fn abcright_apply_l(&self, t: &mut [f32], trows:usize, tcols:usize) {
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
-        let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(tcols, rows);
-        if rows > tcols {
-            target.resize_cols(rows);
-        }
-        let t = &mut target.data;
         let h = &self.h.data;
         let mut offset = 0;
         let mut roffset;
@@ -455,18 +504,10 @@ impl AutumnDecomp {
             }
             offset += tcols;
         }
-        if rows < tcols {
-            target.resize_cols(rows);
-        }
     }
-    pub fn right_apply_lt(&self, target: &mut NdArray) {
+    pub fn abcright_apply_lt(&self, t: &mut [f32], trows:usize, tcols:usize) {
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
-        let (trows, tcols) = (target.dims[0], target.dims[1]);
         debug_assert_eq!(tcols, rows);
-        if rows > tcols {
-            target.resize_cols(rows);
-        }
-        let t = &mut target.data;
         let h = &self.h.data;
         let mut dij;
         let mut toffset = 0;
@@ -485,12 +526,20 @@ impl AutumnDecomp {
             }
             toffset += tcols;
         }
-        if rows < tcols {
-            target.resize_cols(rows);
+    }
+    pub fn abcql_apply(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+        t.fill(0f32);
+        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        debug_assert!(workspace.len() >= cols);
+        let h = &self.h.data;
+        let mut offset = 0;
+        for i in 0..rows {
+            t[offset..=offset+i].copy_from_slice(&h[offset..=offset+i]);
+            offset += cols;
         }
+        self.abcleft_apply_q(t, workspace, trows, tcols);
     }
 }
-
 #[cfg(test)]
 mod test_lq {
     use super::*;

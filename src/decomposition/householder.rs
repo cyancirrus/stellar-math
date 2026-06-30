@@ -38,7 +38,8 @@ pub fn householder_params(mut u: Vec<f32>) -> HouseholderReflection {
     let sign = u[0].signum();
     let tmp = u[0];
     u[0] += sign * magnitude_squared.sqrt();
-    magnitude_squared = 2f32 * sign * tmp * magnitude_squared.sqrt() + magnitude_squared + magnitude_squared;
+    magnitude_squared =
+        2f32 * sign * tmp * magnitude_squared.sqrt() + magnitude_squared + magnitude_squared;
     HouseholderReflection::instantiate(2f32 / magnitude_squared, u)
 }
 pub fn householder_inplace(u: &mut [f32]) -> f32 {
@@ -63,6 +64,7 @@ pub fn householder_inplace(u: &mut [f32]) -> f32 {
     let sign = u[0].signum();
     let tmp = u[0];
     u[0] += sign * magnitude_squared.sqrt();
-    magnitude_squared = 2f32 * sign * tmp * magnitude_squared.sqrt() + magnitude_squared + magnitude_squared;
+    magnitude_squared =
+        2f32 * sign * tmp * magnitude_squared.sqrt() + magnitude_squared + magnitude_squared;
     2f32 / magnitude_squared
 }
