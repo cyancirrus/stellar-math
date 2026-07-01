@@ -1,32 +1,20 @@
 use crate::algebra::ndmethods::create_identity_matrix;
-use crate::decomposition::qr::QrDecomposition;
+use crate::decomposition::lq::AutumnDecomp;
 use crate::structure::ndarray::NdArray;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
-// const LIMIT_ITERATION: usize = 16;
-// const LIMIT_ITERATION: usize = 64;
-const LIMIT_ITERATION: usize = 1;
+const LIMIT_ITERATION: usize = 3;
 pub struct SchurDecomp {
     pub rotation: NdArray, // The current rotation
     pub kernel: NdArray,   // The upper quasi-triangular matrix (Schur form)
 }
 
-impl SchurDecomp {
-    pub fn new(rotation: NdArray, kernel: NdArray) -> Self {
-        Self { rotation, kernel }
-    }
-}
+fn real_schur_iteration(kernel:NdArray, mut nkernel:NdArray, rotation:&mut NdArray, workspace: &mut [f32]) -> (NdArray, NdArray) {
+    let lq = AutumnDecomp::new(kernel);
 
-fn real_schur_iteration(mut schur: SchurDecomp) -> SchurDecomp {
-    let mut qr = QrDecomposition::new(schur.kernel);
-    // println!("q {:?}\nr {:?}", qr.projections, qr.triangle);
-    // Apply Q to a matrix X ie (QR) -> Qx
-    qr.triangle_rotation();
-    qr.right_apply_q(&mut schur.rotation);
-    // might want to make a thing where not needed or optional
-    schur.kernel = qr.triangle;
-    // println!("schur.kernel {:?}", schur.kernel);
-    schur
+    lq.mat_ql_apply(&mut nkernel, workspace);
+    lq.mat_left_apply_q(rotation, workspace);
+    (nkernel, lq.h)
 }
 fn real_schur_threshold(kernel: &NdArray) -> f32 {
     let rows = kernel.dims[0];
@@ -40,16 +28,70 @@ fn real_schur_threshold(kernel: &NdArray) -> f32 {
     }
     off_diagonal
 }
-pub fn real_schur(kernel: NdArray) -> SchurDecomp {
+pub fn real_schur(mut kernel: NdArray, mut nkernel:NdArray, workspace:&mut [f32]) -> SchurDecomp {
     let rows = kernel.dims[0];
-    let rotation = create_identity_matrix(rows);
-    let mut schur = SchurDecomp::new(rotation, kernel);
+    let mut rotation = create_identity_matrix(rows);
     for _ in 0..LIMIT_ITERATION {
-        let threshold = real_schur_threshold(&schur.kernel);
+        let threshold = real_schur_threshold(&kernel);
         if CONVERGENCE_CONDITION > threshold {
             break;
         }
-        schur = real_schur_iteration(schur);
+        (kernel, nkernel) = real_schur_iteration(kernel, nkernel, &mut rotation, workspace);
     }
-    schur
+    SchurDecomp {
+        kernel,
+        rotation,
+    }
 }
+
+#[cfg(test)]
+mod test_lq {
+    const TOLERANCE:f32 = 1e-3;
+    use super::*;
+    use crate::algebra::ndmethods::create_identity_matrix;
+    use crate::algebra::ndmethods::basic_mult;
+    use crate::equality::approximate::{approx_vector_tol_eq};
+    use crate::random::generation::generate_random_matrix;
+    #[test]
+    fn test_reconstruction() {
+        for n in 1..12 {
+            check_reconstruct(n);
+        }
+    }
+    fn check_reconstruct(n: usize) {
+        let x = generate_random_matrix(n, n);
+        let kernel = x.clone();
+        let nkernel = create_identity_matrix(n);
+        let mut workspace = vec![0f32;n];
+        let schur = real_schur(kernel, nkernel, &mut workspace);
+        let q = schur.rotation;
+        let q_star = q.transpose();
+        let expect = basic_mult(&q, &x);
+        let expect = basic_mult(&expect, &q_star);
+        let result = schur.kernel;
+        println!("expect {expect:?}");
+        println!("result {result:?}");
+        assert!(approx_vector_tol_eq(&result.data, &expect.data, TOLERANCE));
+    }
+    #[test]
+    fn test_orthogonalality() {
+        for n in 1..12 {
+            check_orthogonal(n);
+        }
+    }
+    fn check_orthogonal(n: usize) {
+        let x = generate_random_matrix(n, n);
+        let kernel = x.clone();
+        let nkernel = create_identity_matrix(n);
+        let mut workspace = vec![0f32;n];
+        let schur = real_schur(kernel, nkernel, &mut workspace);
+        let q = schur.rotation;
+        let q_star = q.transpose();
+        let expect = create_identity_matrix(n);
+        let result = basic_mult(&q, &q_star);
+        println!("expect {expect:?}");
+        println!("result {result:?}");
+        assert!(approx_vector_tol_eq(&result.data, &expect.data, TOLERANCE));
+    }
+}
+
