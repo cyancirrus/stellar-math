@@ -193,12 +193,12 @@ impl AutumnDecomp {
     }
     pub fn mat_ql_apply(&self, target: &mut NdArray, workspace: &mut [f32]) {
         target.data.fill(0f32);
-        let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
+        let (_rows, _cols) = (self.h.dims[0], self.h.dims[1]);
         self.ql_apply(&mut target.data, workspace);
     }
 }
 impl AutumnDecomp {
-    pub fn left_apply_q(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+    pub fn left_apply_q(&self, t: &mut [f32], workspace: &mut [f32], trows: usize, tcols: usize) {
         // Q * A
         // implied dimension of q ~ cols x cols
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
@@ -252,7 +252,7 @@ impl AutumnDecomp {
             offset += cols;
         }
     }
-    pub fn left_apply_qt(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+    pub fn left_apply_qt(&self, t: &mut [f32], workspace: &mut [f32], trows: usize, tcols: usize) {
         // Q * A
         // implied dimension of q ~ cols x cols
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
@@ -301,10 +301,16 @@ impl AutumnDecomp {
             }
         }
     }
-    pub fn right_apply_q(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+    pub fn right_apply_q(&self, t: &mut [f32], workspace: &mut [f32], trows: usize, tcols: usize) {
         unsafe { self.right_apply_q_impl(t, workspace, trows, tcols) }
     }
-    unsafe fn right_apply_q_impl(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+    unsafe fn right_apply_q_impl(
+        &self,
+        t: &mut [f32],
+        workspace: &mut [f32],
+        trows: usize,
+        tcols: usize,
+    ) {
         unsafe {
             let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
             let h = &self.h.data;
@@ -346,7 +352,7 @@ impl AutumnDecomp {
             }
         }
     }
-    pub fn right_apply_qt(&self, t: &mut [f32], trows:usize, tcols:usize) {
+    pub fn right_apply_qt(&self, t: &mut [f32], trows: usize, tcols: usize) {
         // A * Q'
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         let h = &self.h.data;
@@ -374,7 +380,7 @@ impl AutumnDecomp {
             offset += cols;
         }
     }
-    pub fn left_apply_l(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+    pub fn left_apply_l(&self, t: &mut [f32], workspace: &mut [f32], trows: usize, tcols: usize) {
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         debug_assert_eq!(rows, trows);
         debug_assert!(workspace.len() >= tcols);
@@ -402,7 +408,7 @@ impl AutumnDecomp {
             t[toffset..toffset + tcols].copy_from_slice(workspace);
         }
     }
-    pub fn left_apply_lt(&self, t: &mut [f32], workspace: &mut [f32], trows:usize, tcols:usize) {
+    pub fn left_apply_lt(&self, t: &mut [f32], workspace: &mut [f32], trows: usize, tcols: usize) {
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         debug_assert_eq!(rows, trows);
         debug_assert!(workspace.len() >= tcols);
@@ -430,7 +436,7 @@ impl AutumnDecomp {
             }
         }
     }
-    pub fn right_apply_l(&self, t: &mut [f32], trows:usize, tcols:usize) {
+    pub fn right_apply_l(&self, t: &mut [f32], trows: usize, tcols: usize) {
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         debug_assert_eq!(tcols, rows);
         let h = &self.h.data;
@@ -451,7 +457,7 @@ impl AutumnDecomp {
             offset += tcols;
         }
     }
-    pub fn right_apply_lt(&self, t: &mut [f32], trows:usize, tcols:usize) {
+    pub fn right_apply_lt(&self, t: &mut [f32], trows: usize, tcols: usize) {
         let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
         debug_assert_eq!(tcols, rows);
         let h = &self.h.data;
@@ -480,7 +486,7 @@ impl AutumnDecomp {
         let h = &self.h.data;
         let mut offset = 0;
         for i in 0..rows {
-            t[offset..=offset+i].copy_from_slice(&h[offset..=offset+i]);
+            t[offset..=offset + i].copy_from_slice(&h[offset..=offset + i]);
             offset += cols;
         }
         self.left_apply_q(t, workspace, rows, cols);
@@ -763,7 +769,7 @@ mod test_lq {
             check_ql_matrix(n);
         }
     }
-    fn check_ql_method(n:usize) {
+    fn check_ql_method(n: usize) {
         let x = generate_random_matrix(n, n);
         let mut workspace = vec![0f32; n];
         let mut explicit = create_identity_matrix(n);
@@ -773,20 +779,32 @@ mod test_lq {
         lq.left_apply_q(&mut explicit.data, &mut workspace, n, n);
         lq.ql_apply(&mut implicit, &mut workspace);
         let expect = explicit;
-        let result = NdArray { dims: vec![n, n], data: implicit.clone() };
-        assert!(approx_vector_eq(&result.data, &expect.data,), "result {result:?}\nexpect {expect:?}");
+        let result = NdArray {
+            dims: vec![n, n],
+            data: implicit.clone(),
+        };
+        assert!(
+            approx_vector_eq(&result.data, &expect.data,),
+            "result {result:?}\nexpect {expect:?}"
+        );
     }
-    fn check_ql_matrix(n:usize) {
+    fn check_ql_matrix(n: usize) {
         let x = generate_random_matrix(n, n);
         let mut workspace = vec![f32::NAN; n];
         let mut explicit = create_identity_matrix(n);
-        let mut implicit = NdArray { dims: vec![n, n], data: vec![f32::NAN; n * n]};
+        let mut implicit = NdArray {
+            dims: vec![n, n],
+            data: vec![f32::NAN; n * n],
+        };
         let lq = AutumnDecomp::new(x);
         lq.mat_left_apply_l(&mut explicit, &mut workspace);
         lq.mat_left_apply_q(&mut explicit, &mut workspace);
         lq.mat_ql_apply(&mut implicit, &mut workspace);
         let expect = explicit;
         let result = implicit;
-        assert!(approx_vector_eq(&result.data, &expect.data,), "result {result:?}\nexpect {expect:?}");
+        assert!(
+            approx_vector_eq(&result.data, &expect.data,),
+            "result {result:?}\nexpect {expect:?}"
+        );
     }
 }
