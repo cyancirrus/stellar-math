@@ -3,7 +3,7 @@ use crate::decomposition::lq::AutumnDecomp;
 use crate::structure::ndarray::NdArray;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
-const LIMIT_ITERATION: usize = 3;
+const LIMIT_ITERATION: usize = 6;
 pub struct SchurDecomp {
     pub rotation: NdArray, // The current rotation
     pub kernel: NdArray,   // The upper quasi-triangular matrix (Schur form)
@@ -11,6 +11,7 @@ pub struct SchurDecomp {
 
 fn real_schur_iteration(kernel:NdArray, mut nkernel:NdArray, rotation:&mut NdArray, workspace: &mut [f32]) -> (NdArray, NdArray) {
     let lq = AutumnDecomp::new(kernel);
+    println!("lq tau {:?}\nlq h {:?}", lq.t, lq.h);
 
     lq.mat_ql_apply(&mut nkernel, workspace);
     lq.mat_left_apply_q(rotation, workspace);

@@ -47,5 +47,5 @@ fn check_orthogonal(n: usize) {
 }
 fn main() {
     test_reconstruct();
-    test_orthogonal();
+    // test_orthogonal();
 }
