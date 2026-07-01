@@ -11,7 +11,7 @@ pub struct AutumnDecomp {
     pub t: Vec<f32>,
 }
 
-const TOLERANCE: f32 = 1e-6;
+const TOLERANCE: f32 = 1e-12;
 
 fn params(v: &mut [f32]) -> f32 {
     let mut max_element = 0f32;
@@ -22,7 +22,6 @@ fn params(v: &mut [f32]) -> f32 {
         };
     }
     if max_element.abs() < TOLERANCE {
-        // return max_element;
         return 0f32;
     }
     let mut magnitude_squared = 0f32;
@@ -56,6 +55,9 @@ impl AutumnDecomp {
             let projection = &mut projection[offset + p..offset + cols];
             *tau = params(projection);
             if *tau == 0f32 {
+                let roffset = p * cols;
+                // h.data[roffset + p+1..roffset + cols].fill(0f32);
+                h.data[roffset + p + 1..roffset + cols].fill(0f32);
                 continue;
             }
             let proj_suffix = &projection[1..];
@@ -193,7 +195,6 @@ impl AutumnDecomp {
     }
     pub fn mat_ql_apply(&self, target: &mut NdArray, workspace: &mut [f32]) {
         target.data.fill(0f32);
-        let (_rows, _cols) = (self.h.dims[0], self.h.dims[1]);
         self.ql_apply(&mut target.data, workspace);
     }
 }
@@ -212,6 +213,9 @@ impl AutumnDecomp {
         // => loop k { x -= b * uu'x }
         for p in 0..rows {
             let tau = n[p];
+            if tau.abs() < TOLERANCE {
+                continue;
+            }
             let h_suffix = &h[offset + p + 1..offset + cols];
             // implicit 1 on the diagonal and zero the buffer of w to zero
             {
