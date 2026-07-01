@@ -22,7 +22,7 @@ pub fn bench_apply_right_q(c: &mut Criterion) {
                     (decomp, target, workspace)
                 },
                 |(decomp, mut target, mut workspace)| {
-                    black_box(decomp.right_apply_q(&mut target, &mut workspace))
+                    black_box(decomp.mat_right_apply_q(&mut target, &mut workspace))
                 },
             );
         });
@@ -90,7 +90,7 @@ pub fn bench_apply_right_qt(c: &mut Criterion) {
                     let target = generate_random_matrix(n, n);
                     (decomp, target)
                 },
-                |(decomp, mut target)| black_box(decomp.right_apply_qt(&mut target)),
+                |(decomp, mut target)| black_box(decomp.mat_right_apply_qt(&mut target)),
             );
         });
 

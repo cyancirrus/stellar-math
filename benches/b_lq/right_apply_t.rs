@@ -17,7 +17,7 @@ pub fn bench_apply_right_t(c: &mut Criterion) {
                     let target = generate_random_matrix(n, n);
                     (decomp, target, n)
                 },
-                |(decomp, mut target, _)| black_box(decomp.right_apply_l(&mut target)),
+                |(decomp, mut target, _)| black_box(decomp.mat_right_apply_l(&mut target)),
             );
         });
 

@@ -22,7 +22,7 @@ pub fn bench_apply_left_q(c: &mut Criterion) {
                 },
                 |(decomp, mut target, n)| {
                     let mut workspace = vec![0.0f32; n];
-                    black_box(decomp.left_apply_q(&mut target, &mut workspace))
+                    black_box(decomp.mat_left_apply_q(&mut target, &mut workspace))
                 },
             );
         });
@@ -92,7 +92,7 @@ pub fn bench_apply_left_qt(c: &mut Criterion) {
                 },
                 |(decomp, mut target, n)| {
                     let mut workspace = vec![0.0f32; n];
-                    black_box(decomp.left_apply_qt(&mut target, &mut workspace))
+                    black_box(decomp.mat_left_apply_qt(&mut target, &mut workspace))
                 },
             );
         });

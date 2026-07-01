@@ -19,7 +19,7 @@ pub fn bench_apply_left_t(c: &mut Criterion) {
                 },
                 |(decomp, mut target, n)| {
                     let mut workspace = vec![0.0f32; n];
-                    black_box(decomp.left_apply_l(&mut target, &mut workspace))
+                    black_box(decomp.mat_left_apply_l(&mut target, &mut workspace))
                 },
             );
         });

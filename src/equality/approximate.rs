@@ -16,7 +16,6 @@ pub fn approx_vector_tol_eq(a: &[f32], b: &[f32], tolerance: f32) -> bool {
         }
         error += (a[i] - b[i]).abs();
     }
-    println!("error {error:?}");
     error / (n as f32).sqrt() < tolerance
 }
 pub fn approx_vector_eq(a: &[f32], b: &[f32]) -> bool {
