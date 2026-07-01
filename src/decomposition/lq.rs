@@ -109,9 +109,7 @@ impl AutumnDecomp {
         if cols > trows {
             target.resize_rows(cols);
         }
-        let h = &self.h.data;
         let t = &mut target.data;
-        let n = &self.t;
         let workspace = &mut workspace[0..tcols];
         self.left_apply_qt(t, workspace, trows, tcols);
         if cols < trows {
@@ -119,14 +117,9 @@ impl AutumnDecomp {
         }
     }
     pub fn mat_right_apply_q(&self, target: &mut NdArray, workspace: &mut [f32]) {
-        unsafe {
-            let (rows, cols) = (self.h.dims[0], self.h.dims[1]);
-            let (trows, tcols) = (target.dims[0], target.dims[1]);
-            let h = &self.h.data;
-            let t = &mut target.data;
-            self.right_apply_q(t, workspace, trows, tcols);
-        }
-        // unsafe { self.right_apply_q_impl(target, workspace) }
+        let (trows, tcols) = (target.dims[0], target.dims[1]);
+        let t = &mut target.data;
+        self.right_apply_q(t, workspace, trows, tcols);
     }
     pub fn mat_right_apply_qt(&self, target: &mut NdArray) {
         // A * Q'
@@ -136,7 +129,6 @@ impl AutumnDecomp {
         if cols > tcols {
             target.resize_cols(cols);
         }
-        let h = &self.h.data;
         let t = &mut target.data;
         self.right_apply_qt(t, trows, tcols);
         if cols < tcols {
@@ -151,7 +143,6 @@ impl AutumnDecomp {
         if rows > trows {
             target.resize_rows(rows);
         }
-        let h = &self.h.data;
         let workspace = &mut workspace[..tcols];
         let t = &mut target.data;
         self.left_apply_l(t, workspace, trows, tcols);
@@ -167,7 +158,6 @@ impl AutumnDecomp {
         if rows > trows {
             target.resize_rows(rows);
         }
-        let h = &self.h.data;
         let t = &mut target.data;
         let workspace = &mut workspace[..tcols];
         self.left_apply_lt(t, workspace, trows, tcols);
