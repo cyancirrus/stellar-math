@@ -30,7 +30,6 @@ fn params(v: &mut [f32]) -> f32 {
         *val *= inv_max_element;
         magnitude_squared += *val * *val;
     }
-    // let g = v[0].signum() * magnitude_squared.sqrt();
     let g = -v[0].signum() * magnitude_squared.sqrt();
     let scale = v[0] + g;
     let inv_scale = 1f32 / scale;
@@ -56,8 +55,8 @@ impl AutumnDecomp {
             *tau = params(projection);
             if *tau == 0f32 {
                 let roffset = p * cols;
-                // h.data[roffset + p+1..roffset + cols].fill(0f32);
                 h.data[roffset + p + 1..roffset + cols].fill(0f32);
+                // target[roffset + p + 1..roffset + cols].fill(0f32);
                 continue;
             }
             let proj_suffix = &projection[1..];

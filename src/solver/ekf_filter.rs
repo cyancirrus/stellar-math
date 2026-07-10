@@ -298,7 +298,7 @@ where
         update = tensor_mult(4, &update, &self.p);
         in_place_sub(&mut self.p, &update);
     }
-    pub fn output(&mut self, prediction: &mut Vec<f32>, measurement: &Vec<f32>) {
+    pub fn output(&mut self, prediction: &mut Vec<f32>, measurement: &[f32]) {
         debug_assert_eq!(prediction.len(), measurement.len());
         let y_star = mult_mat_vec(&self.k, measurement);
         vec_in_place_add(prediction, &y_star);

@@ -2,7 +2,7 @@ use crate::algebra::ndmethods::create_identity_matrix;
 use crate::decomposition::lq::AutumnDecomp;
 use crate::structure::ndarray::NdArray;
 
-const CONVERGENCE_CONDITION: f32 = 1e-12;
+const CONVERGENCE_CONDITION: f32 = 1e-6;
 const LIMIT_ITERATION: usize = 2156;
 pub struct SchurDecomp {
     pub rotation: NdArray, // The current rotation
