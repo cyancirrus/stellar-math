@@ -222,7 +222,7 @@ fn decomp(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
     let he1 = h[e1];
     let he2 = h[e2];
     println!("(r:{range}, e1:{he1}, e2:{he2})");
-    while range > 1 && i < 20 {
+    while range > 1 && i < 100 {
         println!("iter {i:?}");
         i += 1;
         if h[e1].abs() < TOLERANCE {
@@ -246,7 +246,7 @@ fn francis_iteration(h: &mut [f32], size: usize, range: usize, stride: usize) {
     let card = stride * range;
     let tl = card.saturating_sub(stride + 2);
     let bl = card.saturating_sub(2);
-    let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
+    let eig = eigen(h[tl], -h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_g_right(h, 0, 1, stride, range, cosine, -sine);
     apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
