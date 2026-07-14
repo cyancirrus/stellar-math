@@ -14,7 +14,8 @@ use stellar::random::generation::{
 };
 use stellar::structure::ndarray::NdArray;
 // use stellar::decomposition::lq::params;
-const TOLERANCE: f32 = 1e-6;
+const TOLERANCE: f32 = 1e-8;
+const EPSILON: f32 = 1e-12;
 
 /// params
 /// takes in data forom a matrix slice
@@ -200,11 +201,11 @@ impl FrancisLq {
 
 fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
     let d = (m00 - m11) / 2f32;
-    let discriminate = d * d + m10 * m01;
-    if discriminate >= 0f32 {
-        m11 + d - d.signum() * discriminate.sqrt()
+    let mut discriminate = d * d + m10 * m01;
+    if discriminate >= -EPSILON {
+        m11 + d - d.signum() * discriminate.max(0f32).sqrt()
     } else {
-        println!("complex");
+        println!("complex discriminate {discriminate:?}");
         m11 + d
     }
 }
@@ -246,7 +247,7 @@ fn francis_iteration(h: &mut [f32], size: usize, range: usize, stride: usize) {
     let card = stride * range;
     let tl = card.saturating_sub(stride + 2);
     let bl = card.saturating_sub(2);
-    let eig = eigen(h[tl], -h[tl + 1], h[bl], h[bl + 1]);
+    let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_g_right(h, 0, 1, stride, range, cosine, -sine);
     apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
