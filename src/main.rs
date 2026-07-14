@@ -141,6 +141,7 @@ impl FrancisLq {
             } else {
                 // lapply_householder(&mut r[o..], proj, w, tau, rows, split_range, cols);
                 // lapply_householder(r, proj, w, tau, active_range, cols, cols);
+                println!("offset + stride {}", offset + stride);
                 lapply_householder(&mut r[offset + stride..], proj, w, tau, active_range, cols, stride);
             }
             // let proj_suffix = &proj[1..];
