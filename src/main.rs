@@ -14,7 +14,7 @@ use stellar::random::generation::{
 };
 use stellar::structure::ndarray::NdArray;
 // use stellar::decomposition::lq::params;
-const TOLERANCE: f32 = 1e-4;
+const TOLERANCE: f32 = 1e-6;
 
 /// params
 /// takes in data forom a matrix slice
@@ -183,7 +183,7 @@ impl FrancisLq {
         for o in 1..rows {
             active_range -= 1;
             split_range -= 1;
-            let (slice, target) = h.split_at_mut(offset + stride);
+            let (slice, t) = h.split_at_mut(offset + stride);
             let slice = &mut slice[offset + o..offset + cols];
             let proj = &mut p[..split_range];
             let tau = params(slice, proj);
@@ -192,15 +192,8 @@ impl FrancisLq {
                 continue;
             }
             lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
-            rapply_householder(
-                &mut target[o..],
-                proj,
-                w,
-                tau,
-                rows.saturating_sub(o),
-                split_range,
-                stride,
-            );
+            rapply_householder(&mut t[o..], proj, w, tau, rows - o, split_range, stride);
+            lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
         }
     }
 }
@@ -212,7 +205,7 @@ fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
         m11 + d - d.signum() * discriminate.sqrt()
     } else {
         println!("complex");
-        m11 + d 
+        m11 + d
     }
 }
 // fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
@@ -220,7 +213,7 @@ fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
 //     m11 + d - d.signum() * (d * d + m10 * m10).sqrt()
 // }
 // h:= hessenberg matrix
-fn decomp(h: &mut [f32], mut range: usize, size:usize, mut stride: usize) {
+fn decomp(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
     //TODO: port this to LQ the error places aren't consistent
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
@@ -229,9 +222,9 @@ fn decomp(h: &mut [f32], mut range: usize, size:usize, mut stride: usize) {
     let he1 = h[e1];
     let he2 = h[e2];
     println!("(r:{range}, e1:{he1}, e2:{he2})");
-    while range > 1  && i < 4 {
+    while range > 1 && i < 20 {
         println!("iter {i:?}");
-        i+=1;
+        i += 1;
         if h[e1].abs() < TOLERANCE {
             range -= 1;
             e1 = e1.saturating_sub(stride + 1);
@@ -249,7 +242,7 @@ fn decomp(h: &mut [f32], mut range: usize, size:usize, mut stride: usize) {
         println!("(r:{range}, e1:{he1}, e2:{he2})");
     }
 }
-fn francis_iteration(h: &mut [f32], size:usize, range: usize, stride: usize) {
+fn francis_iteration(h: &mut [f32], size: usize, range: usize, stride: usize) {
     let card = stride * range;
     let tl = card.saturating_sub(stride + 2);
     let bl = card.saturating_sub(2);
@@ -267,10 +260,9 @@ fn francis_iteration(h: &mut [f32], size:usize, range: usize, stride: usize) {
             dims: vec![range, range],
             data: h.to_vec(),
         };
-        let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r  + s2]);
+        let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r + s2]);
         apply_g_right(&mut h[r..], s1, s2, stride, size - k, cosine, -sine);
         apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
-        
 
         // apply_g_right(&mut h[r..], s1, s2, stride, range - k, cosine, -sine);
         // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
@@ -278,11 +270,41 @@ fn francis_iteration(h: &mut [f32], size:usize, range: usize, stride: usize) {
         // // apply_gt_left(&mut t[r..], k, k + 1, stride, card, cosine, sine);
     }
 }
-fn generate_symmetric_vector(n:usize) -> Vec<f32> {
+fn generate_symmetric_vector(n: usize) -> Vec<f32> {
     let a = generate_random_matrix(n, n);
     matrix_mult(&a, &a.transpose()).data
 }
-
+fn check_hessen_sym() {
+    let (rows, cols) = (5, 5);
+    let stride = 5;
+    let mut h = generate_symmetric_vector(rows);
+    let mut r = generate_identity_vector(rows, cols);
+    let mut p = vec![0f32; cols];
+    let mut w = vec![0f32; rows];
+    let input = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("before {input:?}");
+    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    let kernel = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("after {kernel:?}");
+    let rotation = NdArray {
+        dims: vec![rows, cols],
+        data: r.clone(),
+    };
+    println!("rotation {rotation:?}");
+    let ortho = matrix_mult(&rotation, &rotation.transpose());
+    println!("ortho rr' {ortho:?}");
+    let ortho = matrix_mult(&rotation.transpose(), &rotation);
+    println!("ortho r'r {ortho:?}");
+    let reconstruct = matrix_mult(&kernel, &rotation);
+    let reconstruct = matrix_mult(&rotation.transpose(), &reconstruct);
+    println!("reconstruct {reconstruct:?}");
+}
 fn check_hessen() {
     let (rows, cols) = (5, 5);
     let stride = 5;
@@ -376,6 +398,7 @@ fn check_decomp() -> NdArray {
 
 fn main() {
     check_decomp();
+    // check_hessen_sym();
     // check_iteration();
     // check_hessen();
     // test_orthogonal();
