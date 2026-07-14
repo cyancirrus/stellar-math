@@ -16,8 +16,10 @@ use stellar::structure::ndarray::NdArray;
 // use stellar::decomposition::lq::params;
 // const TOLERANCE: f32 = 1e-8;
 // const EPSILON: f32 = 1e-12;
-const TOLERANCE: f32 = 1e-6;
-const EPSILON: f32 = 1e-8;
+// const TOLERANCE: f32 = 1e-6;
+// const EPSILON: f32 = 1e-8;
+const TOLERANCE: f32 = 1e-3;
+const EPSILON: f32 = 1e-6;
 
 /// params
 /// takes in data forom a matrix slice
@@ -210,7 +212,7 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
     let he2 = h[e2];
     let p = &mut [0f32; 3];
     println!("(r:{range}, e1:{he1}, e2:{he2})");
-    while range > 1 && i < 80 {
+    while range > 1 && i < 60 {
         println!("iter {i:?}");
         i += 1;
         if h[e1].abs() < TOLERANCE {
@@ -267,7 +269,10 @@ fn francis_iteration_cpx(
     w[0] = h00 * h00 + h01 * h10 - trace * h00 + deter;
     w[1] = h01 * (h00 + h11 - trace);
     w[2] = h01 * h12;
+    // w[1] = h01 * (h00 + h11 - trace);
+    // w[2] = h01 * h12;
     let bound = range.min(3);
+    let p = &mut p[..bound];
     let tau = params(&mut w[..bound], p);
     if tau != 0f32 {
         rapply_householder(h, p, w, tau, size, bound, stride);
@@ -282,6 +287,7 @@ fn francis_iteration_cpx(
     // println!("-------------------------------");
     // println!("-------------------------------");
     // for o in 0..range.saturating_sub(2) {
+    // for o in 1..range.saturating_sub(1) {
     for o in 1..range.saturating_sub(1) {
         // println!("---------");
         let bound = bound.min(range - o);
@@ -289,10 +295,11 @@ fn francis_iteration_cpx(
         let slice = &mut slice[offset + o..offset + o + bound];
         let proj = &mut p[..bound];
         let tau = params(slice, proj);
+        offset += stride;
         if tau == 0f32 {
+            println!("continuing o:{o:}");
             continue;
         }
-        offset += stride;
         // println!("size -o - 1 {}", size - o - 1);
         rapply_householder(&mut t[o..], proj, w, tau, size - o, bound, stride);
         let data = NdArray {
@@ -301,7 +308,8 @@ fn francis_iteration_cpx(
         };
         println!("rapply\n{data:?}");
         println!("---------");
-        lapply_householder(&mut h[offset..], proj, w, tau, bound, range, stride);
+        // lapply_householder(&mut h[offset..], proj, w, tau, bound, range, stride);
+        lapply_householder(&mut h[offset..], proj, w, tau, bound, size, stride);
         let data = NdArray {
             dims:vec![size, size],
             data:h.to_vec(),
