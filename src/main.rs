@@ -131,26 +131,20 @@ fn rapply_householder(
     stride: usize,
 ) {
     debug_assert!(rows <= w.len());
-    // debug_assert_eq!(cols, p.len(), "cols {cols:}, p: {p:?}");
+    debug_assert_eq!(cols, p.len());
     // A(I - tuu');
     // A - t*Auu';
     // w := Au;
     // R -= t*wu;
-    // println!("rows {rows:}");
-    // println!("cols {cols:}");
-    // println!("r {r:?}");
-    // println!("r {r:?}");
     let mut roffset = 0;
     for i in 0..rows {
         w[i] = h[roffset];
         for k in 1..cols {
-            // println!("k {k:}");
             w[i] += h[roffset + k] * p[k];
         }
         w[i] *= tau;
         roffset += stride;
     }
-    // println!("w {w:?}");
     roffset = 0;
     for i in 0..rows {
         h[roffset] -= w[i];
@@ -194,12 +188,19 @@ impl FrancisLq {
             let proj = &mut p[..split_range];
             let tau = params(slice, proj);
             offset += stride;
-            println!("proj {proj:?}");
-            if tau == 0f32 { continue; }
-            println!("r {r:?}");
+            if tau == 0f32 {
+                continue;
+            }
             lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
-            // rapply_householder(&mut h[o..], proj, w, tau, rows, split_range, stride);
-            rapply_householder(&mut target[o..], proj, w, tau, rows.saturating_sub(o), split_range, stride);
+            rapply_householder(
+                &mut target[o..],
+                proj,
+                w,
+                tau,
+                rows.saturating_sub(o),
+                split_range,
+                stride,
+            );
         }
     }
 }
@@ -210,6 +211,7 @@ fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
 }
 // h:= hessenberg matrix
 fn decomp(h: &mut [f32], mut range: usize, stride: usize) {
+    //TODO: port this to LQ the error places aren't consistent
     let s = range * stride;
     let mut e1 = s.saturating_sub(2);
     let mut e2 = s.saturating_sub(stride + 3);
@@ -233,18 +235,76 @@ fn francis_iteration(h: &mut [f32], range: usize, stride: usize) {
     let card = stride * range;
     let tl = card.saturating_sub(stride + 2);
     let bl = card.saturating_sub(2);
-    let eig = eigen(h[tl + 1], h[tl], h[bl + 1], h[bl]);
-    let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[stride]);
-    apply_g_left(h, 0, 1, stride, range, cosine, sine);
-    apply_gt_right(h, 0, 1, stride, range, cosine, sine);
-    for k in 1..range {
+    // println!("tl {tl:}, bl: {bl:}");
+    // println!("v-tl {}, v-bl: {}", h[tl], h[bl]);
+    let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
+    let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
+    apply_g_right(h, 0, 1, stride, range, cosine, -sine);
+    apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
+    let temp = NdArray {
+        dims: vec![range, range],
+        data: h.to_vec(),
+    };
+    println!("temp {temp:?}");
+    println!("error piece {:?}", h[tl + 1 - stride]);
+    println!("--------------");
+    for k in 0..3 {
+    // for k in 0..range - 3 {
         let r = k * stride;
-        let (_, cosine, sine) = implicit_givens_rotation(h[r + k], h[r + k + stride]);
-        apply_gt_left(&mut h[r..], k, k + 1, stride, range - k, cosine, sine);
-        apply_g_right(&mut h[r..], k, k + 1, stride, range - k, cosine, sine);
-        // apply_g_left(&mut h[r..], k, k + 1, stride, range - k, cosine, sine);
-        // apply_gt_right(&mut h[r..], k, k + 1, stride, range - k, cosine, sine);
+        let s1 = k + 1;
+        let s2 = k + 2;
+        let temp = NdArray {
+            dims: vec![range, range],
+            data: h.to_vec(),
+        };
+        let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r  + s2]);
+        println!("two entries {}, {}", h[r + s1], h[r + s2]);
+        // println!("row offset {:?}, iterations {}", r / stride, range - k - 1);
+        // println!("k {k:?}");
+        apply_g_right(&mut h[r..], s1, s2, stride, range - k, cosine, -sine);
+        let temp = NdArray {
+            dims: vec![range, range],
+            data: h.to_vec(),
+        };
+        println!("apply_g_right {temp:?}");
+        println!("-------------");
+        apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
+        let temp = NdArray {
+            dims: vec![range, range],
+            data: h.to_vec(),
+        };
+        println!("apply_gt_left {temp:?}");
+        println!("-------------");
+        println!("error piece {:?}", h[tl + 1 - stride]);
     }
+    // for k in 0..range-2 {
+    // for k in 0..range-2 {
+    // for k in 0..1 {
+    //     let s = k + 2;
+    //     let temp = NdArray {
+    //         dims: vec![range, range],
+    //         data: h.to_vec(),
+    //     };
+    //     let r = k * stride;
+    //     let (_, cosine, sine) = implicit_givens_rotation(h[r + k + 1], h[r + k + 2]);
+    //     // println!("two entries {}, {}", h[r + k + 1], h[r + k + 1 + 1]);
+    //     // println!("row offset {:?}, iterations {}", r / stride, range - k - 1);
+    //     // println!("k {k:?}");
+    //     apply_g_right(&mut h[r + 1..], k, k + 1, stride, range - k, cosine, -sine);
+    //     let temp = NdArray {
+    //         dims: vec![range, range],
+    //         data: h.to_vec(),
+    //     };
+    //     println!("apply_g_right {temp:?}");
+    //     apply_gt_left(&mut h[r + stride..], k, k + 1, stride, k + 3, cosine, -sine);
+    //     let temp = NdArray {
+    //         dims: vec![range, range],
+    //         data: h.to_vec(),
+    //     };
+    //     println!("apply_gt_left {temp:?}");
+    //     println!("error piece {:?}", h[tl + 1 - stride]);
+    //     // apply_gt_left(&mut h[r..], k, k+1, stride, range - k, cosine, sine);
+    // }
 }
 fn full_decomp(h: &mut [f32], t: &mut [f32], mut range: usize, stride: usize) {
     let card = range;
@@ -314,31 +374,40 @@ fn check_hessen() {
     let reconstruct = matrix_mult(&kernel, &rotation);
     println!("reconstruct {reconstruct:?}");
 }
-// fn check() -> NdArray {
-//     let d = 4;
-//     let a = generate_random_matrix(d, d);
-//     println!("a {a:?}");
-//     let mut kern = vec![0f32; d * d];
-//     let mut workspace = vec![0f32; d];
-//     println!("kern {kern:?}");
-//     let lq = AutumnDecomp::new(a);
-//     lq.ql_apply(&mut kern, &mut workspace);
-//     let input = NdArray {
-//         dims: vec![d, d],
-//         data: kern.clone(),
-//     };
-//     println!("before {input:?}");
-//     francis_iteration(&mut kern, d, d);
-//     let output = NdArray {
-//         dims: vec![d, d],
-//         data: kern.clone(),
-//     };
-//     println!("after {output:?}");
-//     output
-// }
+fn check_iteration() -> NdArray {
+    let c = 5;
+    let (rows, cols) = (c, c);
+    let stride = c;
+    let mut h = generate_random_vector(rows * cols);
+    let mut r = generate_identity_vector(rows, cols);
+    let mut p = vec![0f32; cols];
+    let mut w = vec![0f32; rows];
+    let input = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("before {input:?}");
+    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    let kernel = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("hessenberg {kernel:?}");
+    let rotation = NdArray {
+        dims: vec![rows, cols],
+        data: r.clone(),
+    };
+    francis_iteration(&mut h, rows, stride);
+    let output = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("final {output:?}");
+    output
+}
 
 fn main() {
-    check_hessen();
-    // test_reconstruct();
+    check_iteration();
+    // check_hessen();
     // test_orthogonal();
 }
