@@ -245,7 +245,11 @@ fn francis_iteration(h: &mut [f32], range: usize, stride: usize) {
         dims: vec![range, range],
         data: h.to_vec(),
     };
+    println!("temp {temp:?}");
+    println!("error piece {:?}", h[tl + 1 - stride]);
+    println!("--------------");
     for k in 0..range - 2 {
+    // for k in 0..range - 3 {
         let r = k * stride;
         let s1 = k + 1;
         let s2 = k + 2;
@@ -254,8 +258,25 @@ fn francis_iteration(h: &mut [f32], range: usize, stride: usize) {
             data: h.to_vec(),
         };
         let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r  + s2]);
+        println!("two entries {}, {}", h[r + s1], h[r + s2]);
+        // println!("row offset {:?}, iterations {}", r / stride, range - k - 1);
+        // println!("k {k:?}");
         apply_g_right(&mut h[r..], s1, s2, stride, range - k, cosine, -sine);
-        apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
+        let temp = NdArray {
+            dims: vec![range, range],
+            data: h.to_vec(),
+        };
+        println!("apply_g_right {temp:?}");
+        println!("-------------");
+        // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
+        apply_gt_left(h, s1, s2, stride, range.min(s2+2), cosine, -sine);
+        let temp = NdArray {
+            dims: vec![range, range],
+            data: h.to_vec(),
+        };
+        println!("apply_gt_left {temp:?}");
+        println!("-------------");
+        println!("error piece {:?}", h[tl + 1 - stride]);
     }
 }
 fn full_decomp(h: &mut [f32], t: &mut [f32], mut range: usize, stride: usize) {
@@ -327,7 +348,7 @@ fn check_hessen() {
     println!("reconstruct {reconstruct:?}");
 }
 fn check_iteration() -> NdArray {
-    let c = 4;
+    let c = 6;
     let (rows, cols) = (c, c);
     let stride = c;
     let mut h = generate_random_vector(rows * cols);
