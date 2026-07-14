@@ -277,34 +277,6 @@ fn francis_iteration(h: &mut [f32], range: usize, stride: usize) {
         println!("-------------");
         println!("error piece {:?}", h[tl + 1 - stride]);
     }
-    // for k in 0..range-2 {
-    // for k in 0..range-2 {
-    // for k in 0..1 {
-    //     let s = k + 2;
-    //     let temp = NdArray {
-    //         dims: vec![range, range],
-    //         data: h.to_vec(),
-    //     };
-    //     let r = k * stride;
-    //     let (_, cosine, sine) = implicit_givens_rotation(h[r + k + 1], h[r + k + 2]);
-    //     // println!("two entries {}, {}", h[r + k + 1], h[r + k + 1 + 1]);
-    //     // println!("row offset {:?}, iterations {}", r / stride, range - k - 1);
-    //     // println!("k {k:?}");
-    //     apply_g_right(&mut h[r + 1..], k, k + 1, stride, range - k, cosine, -sine);
-    //     let temp = NdArray {
-    //         dims: vec![range, range],
-    //         data: h.to_vec(),
-    //     };
-    //     println!("apply_g_right {temp:?}");
-    //     apply_gt_left(&mut h[r + stride..], k, k + 1, stride, k + 3, cosine, -sine);
-    //     let temp = NdArray {
-    //         dims: vec![range, range],
-    //         data: h.to_vec(),
-    //     };
-    //     println!("apply_gt_left {temp:?}");
-    //     println!("error piece {:?}", h[tl + 1 - stride]);
-    //     // apply_gt_left(&mut h[r..], k, k+1, stride, range - k, cosine, sine);
-    // }
 }
 fn full_decomp(h: &mut [f32], t: &mut [f32], mut range: usize, stride: usize) {
     let card = range;

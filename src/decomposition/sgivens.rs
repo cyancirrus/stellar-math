@@ -64,7 +64,7 @@ pub fn apply_gt_left(
     // c, -s, s, c
     let r1 = i * stride;
     let r2 = j * stride;
-    println!("gt_left r1, r2 ({}, {})", r1 / stride, r2 / stride);
+    // println!("gt_left r1, r2 ({}, {})", r1 / stride, r2 / stride);
     for k in 0..range {
         // alpha a[i*,j] + beta a[j*, j];
         let i_replace = c * a[r1 + k] - s * a[r2 + k];
@@ -87,7 +87,7 @@ pub fn apply_g_right(
     // alpha, beta, gamma, delta,
     // c, s, -s, c
     for l in 0..range {
-        println!("apply g right {}", l);
+        // println!("apply g right {}", l);
         let r = l * stride;
         // alpha a[l,i*] + gamma a[l, j*];
         let i_replace = c * a[r + i] - s * a[r + j];
