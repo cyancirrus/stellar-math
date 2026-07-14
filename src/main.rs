@@ -247,8 +247,6 @@ fn francis_iteration(h: &mut [f32], size: usize, range: usize, stride: usize) {
     let tl = card.saturating_sub(stride + 2);
     let bl = card.saturating_sub(2);
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
-    println!("input to eigens");
-    println!("[{}, {}],\n[{}, {}]", h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_g_right(h, 0, 1, stride, range, cosine, -sine);
     apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
