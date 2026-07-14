@@ -83,10 +83,15 @@ fn lapply_householder(
     // A - t*Auu';
     // w := Au;
     // R -= t*wu;
+    println!("rows {rows:}");
+    println!("cols {cols:}");
+    println!("r {r:?}");
+    println!("r {r:?}");
     let mut roffset = 0;
     for i in 0..rows {
         w[i] = r[roffset] * p[0];
         for k in 1..cols {
+            println!("k {k:}");
             w[i] += r[roffset + k] * p[k];
         }
         w[i] *= tau;
@@ -136,13 +141,14 @@ impl FrancisLq {
             let proj = &mut p[..split_range];
             let tau = params(slice, proj);
             offset += stride;
+            println!("proj {proj:?}");
             if tau == 0f32 {
                 continue;
             } else {
                 // lapply_householder(&mut r[o..], proj, w, tau, rows, split_range, cols);
                 // lapply_householder(r, proj, w, tau, active_range, cols, cols);
-                println!("offset + stride {}", offset + stride);
-                lapply_householder(&mut r[offset + stride..], proj, w, tau, active_range, cols, stride);
+                println!("offset + stride {}", offset);
+                lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
             }
             // let proj_suffix = &proj[1..];
             let proj_suffix = proj;
