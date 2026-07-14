@@ -68,7 +68,7 @@ pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
-fn rapply_householder(
+fn lapply_householder(
     r: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
@@ -78,7 +78,7 @@ fn rapply_householder(
     stride: usize,
 ) {
     debug_assert!(cols <= w.len());
-    debug_assert_eq!(rows, p.len());
+    // debug_assert_eq!(rows, p.len());
     // (I - tuu')A;
     // A -= t*uu'A;
     // w := u'A;
@@ -86,30 +86,36 @@ fn rapply_householder(
     println!("rows {rows:}");
     println!("cols {cols:}");
     println!("r {r:?}");
-    println!("r {r:?}");
+    println!("p {p:?}");
     let mut roffset = 0;
     for j in 0..cols {
         // let scalar = p[0];
         // scalar implicitly 1
         w[j] = r[j];
     }
+    println!("w first {w:?}");
     for i in 1..rows {
+        roffset += stride;
         let scalar = p[i];
         for j in 0..cols {
+            println!("roffset {}, j {}", roffset, j);
             w[j] += scalar * r[roffset + j];
         }
-        roffset += stride;
     }
     for j in 0..cols {
         w[j] *= tau;
         r[j] -= w[j];
     }
+    println!("w {w:?}");
+    roffset = 0;
     for i in 1..rows {
+        println!("hello?");
         roffset += stride;
         for j in 0..cols {
             r[roffset + j] -= p[i] * w[j];
         }
     }
+    println!("r {r:?}");
 }
 /// apply_householder
 ///
@@ -124,7 +130,7 @@ fn rapply_householder(
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
-fn lapply_householder(
+fn rapply_householder(
     r: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
@@ -139,21 +145,21 @@ fn lapply_householder(
     // A - t*Auu';
     // w := Au;
     // R -= t*wu;
-    println!("rows {rows:}");
-    println!("cols {cols:}");
-    println!("r {r:?}");
-    println!("r {r:?}");
+    // println!("rows {rows:}");
+    // println!("cols {cols:}");
+    // println!("r {r:?}");
+    // println!("r {r:?}");
     let mut roffset = 0;
     for i in 0..rows {
         w[i] = r[roffset] * p[0];
         for k in 1..cols {
-            println!("k {k:}");
+            // println!("k {k:}");
             w[i] += r[roffset + k] * p[k - 1];
         }
         w[i] *= tau;
         roffset += stride;
     }
-    println!("w {w:?}");
+    // println!("w {w:?}");
     roffset = 0;
     for i in 0..rows {
         r[roffset] -= w[i];
@@ -189,7 +195,6 @@ impl FrancisLq {
         let mut offset = 0;
         let mut active_range = rows;
         let mut split_range = cols;
-        println!("r {r:?}");
         for o in 1..2 {
             active_range -= 1;
             split_range -= 1;
@@ -202,9 +207,9 @@ impl FrancisLq {
             if tau == 0f32 {
                 continue;
             }
-            lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
-            rapply_householder(&mut h[o..], proj, w, tau, rows, split_range, stride);
             println!("r {r:?}");
+            lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
+            // rapply_householder(&mut h[o..], proj, w, tau, rows, split_range, stride);
         }
     }
 }
