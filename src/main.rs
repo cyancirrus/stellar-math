@@ -207,7 +207,6 @@ impl FrancisLq {
 
 fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
     let d = (m00 - m11) / 2f32;
-    // m11 + d - d.signum() * (d * d + m10 * m10).sqrt()
     let discriminate = d * d + m10 * m01;
     if discriminate >= 0f32 {
         m11 + d - d.signum() * discriminate.sqrt()
@@ -230,7 +229,8 @@ fn decomp(h: &mut [f32], mut range: usize, size:usize, mut stride: usize) {
     let he1 = h[e1];
     let he2 = h[e2];
     println!("(r:{range}, e1:{he1}, e2:{he2})");
-    while range > 1  && i < 40 {
+    while range > 1  && i < 4 {
+        println!("iter {i:?}");
         i+=1;
         if h[e1].abs() < TOLERANCE {
             range -= 1;
@@ -254,6 +254,8 @@ fn francis_iteration(h: &mut [f32], size:usize, range: usize, stride: usize) {
     let tl = card.saturating_sub(stride + 2);
     let bl = card.saturating_sub(2);
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
+    println!("input to eigens");
+    println!("[{}, {}],\n[{}, {}]", h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_g_right(h, 0, 1, stride, range, cosine, -sine);
     apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
@@ -266,26 +268,14 @@ fn francis_iteration(h: &mut [f32], size:usize, range: usize, stride: usize) {
             data: h.to_vec(),
         };
         let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r  + s2]);
-        apply_g_right(&mut h[r..], s1, s2, stride, range - k, cosine, -sine);
-        apply_gt_left(h, s1, s2, stride, range.min(s2+2), cosine, -sine);
+        apply_g_right(&mut h[r..], s1, s2, stride, size - k, cosine, -sine);
+        apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
+        
+
+        // apply_g_right(&mut h[r..], s1, s2, stride, range - k, cosine, -sine);
         // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
-    }
-}
-fn full_francis_iteration(h: &mut [f32], t: &mut [f32], card: usize, range: usize, stride: usize) {
-    let card = stride * range;
-    let tl = card.saturating_sub(stride + 2);
-    let bl = card.saturating_sub(2);
-    let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
-    let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[stride]);
-    apply_g_left(h, 0, 1, stride, range, cosine, sine);
-    apply_gt_right(h, 0, 1, stride, range, cosine, sine);
-    apply_g_right(t, 0, 1, stride, card, cosine, sine);
-    for k in 1..range {
-        let r = k * stride;
-        let (_, cosine, sine) = implicit_givens_rotation(h[r + k], h[r + k + stride]);
-        apply_g_left(&mut h[r..], k, k + 1, stride, range - k, cosine, sine);
-        apply_gt_right(&mut h[r..], k, k + 1, stride, range - k, cosine, sine);
-        apply_g_right(&mut t[r..], k, k + 1, stride, card, cosine, sine);
+        // // apply_gt_left(h, s1, s2, stride, range.min(s2+2), cosine, -sine);
+        // // apply_gt_left(&mut t[r..], k, k + 1, stride, card, cosine, sine);
     }
 }
 fn generate_symmetric_vector(n:usize) -> Vec<f32> {
@@ -346,7 +336,7 @@ fn check_iteration() -> NdArray {
         dims: vec![rows, cols],
         data: r.clone(),
     };
-    francis_iteration(&mut h, rows, stride);
+    francis_iteration(&mut h, rows, rows, stride);
     let output = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
@@ -374,7 +364,7 @@ fn check_decomp() -> NdArray {
         data: h.clone(),
     };
     println!("hessenberg {kernel:?}");
-    decomp(&mut h, c, c);
+    decomp(&mut h, c, c, c);
     // francis_iteration(&mut h, rows, stride);
     let output = NdArray {
         dims: vec![rows, cols],
