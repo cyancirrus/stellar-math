@@ -65,14 +65,14 @@ pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
 /// stride = cols
 /// cols = cols - 1;
 ///
-/// * r: rotation matrix data
-/// * p: projection vector
-/// * w: workspace vector
+/// * h: matrix linear data slice
+/// * p: projection slice
+/// * w: workspace slice
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
 fn lapply_householder(
-    r: &mut [f32],
+    h: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
     tau: f32,
@@ -80,6 +80,7 @@ fn lapply_householder(
     cols: usize,
     stride: usize,
 ) {
+    // println!("p {p:?}");
     debug_assert!(cols <= w.len());
     debug_assert_eq!(rows, p.len());
     // (I - tuu')A;
@@ -90,24 +91,24 @@ fn lapply_householder(
     for j in 0..cols {
         // let scalar = p[0];
         // scalar implicitly 1
-        w[j] = r[j];
+        w[j] = h[j];
     }
     for i in 1..rows {
         roffset += stride;
         let scalar = p[i];
         for j in 0..cols {
-            w[j] += scalar * r[roffset + j];
+            w[j] += scalar * h[roffset + j];
         }
     }
     for j in 0..cols {
         w[j] *= tau;
-        r[j] -= w[j];
+        h[j] -= w[j];
     }
     roffset = 0;
     for i in 1..rows {
         roffset += stride;
         for j in 0..cols {
-            r[roffset + j] -= p[i] * w[j];
+            h[roffset + j] -= p[i] * w[j];
         }
     }
 }
@@ -200,6 +201,106 @@ impl FrancisLq {
         }
     }
 }
+fn decomp_cpx(h: &mut [f32], w:&mut [f32], mut range: usize, size: usize, mut stride: usize) {
+    let s = range * stride;
+    let mut e1 = s.saturating_sub(stride + 1);
+    let mut e2 = s.saturating_sub(stride + stride + 2);
+    let mut i = 0;
+    let he1 = h[e1];
+    let he2 = h[e2];
+    let p = &mut [0f32; 3];
+    println!("(r:{range}, e1:{he1}, e2:{he2})");
+    while range > 1 && i < 40 {
+        println!("iter {i:?}");
+        i += 1;
+        if h[e1].abs() < TOLERANCE {
+            range -= 1;
+            e1 = e1.saturating_sub(stride + 1);
+            e2 = e2.saturating_sub(stride + 1);
+        } else if h[e2].abs() < TOLERANCE {
+            // if e2 == 0 then we are hitting eigen which should be greater than tolerance
+            range -= 2;
+            e1 = e1.saturating_sub(2 * stride + 2);
+            e2 = e2.saturating_sub(2 * stride + 2);
+        } else {
+            francis_iteration_cpx(h, p, w, size, range, stride);
+        }
+        let he1 = h[e1];
+        let he2 = h[e2];
+        println!("(r:{range}, e1:{he1}, e2:{he2})");
+    }
+}
+/// francis_iteration_cpx
+///
+/// * h: hessenberg linearized matrix 
+/// * p: projection slice
+/// * w: workspace slice
+/// * size: static number of rows for rotations
+/// * range: number of rows in active window
+/// * stride: stride of the data format
+fn francis_iteration_cpx(h: &mut [f32], p: &mut [f32], w: &mut [f32], size: usize, range: usize, stride: usize) {
+    // u1 = a + bi;
+    // u2 = a - bi;
+    // M = H^2 - H(u1 + u2) +Iu1 *u2;
+    // M = H^2 - H *trace +I * det;
+    let card = stride * range;
+    let tl = card.saturating_sub(stride + 2);
+    let bl = card.saturating_sub(2);
+
+    let (m00, m01) = (h[tl], h[tl + 1]);
+    let (m10, m11) = (h[bl], h[bl + 1]);
+
+    let (h00, h01) = (h[0], h[1]);
+    let (h10, h11) = (h[stride], h[stride + 1]);
+    let h12 = h[stride + 2];
+
+    let trace = m00 + m11;
+    let deter = m00 * m11 - m01 * m10;
+
+    w[0] = h00 * h00 + h01 * h10 - trace * h00 + deter;
+    w[1] = h01 * (h00 + h11 - trace);
+    w[2] = h01 * h12;
+    let bound = range.min(3);
+    let tau = params(&mut w[..bound], p);
+    if tau != 0f32 {
+        rapply_householder(h, p, w, tau, size, bound, stride);
+        lapply_householder(h, p, w, tau, bound, range, stride);
+    }
+    let mut offset = 0;
+    let data = NdArray {
+        dims:vec![size, size],
+        data:h.to_vec(), 
+    };
+    println!("rotating{data:?}");
+    println!("-------------------------------");
+    println!("-------------------------------");
+    // for o in 0..range.saturating_sub(2) {
+    for o in 1..range.saturating_sub(1) {
+        println!("---------");
+        let bound = bound.min(range-o);
+        let (slice, t) = h.split_at_mut(offset + stride);
+        let slice = &mut slice[offset + o..offset + o + bound];
+        let proj = &mut p[..bound];
+        let tau = params(slice, proj);
+        if tau == 0f32 {continue; }
+        offset += stride;
+        println!("size -o - 1 {}", size - o - 1);
+        rapply_householder(&mut t[o..], proj, w, tau, size - o, bound, stride);
+        let data = NdArray {
+            dims:vec![size, size],
+            data:h.to_vec(), 
+        };
+        println!("rapply\n{data:?}");
+        println!("---------");
+        lapply_householder(&mut h[offset..], proj, w, tau, bound, range, stride);
+        let data = NdArray {
+            dims:vec![size, size],
+            data:h.to_vec(), 
+        };
+        println!("lapply\n{data:?}");
+        println!("---------");
+    }
+}
 
 fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
     let d = (m00 - m11) / 2f32;
@@ -216,8 +317,7 @@ fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
 //     m11 + d - d.signum() * (d * d + m10 * m10).sqrt()
 // }
 // h:= hessenberg matrix
-fn decomp(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
-    //TODO: port this to LQ the error places aren't consistent
+fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
@@ -238,14 +338,14 @@ fn decomp(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
             e1 = e1.saturating_sub(2 * stride + 2);
             e2 = e2.saturating_sub(2 * stride + 2);
         } else {
-            francis_iteration(h, size, range, stride);
+            francis_iteration_sym(h, size, range, stride);
         }
         let he1 = h[e1];
         let he2 = h[e2];
         println!("(r:{range}, e1:{he1}, e2:{he2})");
     }
 }
-fn francis_iteration(h: &mut [f32], size: usize, range: usize, stride: usize) {
+fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize) {
     let card = stride * range;
     let tl = card.saturating_sub(stride + 2);
     let bl = card.saturating_sub(2);
@@ -336,7 +436,7 @@ fn check_hessen() {
     let reconstruct = matrix_mult(&kernel, &rotation);
     println!("reconstruct {reconstruct:?}");
 }
-fn check_iteration() -> NdArray {
+fn check_iteration_sym() -> NdArray {
     let c = 6;
     let (rows, cols) = (c, c);
     let stride = c;
@@ -359,7 +459,7 @@ fn check_iteration() -> NdArray {
         dims: vec![rows, cols],
         data: r.clone(),
     };
-    francis_iteration(&mut h, rows, rows, stride);
+    francis_iteration_sym(&mut h, rows, rows, stride);
     let output = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
@@ -386,7 +486,7 @@ fn check_decomp_sym() -> NdArray {
         data: h.clone(),
     };
     println!("hessenberg {kernel:?}");
-    decomp(&mut h, c, c, c);
+    decomp_sym(&mut h, c, c, c);
     // francis_iteration(&mut h, rows, stride);
     let output = NdArray {
         dims: vec![rows, cols],
@@ -414,8 +514,43 @@ fn check_decomp() -> NdArray {
         data: h.clone(),
     };
     println!("hessenberg {kernel:?}");
-    decomp(&mut h, c, c, c);
+    decomp_sym(&mut h, c, c, c);
     // francis_iteration(&mut h, rows, stride);
+    let output = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("final {output:?}");
+    output
+}
+fn check_iteration_cpx() -> NdArray {
+    let c = 6;
+    let (rows, cols) = (c, c);
+    let stride = c;
+    let mut h = generate_random_vector(rows * cols);
+    let mut r = generate_identity_vector(rows, cols);
+    let mut p = vec![0f32; cols];
+    let mut w = vec![0f32; rows];
+    let input = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("before {input:?}");
+    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    let kernel = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("hessenberg {kernel:?}");
+    println!("-------------------------------");
+    println!("-------------------------------");
+    let rotation = NdArray {
+        dims: vec![rows, cols],
+        data: r.clone(),
+    };
+    let mut p = [0f32; 3];
+    w.fill(0f32);
+    francis_iteration_cpx(&mut h, &mut p,  &mut w, rows, rows, stride);
     let output = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
@@ -426,9 +561,9 @@ fn check_decomp() -> NdArray {
 
 fn main() {
     // check_decomp_sym();
-    check_decomp();
+    check_iteration_cpx();
     // check_hessen_sym();
-    // check_iteration();
+    // check_iteration_sym();
     // check_hessen();
     // test_orthogonal();
 }
