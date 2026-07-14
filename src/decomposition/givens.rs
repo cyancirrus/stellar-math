@@ -121,7 +121,7 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
     (r, c, s)
 }
 
-fn apply_g_left(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
+pub fn apply_g_left(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
     // G * A
     // alpha, beta, gamma, delta,
     // c, s, -s, c
@@ -168,7 +168,7 @@ pub fn apply_g_right(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
     }
 }
 
-fn apply_gt_right(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
+pub fn apply_gt_right(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
     // A * G'
     // alpha, beta, gamma, delta,
     // c, -s, s, c

@@ -13,7 +13,7 @@ pub struct AutumnDecomp {
 
 const TOLERANCE: f32 = 1e-12;
 
-fn params(v: &mut [f32]) -> f32 {
+pub fn params(v: &mut [f32]) -> f32 {
     let mut max_element = 0f32;
     for val in v.iter() {
         let v = val.abs();

@@ -6,5 +6,6 @@ pub mod lq;
 pub mod qr;
 pub mod qr_matrix;
 pub mod schur;
+pub mod sgivens;
 pub mod svd;
 pub mod wy;
