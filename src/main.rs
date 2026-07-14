@@ -212,7 +212,7 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
     let he2 = h[e2];
     let p = &mut [0f32; 3];
     println!("(r:{range}, e1:{he1}, e2:{he2})");
-    while range > 1 && i < 60 {
+    while range > 2 && i < 60 {
         println!("iter {i:?}");
         i += 1;
         if h[e1].abs() < TOLERANCE {
