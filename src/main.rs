@@ -78,27 +78,21 @@ fn lapply_householder(
     stride: usize,
 ) {
     debug_assert!(cols <= w.len());
-    // debug_assert_eq!(rows, p.len());
+    debug_assert_eq!(rows, p.len());
     // (I - tuu')A;
     // A -= t*uu'A;
     // w := u'A;
     // R -= t*uw';
-    println!("rows {rows:}");
-    println!("cols {cols:}");
-    println!("r {r:?}");
-    println!("p {p:?}");
     let mut roffset = 0;
     for j in 0..cols {
         // let scalar = p[0];
         // scalar implicitly 1
         w[j] = r[j];
     }
-    println!("w first {w:?}");
     for i in 1..rows {
         roffset += stride;
         let scalar = p[i];
         for j in 0..cols {
-            println!("roffset {}, j {}", roffset, j);
             w[j] += scalar * r[roffset + j];
         }
     }
@@ -106,18 +100,15 @@ fn lapply_householder(
         w[j] *= tau;
         r[j] -= w[j];
     }
-    println!("w {w:?}");
     roffset = 0;
     for i in 1..rows {
-        println!("hello?");
         roffset += stride;
         for j in 0..cols {
             r[roffset + j] -= p[i] * w[j];
         }
     }
-    println!("r {r:?}");
 }
-/// apply_householder
+/// rapply_householder
 ///
 /// applies the transformation directly starting here to apply
 /// to columns 1..cols, simply index into the data and then
@@ -151,10 +142,10 @@ fn rapply_householder(
     // println!("r {r:?}");
     let mut roffset = 0;
     for i in 0..rows {
-        w[i] = r[roffset] * p[0];
+        w[i] = r[roffset];
         for k in 1..cols {
             // println!("k {k:}");
-            w[i] += r[roffset + k] * p[k - 1];
+            w[i] += r[roffset + k] * p[k];
         }
         w[i] *= tau;
         roffset += stride;
@@ -164,7 +155,7 @@ fn rapply_householder(
     for i in 0..rows {
         r[roffset] -= w[i];
         for j in 1..cols {
-            r[roffset + j] -= w[i] * p[j - 1];
+            r[roffset + j] -= w[i] * p[j];
         }
         roffset += stride;
     }
