@@ -214,7 +214,6 @@ fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
     } else {
         println!("complex");
         m11 + d 
-        // m11 + d - d.signum() * (d_square + m10 * m10).sqrt()
     }
 }
 // fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
@@ -222,7 +221,7 @@ fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
 //     m11 + d - d.signum() * (d * d + m10 * m10).sqrt()
 // }
 // h:= hessenberg matrix
-fn decomp(h: &mut [f32], mut range: usize, stride: usize) {
+fn decomp(h: &mut [f32], mut range: usize, size:usize, mut stride: usize) {
     //TODO: port this to LQ the error places aren't consistent
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
@@ -243,14 +242,14 @@ fn decomp(h: &mut [f32], mut range: usize, stride: usize) {
             e1 = e1.saturating_sub(2 * stride + 2);
             e2 = e2.saturating_sub(2 * stride + 2);
         } else {
-            francis_iteration(h, range, stride);
+            francis_iteration(h, size, range, stride);
         }
         let he1 = h[e1];
         let he2 = h[e2];
         println!("(r:{range}, e1:{he1}, e2:{he2})");
     }
 }
-fn francis_iteration(h: &mut [f32], range: usize, stride: usize) {
+fn francis_iteration(h: &mut [f32], size:usize, range: usize, stride: usize) {
     let card = stride * range;
     let tl = card.saturating_sub(stride + 2);
     let bl = card.saturating_sub(2);
@@ -268,29 +267,8 @@ fn francis_iteration(h: &mut [f32], range: usize, stride: usize) {
         };
         let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r  + s2]);
         apply_g_right(&mut h[r..], s1, s2, stride, range - k, cosine, -sine);
-        // apply_gt_left(h, s1, s2, stride, range.min(s2+2), cosine, -sine);
-        apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
-    }
-}
-fn full_decomp(h: &mut [f32], t: &mut [f32], mut range: usize, stride: usize) {
-    let card = range;
-    let s = range * stride;
-    let mut e1 = s.saturating_sub(2);
-    let mut e2 = s.saturating_sub(stride + 3);
-    let mut eig: f32;
-    while range != 0 {
-        if h[e1].abs() < TOLERANCE {
-            range -= 1;
-            e1 = e1.saturating_sub(stride + 1);
-            e2 = e2.saturating_sub(stride + 1);
-        } else if h[e2].abs() < TOLERANCE {
-            // if e2 == 0 then we are hitting eigen which should be greater than tolerance
-            range -= 2;
-            e1 = e1.saturating_sub(2 * stride + 2);
-            e2 = e2.saturating_sub(2 * stride + 2);
-        } else {
-            full_francis_iteration(h, t, card, range, stride);
-        }
+        apply_gt_left(h, s1, s2, stride, range.min(s2+2), cosine, -sine);
+        // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
     }
 }
 fn full_francis_iteration(h: &mut [f32], t: &mut [f32], card: usize, range: usize, stride: usize) {
