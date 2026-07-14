@@ -1,5 +1,6 @@
-// #![allow(unused_imports, dead_code, unused_variables, unused)]
+#![allow(unused_imports, dead_code, unused_variables, unused)]
 use stellar::algebra::ndmethods::basic_mult;
+use stellar::algebra::ndmethods::matrix_mult;
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::decomposition::lower_upper::LuPivotDecompose;
 use stellar::decomposition::lq::AutumnDecomp;
@@ -8,7 +9,9 @@ use stellar::decomposition::sgivens::{
     apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
 };
 use stellar::equality::approximate::approx_vector_tol_eq;
-use stellar::random::generation::generate_random_matrix;
+use stellar::random::generation::{
+    generate_identity_vector, generate_random_matrix, generate_random_vector,
+};
 use stellar::structure::ndarray::NdArray;
 // use stellar::decomposition::lq::params;
 const TOLERANCE: f32 = 1e-4;
@@ -22,7 +25,7 @@ const TOLERANCE: f32 = 1e-4;
 ///
 /// * v: matrix slice data
 /// * w: sized workspace vector
-pub fn params(v: &mut [f32], w:&mut [f32]) -> f32 {
+pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
     let mut max_element = 0f32;
     for val in v.iter() {
         let v = val.abs();
@@ -31,6 +34,7 @@ pub fn params(v: &mut [f32], w:&mut [f32]) -> f32 {
         };
     }
     if max_element.abs() < TOLERANCE {
+        w[0] = 1f32;
         return 0f32;
     }
     let mut magnitude_squared = 0f32;
@@ -52,35 +56,46 @@ pub fn params(v: &mut [f32], w:&mut [f32]) -> f32 {
     scale / g
 }
 /// apply_householder
+///
+/// applies the transformation directly starting here to apply
+/// to columns 1..cols, simply index into the data and then
+/// stride = cols
+/// cols = cols - 1;
+///
 /// * r: rotation matrix data
 /// * p: projection vector
 /// * w: workspace vector
-/// * dim: number of rows
+/// * rows: number of rows
+/// * cols: number of cols
 /// * stride: stride of the data
-fn apply_householder(
+fn lapply_householder(
     r: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
-    tau:f32,
-    dim: usize,
-    stride: usize
+    tau: f32,
+    rows: usize,
+    cols: usize,
+    stride: usize,
 ) {
+    // debug_assert_eq!(rows, w.len());
+    // debug_assert_eq!(cols, p.len());
     // A(I - tuu');
     // A - t*Auu';
-    // v := Au;
-    // R -= t*vu;
+    // w := Au;
+    // R -= t*wu;
     let mut roffset = 0;
-    for i in 0..dim {
+    for i in 0..rows {
         w[i] = r[roffset] * p[0];
-        for k in 1..dim {
+        for k in 1..cols {
             w[i] += r[roffset + k] * p[k];
         }
         w[i] *= tau;
         roffset += stride;
     }
+    println!("w {w:?}");
     roffset = 0;
-    for i in 0..dim {
-        for j in 0..dim {
+    for i in 0..rows {
+        for j in 0..cols {
             r[roffset + j] -= w[i] * p[j];
         }
         roffset += stride;
@@ -91,48 +106,66 @@ struct FrancisLq {
     // transform: NdArray,
 }
 impl FrancisLq {
-    // pub fn thing(self, h:&mut [f32], r:&mut [f32], w:&mut [f32], dim:usize, stride:usize) -> Self {
-    //     self.zero(&mut h[1..], r[1..]
-    // }
-
-    pub fn zero(h: &mut [f32], r: &mut [f32], w: &mut [f32], dim: usize, stride: usize) -> Self {
-        let (rows, cols) = (dim, dim);
-        let mut t = vec![0f32; rows];
+    /// full_hessenberg
+    /// * h: matrix to create the hessenberg
+    /// * r: rotation matrix should be identity on coldstart
+    /// * p: projection vector
+    /// * w: workspace vector
+    /// * rows: number of rows
+    /// * cols: number of cols
+    /// * stride: stride of the data
+    pub fn full_hessenberg(
+        h: &mut [f32],
+        r: &mut [f32],
+        p: &mut [f32],
+        w: &mut [f32],
+        rows: usize,
+        cols: usize,
+        stride: usize,
+    ) {
+        // stores tau
+        let mut offset = 0;
         let mut active_range = rows;
-        for p in 0..rows {
+        let mut split_range = cols;
+        println!("r {r:?}");
+        for o in 1..2 {
             active_range -= 1;
-            let tau = &mut t[p];
-            let offset = p * stride;
-            let (projection, target) = h.split_at_mut(offset + stride);
-            let projection = &mut projection[offset + p..offset + stride];
-            *tau = params(projection);
-            if *tau == 0f32 {
-                let roffset = p * cols;
-                // h[roffset + p + 1..roffset + cols].fill(0f32);
-                // continue;
+            split_range -= 1;
+            let (slice, target) = h.split_at_mut(offset + stride);
+            let slice = &mut slice[offset + o..offset + cols];
+            let proj = &mut p[..split_range];
+            let tau = params(slice, proj);
+            offset += stride;
+            if tau == 0f32 {
+                continue;
             } else {
-                apply_householder(
+                // lapply_householder(&mut r[o..], proj, w, tau, rows, split_range, cols);
+                // lapply_householder(r, proj, w, tau, active_range, cols, cols);
+                lapply_householder(&mut r[offset + stride..], proj, w, tau, active_range, cols, stride);
             }
-            let proj_suffix = &projection[1..];
-            let split_range = proj_suffix.len();
+            // let proj_suffix = &proj[1..];
+            let proj_suffix = proj;
+            let mut woffset = o;
             for i in 0..active_range {
-                let roffset = i * stride;
-                let mut wi = target[roffset + p];
+                let mut wi = target[woffset];
                 {
-                    let mut targ_suffix = &mut target[roffset + p + 1..roffset + cols];
-                    targ_suffix = &mut targ_suffix[..split_range];
+                    let targ_suffix = &mut target[woffset..woffset + split_range];
+                    println!("targ_suffix {targ_suffix:?}");
+                    println!("proj_suffix {proj_suffix:?}");
                     for j in 0..split_range {
                         wi += targ_suffix[j] * proj_suffix[j];
                     }
-                    wi *= *tau;
+                    wi *= tau;
                     for j in 0..split_range {
                         targ_suffix[j] -= wi * proj_suffix[j];
                     }
                 }
-                target[roffset + p] -= wi;
+                // top left for 1f32
+                target[woffset] -= wi;
+                woffset += stride;
             }
+            println!("r {r:?}");
         }
-        Self {}
     }
 }
 
@@ -216,32 +249,61 @@ fn full_francis_iteration(h: &mut [f32], t: &mut [f32], card: usize, range: usiz
         apply_g_right(&mut t[r..], k, k + 1, stride, card, cosine, sine);
     }
 }
-
-fn check() -> NdArray {
-    let d = 4;
-    let a = generate_random_matrix(d, d);
-    println!("a {a:?}");
-    let mut kern = vec![0f32; d * d];
-    let mut workspace = vec![0f32; d];
-    println!("kern {kern:?}");
-    let lq = AutumnDecomp::new(a);
-    lq.ql_apply(&mut kern, &mut workspace);
+fn check_hessen() {
+    let (rows, cols) = (3, 3);
+    let stride = 3;
+    let mut h = generate_random_vector(rows * cols);
+    let mut r = generate_identity_vector(rows, cols);
+    let mut p= vec![0f32; cols];
+    let mut w= vec![0f32; rows];
     let input = NdArray {
-        dims: vec![d, d],
-        data: kern.clone(),
+        dims: vec![rows, cols],
+        data: h.clone(),
     };
     println!("before {input:?}");
-    francis_iteration(&mut kern, d, d);
-    let output = NdArray {
-        dims: vec![d, d],
-        data: kern.clone(),
+    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    let kernel = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
     };
-    println!("after {output:?}");
-    output
+    println!("after {kernel:?}");
+    let rotation = NdArray {
+        dims: vec![rows, cols],
+        data: r.clone(),
+    };
+    println!("rotation {rotation:?}");
+    let ortho = matrix_mult(&rotation, &rotation.transpose());
+    println!("ortho rr' {ortho:?}");
+    let ortho = matrix_mult(&rotation.transpose(), &rotation);
+    println!("ortho r'r {ortho:?}");
+    let reconstruct = matrix_mult(&kernel, &rotation);
+    println!("reconstruct {reconstruct:?}");
 }
+// fn check() -> NdArray {
+//     let d = 4;
+//     let a = generate_random_matrix(d, d);
+//     println!("a {a:?}");
+//     let mut kern = vec![0f32; d * d];
+//     let mut workspace = vec![0f32; d];
+//     println!("kern {kern:?}");
+//     let lq = AutumnDecomp::new(a);
+//     lq.ql_apply(&mut kern, &mut workspace);
+//     let input = NdArray {
+//         dims: vec![d, d],
+//         data: kern.clone(),
+//     };
+//     println!("before {input:?}");
+//     francis_iteration(&mut kern, d, d);
+//     let output = NdArray {
+//         dims: vec![d, d],
+//         data: kern.clone(),
+//     };
+//     println!("after {output:?}");
+//     output
+// }
 
 fn main() {
-    check();
+    check_hessen();
     // test_reconstruct();
     // test_orthogonal();
 }

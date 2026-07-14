@@ -2,6 +2,15 @@ use crate::structure::ndarray::NdArray;
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 
+pub fn generate_identity_vector(m: usize, n: usize) -> Vec<f32> {
+    let mut vector = vec![0f32; m * n];
+    let mut idx = 0;
+    for _ in 0..m {
+        vector[idx] = 1f32;
+        idx += 1 + n;
+    }
+    vector
+}
 pub fn generate_zero_matrix(m: usize, n: usize) -> NdArray {
     NdArray {
         dims: vec![m, n],
