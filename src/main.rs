@@ -375,7 +375,7 @@ fn check_hessen() {
     println!("reconstruct {reconstruct:?}");
 }
 fn check_iteration() -> NdArray {
-    let c = 5;
+    let c = 4;
     let (rows, cols) = (c, c);
     let stride = c;
     let mut h = generate_random_vector(rows * cols);
