@@ -209,7 +209,7 @@ impl FrancisLq {
             }
             println!("r {r:?}");
             lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
-            // rapply_householder(&mut h[o..], proj, w, tau, rows, split_range, stride);
+            rapply_householder(&mut h[o..], proj, w, tau, rows, split_range, stride);
         }
     }
 }
