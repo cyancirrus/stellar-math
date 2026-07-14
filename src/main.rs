@@ -248,7 +248,7 @@ fn francis_iteration(h: &mut [f32], range: usize, stride: usize) {
     println!("temp {temp:?}");
     println!("error piece {:?}", h[tl + 1 - stride]);
     println!("--------------");
-    for k in 0..3 {
+    for k in 0..range - 2 {
     // for k in 0..range - 3 {
         let r = k * stride;
         let s1 = k + 1;
