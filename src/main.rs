@@ -230,7 +230,7 @@ fn decomp(h: &mut [f32], mut range: usize, stride: usize) {
     let he1 = h[e1];
     let he2 = h[e2];
     println!("(r:{range}, e1:{he1}, e2:{he2})");
-    while range > 0  && i < 80 {
+    while range > 0  && i < 20 {
         i+=1;
         if h[e1].abs() < TOLERANCE {
             range -= 1;
