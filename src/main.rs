@@ -14,8 +14,10 @@ use stellar::random::generation::{
 };
 use stellar::structure::ndarray::NdArray;
 // use stellar::decomposition::lq::params;
-const TOLERANCE: f32 = 1e-8;
-const EPSILON: f32 = 1e-12;
+// const TOLERANCE: f32 = 1e-8;
+// const EPSILON: f32 = 1e-12;
+const TOLERANCE: f32 = 1e-6;
+const EPSILON: f32 = 1e-8;
 
 /// params
 /// takes in data forom a matrix slice
@@ -223,7 +225,7 @@ fn decomp(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
     let he1 = h[e1];
     let he2 = h[e2];
     println!("(r:{range}, e1:{he1}, e2:{he2})");
-    while range > 1 && i < 100 {
+    while range > 1 && i < 40 {
         println!("iter {i:?}");
         i += 1;
         if h[e1].abs() < TOLERANCE {
@@ -365,12 +367,39 @@ fn check_iteration() -> NdArray {
     println!("final {output:?}");
     output
 }
+fn check_decomp_sym() -> NdArray {
+    let c = 4;
+    let (rows, cols) = (c, c);
+    let stride = c;
+    let mut h = generate_symmetric_vector(rows);
+    let mut r = generate_identity_vector(rows, cols);
+    let mut p = vec![0f32; cols];
+    let mut w = vec![0f32; rows];
+    let input = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("before {input:?}");
+    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    let kernel = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("hessenberg {kernel:?}");
+    decomp(&mut h, c, c, c);
+    // francis_iteration(&mut h, rows, stride);
+    let output = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("final {output:?}");
+    output
+}
 fn check_decomp() -> NdArray {
     let c = 4;
     let (rows, cols) = (c, c);
     let stride = c;
-    // let mut h = generate_random_vector(rows * cols);
-    let mut h = generate_symmetric_vector(rows);
+    let mut h = generate_random_vector(rows * cols);
     let mut r = generate_identity_vector(rows, cols);
     let mut p = vec![0f32; cols];
     let mut w = vec![0f32; rows];
@@ -396,6 +425,7 @@ fn check_decomp() -> NdArray {
 }
 
 fn main() {
+    // check_decomp_sym();
     check_decomp();
     // check_hessen_sym();
     // check_iteration();
