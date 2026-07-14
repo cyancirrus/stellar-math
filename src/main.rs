@@ -1,7 +1,7 @@
 #![allow(unused_imports, dead_code, unused_variables, unused)]
 use stellar::algebra::ndmethods::basic_mult;
-use stellar::algebra::ndmethods::matrix_mult;
 use stellar::algebra::ndmethods::create_identity_matrix;
+use stellar::algebra::ndmethods::matrix_mult;
 use stellar::decomposition::lower_upper::LuPivotDecompose;
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::decomposition::schur::real_schur;
@@ -55,6 +55,62 @@ pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
     w[0] = 1f32;
     scale / g
 }
+/// rapply_householder
+///
+/// applies the transformation directly starting here to apply
+/// to columns 1..cols, simply index into the data and then
+/// stride = cols
+/// cols = cols - 1;
+///
+/// * r: rotation matrix data
+/// * p: projection vector
+/// * w: workspace vector
+/// * rows: number of rows
+/// * cols: number of cols
+/// * stride: stride of the data
+fn rapply_householder(
+    r: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    tau: f32,
+    rows: usize,
+    cols: usize,
+    stride: usize,
+) {
+    debug_assert!(cols <= w.len());
+    debug_assert_eq!(rows, p.len());
+    // (I - tuu')A;
+    // A -= t*uu'A;
+    // w := u'A;
+    // R -= t*uw';
+    println!("rows {rows:}");
+    println!("cols {cols:}");
+    println!("r {r:?}");
+    println!("r {r:?}");
+    let mut roffset = 0;
+    for j in 0..cols {
+        // let scalar = p[0];
+        // scalar implicitly 1
+        w[j] = r[j];
+    }
+    for i in 1..rows {
+        let scalar = p[i];
+        for j in 0..cols {
+            w[j] += scalar * r[roffset + j];
+        }
+        roffset += stride;
+    }
+    for j in 0..cols {
+        w[j] *= tau;
+        r[j] -= w[j];
+    }
+    for i in 1..rows {
+        roffset += stride;
+        for j in 0..cols {
+            r[roffset + j] -= p[i] * w[j];
+        }
+    }
+}
 /// apply_householder
 ///
 /// applies the transformation directly starting here to apply
@@ -77,8 +133,8 @@ fn lapply_householder(
     cols: usize,
     stride: usize,
 ) {
-    // debug_assert_eq!(rows, w.len());
-    // debug_assert_eq!(cols, p.len());
+    debug_assert!(rows <= w.len());
+    // debug_assert_eq!(cols, p.len(), "cols {cols:}, p: {p:?}");
     // A(I - tuu');
     // A - t*Auu';
     // w := Au;
@@ -92,7 +148,7 @@ fn lapply_householder(
         w[i] = r[roffset] * p[0];
         for k in 1..cols {
             println!("k {k:}");
-            w[i] += r[roffset + k] * p[k];
+            w[i] += r[roffset + k] * p[k - 1];
         }
         w[i] *= tau;
         roffset += stride;
@@ -100,8 +156,9 @@ fn lapply_householder(
     println!("w {w:?}");
     roffset = 0;
     for i in 0..rows {
-        for j in 0..cols {
-            r[roffset + j] -= w[i] * p[j];
+        r[roffset] -= w[i];
+        for j in 1..cols {
+            r[roffset + j] -= w[i] * p[j - 1];
         }
         roffset += stride;
     }
@@ -144,33 +201,9 @@ impl FrancisLq {
             println!("proj {proj:?}");
             if tau == 0f32 {
                 continue;
-            } else {
-                // lapply_householder(&mut r[o..], proj, w, tau, rows, split_range, cols);
-                // lapply_householder(r, proj, w, tau, active_range, cols, cols);
-                println!("offset + stride {}", offset);
-                lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
             }
-            // let proj_suffix = &proj[1..];
-            let proj_suffix = proj;
-            let mut woffset = o;
-            for i in 0..active_range {
-                let mut wi = target[woffset];
-                {
-                    let targ_suffix = &mut target[woffset..woffset + split_range];
-                    println!("targ_suffix {targ_suffix:?}");
-                    println!("proj_suffix {proj_suffix:?}");
-                    for j in 0..split_range {
-                        wi += targ_suffix[j] * proj_suffix[j];
-                    }
-                    wi *= tau;
-                    for j in 0..split_range {
-                        targ_suffix[j] -= wi * proj_suffix[j];
-                    }
-                }
-                // top left for 1f32
-                target[woffset] -= wi;
-                woffset += stride;
-            }
+            lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
+            rapply_householder(&mut h[o..], proj, w, tau, rows, split_range, stride);
             println!("r {r:?}");
         }
     }
@@ -261,8 +294,8 @@ fn check_hessen() {
     let stride = 3;
     let mut h = generate_random_vector(rows * cols);
     let mut r = generate_identity_vector(rows, cols);
-    let mut p= vec![0f32; cols];
-    let mut w= vec![0f32; rows];
+    let mut p = vec![0f32; cols];
+    let mut w = vec![0f32; rows];
     let input = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
@@ -314,3 +347,53 @@ fn main() {
     // test_reconstruct();
     // test_orthogonal();
 }
+// pub fn full_hessenberg(
+//     h: &mut [f32],
+//     r: &mut [f32],
+//     p: &mut [f32],
+//     w: &mut [f32],
+//     rows: usize,
+//     cols: usize,
+//     stride: usize,
+// ) {
+//     // stores tau
+//     let mut offset = 0;
+//     let mut active_range = rows;
+//     let mut split_range = cols;
+//     println!("r {r:?}");
+//     for o in 1..2 {
+//         active_range -= 1;
+//         split_range -= 1;
+//         let (slice, target) = h.split_at_mut(offset + stride);
+//         let slice = &mut slice[offset + o..offset + cols];
+//         let proj = &mut p[..split_range];
+//         let tau = params(slice, proj);
+//         offset += stride;
+//         println!("proj {proj:?}");
+//         if tau == 0f32 { continue; }
+//         // lapply_householder(&mut r[o..], proj, w, tau, rows, split_range, cols);
+//         lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
+//         rapply_householder(&mut r[o..], proj, w, tau, rows, split_range, stride);
+//         // // let proj_suffix = &proj[1..];
+//         // let proj_suffix = proj;
+//         // let mut woffset = o;
+//         // for i in 0..active_range {
+//         //     let mut wi = target[woffset];
+//         //     {
+//         //         let targ_suffix = &mut target[woffset..woffset + split_range];
+//         //         println!("targ_suffix {targ_suffix:?}");
+//         //         println!("proj_suffix {proj_suffix:?}");
+//         //         for j in 0..split_range {
+//         //             wi += targ_suffix[j] * proj_suffix[j];
+//         //         }
+//         //         wi *= tau;
+//         //         for j in 0..split_range {
+//         //             targ_suffix[j] -= wi * proj_suffix[j];
+//         //         }
+//         //     }
+//         //     // top left for 1f32
+//         //     target[woffset] -= wi;
+//         //     woffset += stride;
+//         println!("r {r:?}");
+//     }
+// }
