@@ -81,7 +81,6 @@ impl AutumnDecomp {
         Self { h, t }
     }
 }
-
 impl AutumnDecomp {
     pub fn mat_left_apply_q(&self, target: &mut NdArray, workspace: &mut [f32]) {
         // Q * A
