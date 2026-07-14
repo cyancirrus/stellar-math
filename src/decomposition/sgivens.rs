@@ -86,17 +86,16 @@ pub fn apply_g_right(
     // A * G
     // alpha, beta, gamma, delta,
     // c, s, -s, c
-    for l in 0..range {
+    let mut r = 0;
+    for _ in 0..range {
         // println!("apply g right {}", l);
-        let r = l * stride;
         // alpha a[l,i*] + gamma a[l, j*];
         let i_replace = c * a[r + i] - s * a[r + j];
         // beta a[l,i*] + delta a[l, j*];
         let j_replace = s * a[r + i] + c * a[r + j];
-        // a[r + i] = 100f32;
-        // a[r + j] = 100f32;
         a[r + i] = i_replace;
         a[r + j] = j_replace;
+        r += stride;
     }
 }
 pub fn apply_gt_right(
