@@ -13,7 +13,7 @@ use stellar::random::generation::{
     generate_identity_vector, generate_random_matrix, generate_random_vector,
 };
 use stellar::structure::ndarray::NdArray;
-const MAX_ITERS: usize = 64;
+const MAX_ITERS: usize = 32;
 const TOLERANCE: f32 = 1e-6;
 const EPSILON: f32 = 1e-9;
 
@@ -225,6 +225,11 @@ fn deflate(
     *curriter = curriter.saturating_sub(MAX_ITERS >> 1);
 }
 
+fn complex_eig_pair(h: &mut [f32],  tl: usize, bl:usize) -> bool {
+    let d = (h[tl] - h[bl + 1]) / 2f32;
+    d * d + h[tl + 1] * h[bl] < 0f32
+}
+
 fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
@@ -236,57 +241,17 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
     let he2 = h[e2];
     let p = &mut [0f32; 3];
     let mut stall = 0;
-    // println!(
-    //     "  tl={} (row={},col={}) bl={} (row={},col={})  [tl-e1={}, bl-e2={}]",
-    //     tl, tl / stride, tl % stride,
-    //     bl, bl / stride, bl % stride,
-    //     tl as isize - e1 as isize,
-    //     bl as isize - e2 as isize,
-    // );
     while range > 0 && curriter < MAX_ITERS {
         curriter += 1;
-        // compute trailing 2x2 discriminant up front so it's available for the branch below
-        // println!("tl={} (row={},col={}) bl={} (row={},col={})  [tl-e1={}, bl-e2={}]",
-        //     tl, tl / stride, tl % stride,
-        //     bl, bl / stride, bl % stride,
-        //     tl as isize - e1 as isize,
-        //     bl as isize - e2 as isize,
-        // );
         if h[e1].abs() < TOLERANCE {
-            stall = 0;
-            range -= 1;
-            e1 = e1.saturating_sub(stride + 1);
-            e2 = e2.saturating_sub(stride + 1);
-            tl = tl.saturating_sub(stride + 1);
-            bl = bl.saturating_sub(stride + 1);
-            curriter = curriter.saturating_sub(MAX_ITERS >> 1);
+            deflate(1, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut stall, &mut curriter);
         } else if h[e2].abs() < TOLERANCE {
             // if e2 == 0 then we are hitting eigen which should be greater than tolerance
-            stall = 0;
-            range -= 2;
-            e1 = e1.saturating_sub(2 * stride + 2);
-            e2 = e2.saturating_sub(2 * stride + 2);
-            tl = tl.saturating_sub(2 * stride + 2);
-            bl = bl.saturating_sub(2 * stride + 2);
-            curriter = curriter.saturating_sub(MAX_ITERS >> 1);
+            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut stall, &mut curriter);
+        } else if range == 2 && complex_eig_pair(h, tl, bl) {
+            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut stall, &mut curriter);
         } else {
             if range == 2 {
-                let eig_disc = {
-                    // compute disc using tl,bl the same way
-                    let d = (h[tl] - h[bl + 1]) / 2.0;
-                    d * d + h[tl + 1] * h[bl]
-                };
-                if eig_disc < 0.0 {
-                    // converged complex-conjugate pair, nothing more to do
-                    stall = 0;
-                    range -= 2;
-                    e1 = e1.saturating_sub(2 * stride + 2);
-                    e2 = e2.saturating_sub(2 * stride + 2);
-                    tl = tl.saturating_sub(2 * stride + 2);
-                    bl = bl.saturating_sub(2 * stride + 2);
-                    curriter = curriter.saturating_sub(MAX_ITERS >> 1);
-                    continue;
-                }
                 francis_iteration_cpx_2x2(h, size, stride, tl, bl);
             } else if stall > 0 && stall % 8 == 0 {
                 exception_shift(h, w, stride, range, tl, bl);
@@ -297,18 +262,8 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
             }
             stall += 1;
         }
-        let he1 = h[e1];
-        let he2 = h[e2];
-        // println!("e1={} (row={},col={}) e2={} (row={},col={}) range={} stride={}",
-        //     e1, e1 / stride, e1 % stride,
-        //     e2, e2 / stride, e2 % stride,
-        //     range, stride
-        // );
     }
     if range > 1 {
-        let card = range * stride;
-        let tl = card.saturating_sub(stride + 2 + stride - range);
-        let bl = card.saturating_sub(2 + stride - range);
         let (m00, m01) = (h[tl], h[tl + 1]);
         let (m10, m11) = (h[bl], h[bl + 1]);
         let d = (m00 - m11) / 2.0;
