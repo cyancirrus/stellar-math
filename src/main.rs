@@ -14,12 +14,9 @@ use stellar::random::generation::{
 };
 use stellar::structure::ndarray::NdArray;
 // use stellar::decomposition::lq::params;
-// const TOLERANCE: f32 = 1e-8;
-// const EPSILON: f32 = 1e-12;
-// const TOLERANCE: f32 = 1e-6;
-// const EPSILON: f32 = 1e-8;
 const TOLERANCE: f32 = 1e-6;
 const EPSILON: f32 = 1e-4;
+const MAX_ITERS: usize = 120;
 
 // NOTE: To self householder vecs getting inf's, well it's bc of like [w0, 0, 0] style vecs
 // symmetric case done
@@ -49,7 +46,6 @@ pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
     }
     let mut magnitude_squared = 0f32;
     let inv_max_element = 1f32 / max_element;
-    println!("inv_max_element {inv_max_element:?}");
     for (val, gbg) in v.iter_mut().zip(w.iter_mut()) {
         *val *= inv_max_element;
         magnitude_squared += *val * *val;
@@ -60,13 +56,11 @@ pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
     let g = w[0].signum() * magnitude_squared.sqrt();
     let scale = w[0] + g;
     let inv_scale = 1f32 / scale;
-    println!("inv_scale {inv_scale:?}");
     for val in w[1..].iter_mut() {
         *val *= inv_scale;
     }
     v[0] = g * max_element;
     w[0] = 1f32;
-    println!("returning tau {:?}, scale {scale:}, g {g:}", scale / g);
     scale / g
 }
 /// lapply_householder
@@ -216,15 +210,13 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
-    let mut i = 0;
+    let mut curriter = 0;
     let he1 = h[e1];
     let he2 = h[e2];
     let p = &mut [0f32; 3];
     let mut stall = 0;
-    println!("(r:{range}, e1:{he1}, e2:{he2})");
-    while range > 1 && i < 80 {
-        println!("iter {i:?}");
-        i += 1;
+    while range > 1 && curriter < MAX_ITERS {
+        curriter += 1;
         if h[e1].abs() < TOLERANCE {
             stall = 0;
             range -= 1;
@@ -238,9 +230,6 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
             e2 = e2.saturating_sub(2 * stride + 2);
         } else {
             if stall > 0 && stall % 8 == 0 {
-                println!("EXPONENTIAL SHIFTTTTTTTTTTTTTTTTTTTTTTTTTTT");
-                println!("EXPONENTIAL SHIFTTTTTTTTTTTTTTTTTTTTTTTTTTT");
-                println!("EXPONENTIAL SHIFTTTTTTTTTTTTTTTTTTTTTTTTTTT");
                 exception_shift(h, w, stride, range);
             } else {
                 double_shift(h, w, stride, range);
@@ -250,7 +239,6 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
         }
         let he1 = h[e1];
         let he2 = h[e2];
-        println!("(r:{range}, e1:{he1}, e2:{he2})");
     }
 }
 /// double_shift
@@ -357,32 +345,17 @@ fn francis_iteration_cpx(
     }
     let mut offset = 0;
     for o in 1..range.saturating_sub(1) {
-        println!("---------");
         let bound = bound.min(stride - o);
         let (slice, t) = h.split_at_mut(offset + stride);
         let slice = &mut slice[offset + o..offset + o + bound];
         let proj = &mut p[..bound];
-        println!("slice {slice:?}");
         let tau = params(slice, proj);
         offset += stride;
         if tau == 0f32 {
-            println!("EARLY EXIT  (tau: {tau:?}, cont_o: {o:}, proj: {proj:?}");
             continue;
         }
         rapply_householder(&mut t[o..], proj, w, tau, size - o, bound, stride);
-        // let data = NdArray {
-        //     dims:vec![size, size],
-        //     data:h.to_vec(),
-        // };
-        // println!("rapply\n{data:?}");
-        // println!("---------");
         lapply_householder(&mut h[offset..], proj, w, tau, bound, size, stride);
-        // let data = NdArray {
-        //     dims:vec![size, size],
-        //     data:h.to_vec(),
-        // };
-        // println!("lapply\n{data:?}");
-        // println!("---------");
     }
 }
 fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
@@ -391,15 +364,9 @@ fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
     if discriminate >= -EPSILON {
         m11 + d - d.signum() * discriminate.max(0f32).sqrt()
     } else {
-        println!("complex discriminate {discriminate:?}");
         m11 + d
     }
 }
-// fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
-//     let d = (m00 - m11) / 2f32;
-//     m11 + d - d.signum() * (d * d + m10 * m10).sqrt()
-// }
-// h:= hessenberg matrix
 fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
@@ -407,9 +374,7 @@ fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
     let mut i = 0;
     let he1 = h[e1];
     let he2 = h[e2];
-    println!("(r:{range}, e1:{he1}, e2:{he2})");
     while range > 1 && i < 40 {
-        println!("iter {i:?}");
         i += 1;
         if h[e1].abs() < TOLERANCE {
             range -= 1;
@@ -425,7 +390,6 @@ fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
         }
         let he1 = h[e1];
         let he2 = h[e2];
-        println!("(r:{range}, e1:{he1}, e2:{he2})");
     }
 }
 fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize) {
@@ -446,12 +410,7 @@ fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize
         };
         let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r + s2]);
         apply_g_right(&mut h[r..], s1, s2, stride, size - k, cosine, -sine);
-        // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
         apply_gt_left(h, s1, s2, stride, range.min(s2+2), cosine, -sine);
-
-        // apply_g_right(&mut h[r..], s1, s2, stride, range - k, cosine, -sine);
-        // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
-        // // apply_gt_left(&mut t[r..], k, k + 1, stride, card, cosine, sine);
     }
 }
 fn generate_symmetric_vector(n: usize) -> Vec<f32> {
