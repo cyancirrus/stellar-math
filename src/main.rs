@@ -19,7 +19,7 @@ use stellar::structure::ndarray::NdArray;
 // const TOLERANCE: f32 = 1e-6;
 // const EPSILON: f32 = 1e-8;
 const TOLERANCE: f32 = 1e-6;
-const EPSILON: f32 = 1e-6;
+const EPSILON: f32 = 1e-4;
 
 // NOTE: To self householder vecs getting inf's, well it's bc of like [w0, 0, 0] style vecs
 // symmetric case done
@@ -220,42 +220,52 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
     let he1 = h[e1];
     let he2 = h[e2];
     let p = &mut [0f32; 3];
+    let mut stall = 0;
     println!("(r:{range}, e1:{he1}, e2:{he2})");
     while range > 1 && i < 80 {
         println!("iter {i:?}");
         i += 1;
         if h[e1].abs() < TOLERANCE {
+            stall = 0;
             range -= 1;
             e1 = e1.saturating_sub(stride + 1);
             e2 = e2.saturating_sub(stride + 1);
         } else if h[e2].abs() < TOLERANCE {
             // if e2 == 0 then we are hitting eigen which should be greater than tolerance
+            stall = 0;
             range -= 2;
             e1 = e1.saturating_sub(2 * stride + 2);
             e2 = e2.saturating_sub(2 * stride + 2);
         } else {
+            if stall > 0 && stall % 8 == 0 {
+                println!("EXPONENTIAL SHIFTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+                println!("EXPONENTIAL SHIFTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+                println!("EXPONENTIAL SHIFTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+                exception_shift(h, w, stride, range);
+            } else {
+                double_shift(h, w, stride, range);
+            }
             francis_iteration_cpx(h, p, w, size, range, stride);
+            stall += 1;
         }
         let he1 = h[e1];
         let he2 = h[e2];
         println!("(r:{range}, e1:{he1}, e2:{he2})");
     }
 }
-/// francis_iteration_cpx
+/// double_shift
+///   - standard shift for francis iteration
 ///
 /// * h: hessenberg linearized matrix
 /// * p: projection slice
 /// * w: workspace slice
-/// * size: static number of rows for rotations
 /// * range: number of rows in active window
 /// * stride: stride of the data format
-fn francis_iteration_cpx(
+fn double_shift(
     h: &mut [f32],
-    p: &mut [f32],
     w: &mut [f32],
-    size: usize,
-    range: usize,
-    stride: usize,
+    stride:usize,
+    range:usize,
 ) {
     // u1 = a + bi;
     // u2 = a - bi;
@@ -278,8 +288,66 @@ fn francis_iteration_cpx(
     w[0] = h00 * h00 + h01 * h10 - trace * h00 + deter;
     w[1] = h01 * (h00 + h11 - trace);
     w[2] = h01 * h12;
-    // w[1] = h01 * (h00 + h11 - trace);
-    // w[2] = h01 * h12;
+}
+/// exception_shift
+///   - standard shift for francis iteration
+///
+/// * h: hessenberg linearized matrix
+/// * p: projection slice
+/// * w: workspace slice
+/// * range: number of rows in active window
+/// * stride: stride of the data format
+fn exception_shift(
+    h: &mut [f32],
+    w: &mut [f32],
+    stride:usize,
+    range:usize,
+) {
+    // u1 = a + bi;
+    // u2 = a - bi;
+    // M = H^2 - H(u1 + u2) +Iu1 *u2;
+    // M = H^2 - H *trace +I * det;
+    let card = stride * range;
+    let tl = card.saturating_sub(stride + 2);
+    let bl = card.saturating_sub(2);
+
+    let (m00, m01) = (h[tl], h[tl + 1]);
+    let (m10, m11) = (h[bl], h[bl + 1]);
+
+    let (h00, h01) = (h[0], h[1]);
+    let (h10, h11) = (h[stride], h[stride + 1]);
+    let h12 = h[stride + 2];
+
+    let s = m01.abs() + h01.abs();
+
+    let trace = 2.0 * s;
+    let deter = s * s;
+
+    w[0] = h00 * h00 + h01 * h10 - trace * h00 + deter;
+    w[1] = h01 * (h00 + h11 - trace);
+    w[2] = h01 * h12;
+}
+
+
+/// francis_iteration_cpx
+///
+/// * h: hessenberg linearized matrix
+/// * p: projection slice
+/// * w: workspace slice
+/// * size: static number of rows for rotations
+/// * range: number of rows in active window
+/// * stride: stride of the data format
+fn francis_iteration_cpx(
+    h: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    size: usize,
+    range: usize,
+    stride: usize,
+) {
+    let card = stride * range;
+    let tl = card.saturating_sub(stride + 2);
+    let bl = card.saturating_sub(2);
     let bound = range.min(3);
     let p = &mut p[..bound];
     let tau = params(&mut w[..bound], p);
@@ -288,15 +356,6 @@ fn francis_iteration_cpx(
         lapply_householder(h, p, w, tau, bound, range, stride);
     }
     let mut offset = 0;
-    // let data = NdArray {
-    //     dims:vec![size, size],
-    //     data:h.to_vec(),
-    // };
-    // println!("rotating{data:?}");
-    // println!("-------------------------------");
-    // println!("-------------------------------");
-    // for o in 0..range.saturating_sub(2) {
-    // for o in 1..range.saturating_sub(1) {
     for o in 1..range.saturating_sub(1) {
         println!("---------");
         let bound = bound.min(stride - o);
@@ -310,22 +369,20 @@ fn francis_iteration_cpx(
             println!("EARLY EXIT  (tau: {tau:?}, cont_o: {o:}, proj: {proj:?}");
             continue;
         }
-        // println!("size -o - 1 {}", size - o - 1);
         rapply_householder(&mut t[o..], proj, w, tau, size - o, bound, stride);
-        let data = NdArray {
-            dims:vec![size, size],
-            data:h.to_vec(),
-        };
-        println!("rapply\n{data:?}");
-        println!("---------");
-        // lapply_householder(&mut h[offset..], proj, w, tau, bound, range, stride);
+        // let data = NdArray {
+        //     dims:vec![size, size],
+        //     data:h.to_vec(),
+        // };
+        // println!("rapply\n{data:?}");
+        // println!("---------");
         lapply_householder(&mut h[offset..], proj, w, tau, bound, size, stride);
-        let data = NdArray {
-            dims:vec![size, size],
-            data:h.to_vec(),
-        };
-        println!("lapply\n{data:?}");
-        println!("---------");
+        // let data = NdArray {
+        //     dims:vec![size, size],
+        //     data:h.to_vec(),
+        // };
+        // println!("lapply\n{data:?}");
+        // println!("---------");
     }
 }
 fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
