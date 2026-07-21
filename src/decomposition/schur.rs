@@ -5,7 +5,6 @@ use crate::structure::ndarray::NdArray;
 // schur takes in a matrix (A) -> outputs like a like bidiagonal like um triangle thing
 // it's strictly a triangle
 
-
 const CONVERGENCE_CONDITION: f32 = 1e-6;
 const LIMIT_ITERATION: usize = 2156;
 pub struct SchurDecomp {
