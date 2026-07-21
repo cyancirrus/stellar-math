@@ -19,7 +19,7 @@ use stellar::structure::ndarray::NdArray;
 // const TOLERANCE: f32 = 1e-6;
 // const EPSILON: f32 = 1e-8;
 const TOLERANCE: f32 = 1e-6;
-const EPSILON: f32 = 1e-8;
+const EPSILON: f32 = 1e-6;
 
 // NOTE: To self householder vecs getting inf's, well it's bc of like [w0, 0, 0] style vecs
 // symmetric case done
@@ -35,7 +35,6 @@ const EPSILON: f32 = 1e-8;
 /// * v: matrix slice data
 /// * w: sized workspace vector
 pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
-    // TODO: a bug when the other numbers aren't valid
     debug_assert_eq!(v.len(), w.len());
     let mut max_element = 0f32;
     for val in v.iter() {
@@ -58,14 +57,14 @@ pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
         *gbg = *val;
         *val = 0f32;
     }
-    let g = -w[0].signum() * magnitude_squared.sqrt();
+    let g = w[0].signum() * magnitude_squared.sqrt();
     let scale = w[0] + g;
     let inv_scale = 1f32 / scale;
     println!("inv_scale {inv_scale:?}");
     for val in w[1..].iter_mut() {
         *val *= inv_scale;
     }
-    v[0] = -g * max_element;
+    v[0] = g * max_element;
     w[0] = 1f32;
     println!("returning tau {:?}, scale {scale:}, g {g:}", scale / g);
     scale / g
@@ -222,7 +221,7 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
     let he2 = h[e2];
     let p = &mut [0f32; 3];
     println!("(r:{range}, e1:{he1}, e2:{he2})");
-    while range > 1 && i < 40 {
+    while range > 1 && i < 80 {
         println!("iter {i:?}");
         i += 1;
         if h[e1].abs() < TOLERANCE {
