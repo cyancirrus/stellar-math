@@ -1,6 +1,7 @@
 use rand::seq::SliceRandom;
 use std::collections::VecDeque;
 
+// TODO; clean up this nested data form
 pub struct DecisionTree<'a> {
     data: &'a Vec<Vec<f32>>, // feature major form, individual observations are columns
     sample: (usize, usize),  // observation sample, dimension sample
@@ -11,6 +12,7 @@ pub struct DecisionTree<'a> {
     metadata: Vec<Metadata>,
     dimensions: Vec<Vec<usize>>, // idx sorted by dimension
 }
+//TODO: probably borrow this data
 pub struct DecisionTreeModel {
     pub nodes: Vec<Node>,
     pub metadata: Vec<Metadata>,

@@ -18,8 +18,12 @@ use stellar::structure::ndarray::NdArray;
 // const EPSILON: f32 = 1e-12;
 // const TOLERANCE: f32 = 1e-6;
 // const EPSILON: f32 = 1e-8;
-const TOLERANCE: f32 = 1e-3;
-const EPSILON: f32 = 1e-6;
+const TOLERANCE: f32 = 1e-6;
+const EPSILON: f32 = 1e-8;
+
+// NOTE: To self householder vecs getting inf's, well it's bc of like [w0, 0, 0] style vecs
+// symmetric case done
+
 
 /// params
 /// takes in data forom a matrix slice
@@ -31,6 +35,8 @@ const EPSILON: f32 = 1e-6;
 /// * v: matrix slice data
 /// * w: sized workspace vector
 pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
+    // TODO: a bug when the other numbers aren't valid
+    debug_assert_eq!(v.len(), w.len());
     let mut max_element = 0f32;
     for val in v.iter() {
         let v = val.abs();
@@ -44,20 +50,24 @@ pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
     }
     let mut magnitude_squared = 0f32;
     let inv_max_element = 1f32 / max_element;
+    println!("inv_max_element {inv_max_element:?}");
     for (val, gbg) in v.iter_mut().zip(w.iter_mut()) {
         *val *= inv_max_element;
         magnitude_squared += *val * *val;
+        println!("val {}", *val);
         *gbg = *val;
         *val = 0f32;
     }
     let g = -w[0].signum() * magnitude_squared.sqrt();
     let scale = w[0] + g;
     let inv_scale = 1f32 / scale;
+    println!("inv_scale {inv_scale:?}");
     for val in w[1..].iter_mut() {
         *val *= inv_scale;
     }
     v[0] = -g * max_element;
     w[0] = 1f32;
+    println!("returning tau {:?}, scale {scale:}, g {g:}", scale / g);
     scale / g
 }
 /// lapply_householder
@@ -212,7 +222,7 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
     let he2 = h[e2];
     let p = &mut [0f32; 3];
     println!("(r:{range}, e1:{he1}, e2:{he2})");
-    while range > 2 && i < 60 {
+    while range > 1 && i < 40 {
         println!("iter {i:?}");
         i += 1;
         if h[e1].abs() < TOLERANCE {
@@ -289,15 +299,16 @@ fn francis_iteration_cpx(
     // for o in 0..range.saturating_sub(2) {
     // for o in 1..range.saturating_sub(1) {
     for o in 1..range.saturating_sub(1) {
-        // println!("---------");
-        let bound = bound.min(range - o);
+        println!("---------");
+        let bound = bound.min(stride - o);
         let (slice, t) = h.split_at_mut(offset + stride);
         let slice = &mut slice[offset + o..offset + o + bound];
         let proj = &mut p[..bound];
+        println!("slice {slice:?}");
         let tau = params(slice, proj);
         offset += stride;
         if tau == 0f32 {
-            println!("continuing o:{o:}");
+            println!("EARLY EXIT  (tau: {tau:?}, cont_o: {o:}, proj: {proj:?}");
             continue;
         }
         // println!("size -o - 1 {}", size - o - 1);
@@ -318,7 +329,6 @@ fn francis_iteration_cpx(
         println!("---------");
     }
 }
-
 fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
     let d = (m00 - m11) / 2f32;
     let mut discriminate = d * d + m10 * m01;
@@ -380,11 +390,11 @@ fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize
         };
         let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r + s2]);
         apply_g_right(&mut h[r..], s1, s2, stride, size - k, cosine, -sine);
-        apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
+        // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
+        apply_gt_left(h, s1, s2, stride, range.min(s2+2), cosine, -sine);
 
         // apply_g_right(&mut h[r..], s1, s2, stride, range - k, cosine, -sine);
         // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
-        // // apply_gt_left(h, s1, s2, stride, range.min(s2+2), cosine, -sine);
         // // apply_gt_left(&mut t[r..], k, k + 1, stride, card, cosine, sine);
     }
 }
@@ -514,7 +524,7 @@ fn check_decomp_sym() -> NdArray {
     output
 }
 fn check_iteration_cpx() -> NdArray {
-    let c = 6;
+    let c = 4;
     let (rows, cols) = (c, c);
     let stride = c;
     let mut h = generate_random_vector(rows * cols);
@@ -549,7 +559,7 @@ fn check_iteration_cpx() -> NdArray {
     output
 }
 fn check_decomp_cpx() -> NdArray {
-    let c = 6;
+    let c = 5;
     let (rows, cols) = (c, c);
     let stride = c;
     let mut h = generate_random_vector(rows * cols);
