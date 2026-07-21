@@ -13,12 +13,16 @@ use stellar::random::generation::{
     generate_identity_vector, generate_random_matrix, generate_random_vector,
 };
 use stellar::structure::ndarray::NdArray;
-const MAX_ITERS: usize = 32;
+const MAX_ITERS: usize = 16;
 const TOLERANCE: f32 = 1e-6;
-const EPSILON: f32 = 1e-9;
+const EPSILON: f32 = 1e-15;
 
-// NOTE: To self householder vecs getting inf's, well it's bc of like [w0, 0, 0] style vecs
-// symmetric case done
+// TODO: double-verify — changed francis_iteration_cpx's lapply_householder
+// calls from `size` to `range` for the column-count arg, and dropped
+// EPSILON down to ~1e-12/1e-15 (was tied too close to TOLERANCE, causing
+// params() to skip legitimate small reflections). Together these took
+// stall rate from ~20% -> ~99.75% convergence on 100 random 5x5/6x6 mats,
+// but found this at hour 13 of a debugging session, re-check with fresh eyes.
 
 /// params
 /// takes in data forom a matrix slice
@@ -82,7 +86,6 @@ fn lapply_householder(
     cols: usize,
     stride: usize,
 ) {
-    // println!("p {p:?}");
     debug_assert!(cols <= w.len());
     debug_assert_eq!(rows, p.len());
     // (I - tuu')A;
@@ -264,14 +267,7 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
         }
     }
     if range > 1 {
-        let (m00, m01) = (h[tl], h[tl + 1]);
-        let (m10, m11) = (h[bl], h[bl + 1]);
-        let d = (m00 - m11) / 2.0;
-        let disc = d * d + m01 * m10;
-        println!(
-            "max_iter reached (r:{range}, e1: {}, e2: {}, disc: {disc:?})",
-            h[e1], h[e2]
-        );
+        println!("missed");
     }
 }
 /// double_shift
@@ -287,10 +283,6 @@ fn double_shift(h: &mut [f32], w: &mut [f32], stride: usize, range: usize, tl: u
     // u2 = a - bi;
     // M = H^2 - H(u1 + u2) +Iu1 *u2;
     // M = H^2 - H *trace +I * det;
-    // let card = stride * range;
-    // let tl = card.saturating_sub(stride + 2 + stride - range);
-    // let bl = card.saturating_sub(2 + stride - range);
-
     let (m00, m01) = (h[tl], h[tl + 1]);
     let (m10, m11) = (h[bl], h[bl + 1]);
 
@@ -325,10 +317,6 @@ fn exception_shift(
     // u2 = a - bi;
     // M = H^2 - H(u1 + u2) +Iu1 *u2;
     // M = H^2 - H *trace +I * det;
-    // let card = stride * range;
-    // let tl = card.saturating_sub(stride + 2 + stride - range);
-    // let bl = card.saturating_sub(2 + stride - range);
-
     let (m00, m01) = (h[tl], h[tl + 1]);
     let (m10, m11) = (h[bl], h[bl + 1]);
 
@@ -337,7 +325,6 @@ fn exception_shift(
     let h12 = h[stride + 2];
 
     let s = m01.abs() + h01.abs();
-
     let trace = 2.0 * s;
     let deter = s * s;
 
@@ -369,6 +356,7 @@ fn francis_iteration_cpx(
     if tau != 0f32 {
         rapply_householder(h, p, w, tau, size, bound, stride);
         lapply_householder(h, p, w, tau, bound, range, stride);
+        // lapply_householder(h, p, w, tau, bound, size, stride);
     }
     let mut offset = 0;
     for o in 1..range.saturating_sub(1) {
@@ -382,7 +370,8 @@ fn francis_iteration_cpx(
             continue;
         }
         rapply_householder(&mut t[o..], proj, w, tau, size - o, bound, stride);
-        lapply_householder(&mut h[offset..], proj, w, tau, bound, size, stride);
+        // lapply_householder(&mut h[offset..], proj, w, tau, bound, size, stride);
+        lapply_householder(&mut h[offset..], proj, w, tau, bound, range, stride);
     }
 }
 fn francis_iteration_cpx_2x2(h: &mut [f32], size: usize, stride: usize, tl: usize, bl: usize) {
@@ -649,4 +638,22 @@ fn main() {
     // check_iteration_sym();
     // check_hessen();
     // test_orthogonal();
+    // TODO
+    // if range > 1 {
+
+    //     let output = NdArray {
+    //         dims: vec![size, size],
+    //         data: h.to_vec(),
+    //     };
+    //     println!("-------------- error output inspect----------");
+    //     println!("{output:?}");
+    //     let (m00, m01) = (h[tl], h[tl + 1]);
+    //     let (m10, m11) = (h[bl], h[bl + 1]);
+    //     let d = (m00 - m11) / 2.0;
+    //     let disc = d * d + m01 * m10;
+    //     println!(
+    //         "max_iter reached (r:{range}, e1: {}, e2: {}, disc: {disc:?})",
+    //         h[e1], h[e2]
+    //     );
+    // }
 }
