@@ -60,7 +60,7 @@ pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
     for val in w[1..].iter_mut() {
         *val *= inv_scale;
     }
-    v[0] = g * max_element;
+    v[0] = -g * max_element;
     w[0] = 1f32;
     scale / g
 }
@@ -393,31 +393,32 @@ fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
+    let mut tl = s.saturating_sub(stride + 2);
+    let mut bl = s.saturating_sub(2);
     let mut i = 0;
     let he1 = h[e1];
     let he2 = h[e2];
-    while range > 1 && i < 40 {
+    while range > 1 && i < MAX_ITERS {
         i += 1;
         if h[e1].abs() < TOLERANCE {
             range -= 1;
             e1 = e1.saturating_sub(stride + 1);
             e2 = e2.saturating_sub(stride + 1);
+            tl = tl.saturating_sub(stride + 1);
+            bl = bl.saturating_sub(stride + 1);
         } else if h[e2].abs() < TOLERANCE {
             // if e2 == 0 then we are hitting eigen which should be greater than tolerance
             range -= 2;
             e1 = e1.saturating_sub(2 * stride + 2);
             e2 = e2.saturating_sub(2 * stride + 2);
+            tl = tl.saturating_sub(2 * stride + 2);
+            bl = bl.saturating_sub(2 * stride + 2);
         } else {
-            francis_iteration_sym(h, size, range, stride);
+            francis_iteration_sym(h, size, range, stride, tl, bl);
         }
-        let he1 = h[e1];
-        let he2 = h[e2];
     }
 }
-fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize) {
-    let card = stride * range;
-    let tl = card.saturating_sub(stride + 2);
-    let bl = card.saturating_sub(2);
+fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize, tl:usize, bl:usize) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_g_right(h, 0, 1, stride, range, cosine, -sine);
@@ -431,8 +432,10 @@ fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize
             data: h.to_vec(),
         };
         let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r + s2]);
-        apply_g_right(&mut h[r..], s1, s2, stride, size - k, cosine, -sine);
-        apply_gt_left(h, s1, s2, stride, range.min(s2 + 2), cosine, -sine);
+        // apply_g_right(&mut h[r..], s1, s2, stride, size - k, cosine, -sine);
+        // apply_gt_left(h, s1, s2, stride, range.min(s2 + 2), cosine, -sine);
+        apply_g_right(&mut h[r..], s1, s2, stride, range-k , cosine, -sine);
+        apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
     }
 }
 fn generate_symmetric_vector(n: usize) -> Vec<f32> {
@@ -506,6 +509,9 @@ fn check_iteration_sym() -> NdArray {
     let stride = c;
     let mut h = generate_random_vector(rows * cols);
     let mut r = generate_identity_vector(rows, cols);
+    let s = c * c;
+    let mut bl = s.saturating_sub(2);
+    let mut tl = s.saturating_sub(stride + 2);
     let mut p = vec![0f32; cols];
     let mut w = vec![0f32; rows];
     let input = NdArray {
@@ -523,7 +529,7 @@ fn check_iteration_sym() -> NdArray {
         dims: vec![rows, cols],
         data: r.clone(),
     };
-    francis_iteration_sym(&mut h, rows, rows, stride);
+    francis_iteration_sym(&mut h, rows, rows, stride, tl, bl);
     let output = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
