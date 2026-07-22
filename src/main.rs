@@ -180,47 +180,41 @@ fn rapply_householder(
         roffset += stride;
     }
 }
-struct FrancisLq {
-    // kernel: NdArray,
-    // transform: NdArray,
-}
-impl FrancisLq {
-    /// full_hessenberg
-    /// * h: matrix to create the hessenberg
-    /// * r: rotation matrix should be identity on coldstart
-    /// * p: projection vector
-    /// * w: workspace vector
-    /// * rows: number of rows
-    /// * cols: number of cols
-    /// * stride: stride of the data
-    pub fn full_hessenberg(
-        h: &mut [f32],
-        r: &mut [f32],
-        p: &mut [f32],
-        w: &mut [f32],
-        rows: usize,
-        cols: usize,
-        stride: usize,
-    ) {
-        // stores tau
-        let mut offset = 0;
-        let mut active_range = rows;
-        let mut split_range = cols;
-        for o in 1..rows {
-            active_range -= 1;
-            split_range -= 1;
-            let (slice, t) = h.split_at_mut(offset + stride);
-            let slice = &mut slice[offset + o..offset + cols];
-            let proj = &mut p[..split_range];
-            let tau = params(slice, proj);
-            offset += stride;
-            if tau == 0f32 {
-                continue;
-            }
-            lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
-            rapply_householder(&mut t[o..], proj, w, tau, rows - o, split_range, stride);
-            lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
+/// full_hessenberg
+/// * h: matrix to create the hessenberg
+/// * r: rotation matrix should be identity on coldstart
+/// * p: projection vector
+/// * w: workspace vector
+/// * rows: number of rows
+/// * cols: number of cols
+/// * stride: stride of the data
+pub fn full_hessenberg(
+    h: &mut [f32],
+    r: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    rows: usize,
+    cols: usize,
+    stride: usize,
+) {
+    // stores tau
+    let mut offset = 0;
+    let mut active_range = rows;
+    let mut split_range = cols;
+    for o in 1..rows {
+        active_range -= 1;
+        split_range -= 1;
+        let (slice, t) = h.split_at_mut(offset + stride);
+        let slice = &mut slice[offset + o..offset + cols];
+        let proj = &mut p[..split_range];
+        let tau = params(slice, proj);
+        offset += stride;
+        if tau == 0f32 {
+            continue;
         }
+        lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
+        rapply_householder(&mut t[o..], proj, w, tau, rows - o, split_range, stride);
+        lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
     }
 }
 
@@ -474,7 +468,7 @@ fn check_hessen_sym() {
         data: h.clone(),
     };
     println!("before {input:?}");
-    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
     let kernel = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
@@ -505,7 +499,7 @@ fn check_hessen() {
         data: h.clone(),
     };
     println!("before {input:?}");
-    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
     let kernel = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
@@ -539,7 +533,7 @@ fn check_iteration_sym() -> NdArray {
         data: h.clone(),
     };
     println!("before {input:?}");
-    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
     let kernel = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
@@ -571,7 +565,7 @@ fn check_decomp_sym() -> NdArray {
         data: h.clone(),
     };
     println!("before {input:?}");
-    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
     let kernel = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
@@ -602,7 +596,7 @@ fn check_iteration_cpx() -> NdArray {
         data: h.clone(),
     };
     println!("before {input:?}");
-    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
     let kernel = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
@@ -637,7 +631,7 @@ fn check_decomp_cpx() -> NdArray {
         data: h.clone(),
     };
     // println!("before {input:?}");
-    FrancisLq::full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
     let kernel = NdArray {
         dims: vec![rows, cols],
         data: h.clone(),
@@ -653,12 +647,12 @@ fn check_decomp_cpx() -> NdArray {
     output
 }
 
+// fn check_reconstruct(n: usize) {
+
 //  RQ = Q'QRQ;
 //  --> R * K R'
 //  for LQ orientation
 //  A == R'KR
-
-// fn check_reconstruct(n: usize) {
 //     let mut workspace = vec![0f32; n];
 //     let x = generate_random_matrix(n, n);
 //     let x = basic_mult(&x, &x.transpose());
@@ -703,8 +697,8 @@ fn check_decomp_cpx() -> NdArray {
 // }
 
 fn main() {
-    // check_decomp_sym();
-    for i in 0..100_000 {
+    check_decomp_sym();
+    for i in 0..100 {
         check_decomp_cpx();
         // println!("-----------------");
     }
