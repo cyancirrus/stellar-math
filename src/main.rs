@@ -13,9 +13,26 @@ use stellar::random::generation::{
     generate_identity_vector, generate_random_matrix, generate_random_vector,
 };
 use stellar::structure::ndarray::NdArray;
-const MAX_ITERS: usize = 16;
+// // PARAMS :: 99.95%
+// const MAX_ITERS: usize = 16;
+// const TOLERANCE: f32 = 1e-6;
+// const EPSILON: f32 = 1e-24;
+
+// // PARAMS :: 99.993%
+const MAX_ITERS: usize = 24;
 const TOLERANCE: f32 = 1e-6;
-const EPSILON: f32 = 1e-15;
+const EPSILON: f32 = 1e-24;
+
+
+// const EPSILON: f32 = 1e-14;
+// 9995/10_000 success rate
+
+// PARAMS:: ~= 9999/10_000 success rate
+// const MAX_ITERS: usize = 24;
+// const TOLERANCE: f32 = 1e-6;
+// const EPSILON: f32 = 1e-20;
+// // } else if (stall + 8) % 12 == 0 {
+
 
 // TODO: double-verify — changed francis_iteration_cpx's lapply_householder
 // calls from `size` to `range` for the column-count arg, and dropped
@@ -230,7 +247,7 @@ fn deflate(
 
 fn complex_eig_pair(h: &mut [f32],  tl: usize, bl:usize) -> bool {
     let d = (h[tl] - h[bl + 1]) / 2f32;
-    d * d + h[tl + 1] * h[bl] < 0f32
+    d * d + h[tl + 1] * h[bl] < EPSILON
 }
 
 fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
@@ -256,7 +273,10 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
         } else {
             if range == 2 {
                 francis_iteration_cpx_2x2(h, size, stride, tl, bl);
-            } else if stall > 0 && stall % 8 == 0 {
+            // } else if stall > 0 && (stall + 4) % 10 == 0 {
+            // } else if (stall + 8) % 12 == 0 {
+            // } else if (stall + 4) % 10 == 0 {
+            } else if stall == 6 {
                 exception_shift(h, w, stride, range, tl, bl);
                 francis_iteration_cpx(h, p, w, size, range, stride, tl, bl);
             } else {
@@ -635,7 +655,7 @@ fn check_decomp_cpx() -> NdArray {
 
 fn main() {
     // check_decomp_sym();
-    for i in 0..100 {
+    for i in 0..100_000 {
         check_decomp_cpx();
         // println!("-----------------");
     }

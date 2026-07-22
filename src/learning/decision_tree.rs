@@ -92,7 +92,8 @@ impl<'a> DecisionTree<'a> {
         if data.is_empty() || data[0].is_empty() {
             panic!("data is empty");
         }
-        if obs_sample > 1f32 || obs_sample < 0f32 || dim_sample > 1f32 || dim_sample < 0f32 {
+        if !(0f32..=1f32).contains(&obs_sample) || !(0f32..=1f32).contains(&dim_sample) {
+        // if obs_sample > 1f32 || obs_sample < 0f32 || dim_sample > 1f32 || dim_sample < 0f32 {
             panic!("cannot subsample range");
         }
         let label = data.len();
@@ -189,7 +190,7 @@ impl<'a> DecisionTree<'a> {
                 dimension = d;
                 delta = del;
                 partition = dval;
-                target = runnings[node].clone();
+                target = runnings[node];
             }
         }
         let parent = self.metadata[ancestor];
@@ -278,8 +279,8 @@ impl Metadata {
     // Contains information for splitting criterions
     fn empty_from(dim: usize, offset: usize) -> Self {
         Self {
-            dim: dim,
-            offset: offset,
+            dim,
+            offset,
             card: 0,
             sum_linear: 0f32,  // Sum y
             sum_squares: 0f32, // Sum y * y;
@@ -312,7 +313,7 @@ impl Metadata {
         self.sum_linear += output;
         self.sum_squares += output * output;
     }
-    fn derive(include: &[usize], data: &Vec<Vec<f32>>) -> Self {
+    fn derive(include: &[usize], data: &[Vec<f32>]) -> Self {
         if data.is_empty() || data[0].is_empty() {
             panic!("data is empty");
         }
