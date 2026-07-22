@@ -1,10 +1,4 @@
-use crate::algebra::ndmethods::matrix_mult;
-use crate::decomposition::francis::constants::{EPSILON, MAX_ITERS, TOLERANCE};
-use crate::decomposition::sgivens::{apply_g_right, apply_gt_left, implicit_givens_rotation};
-use crate::random::generation::{
-    generate_identity_vector, generate_random_matrix, generate_random_vector,
-};
-use crate::structure::ndarray::NdArray;
+use crate::decomposition::francis::constants::{EPSILON, MAX_ITERS};
 /// params
 /// takes in data forom a matrix slice
 /// zeros the incoming data and creates the householder vec
@@ -58,7 +52,7 @@ pub fn params(v: &mut [f32], w: &mut [f32]) -> f32 {
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
-fn lapply_householder(
+pub fn lapply_householder(
     h: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
@@ -111,7 +105,7 @@ fn lapply_householder(
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
-fn rapply_householder(
+pub fn rapply_householder(
     h: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
@@ -213,7 +207,14 @@ pub fn complex_eig_pair(h: &mut [f32], tl: usize, bl: usize) -> bool {
 /// * w: workspace slice
 /// * range: number of rows in active window
 /// * stride: stride of the data format
-pub fn double_shift(h: &mut [f32], w: &mut [f32], stride: usize, _range: usize, tl: usize, bl: usize) {
+pub fn double_shift(
+    h: &mut [f32],
+    w: &mut [f32],
+    stride: usize,
+    _range: usize,
+    tl: usize,
+    bl: usize,
+) {
     // u1 = a + bi;
     // u2 = a - bi;
     // M = H^2 - H(u1 + u2) +Iu1 *u2;
@@ -267,7 +268,7 @@ pub fn exception_shift(
     w[1] = h01 * (h00 + h11 - trace);
     w[2] = h01 * h12;
 }
-fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
+pub fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
     let d = (m00 - m11) / 2f32;
     let discriminate = d * d + m10 * m01;
     if discriminate >= -EPSILON {
