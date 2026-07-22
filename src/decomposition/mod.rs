@@ -1,4 +1,5 @@
 pub mod cholesky;
+pub mod francis;
 pub mod givens;
 pub mod householder;
 pub mod lower_upper;

@@ -23,7 +23,6 @@ const MAX_ITERS: usize = 24;
 const TOLERANCE: f32 = 1e-8;
 const EPSILON: f32 = 1e-26;
 
-
 // const EPSILON: f32 = 1e-14;
 // 9995/10_000 success rate
 
@@ -32,7 +31,6 @@ const EPSILON: f32 = 1e-26;
 // const TOLERANCE: f32 = 1e-6;
 // const EPSILON: f32 = 1e-20;
 // // } else if (stall + 8) % 12 == 0 {
-
 
 // TODO: double-verify — changed francis_iteration_cpx's lapply_householder
 // calls from `size` to `range` for the column-count arg, and dropped
@@ -238,11 +236,18 @@ fn deflate(
     *curriter = curriter.saturating_sub(MAX_ITERS >> 1);
 }
 
-fn complex_eig_pair(h: &mut [f32],  tl: usize, bl:usize) -> bool {
+fn complex_eig_pair(h: &mut [f32], tl: usize, bl: usize) -> bool {
     let d = (h[tl] - h[bl + 1]) / 2f32;
     d * d + h[tl + 1] * h[bl] < EPSILON
 }
-fn full_decomp_cpx(h: &mut [f32], r: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
+fn full_decomp_cpx(
+    h: &mut [f32],
+    r: &mut [f32],
+    w: &mut [f32],
+    mut range: usize,
+    size: usize,
+    mut stride: usize,
+) {
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
@@ -257,21 +262,48 @@ fn full_decomp_cpx(h: &mut [f32], r: &mut [f32], w: &mut [f32], mut range: usize
         curriter += 1;
         if h[e1].abs() < TOLERANCE {
             stall = 0;
-            deflate(1, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
+            deflate(
+                1,
+                stride,
+                &mut range,
+                &mut e1,
+                &mut e2,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
         } else if h[e2].abs() < TOLERANCE {
             // if e2 == 0 then we are hitting eigen which should be greater than tolerance
-            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
+            deflate(
+                2,
+                stride,
+                &mut range,
+                &mut e1,
+                &mut e2,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
             stall = 0;
         } else if range == 2 && complex_eig_pair(h, tl, bl) {
-            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
+            deflate(
+                2,
+                stride,
+                &mut range,
+                &mut e1,
+                &mut e2,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
             stall = 0;
         } else {
             if range == 2 {
                 francis_iteration_cpx_2x2(h, size, stride, tl, bl);
             // } else if stall > 0 && (stall + 4) % 10 == 0 {
             } else if (stall + 8) % 12 == 0 {
-            // } else if (stall + 4) % 10 == 0 {
-            // } else if stall == 6 {
+                // } else if (stall + 4) % 10 == 0 {
+                // } else if stall == 6 {
                 exception_shift(h, w, stride, range, tl, bl);
                 francis_iteration_cpx(h, p, w, size, range, stride, tl, bl);
             } else {
@@ -300,21 +332,48 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
         curriter += 1;
         if h[e1].abs() < TOLERANCE {
             stall = 0;
-            deflate(1, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
+            deflate(
+                1,
+                stride,
+                &mut range,
+                &mut e1,
+                &mut e2,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
         } else if h[e2].abs() < TOLERANCE {
             // if e2 == 0 then we are hitting eigen which should be greater than tolerance
-            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
+            deflate(
+                2,
+                stride,
+                &mut range,
+                &mut e1,
+                &mut e2,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
             stall = 0;
         } else if range == 2 && complex_eig_pair(h, tl, bl) {
-            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
+            deflate(
+                2,
+                stride,
+                &mut range,
+                &mut e1,
+                &mut e2,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
             stall = 0;
         } else {
             if range == 2 {
                 francis_iteration_cpx_2x2(h, size, stride, tl, bl);
             // } else if stall > 0 && (stall + 4) % 10 == 0 {
             } else if (stall + 8) % 12 == 0 {
-            // } else if (stall + 4) % 10 == 0 {
-            // } else if stall == 6 {
+                // } else if (stall + 4) % 10 == 0 {
+                // } else if stall == 6 {
                 exception_shift(h, w, stride, range, tl, bl);
                 francis_iteration_cpx(h, p, w, size, range, stride, tl, bl);
             } else {
@@ -507,9 +566,27 @@ fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
     while range > 1 && curriter < MAX_ITERS {
         curriter += 1;
         if h[e1].abs() < TOLERANCE {
-            deflate(1, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
+            deflate(
+                1,
+                stride,
+                &mut range,
+                &mut e1,
+                &mut e2,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
         } else if h[e2].abs() < TOLERANCE {
-            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
+            deflate(
+                2,
+                stride,
+                &mut range,
+                &mut e1,
+                &mut e2,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
         } else {
             francis_iteration_sym(h, size, range, stride, tl, bl);
         }
@@ -523,7 +600,14 @@ fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
 /// * stride: stride of the data format
 /// * tl: top left of the window for the eigens
 /// * bl: bottom left of the window for the eigens
-fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize, tl:usize, bl:usize) {
+fn francis_iteration_sym(
+    h: &mut [f32],
+    size: usize,
+    range: usize,
+    stride: usize,
+    tl: usize,
+    bl: usize,
+) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_g_right(h, 0, 1, stride, range, cosine, -sine);
@@ -539,7 +623,7 @@ fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize
         let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r + s2]);
         // apply_g_right(&mut h[r..], s1, s2, stride, size - o, cosine, -sine);
         // apply_gt_left(h, s1, s2, stride, range.min(s2 + 2), cosine, -sine);
-        apply_g_right(&mut h[r..], s1, s2, stride, range-o , cosine, -sine);
+        apply_g_right(&mut h[r..], s1, s2, stride, range - o, cosine, -sine);
         apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
     }
 }
@@ -552,7 +636,15 @@ fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize
 /// * stride: stride of the data format
 /// * tl: top left of the window for the eigens
 /// * bl: bottom left of the window for the eigens
-fn full_francis_iteration_sym(h: &mut [f32], r: &mut [f32], size: usize, range: usize, stride: usize, tl:usize, bl:usize) {
+fn full_francis_iteration_sym(
+    h: &mut [f32],
+    r: &mut [f32],
+    size: usize,
+    range: usize,
+    stride: usize,
+    tl: usize,
+    bl: usize,
+) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_g_right(h, 0, 1, stride, range, cosine, -sine);
@@ -566,13 +658,13 @@ fn full_francis_iteration_sym(h: &mut [f32], r: &mut [f32], size: usize, range: 
             data: h.to_vec(),
         };
         let (_, cosine, sine) = implicit_givens_rotation(h[row + s1], h[row + s2]);
-        apply_g_right(&mut h[row..], s1, s2, stride, range-o , cosine, -sine);
+        apply_g_right(&mut h[row..], s1, s2, stride, range - o, cosine, -sine);
         apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
         // apply_g_right(&mut h[r..], s1, s2, stride, size - o, cosine, -sine);
         // apply_gt_left(h, s1, s2, stride, range.min(s2 + 2), cosine, -sine);
-        
+
         // -----------------------
-        apply_g_right(&mut r[row..], s1, s2, stride, range-o, cosine, -sine)
+        apply_g_right(&mut r[row..], s1, s2, stride, range - o, cosine, -sine)
     }
 }
 fn generate_symmetric_vector(n: usize) -> Vec<f32> {

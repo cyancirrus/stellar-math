@@ -93,7 +93,7 @@ impl<'a> DecisionTree<'a> {
             panic!("data is empty");
         }
         if !(0f32..=1f32).contains(&obs_sample) || !(0f32..=1f32).contains(&dim_sample) {
-        // if obs_sample > 1f32 || obs_sample < 0f32 || dim_sample > 1f32 || dim_sample < 0f32 {
+            // if obs_sample > 1f32 || obs_sample < 0f32 || dim_sample > 1f32 || dim_sample < 0f32 {
             panic!("cannot subsample range");
         }
         let label = data.len();
