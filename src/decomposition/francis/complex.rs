@@ -1,18 +1,5 @@
-#![allow(unused_imports, dead_code, unused_variables, unused)]
-use crate::algebra::ndmethods::basic_mult;
-use crate::algebra::ndmethods::create_identity_matrix;
-use crate::algebra::ndmethods::matrix_mult;
 use crate::decomposition::francis::constants::{MAX_ITERS, TOLERANCE};
-use crate::decomposition::lower_upper::LuPivotDecompose;
-use crate::decomposition::lq::AutumnDecomp;
-use crate::decomposition::schur::real_schur;
-use crate::decomposition::sgivens::{
-    apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
-};
-use crate::equality::approximate::approx_vector_tol_eq;
-use crate::random::generation::{
-    generate_identity_vector, generate_random_matrix, generate_random_vector,
-};
+use crate::decomposition::sgivens::{apply_g_right, apply_gt_left, implicit_givens_rotation};
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
     complex_eig_pair,
@@ -24,15 +11,15 @@ use crate::decomposition::francis::primitives::{
     params,
     rapply_householder,
 };
-fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
+pub fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, stride: usize) {
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
     let mut tl = s.saturating_sub(stride + 2);
     let mut bl = s.saturating_sub(2);
     let mut curriter = 0;
-    let he1 = h[e1];
-    let he2 = h[e2];
+    let _he1 = h[e1];
+    let _he2 = h[e2];
     let p = &mut [0f32; 3];
     let mut stall = 0;
     while range > 0 && curriter < MAX_ITERS {
@@ -102,15 +89,15 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
 /// * size: static number of rows for rotations
 /// * range: number of rows in active window
 /// * stride: stride of the data format
-fn francis_iteration_cpx(
+pub fn francis_iteration_cpx(
     h: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
     size: usize,
     range: usize,
     stride: usize,
-    tl: usize,
-    bl: usize,
+    _tl: usize,
+    _bl: usize,
 ) {
     let bound = range.min(3);
     let p = &mut p[..bound];
@@ -136,7 +123,7 @@ fn francis_iteration_cpx(
         lapply_householder(&mut h[offset..], proj, w, tau, bound, range, stride);
     }
 }
-fn francis_iteration_cpx_2x2(h: &mut [f32], size: usize, stride: usize, tl: usize, bl: usize) {
+pub fn francis_iteration_cpx_2x2(h: &mut [f32], size: usize, stride: usize, tl: usize, bl: usize) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_g_right(h, 0, 1, stride, size, cosine, -sine);
