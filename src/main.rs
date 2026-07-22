@@ -18,7 +18,7 @@ use stellar::structure::ndarray::NdArray;
 // const TOLERANCE: f32 = 1e-6;
 // const EPSILON: f32 = 1e-24;
 
-// // PARAMS :: 99.99%
+// // PARAMS :: 99.98%
 const MAX_ITERS: usize = 24;
 const TOLERANCE: f32 = 1e-8;
 const EPSILON: f32 = 1e-26;
@@ -217,7 +217,6 @@ pub fn full_hessenberg(
         lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
     }
 }
-
 fn deflate(
     amount: usize,
     stride: usize,
@@ -226,7 +225,7 @@ fn deflate(
     e2: &mut usize,
     tl: &mut usize,
     bl: &mut usize,
-    stall: &mut usize,
+    // stall: &mut usize,
     curriter: &mut usize,
 ) {
     let shift = amount * stride + amount;
@@ -235,7 +234,7 @@ fn deflate(
     *e2 = e2.saturating_sub(shift);
     *tl = tl.saturating_sub(shift);
     *bl = bl.saturating_sub(shift);
-    *stall = 0;
+    // *stall = 0;
     *curriter = curriter.saturating_sub(MAX_ITERS >> 1);
 }
 
@@ -258,12 +257,15 @@ fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, mut s
     while range > 0 && curriter < MAX_ITERS {
         curriter += 1;
         if h[e1].abs() < TOLERANCE {
-            deflate(1, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut stall, &mut curriter);
+            stall = 0;
+            deflate(1, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
         } else if h[e2].abs() < TOLERANCE {
             // if e2 == 0 then we are hitting eigen which should be greater than tolerance
-            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut stall, &mut curriter);
+            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
+            stall = 0;
         } else if range == 2 && complex_eig_pair(h, tl, bl) {
-            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut stall, &mut curriter);
+            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
+            stall = 0;
         } else {
             if range == 2 {
                 francis_iteration_cpx_2x2(h, size, stride, tl, bl);
@@ -409,30 +411,58 @@ fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, mut stride: usize) {
     let mut e2 = s.saturating_sub(stride + stride + 2);
     let mut tl = s.saturating_sub(stride + 2);
     let mut bl = s.saturating_sub(2);
-    let mut i = 0;
+    let mut curriter = 0;
     let he1 = h[e1];
     let he2 = h[e2];
-    while range > 1 && i < MAX_ITERS {
-        i += 1;
+    while range > 1 && curriter < MAX_ITERS {
+        curriter += 1;
         if h[e1].abs() < TOLERANCE {
-            range -= 1;
-            e1 = e1.saturating_sub(stride + 1);
-            e2 = e2.saturating_sub(stride + 1);
-            tl = tl.saturating_sub(stride + 1);
-            bl = bl.saturating_sub(stride + 1);
+            deflate(1, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
         } else if h[e2].abs() < TOLERANCE {
-            // if e2 == 0 then we are hitting eigen which should be greater than tolerance
-            range -= 2;
-            e1 = e1.saturating_sub(2 * stride + 2);
-            e2 = e2.saturating_sub(2 * stride + 2);
-            tl = tl.saturating_sub(2 * stride + 2);
-            bl = bl.saturating_sub(2 * stride + 2);
+            deflate(2, stride, &mut range, &mut e1, &mut e2, &mut tl, &mut bl, &mut curriter);
         } else {
             francis_iteration_sym(h, size, range, stride, tl, bl);
         }
     }
 }
+/// francis_iteration_cpx
+///
+/// * h: hessenberg linearized matrix
+/// * size: static number of rows for rotations
+/// * range: number of rows in active window
+/// * stride: stride of the data format
+/// * tl: top left of the window for the eigens
+/// * bl: bottom left of the window for the eigens
 fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize, tl:usize, bl:usize) {
+    let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
+    let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
+    apply_g_right(h, 0, 1, stride, range, cosine, -sine);
+    apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
+    for o in 0..range.saturating_sub(2) {
+        let r = o * stride;
+        let s1 = o + 1;
+        let s2 = o + 2;
+        let temp = NdArray {
+            dims: vec![range, range],
+            data: h.to_vec(),
+        };
+        let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r + s2]);
+        // apply_g_right(&mut h[r..], s1, s2, stride, size - o, cosine, -sine);
+        // apply_gt_left(h, s1, s2, stride, range.min(s2 + 2), cosine, -sine);
+        apply_g_right(&mut h[r..], s1, s2, stride, range-o , cosine, -sine);
+        apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
+    }
+}
+/// full_francis_iteration_cpx
+///
+/// * h: hessenberg linearized matrix
+/// * r: rotation accumulated linearized matrix
+/// * size: static number of rows for rotations
+/// * range: number of rows in active window
+/// * stride: stride of the data format
+/// * tl: top left of the window for the eigens
+/// * bl: bottom left of the window for the eigens
+fn full_francis_iteration_sym(h: &mut [f32], r: &mut [f32], size: usize, range: usize, stride: usize, tl:usize, bl:usize) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_g_right(h, 0, 1, stride, range, cosine, -sine);
@@ -698,7 +728,7 @@ fn check_decomp_cpx() -> NdArray {
 
 fn main() {
     check_decomp_sym();
-    for i in 0..100 {
+    for i in 0..1000 {
         check_decomp_cpx();
         // println!("-----------------");
     }
