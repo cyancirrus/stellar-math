@@ -437,18 +437,18 @@ fn francis_iteration_sym(h: &mut [f32], size: usize, range: usize, stride: usize
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_g_right(h, 0, 1, stride, range, cosine, -sine);
     apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
-    for k in 0..range.saturating_sub(2) {
-        let r = k * stride;
-        let s1 = k + 1;
-        let s2 = k + 2;
+    for o in 0..range.saturating_sub(2) {
+        let r = o * stride;
+        let s1 = o + 1;
+        let s2 = o + 2;
         let temp = NdArray {
             dims: vec![range, range],
             data: h.to_vec(),
         };
         let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r + s2]);
-        // apply_g_right(&mut h[r..], s1, s2, stride, size - k, cosine, -sine);
+        // apply_g_right(&mut h[r..], s1, s2, stride, size - o, cosine, -sine);
         // apply_gt_left(h, s1, s2, stride, range.min(s2 + 2), cosine, -sine);
-        apply_g_right(&mut h[r..], s1, s2, stride, range-k , cosine, -sine);
+        apply_g_right(&mut h[r..], s1, s2, stride, range-o , cosine, -sine);
         apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
     }
 }
