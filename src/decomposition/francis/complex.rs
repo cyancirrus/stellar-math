@@ -2,13 +2,13 @@ use crate::decomposition::francis::constants::{MAX_ITERS, TOLERANCE};
 use crate::decomposition::sgivens::{apply_g_right, apply_gt_left, implicit_givens_rotation};
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
-    complex_eig_pair,
+    params,
     deflate,
     eigen,
     double_shift,
     exception_shift,
+    complex_eig_pair,
     lapply_householder,
-    params,
     rapply_householder,
 };
 pub fn decomp_cpx(h: &mut [f32], w: &mut [f32], mut range: usize, size: usize, stride: usize) {

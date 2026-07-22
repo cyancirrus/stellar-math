@@ -1,14 +1,19 @@
+use crate::decomposition::francis::complex::{francis_iteration_cpx, francis_iteration_cpx_2x2};
 use crate::decomposition::francis::constants::{MAX_ITERS, TOLERANCE};
+use crate::decomposition::sgivens::{
+    apply_g_right, apply_gt_left, implicit_givens_rotation,
+};
+use crate::structure::ndarray::NdArray;
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
-    complex_eig_pair,
+    params,
     deflate,
+    eigen,
     double_shift,
     exception_shift,
-};
-use crate::decomposition::francis::complex::{
-    francis_iteration_cpx,
-    francis_iteration_cpx_2x2,
+    complex_eig_pair,
+    lapply_householder,
+    rapply_householder,
 };
 
 pub fn full_decomp_cpx(
@@ -86,5 +91,92 @@ pub fn full_decomp_cpx(
     }
     if range > 1 {
         println!("missed");
+    }
+}
+/// francis_iteration_cpx
+///
+/// * h: hessenberg linearized matrix
+/// * r: rotaiton linearized matrix
+/// * p: projection slice
+/// * w: workspace slice
+/// * size: static number of rows for rotations
+/// * range: number of rows in active window
+/// * stride: stride of the data format
+fn full_francis_iteration_cpx(
+    h: &mut [f32],
+    r: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    size: usize,
+    range: usize,
+    stride: usize,
+    _tl: usize,
+    _bl: usize,
+) {
+    let bound = range.min(3);
+    let p = &mut p[..bound];
+    let tau = params(&mut w[..bound], p);
+    if tau != 0f32 {
+        rapply_householder(h, p, w, tau, size, bound, stride);
+        lapply_householder(h, p, w, tau, bound, range, stride);
+        // ----------------- tracking the rotation matrix
+        rapply_householder(r, p, w, tau, size, bound, stride);
+    }
+    let mut offset = 0;
+    for o in 1..range.saturating_sub(1) {
+        let bound = bound.min(stride - o);
+        let (slice, t) = h.split_at_mut(offset + stride);
+        let slice = &mut slice[offset + o..offset + o + bound];
+        let proj = &mut p[..bound];
+        let tau = params(slice, proj);
+        offset += stride;
+        if tau == 0f32 {
+            continue;
+        }
+        rapply_householder(&mut t[o..], proj, w, tau, size - o, bound, stride);
+        lapply_householder(&mut h[offset..], proj, w, tau, bound, range, stride);
+        // ----------------- tracking the rotation matrix
+        rapply_householder(&mut r[o..], proj, w, tau, size - o, bound, stride);
+    }
+}
+
+/// full_francis_iteration_sym
+///
+/// * h: hessenberg linearized matrix
+/// * r: rotation accumulated linearized matrix
+/// * size: static number of rows for rotations
+/// * range: number of rows in active window
+/// * stride: stride of the data format
+/// * tl: top left of the window for the eigens
+/// * bl: bottom left of the window for the eigens
+fn full_francis_iteration_sym(
+    h: &mut [f32],
+    r: &mut [f32],
+    _size: usize,
+    range: usize,
+    stride: usize,
+    tl: usize,
+    bl: usize,
+) {
+    let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
+    let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
+    apply_g_right(h, 0, 1, stride, range, cosine, -sine);
+    apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
+    for o in 0..range.saturating_sub(2) {
+        let row = o * stride;
+        let s1 = o + 1;
+        let s2 = o + 2;
+        let _temp = NdArray {
+            dims: vec![range, range],
+            data: h.to_vec(),
+        };
+        let (_, cosine, sine) = implicit_givens_rotation(h[row + s1], h[row + s2]);
+        apply_g_right(&mut h[row..], s1, s2, stride, range - o, cosine, -sine);
+        apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
+        // apply_g_right(&mut h[r..], s1, s2, stride, size - o, cosine, -sine);
+        // apply_gt_left(h, s1, s2, stride, range.min(s2 + 2), cosine, -sine);
+
+        // -----------------------
+        apply_g_right(&mut r[row..], s1, s2, stride, range - o, cosine, -sine)
     }
 }
