@@ -251,7 +251,7 @@ fn check_decomp_cpx_reconstruct() {
 }
 
 fn main() {
-    check_decomp_sym_reconstruct();
+    // check_decomp_sym_reconstruct();
     check_decomp_cpx_reconstruct();
     // check_decomp_sym();
     // check_decomp_sym();

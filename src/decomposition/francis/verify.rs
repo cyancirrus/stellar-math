@@ -166,7 +166,8 @@ pub fn full_francis_iteration_cpx(
         rapply_householder(h, p, w, tau, size, bound, stride);
         lapply_householder(h, p, w, tau, bound, range, stride);
         // ----------------- tracking the rotation matrix
-        rapply_householder(r, p, w, tau, size, bound, stride);
+        // rapply_householder(r, p, w, tau, size, bound, stride);
+        lapply_householder(r, p, w, tau, bound, size, stride);
     }
     let mut offset = 0;
     for o in 1..range.saturating_sub(1) {
@@ -182,7 +183,8 @@ pub fn full_francis_iteration_cpx(
         rapply_householder(&mut t[o..], proj, w, tau, size - o, bound, stride);
         lapply_householder(&mut h[offset..], proj, w, tau, bound, range, stride);
         // ----------------- tracking the rotation matrix
-        rapply_householder(&mut r[o..], proj, w, tau, size - o, bound, stride);
+        lapply_householder(&mut r[offset..], proj, w, tau, bound, size, stride);
+        // rapply_householder(&mut r[o..], proj, w, tau, size - o, bound, stride);
     }
 }
 pub fn full_francis_iteration_cpx_2x2(
