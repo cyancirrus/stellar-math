@@ -246,7 +246,7 @@ fn check_decomp_cpx_reconstruct() {
     let reconstruct = matrix_mult(&rotation.transpose(), &matrix_mult(&kernel, &rotation));
     assert!(
         approx_vector_eq(&reconstruct.data, &original.data),
-        "reconstruction mismatch, got {reconstruct:?} expected {original:?}",
+        "reconstruction mismatch, got {reconstruct:?}\nexpected {original:?}\nkernel {kernel:?}",
     );
 }
 

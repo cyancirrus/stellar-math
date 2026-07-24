@@ -197,8 +197,9 @@ pub fn full_francis_iteration_cpx_2x2(
 ) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
-    apply_g_right(h, 0, 1, stride, size, cosine, -sine);
-    apply_gt_left(h, 0, 1, stride, 2, cosine, -sine);
+    apply_gt_right(h, 0, 1, stride, size, cosine, sine);
+    apply_g_left(h, 0, 1, stride, 2, cosine, sine);
+    apply_g_left(h, 0, 1, stride, 2, cosine, sine);
 }
 /// full_francis_iteration_sym
 ///
