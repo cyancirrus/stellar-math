@@ -249,7 +249,7 @@ pub fn exception_shift(
     // u1 = a + bi;
     // u2 = a - bi;
     // M = H^2 - H(u1 + u2) +Iu1 *u2;
-    // M = H^2 - H *trace +I * det;
+    // M = H^2 - H *trace + I * det;
     let (_m00, m01) = (h[tl], h[tl + 1]);
     let (_m10, _m11) = (h[bl], h[bl + 1]);
 

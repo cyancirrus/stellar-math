@@ -27,9 +27,8 @@ pub fn full_decomp_sym(
     let mut tl = s.saturating_sub(stride + 2);
     let mut bl = s.saturating_sub(2);
     let mut curriter = 0;
-    let _he1 = h[e1];
-    let _he2 = h[e2];
     while range > 1 && curriter < MAX_ITERS {
+        println!("tl {tl:}, bl: {bl:}");
         curriter += 1;
         if h[e1].abs() < TOLERANCE {
             deflate(
@@ -57,9 +56,8 @@ pub fn full_decomp_sym(
             full_francis_iteration_sym(h, r, size, range, stride, tl, bl);
         }
     }
-    println!("range {range:?}");
     if range > 1 {
-        println!("fail");
+        println!("fail, range {range:?}");
     }
 }
 pub fn full_decomp_cpx(
@@ -235,8 +233,6 @@ pub fn full_francis_iteration_sym(
         let (_, cosine, sine) = implicit_givens_rotation(h[row + s1], h[row + s2]);
         apply_gt_right(&mut h[row..], s1, s2, stride, range - o, cosine, sine);
         apply_g_left(h, s1, s2, stride, range, cosine, sine);
-        // apply_g_right(&mut h[row..], s1, s2, stride, range - o, cosine, -sine);
-        // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
         apply_g_left(r, s1, s2, stride, size, cosine, sine);
     }
 }

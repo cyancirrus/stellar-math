@@ -151,7 +151,7 @@ fn check_decomp_cpx() -> NdArray {
     output
 }
 fn check_decomp_sym_reconstruct() {
-    let c = 6;
+    let c = 4;
     let (rows, cols) = (c, c);
     let stride = c;
 
@@ -200,6 +200,7 @@ fn check_decomp_sym_reconstruct() {
         approx_vector_eq(&reconstruct.data, &original.data),
         "reconstruction mismatch, got {reconstruct:?} expected {original:?}",
     );
+    println!("kernel {kernel:?}");
 }
 fn check_decomp_cpx_reconstruct() {
     let c = 9;
@@ -251,8 +252,8 @@ fn check_decomp_cpx_reconstruct() {
 }
 
 fn main() {
-    // check_decomp_sym_reconstruct();
-    check_decomp_cpx_reconstruct();
+    check_decomp_sym_reconstruct();
+    // check_decomp_cpx_reconstruct();
     // check_decomp_sym();
     // check_decomp_sym();
     // for i in 0..1000 {
