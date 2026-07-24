@@ -16,6 +16,8 @@ pub fn decomp_sym(
     absolute: f32,
 ) {
     let s = range * stride;
+    // error 1 supra-diagonal above the first real eigen
+    // error 2 supra-diagonal above the second complex real eigen
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
     let mut tl = s.saturating_sub(stride + 2);
