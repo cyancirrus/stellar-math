@@ -52,8 +52,9 @@ fn check_hessen_sym() {
     println!("reconstruct {reconstruct:?}");
 }
 fn check_hessen() {
-    let (rows, cols) = (5, 5);
-    let stride = 5;
+    let dim = 4;
+    let (rows, cols) = (dim, dim);
+    let stride = dim;
     let mut h = generate_random_vector(rows * cols);
     let mut r = generate_identity_vector(rows, cols);
     let mut p = vec![0f32; cols];
@@ -78,8 +79,9 @@ fn check_hessen() {
     println!("ortho rr' {ortho:?}");
     let ortho = matrix_mult(&rotation.transpose(), &rotation);
     println!("ortho r'r {ortho:?}");
-    let reconstruct = matrix_mult(&kernel, &rotation);
-    println!("reconstruct {reconstruct:?}");
+    let kernel = matrix_mult(&kernel, &rotation);
+    let kernel = matrix_mult(&rotation.transpose(), &kernel);
+    println!("reconstruct {kernel:?}");
 }
 fn check_iteration_sym() -> NdArray {
     let c = 6;
@@ -239,7 +241,7 @@ fn check_hessenberg_sym() {
 }
 
 fn main() {
-    check_hessenberg_sym();
+    // check_hessenberg_sym();
     // check_decomp_sym();
     // for i in 0..1000 {
     //     check_decomp_cpx();
@@ -248,7 +250,7 @@ fn main() {
     // check_iteration_cpx();
     // check_hessen_sym();
     // check_iteration_sym();
-    // check_hessen();
+    check_hessen();
     // test_orthogonal();
     // TODO
     // if range > 1 {
