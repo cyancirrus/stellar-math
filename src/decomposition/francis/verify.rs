@@ -1,5 +1,7 @@
-use crate::decomposition::francis::constants::{MAX_ITERS, TOLERANCE};
-use crate::decomposition::sgivens::{apply_g_left, apply_g_right, apply_gt_right, apply_gt_left, implicit_givens_rotation};
+use crate::decomposition::francis::constants::{MAX_ITERS, TOLERANCE, ABSOLUTE_CAP};
+use crate::decomposition::sgivens::{
+    apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
+};
 use crate::structure::ndarray::NdArray;
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
@@ -27,10 +29,11 @@ pub fn full_decomp_sym(
     let mut tl = s.saturating_sub(stride + 2);
     let mut bl = s.saturating_sub(2);
     let mut curriter = 0;
+    let mut error = vec![];
     while range > 1 && curriter < MAX_ITERS {
-        println!("tl {tl:}, bl: {bl:}");
+        let scale = h[tl].abs() + h[bl+1].abs();
         curriter += 1;
-        if h[e1].abs() < TOLERANCE {
+        if h[e1].abs() < (scale * TOLERANCE).min(ABSOLUTE_CAP) {
             deflate(
                 1,
                 stride,
@@ -41,23 +44,26 @@ pub fn full_decomp_sym(
                 &mut bl,
                 &mut curriter,
             );
-        // } else if h[e2].abs() < TOLERANCE {
-        //     deflate(
-        //         2,
-        //         stride,
-        //         &mut range,
-        //         &mut e1,
-        //         &mut e2,
-        //         &mut tl,
-        //         &mut bl,
-        //         &mut curriter,
-        //     );
+            error = vec![];
+        } else if h[e2].abs() < TOLERANCE && curriter == MAX_ITERS {
+            deflate(
+                2,
+                stride,
+                &mut range,
+                &mut e1,
+                &mut e2,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
+            error = vec![];
         } else {
             full_francis_iteration_sym(h, r, size, range, stride, tl, bl);
         }
+        error.push(h[e1]);
     }
     if range > 1 {
-        println!("fail, range {range:?}");
+        println!("symmetric convergence");
     }
 }
 pub fn full_decomp_cpx(
@@ -134,7 +140,7 @@ pub fn full_decomp_cpx(
         }
     }
     if range > 1 {
-        println!("missed");
+        println!("complex-convergence");
     }
 }
 /// francis_iteration_cpx
@@ -220,7 +226,7 @@ pub fn full_francis_iteration_sym(
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_gt_right(h, 0, 1, stride, size, cosine, sine);
-    apply_g_left(h, 0, 1, stride, range, cosine, sine);
+    apply_g_left(h, 0, 1, stride, size, cosine, sine);
     apply_g_left(r, 0, 1, stride, size, cosine, sine);
     for o in 0..range.saturating_sub(2) {
         let row = o * stride;
@@ -268,9 +274,9 @@ pub fn full_hessenberg(
         if tau == 0f32 {
             continue;
         }
-        lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
         rapply_householder(&mut t[o..], proj, w, tau, rows - o, split_range, stride);
         lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
+        lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
     }
 }
 mod test_hessenberg_reconstructions {

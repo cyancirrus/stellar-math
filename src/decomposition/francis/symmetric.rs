@@ -1,5 +1,4 @@
-use crate::decomposition::francis::constants::{MAX_ITERS, TOLERANCE};
-use crate::decomposition::sgivens::{apply_gt_right, apply_g_left, implicit_givens_rotation};
+use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
     deflate,
@@ -7,18 +6,26 @@ use crate::decomposition::francis::primitives::{
 };
 use crate::structure::ndarray::NdArray;
 
-pub fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, stride: usize) {
+#[rustfmt::skip]
+pub fn decomp_sym(
+    h: &mut [f32],
+    mut range: usize,
+    size: usize,
+    stride: usize,
+    max_iters:usize,
+    tolerance: f32,
+    absolute: f32,
+) {
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
     let mut tl = s.saturating_sub(stride + 2);
     let mut bl = s.saturating_sub(2);
     let mut curriter = 0;
-    let _he1 = h[e1];
-    let _he2 = h[e2];
-    while range > 1 && curriter < MAX_ITERS {
+    while range > 1 && curriter < max_iters {
+        let scale = h[tl].abs() + h[bl+1].abs();
         curriter += 1;
-        if h[e1].abs() < TOLERANCE {
+        if h[e1].abs() < (scale * tolerance).min(absolute) {
             deflate(
                 1,
                 stride,
@@ -29,7 +36,7 @@ pub fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, stride: usize) {
                 &mut bl,
                 &mut curriter,
             );
-        } else if h[e2].abs() < TOLERANCE {
+        } else if h[e2].abs() < tolerance && curriter == max_iters {
             deflate(
                 2,
                 stride,
@@ -64,7 +71,7 @@ pub fn francis_iteration_sym(
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_gt_right(h, 0, 1, stride, size, cosine, sine);
-    apply_g_left(h, 0, 1, stride, range, cosine, sine);
+    apply_g_left(h, 0, 1, stride, size, cosine, sine);
     for o in 0..range.saturating_sub(2) {
         let row = o * stride;
         let s1 = o + 1;

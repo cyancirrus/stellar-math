@@ -3,7 +3,7 @@ use stellar::algebra::ndmethods::basic_mult;
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::matrix_mult;
 use stellar::decomposition::francis::primitives::hessenberg;
-use stellar::decomposition::francis::verify::{full_hessenberg, full_decomp_sym, full_decomp_cpx};
+use stellar::decomposition::francis::verify::{full_decomp_cpx, full_decomp_sym, full_hessenberg};
 use stellar::decomposition::lower_upper::LuPivotDecompose;
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::decomposition::schur::real_schur;
@@ -151,7 +151,7 @@ fn check_decomp_cpx() -> NdArray {
     output
 }
 fn check_decomp_sym_reconstruct() {
-    let c = 4;
+    let c = 6;
     let (rows, cols) = (c, c);
     let stride = c;
 
@@ -200,10 +200,10 @@ fn check_decomp_sym_reconstruct() {
         approx_vector_eq(&reconstruct.data, &original.data),
         "reconstruction mismatch, got {reconstruct:?} expected {original:?}",
     );
-    println!("kernel {kernel:?}");
+    // println!("kernel {kernel:?}");
 }
 fn check_decomp_cpx_reconstruct() {
-    let c = 9;
+    let c = 6;
     let (rows, cols) = (c, c);
     let stride = c;
 
@@ -252,8 +252,12 @@ fn check_decomp_cpx_reconstruct() {
 }
 
 fn main() {
-    check_decomp_sym_reconstruct();
-    // check_decomp_cpx_reconstruct();
+    for i in 0..10_000 {
+        check_decomp_sym_reconstruct();
+    }
+    for i in 0..10_000 {
+        check_decomp_cpx_reconstruct();
+    }
     // check_decomp_sym();
     // check_decomp_sym();
     // for i in 0..1000 {
