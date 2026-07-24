@@ -1,4 +1,4 @@
-use crate::decomposition::sgivens::{apply_gt_right, apply_g_left, implicit_givens_rotation};
+use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
     params,
@@ -16,8 +16,8 @@ pub fn decomp_cpx(
     mut range: usize,
     size: usize,
     stride: usize,
-    max_iters:usize,
-    tolerance:f32,
+    max_iters: usize,
+    tolerance: f32,
 ) {
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
@@ -123,13 +123,7 @@ pub fn francis_iteration_cpx(
         lapply_householder(&mut h[offset..], proj, w, tau, bound, range, stride);
     }
 }
-pub fn francis_iteration_cpx_2x2(
-    h: &mut [f32],
-    size: usize,
-    stride: usize,
-    tl: usize,
-    bl: usize,
-) {
+pub fn francis_iteration_cpx_2x2(h: &mut [f32], size: usize, stride: usize, tl: usize, bl: usize) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
     apply_gt_right(h, 0, 1, stride, size, cosine, sine);

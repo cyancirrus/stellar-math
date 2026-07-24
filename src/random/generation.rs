@@ -12,9 +12,11 @@ pub fn generate_identity_vector(m: usize, n: usize) -> Vec<f32> {
     }
     vector
 }
-pub fn generate_symmetric_vector(n: usize) -> Vec<f32> {
-    // let a = generate_random_matrix(n, n);
-    // matrix_mult(&a, &a.transpose()).data
+pub fn generate_approx_symmetric_vector(n: usize) -> Vec<f32> {
+    let a = generate_random_matrix(n, n);
+    matrix_mult(&a, &a.transpose()).data
+}
+pub fn generate_strict_symmetric_vector(n: usize) -> Vec<f32> {
     let mut data = generate_random_vector(n * n);
     for i in 0..n {
         for j in 0..i {

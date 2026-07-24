@@ -1,4 +1,4 @@
-use crate::decomposition::francis::constants::{MAX_ITERS, TOLERANCE, ABSOLUTE_CAP};
+use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANCE};
 use crate::decomposition::sgivens::{
     apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
 };
@@ -22,7 +22,7 @@ pub fn full_decomp_sym(
     mut range: usize,
     size: usize,
     stride: usize
-) {
+) -> bool {
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
@@ -62,9 +62,7 @@ pub fn full_decomp_sym(
         }
         error.push(h[e1]);
     }
-    if range > 1 {
-        println!("symmetric convergence");
-    }
+    range <= 1
 }
 pub fn full_decomp_cpx(
     h: &mut [f32],
@@ -73,7 +71,7 @@ pub fn full_decomp_cpx(
     mut range: usize,
     size: usize,
     stride: usize,
-) {
+) -> bool {
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
@@ -139,9 +137,7 @@ pub fn full_decomp_cpx(
             stall += 1;
         }
     }
-    if range > 1 {
-        println!("complex-convergence");
-    }
+    range <= 1
 }
 /// francis_iteration_cpx
 ///
@@ -282,8 +278,8 @@ mod test_hessenberg_reconstructions {
     use crate::algebra::ndmethods::matrix_mult;
     use crate::equality::approximate::{approx_vector_eq, approx_vector_tol_eq};
     use crate::random::generation::{
-        generate_identity_vector, generate_random_matrix, generate_random_vector,
-        generate_symmetric_vector,
+        generate_approx_symmetric_vector, generate_identity_vector, generate_random_matrix,
+        generate_random_vector,
     };
 
     #[test]
@@ -338,7 +334,7 @@ mod test_hessenberg_reconstructions {
         for dim in [1, 2, 4, 7] {
             let (rows, cols) = (dim, dim);
             let stride = dim;
-            let mut h = generate_symmetric_vector(dim);
+            let mut h = generate_approx_symmetric_vector(dim);
             let mut r = generate_identity_vector(rows, cols);
             let mut p = vec![0f32; cols];
             let mut w = vec![0f32; rows];
@@ -381,5 +377,120 @@ mod test_hessenberg_reconstructions {
                 "dim={dim}: symmetric reconstruction mismatch"
             );
         }
+    }
+    fn check_decomp_sym_reconstruct() -> (bool, bool) {
+        // returns (converged, reconstruction_ok)
+        let c = 6;
+        let (rows, cols) = (c, c);
+        let stride = c;
+
+        let mut h = generate_approx_symmetric_vector(rows);
+        let mut r = generate_identity_vector(rows, cols);
+        let mut p = vec![0f32; cols];
+        let mut w = vec![0f32; rows];
+
+        let original = NdArray {
+            dims: vec![rows, cols],
+            data: h.clone(),
+        };
+
+        full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+        let converged = full_decomp_sym(&mut h, &mut r, c, c, c);
+
+        let kernel = NdArray {
+            dims: vec![rows, cols],
+            data: h.clone(),
+        };
+        let rotation = NdArray {
+            dims: vec![rows, cols],
+            data: r.clone(),
+        };
+
+        let identity = generate_identity_vector(rows, cols);
+        let rrt = matrix_mult(&rotation, &rotation.transpose());
+        let rtr = matrix_mult(&rotation.transpose(), &rotation);
+        let reconstruct = matrix_mult(&rotation.transpose(), &matrix_mult(&kernel, &rotation));
+
+        let ortho_ok =
+            approx_vector_eq(&rrt.data, &identity) && approx_vector_eq(&rtr.data, &identity);
+        let recon_ok = approx_vector_eq(&reconstruct.data, &original.data);
+
+        (converged, ortho_ok && recon_ok)
+    }
+    #[rustfmt::skip]
+    #[test]
+    fn test_symmetric_reconstruct() {
+        let trials = 10_000;
+        let mut convergence_failures = 0;
+        let mut reconstruction_failures = 0;
+
+        for _ in 0..trials {
+            let (converged, reconstructed) = check_decomp_sym_reconstruct();
+            if !converged { convergence_failures += 1; }
+            if !reconstructed { reconstruction_failures += 1; }
+        }
+
+        println!("sym: {convergence_failures} convergence failures, {reconstruction_failures} reconstruction failures / {trials}");
+        assert!(convergence_failures < 10, "too many convergence failures: {convergence_failures}");
+        assert!(reconstruction_failures < 10, "too many reconstruction failures: {reconstruction_failures}");
+    }
+    fn check_decomp_cpx_reconstruct() -> (bool, bool) {
+        // returns (converged, reconstruction_ok)
+        let c = 6;
+        let (rows, cols) = (c, c);
+        let stride = c;
+
+        let mut h = generate_random_vector(rows * cols);
+        let mut r = generate_identity_vector(rows, cols);
+        let mut p = vec![0f32; cols];
+        let mut w = vec![0f32; rows];
+
+        let original = NdArray {
+            dims: vec![rows, cols],
+            data: h.clone(),
+        };
+
+        full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+        let converged = full_decomp_cpx(&mut h, &mut r, &mut w, c, c, c);
+
+        let kernel = NdArray {
+            dims: vec![rows, cols],
+            data: h.clone(),
+        };
+        let rotation = NdArray {
+            dims: vec![rows, cols],
+            data: r.clone(),
+        };
+
+        let identity = generate_identity_vector(rows, cols);
+        let rrt = matrix_mult(&rotation, &rotation.transpose());
+        let rtr = matrix_mult(&rotation.transpose(), &rotation);
+        let reconstruct = matrix_mult(&rotation.transpose(), &matrix_mult(&kernel, &rotation));
+
+        let ortho_ok =
+            approx_vector_eq(&rrt.data, &identity) && approx_vector_eq(&rtr.data, &identity);
+        let recon_ok = approx_vector_eq(&reconstruct.data, &original.data);
+
+        (converged, ortho_ok && recon_ok)
+    }
+    #[rustfmt::skip]
+    #[test]
+    fn test_complex_reconstruct() {
+        let trials = 10_000;
+        let mut convergence_failures = 0;
+        let mut reconstruction_failures = 0;
+
+        for _ in 0..trials {
+            let (converged, reconstructed) = check_decomp_cpx_reconstruct();
+            if !converged {
+                convergence_failures += 1;
+            }
+            if !reconstructed {
+                reconstruction_failures += 1;
+            }
+        }
+        println!("cpx: {convergence_failures} convergence failures, {reconstruction_failures} reconstruction failures / {trials}");
+        assert!( convergence_failures < 10, "too many convergence failures: {convergence_failures}");
+        assert!( reconstruction_failures < 10, "too many reconstruction failures: {reconstruction_failures}");
     }
 }
