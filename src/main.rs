@@ -21,5 +21,4 @@ use stellar::decomposition::francis::complex::{
     decomp_cpx, francis_iteration_cpx, francis_iteration_cpx_2x2,
 };
 use stellar::decomposition::francis::symmetric::{decomp_sym, francis_iteration_sym};
-fn main() {
-}
+fn main() {}

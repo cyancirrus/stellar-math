@@ -1,6 +1,6 @@
 use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANCE};
 use crate::decomposition::sgivens::{
-    apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
+    apply_g_left, apply_gt_right, implicit_givens_rotation,
 };
 use crate::structure::ndarray::NdArray;
 #[rustfmt::skip]
@@ -276,9 +276,9 @@ pub fn full_hessenberg(
 mod test_hessenberg_reconstructions {
     use super::*;
     use crate::algebra::ndmethods::matrix_mult;
-    use crate::equality::approximate::{approx_vector_eq, approx_vector_tol_eq};
+    use crate::equality::approximate::approx_vector_eq;
     use crate::random::generation::{
-        generate_approx_symmetric_vector, generate_identity_vector, generate_random_matrix,
+        generate_approx_symmetric_vector, generate_identity_vector,
         generate_random_vector,
     };
 

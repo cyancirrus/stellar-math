@@ -49,14 +49,13 @@ pub fn francis_qr_cpx(
     complex::decomp_cpx(h, w, range, size, stride, max_iters, tolerance);
 }
 
-
 mod test_francis_interface {
     use super::*;
-    use crate::algebra::ndmethods::matrix_mult;
-    use crate::equality::approximate::{approx_vector_eq, approx_scalar_eq, approx_vector_tol_eq};
-use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANCE};
+    
+    use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANCE};
+    use crate::equality::approximate::approx_scalar_eq;
     use crate::random::generation::{
-        generate_approx_symmetric_vector, generate_identity_vector, generate_random_matrix,
+        generate_approx_symmetric_vector,
         generate_random_vector,
     };
     fn trace(data: &[f32], n: usize, stride: usize) -> f32 {
@@ -72,9 +71,15 @@ use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANC
         let original_trace = trace(&h, c, stride);
 
         francis_qr_sym(
-            &mut h, &mut p, &mut w,
-            c, c, stride,
-            MAX_ITERS, TOLERANCE, ABSOLUTE_CAP,
+            &mut h,
+            &mut p,
+            &mut w,
+            c,
+            c,
+            stride,
+            MAX_ITERS,
+            TOLERANCE,
+            ABSOLUTE_CAP,
         );
 
         let final_trace = trace(&h, c, stride);
@@ -90,11 +95,7 @@ use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANC
 
         let original_trace = trace(&h, c, stride);
 
-        francis_qr_cpx(
-            &mut h, &mut p, &mut w,
-            c, c, stride,
-            MAX_ITERS, TOLERANCE,
-        );
+        francis_qr_cpx(&mut h, &mut p, &mut w, c, c, stride, MAX_ITERS, TOLERANCE);
 
         let final_trace = trace(&h, c, stride);
         let trace_ok = approx_scalar_eq(original_trace, final_trace);
@@ -112,7 +113,10 @@ use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANC
             }
         }
         println!("francis_qr_sym: {trace_failures} trace mismatches / {trials}");
-        assert!(trace_failures < 10, "too many trace mismatches: {trace_failures}");
+        assert!(
+            trace_failures < 10,
+            "too many trace mismatches: {trace_failures}"
+        );
     }
     #[test]
     fn test_francis_qr_cpx() {
@@ -125,6 +129,9 @@ use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANC
             }
         }
         println!("francis_qr_cpx: {trace_failures} trace mismatches / {trials}");
-        assert!(trace_failures < 10, "too many trace mismatches: {trace_failures}");
+        assert!(
+            trace_failures < 10,
+            "too many trace mismatches: {trace_failures}"
+        );
     }
 }
