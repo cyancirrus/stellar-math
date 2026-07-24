@@ -51,13 +51,10 @@ pub fn francis_qr_cpx(
 
 mod test_francis_interface {
     use super::*;
-    
+
     use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANCE};
     use crate::equality::approximate::approx_scalar_eq;
-    use crate::random::generation::{
-        generate_approx_symmetric_vector,
-        generate_random_vector,
-    };
+    use crate::random::generation::{generate_approx_symmetric_vector, generate_random_vector};
     fn trace(data: &[f32], n: usize, stride: usize) -> f32 {
         (0..n).map(|i| data[i * stride + i]).sum()
     }
