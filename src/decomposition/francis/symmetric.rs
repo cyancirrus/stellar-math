@@ -4,7 +4,6 @@ use crate::decomposition::francis::primitives::{
     deflate,
     eigen,
 };
-use crate::structure::ndarray::NdArray;
 
 #[rustfmt::skip]
 pub fn decomp_sym(
@@ -76,10 +75,6 @@ pub fn francis_iteration_sym(
         let row = o * stride;
         let s1 = o + 1;
         let s2 = o + 2;
-        let _temp = NdArray {
-            dims: vec![range, range],
-            data: h.to_vec(),
-        };
         let (_, cosine, sine) = implicit_givens_rotation(h[row + s1], h[row + s2]);
         apply_gt_right(&mut h[row..], s1, s2, stride, range - o, cosine, sine);
         apply_g_left(h, s1, s2, stride, range, cosine, sine);

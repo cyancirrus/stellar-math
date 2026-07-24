@@ -1,6 +1,5 @@
 use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANCE};
 use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
-use crate::structure::ndarray::NdArray;
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
     params,
@@ -224,10 +223,6 @@ pub fn full_francis_iteration_sym(
         let row = o * stride;
         let s1 = o + 1;
         let s2 = o + 2;
-        let _temp = NdArray {
-            dims: vec![range, range],
-            data: h.to_vec(),
-        };
         let (_, cosine, sine) = implicit_givens_rotation(h[row + s1], h[row + s2]);
         apply_gt_right(&mut h[row..], s1, s2, stride, range - o, cosine, sine);
         apply_g_left(h, s1, s2, stride, range, cosine, sine);
@@ -273,11 +268,13 @@ pub fn full_hessenberg(
 }
 mod test_hessenberg_reconstructions {
     use super::*;
+
     use crate::algebra::ndmethods::matrix_mult;
     use crate::equality::approximate::approx_vector_eq;
     use crate::random::generation::{
         generate_approx_symmetric_vector, generate_identity_vector, generate_random_vector,
     };
+    use crate::structure::ndarray::NdArray;
 
     #[test]
     fn test_hessenberg_reconstruct_general() {
