@@ -2,6 +2,7 @@
 use stellar::algebra::ndmethods::basic_mult;
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::matrix_mult;
+use stellar::decomposition::francis::primitives::{full_hessenberg, hessenberg};
 use stellar::decomposition::lower_upper::LuPivotDecompose;
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::decomposition::schur::real_schur;
@@ -11,25 +12,14 @@ use stellar::decomposition::sgivens::{
 use stellar::equality::approximate::approx_vector_tol_eq;
 use stellar::random::generation::{
     generate_identity_vector, generate_random_matrix, generate_random_vector,
+    generate_symmetric_vector,
 };
 use stellar::structure::ndarray::NdArray;
-use stellar::decomposition::francis:: primitives:: {
-    full_hessenberg,
-};
 
-use stellar::decomposition::francis::symmetric:: {
-decomp_sym,
-    francis_iteration_sym,
+use stellar::decomposition::francis::complex::{
+    decomp_cpx, francis_iteration_cpx, francis_iteration_cpx_2x2,
 };
-use stellar::decomposition::francis::complex:: {
-    decomp_cpx,
-    francis_iteration_cpx,
-    francis_iteration_cpx_2x2,
-};
-fn generate_symmetric_vector(n: usize) -> Vec<f32> {
-    let a = generate_random_matrix(n, n);
-    matrix_mult(&a, &a.transpose()).data
-}
+use stellar::decomposition::francis::symmetric::{decomp_sym, francis_iteration_sym};
 fn check_hessen_sym() {
     let (rows, cols) = (5, 5);
     let stride = 5;
@@ -220,13 +210,41 @@ fn check_decomp_cpx() -> NdArray {
     // println!("final {output:?}");
     output
 }
+fn check_hessenberg_sym() {
+    let c = 4;
+    let (rows, cols) = (c, c);
+    let stride = c;
+    let mut h = generate_symmetric_vector(rows);
+    // let mut h = generate_random_vector(rows * cols);
+    let mut p = vec![0f32; cols];
+    let mut w = vec![0f32; rows];
+    let input = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("before {input:?}");
+    hessenberg(&mut h, &mut p, &mut w, rows, cols, stride);
+    let kernel = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("hessenberg {kernel:?}");
+    decomp_sym(&mut h, c, c, c);
+    // francis_iteration(&mut h, rows, stride);
+    let output = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    println!("final {output:?}");
+}
 
 fn main() {
-    check_decomp_sym();
-    for i in 0..1000 {
-        check_decomp_cpx();
-        // println!("-----------------");
-    }
+    check_hessenberg_sym();
+    // check_decomp_sym();
+    // for i in 0..1000 {
+    //     check_decomp_cpx();
+    //     // println!("-----------------");
+    // }
     // check_iteration_cpx();
     // check_hessen_sym();
     // check_iteration_sym();

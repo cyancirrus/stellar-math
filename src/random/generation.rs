@@ -1,3 +1,4 @@
+use crate::algebra::ndmethods::matrix_mult;
 use crate::structure::ndarray::NdArray;
 use rand::prelude::*;
 use rand_distr::StandardNormal;
@@ -10,6 +11,10 @@ pub fn generate_identity_vector(m: usize, n: usize) -> Vec<f32> {
         idx += 1 + n;
     }
     vector
+}
+pub fn generate_symmetric_vector(n: usize) -> Vec<f32> {
+    let a = generate_random_matrix(n, n);
+    matrix_mult(&a, &a.transpose()).data
 }
 pub fn generate_zero_matrix(m: usize, n: usize) -> NdArray {
     NdArray {

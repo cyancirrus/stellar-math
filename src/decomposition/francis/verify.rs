@@ -1,8 +1,6 @@
 use crate::decomposition::francis::complex::{francis_iteration_cpx, francis_iteration_cpx_2x2};
 use crate::decomposition::francis::constants::{MAX_ITERS, TOLERANCE};
-use crate::decomposition::sgivens::{
-    apply_g_right, apply_gt_left, implicit_givens_rotation,
-};
+use crate::decomposition::sgivens::{apply_g_right, apply_gt_left, implicit_givens_rotation};
 use crate::structure::ndarray::NdArray;
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
