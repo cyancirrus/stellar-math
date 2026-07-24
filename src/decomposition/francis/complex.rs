@@ -24,10 +24,8 @@ pub fn decomp_cpx(
     let mut e2 = s.saturating_sub(stride + stride + 2);
     let mut tl = s.saturating_sub(stride + 2);
     let mut bl = s.saturating_sub(2);
-    let mut curriter = 0;
-    let _he1 = h[e1];
-    let _he2 = h[e2];
     let p = &mut [0f32; 3];
+    let mut curriter = 0;
     let mut stall = 0;
     while range > 0 && curriter < max_iters {
         curriter += 1;
