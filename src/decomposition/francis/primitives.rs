@@ -265,29 +265,12 @@ pub fn exception_shift(
     w[1] = h01 * (h00 + h11 - trace);
     w[2] = h01 * h12;
 }
-// pub fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
-//     let d = (m00 - m11) / 2f32;
-//     let discriminate = (d * d + m10 * m01).max(0f32).sqrt();
-//     // eigenvalue farther from m11 — safe subtraction, no cancellation
-//     let far = m11 + d + d.signum() * discriminate;
-//     // closer eigenvalue via det/far — avoids cancellation for the small one
-//     let det = m00 * m11 - m01 * m10;
-//     if far.abs() > EPSILON {
-//         // pick whichever is the Wilkinson shift you actually want (closer to m11)
-//         let near = det / far;
-//         near
-//     } else {
-//         far
-//         // m11 + d
-//     }
-// }
 pub fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
     let d = (m00 - m11) / 2f32;
     let discriminate = d * d + m10 * m01;
     if discriminate >= -EPSILON {
         m11 + d - d.signum() * discriminate.max(0f32).sqrt()
     } else {
-        // m11 + d
-        m11 + discriminate
+        m11 + d
     }
 }
