@@ -202,7 +202,7 @@ fn check_decomp_sym_reconstruct() {
     );
 }
 fn check_decomp_cpx_reconstruct() {
-    let c = 4;
+    let c = 9;
     let (rows, cols) = (c, c);
     let stride = c;
 
