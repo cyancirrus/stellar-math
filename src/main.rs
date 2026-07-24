@@ -52,7 +52,7 @@ fn check_hessen_sym() {
     println!("reconstruct {reconstruct:?}");
 }
 fn check_hessen() {
-    let dim = 4;
+    let dim = 7;
     let (rows, cols) = (dim, dim);
     let stride = dim;
     let mut h = generate_random_vector(rows * cols);
