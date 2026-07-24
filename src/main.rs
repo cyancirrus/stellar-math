@@ -21,69 +21,6 @@ use stellar::decomposition::francis::complex::{
     decomp_cpx, francis_iteration_cpx, francis_iteration_cpx_2x2,
 };
 use stellar::decomposition::francis::symmetric::{decomp_sym, francis_iteration_sym};
-fn check_hessen_sym() {
-    let (rows, cols) = (5, 5);
-    let stride = 5;
-    let mut h = generate_symmetric_vector(rows);
-    let mut r = generate_identity_vector(rows, cols);
-    let mut p = vec![0f32; cols];
-    let mut w = vec![0f32; rows];
-    let input = NdArray {
-        dims: vec![rows, cols],
-        data: h.clone(),
-    };
-    println!("before {input:?}");
-    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
-    let kernel = NdArray {
-        dims: vec![rows, cols],
-        data: h.clone(),
-    };
-    println!("after {kernel:?}");
-    let rotation = NdArray {
-        dims: vec![rows, cols],
-        data: r.clone(),
-    };
-    println!("rotation {rotation:?}");
-    let ortho = matrix_mult(&rotation, &rotation.transpose());
-    println!("ortho rr' {ortho:?}");
-    let ortho = matrix_mult(&rotation.transpose(), &rotation);
-    println!("ortho r'r {ortho:?}");
-    let reconstruct = matrix_mult(&kernel, &rotation);
-    let reconstruct = matrix_mult(&rotation.transpose(), &reconstruct);
-    println!("reconstruct {reconstruct:?}");
-}
-fn check_hessen() {
-    let dim = 4;
-    let (rows, cols) = (dim, dim);
-    let stride = dim;
-    let mut h = generate_random_vector(rows * cols);
-    let mut r = generate_identity_vector(rows, cols);
-    let mut p = vec![0f32; cols];
-    let mut w = vec![0f32; rows];
-    let input = NdArray {
-        dims: vec![rows, cols],
-        data: h.clone(),
-    };
-    println!("before {input:?}");
-    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
-    let kernel = NdArray {
-        dims: vec![rows, cols],
-        data: h.clone(),
-    };
-    println!("after {kernel:?}");
-    let rotation = NdArray {
-        dims: vec![rows, cols],
-        data: r.clone(),
-    };
-    println!("rotation {rotation:?}");
-    let ortho = matrix_mult(&rotation, &rotation.transpose());
-    println!("ortho rr' {ortho:?}");
-    let ortho = matrix_mult(&rotation.transpose(), &rotation);
-    println!("ortho r'r {ortho:?}");
-    let kernel = matrix_mult(&kernel, &rotation);
-    let kernel = matrix_mult(&rotation.transpose(), &kernel);
-    println!("reconstruct {kernel:?}");
-}
 fn check_iteration_sym() -> NdArray {
     let c = 6;
     let (rows, cols) = (c, c);
@@ -185,65 +122,7 @@ fn check_iteration_cpx() -> NdArray {
     println!("final {output:?}");
     output
 }
-fn check_decomp_cpx() -> NdArray {
-    let c = 6;
-    let (rows, cols) = (c, c);
-    let stride = c;
-    let mut h = generate_random_vector(rows * cols);
-    let mut r = generate_identity_vector(rows, cols);
-    let mut p = vec![0f32; cols];
-    let mut w = vec![0f32; rows];
-    let input = NdArray {
-        dims: vec![rows, cols],
-        data: h.clone(),
-    };
-    // println!("before {input:?}");
-    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
-    let kernel = NdArray {
-        dims: vec![rows, cols],
-        data: h.clone(),
-    };
-    // println!("hessenberg {kernel:?}");
-    w.fill(0f32);
-    decomp_cpx(&mut h, &mut w, c, c, c);
-    let output = NdArray {
-        dims: vec![rows, cols],
-        data: h.clone(),
-    };
-    // println!("final {output:?}");
-    output
-}
-fn check_hessenberg_sym() {
-    let c = 4;
-    let (rows, cols) = (c, c);
-    let stride = c;
-    let mut h = generate_symmetric_vector(rows);
-    // let mut h = generate_random_vector(rows * cols);
-    let mut p = vec![0f32; cols];
-    let mut w = vec![0f32; rows];
-    let input = NdArray {
-        dims: vec![rows, cols],
-        data: h.clone(),
-    };
-    println!("before {input:?}");
-    hessenberg(&mut h, &mut p, &mut w, rows, cols, stride);
-    let kernel = NdArray {
-        dims: vec![rows, cols],
-        data: h.clone(),
-    };
-    println!("hessenberg {kernel:?}");
-    decomp_sym(&mut h, c, c, c);
-    // francis_iteration(&mut h, rows, stride);
-    let output = NdArray {
-        dims: vec![rows, cols],
-        data: h.clone(),
-    };
-    println!("final {output:?}");
-}
-
 fn main() {
-    // check_hessenberg_reconstruct_general();
-    // check_hessenberg_reconstruct_symmetric();
     // check_hessenberg_sym();
     // check_decomp_sym();
     // for i in 0..1000 {
