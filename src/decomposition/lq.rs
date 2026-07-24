@@ -30,7 +30,7 @@ pub fn params(v: &mut [f32]) -> f32 {
         *val *= inv_max_element;
         magnitude_squared += *val * *val;
     }
-    let g = -v[0].signum() * magnitude_squared.sqrt();
+    let g = v[0].signum() * magnitude_squared.sqrt();
     let scale = v[0] + g;
     let inv_scale = 1f32 / scale;
     for val in v[1..].iter_mut() {
