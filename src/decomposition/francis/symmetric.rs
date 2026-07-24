@@ -1,5 +1,5 @@
 use crate::decomposition::francis::constants::{MAX_ITERS, TOLERANCE};
-use crate::decomposition::sgivens::{apply_g_right, apply_gt_left, implicit_givens_rotation};
+use crate::decomposition::sgivens::{apply_gt_right, apply_g_left, implicit_givens_rotation};
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
     deflate,
@@ -55,7 +55,7 @@ pub fn decomp_sym(h: &mut [f32], mut range: usize, size: usize, stride: usize) {
 /// * bl: bottom left of the window for the eigens
 pub fn francis_iteration_sym(
     h: &mut [f32],
-    _size: usize,
+    size: usize,
     range: usize,
     stride: usize,
     tl: usize,
@@ -63,20 +63,18 @@ pub fn francis_iteration_sym(
 ) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
-    apply_g_right(h, 0, 1, stride, range, cosine, -sine);
-    apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
+    apply_gt_right(h, 0, 1, stride, size, cosine, sine);
+    apply_g_left(h, 0, 1, stride, range, cosine, sine);
     for o in 0..range.saturating_sub(2) {
-        let r = o * stride;
+        let row = o * stride;
         let s1 = o + 1;
         let s2 = o + 2;
         let _temp = NdArray {
             dims: vec![range, range],
             data: h.to_vec(),
         };
-        let (_, cosine, sine) = implicit_givens_rotation(h[r + s1], h[r + s2]);
-        // apply_g_right(&mut h[r..], s1, s2, stride, size - o, cosine, -sine);
-        // apply_gt_left(h, s1, s2, stride, range.min(s2 + 2), cosine, -sine);
-        apply_g_right(&mut h[r..], s1, s2, stride, range - o, cosine, -sine);
-        apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
+        let (_, cosine, sine) = implicit_givens_rotation(h[row + s1], h[row + s2]);
+        apply_gt_right(&mut h[row..], s1, s2, stride, range - o, cosine, sine);
+        apply_g_left(h, s1, s2, stride, range, cosine, sine);
     }
 }

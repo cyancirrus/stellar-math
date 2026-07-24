@@ -218,8 +218,6 @@ pub fn full_francis_iteration_sym(
 ) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
-    // apply_g_right(h, 0, 1, stride, range, cosine, -sine);
-    // apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
     apply_gt_right(h, 0, 1, stride, size, cosine, sine);
     apply_g_left(h, 0, 1, stride, range, cosine, sine);
     apply_g_left(r, 0, 1, stride, size, cosine, sine);
@@ -232,14 +230,11 @@ pub fn full_francis_iteration_sym(
             data: h.to_vec(),
         };
         let (_, cosine, sine) = implicit_givens_rotation(h[row + s1], h[row + s2]);
-        // apply_g_right(&mut h[row..], s1, s2, stride, size - o, cosine, -sine);
-        // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
         apply_gt_right(&mut h[row..], s1, s2, stride, range - o, cosine, sine);
         apply_g_left(h, s1, s2, stride, range, cosine, sine);
-
-        // -----------------------
+        // apply_g_right(&mut h[row..], s1, s2, stride, range - o, cosine, -sine);
+        // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
         apply_g_left(r, s1, s2, stride, size, cosine, sine);
-        // apply_g_right(&mut r[row..], s1, s2, stride, range - o, cosine, -sine)
     }
 }
 /// full_hessenberg
