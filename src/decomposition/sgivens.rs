@@ -22,7 +22,6 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
         s = c * t;
         r = a * tt;
     }
-    // let r: f32 = (a.powi(2) + b.powi(2)).sqrt();
     (r, c, s)
 }
 pub fn apply_g_left(
@@ -64,7 +63,6 @@ pub fn apply_gt_left(
     // c, -s, s, c
     let r1 = i * stride;
     let r2 = j * stride;
-    // println!("gt_left r1, r2 ({}, {})", r1 / stride, r2 / stride);
     for k in 0..range {
         // alpha a[i*,j] + beta a[j*, j];
         let i_replace = c * a[r1 + k] - s * a[r2 + k];
@@ -88,7 +86,6 @@ pub fn apply_g_right(
     // c, s, -s, c
     let mut r = 0;
     for _ in 0..range {
-        // println!("apply g right {}", l);
         // alpha a[l,i*] + gamma a[l, j*];
         let i_replace = c * a[r + i] - s * a[r + j];
         // beta a[l,i*] + delta a[l, j*];
