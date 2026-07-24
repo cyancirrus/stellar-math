@@ -2,7 +2,7 @@ use crate::decomposition::francis::{complex, primitives, symmetric};
 
 // Recommended parameters in constants
 // Note: For real-world inputs like A^T*A covariance matrices, explicit forming
-// squares condition numbers, so a pre-QR step or an explicit symmetrization 
+// squares condition numbers, so a pre-QR step or an explicit symmetrization
 // pass on the tridiagonal output can help keep float drift in check.
 
 /// francis_qr_sym

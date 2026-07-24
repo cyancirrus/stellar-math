@@ -20,6 +20,8 @@ pub fn decomp_cpx(
     tolerance: f32,
 ) {
     let s = range * stride;
+    // error 1 supra-diagonal above the first real eigen
+    // error 2 supra-diagonal above the second complex real eigen
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
     let mut tl = s.saturating_sub(stride + 2);
@@ -71,10 +73,10 @@ pub fn decomp_cpx(
                 francis_iteration_cpx_2x2(h, size, stride, tl, bl);
             } else if (stall + 8) % 12 == 0 {
                 exception_shift(h, w, stride, range, tl, bl);
-                francis_iteration_cpx(h, p, w, size, range, stride, tl, bl);
+                francis_iteration_cpx(h, p, w, size, range, stride);
             } else {
                 double_shift(h, w, stride, range, tl, bl);
-                francis_iteration_cpx(h, p, w, size, range, stride, tl, bl);
+                francis_iteration_cpx(h, p, w, size, range, stride);
             }
             stall += 1;
         }
@@ -96,8 +98,6 @@ pub fn francis_iteration_cpx(
     size: usize,
     range: usize,
     stride: usize,
-    _tl: usize,
-    _bl: usize,
 ) {
     let bound = range.min(3);
     let p = &mut p[..bound];
@@ -121,6 +121,14 @@ pub fn francis_iteration_cpx(
         lapply_householder(&mut h[offset..], proj, w, tau, bound, range, stride);
     }
 }
+/// francis_iteration_cpx_2x2
+///
+/// * h: hessenberg linearized matrix
+/// * size: static number of rows for rotations
+/// * range: number of rows in active window
+/// * stride: stride of the data format
+/// * tl : top-left of the eigen-pair
+/// * bl : bottom-left of the eigen-pair
 pub fn francis_iteration_cpx_2x2(h: &mut [f32], size: usize, stride: usize, tl: usize, bl: usize) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);

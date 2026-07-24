@@ -22,7 +22,7 @@
 pub const MAX_ITERS: usize = 16;
 pub const TOLERANCE: f32 = 1e-4;
 pub const ABSOLUTE_CAP: f32 = 1e-3;
-pub const EPSILON: f32 = 1e-18;
+pub const EPSILON: f32 = 1e-21;
 
 // // -------------------------------------------------------------------------
 // // **Strict Precision Profile** (Alternative for high-precision synthetic inputs)
