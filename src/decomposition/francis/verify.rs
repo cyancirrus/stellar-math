@@ -1,6 +1,5 @@
-use crate::decomposition::francis::complex::{francis_iteration_cpx, francis_iteration_cpx_2x2};
 use crate::decomposition::francis::constants::{MAX_ITERS, TOLERANCE};
-use crate::decomposition::sgivens::{apply_g_right, apply_gt_left, implicit_givens_rotation};
+use crate::decomposition::sgivens::{apply_g_left, apply_g_right, apply_gt_left, implicit_givens_rotation};
 use crate::structure::ndarray::NdArray;
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
@@ -14,9 +13,58 @@ use crate::decomposition::francis::primitives::{
     rapply_householder,
 };
 
+#[rustfmt::skip]
+pub fn full_decomp_sym(
+    h: &mut [f32],
+    r: &mut [f32],
+    mut range: usize,
+    size: usize,
+    stride: usize
+) {
+    let s = range * stride;
+    let mut e1 = s.saturating_sub(stride + 1);
+    let mut e2 = s.saturating_sub(stride + stride + 2);
+    let mut tl = s.saturating_sub(stride + 2);
+    let mut bl = s.saturating_sub(2);
+    let mut curriter = 0;
+    let _he1 = h[e1];
+    let _he2 = h[e2];
+    while range > 1 && curriter < MAX_ITERS {
+        curriter += 1;
+        if h[e1].abs() < TOLERANCE {
+            deflate(
+                1,
+                stride,
+                &mut range,
+                &mut e1,
+                &mut e2,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
+        // } else if h[e2].abs() < TOLERANCE {
+        //     deflate(
+        //         2,
+        //         stride,
+        //         &mut range,
+        //         &mut e1,
+        //         &mut e2,
+        //         &mut tl,
+        //         &mut bl,
+        //         &mut curriter,
+        //     );
+        } else {
+            full_francis_iteration_sym(h, r, size, range, stride, tl, bl);
+        }
+    }
+    println!("range {range:?}");
+    if range > 1 {
+        println!("fail");
+    }
+}
 pub fn full_decomp_cpx(
     h: &mut [f32],
-    _r: &mut [f32],
+    r: &mut [f32],
     w: &mut [f32],
     mut range: usize,
     size: usize,
@@ -73,16 +121,16 @@ pub fn full_decomp_cpx(
             stall = 0;
         } else {
             if range == 2 {
-                francis_iteration_cpx_2x2(h, size, stride, tl, bl);
+                full_francis_iteration_cpx_2x2(h, r, size, stride, tl, bl);
             // } else if stall > 0 && (stall + 4) % 10 == 0 {
             } else if (stall + 8) % 12 == 0 {
                 // } else if (stall + 4) % 10 == 0 {
                 // } else if stall == 6 {
                 exception_shift(h, w, stride, range, tl, bl);
-                francis_iteration_cpx(h, p, w, size, range, stride, tl, bl);
+                full_francis_iteration_cpx(h, r, p, w, size, range, stride, tl, bl);
             } else {
                 double_shift(h, w, stride, range, tl, bl);
-                francis_iteration_cpx(h, p, w, size, range, stride, tl, bl);
+                full_francis_iteration_cpx(h, r, p, w, size, range, stride, tl, bl);
             }
             stall += 1;
         }
@@ -100,7 +148,7 @@ pub fn full_decomp_cpx(
 /// * size: static number of rows for rotations
 /// * range: number of rows in active window
 /// * stride: stride of the data format
-fn full_francis_iteration_cpx(
+pub fn full_francis_iteration_cpx(
     h: &mut [f32],
     r: &mut [f32],
     p: &mut [f32],
@@ -137,7 +185,19 @@ fn full_francis_iteration_cpx(
         rapply_householder(&mut r[o..], proj, w, tau, size - o, bound, stride);
     }
 }
-
+pub fn full_francis_iteration_cpx_2x2(
+    h: &mut [f32],
+    r: &mut [f32],
+    size: usize,
+    stride: usize,
+    tl: usize,
+    bl: usize,
+) {
+    let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
+    let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
+    apply_g_right(h, 0, 1, stride, size, cosine, -sine);
+    apply_gt_left(h, 0, 1, stride, 2, cosine, -sine);
+}
 /// full_francis_iteration_sym
 ///
 /// * h: hessenberg linearized matrix
@@ -147,10 +207,10 @@ fn full_francis_iteration_cpx(
 /// * stride: stride of the data format
 /// * tl: top left of the window for the eigens
 /// * bl: bottom left of the window for the eigens
-fn full_francis_iteration_sym(
+pub fn full_francis_iteration_sym(
     h: &mut [f32],
     r: &mut [f32],
-    _size: usize,
+    size: usize,
     range: usize,
     stride: usize,
     tl: usize,
@@ -158,8 +218,11 @@ fn full_francis_iteration_sym(
 ) {
     let eig = eigen(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let (_, cosine, sine) = implicit_givens_rotation(h[0] - eig, h[1]);
-    apply_g_right(h, 0, 1, stride, range, cosine, -sine);
+    // apply_g_right(h, 0, 1, stride, range, cosine, -sine);
+    // apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
+    apply_g_right(h, 0, 1, stride, size, cosine, -sine);
     apply_gt_left(h, 0, 1, stride, range, cosine, -sine);
+    apply_g_left(r, 0, 1, stride, size, cosine, sine);
     for o in 0..range.saturating_sub(2) {
         let row = o * stride;
         let s1 = o + 1;
@@ -169,13 +232,14 @@ fn full_francis_iteration_sym(
             data: h.to_vec(),
         };
         let (_, cosine, sine) = implicit_givens_rotation(h[row + s1], h[row + s2]);
+        // apply_g_right(&mut h[row..], s1, s2, stride, size - o, cosine, -sine);
+        // apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
         apply_g_right(&mut h[row..], s1, s2, stride, range - o, cosine, -sine);
         apply_gt_left(h, s1, s2, stride, range, cosine, -sine);
-        // apply_g_right(&mut h[r..], s1, s2, stride, size - o, cosine, -sine);
-        // apply_gt_left(h, s1, s2, stride, range.min(s2 + 2), cosine, -sine);
 
         // -----------------------
-        apply_g_right(&mut r[row..], s1, s2, stride, range - o, cosine, -sine)
+        apply_g_left(r, s1, s2, stride, size, cosine, sine);
+        // apply_g_right(&mut r[row..], s1, s2, stride, range - o, cosine, -sine)
     }
 }
 /// full_hessenberg
@@ -215,11 +279,10 @@ pub fn full_hessenberg(
         lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
     }
 }
-
 mod test_hessenberg_reconstructions {
     use super::*;
-    use crate::equality::approximate::{approx_vector_eq, approx_vector_tol_eq};
     use crate::algebra::ndmethods::matrix_mult;
+    use crate::equality::approximate::{approx_vector_eq, approx_vector_tol_eq};
     use crate::random::generation::{
         generate_identity_vector, generate_random_matrix, generate_random_vector,
         generate_symmetric_vector,

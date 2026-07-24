@@ -2,8 +2,8 @@
 use stellar::algebra::ndmethods::basic_mult;
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::matrix_mult;
-use stellar::decomposition::francis::primitives::{hessenberg};
-use stellar::decomposition::francis::verify::{full_hessenberg};
+use stellar::decomposition::francis::primitives::hessenberg;
+use stellar::decomposition::francis::verify::{full_hessenberg, full_decomp_sym};
 use stellar::decomposition::lower_upper::LuPivotDecompose;
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::decomposition::schur::real_schur;
@@ -56,7 +56,7 @@ fn check_iteration_sym() -> NdArray {
     output
 }
 fn check_decomp_sym() -> NdArray {
-    let c = 4;
+    let c = 6;
     let (rows, cols) = (c, c);
     let stride = c;
     let mut h = generate_symmetric_vector(rows);
@@ -75,7 +75,7 @@ fn check_decomp_sym() -> NdArray {
         data: h.clone(),
     };
     println!("hessenberg {kernel:?}");
-    decomp_sym(&mut h, c, c, c);
+    full_decomp_sym(&mut h, &mut r, c, c, c);
     // francis_iteration(&mut h, rows, stride);
     let output = NdArray {
         dims: vec![rows, cols],
@@ -150,8 +150,62 @@ fn check_decomp_cpx() -> NdArray {
     // println!("final {output:?}");
     output
 }
+fn check_decomp_sym_reconstruct() {
+    let c = 4;
+    let (rows, cols) = (c, c);
+    let stride = c;
+
+    let mut h = generate_symmetric_vector(rows);
+    let mut r = generate_identity_vector(rows, cols);
+    let mut p = vec![0f32; cols];
+    let mut w = vec![0f32; rows];
+
+    let original = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+
+    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    full_decomp_sym(&mut h, &mut r, c, c, c);
+
+    let kernel = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    let rotation = NdArray {
+        dims: vec![rows, cols],
+        data: r.clone(),
+    };
+
+    // R R' ~= I
+    let identity = generate_identity_vector(rows, cols);
+    let rrt = matrix_mult(&rotation, &rotation.transpose());
+    assert!(
+        approx_vector_eq(&rrt.data, &identity),
+        "R R' not orthogonal, got {:?}",
+        rrt.data
+    );
+
+    // R' R ~= I
+    let rtr = matrix_mult(&rotation.transpose(), &rotation);
+    assert!(
+        approx_vector_eq(&rtr.data, &identity),
+        "R' R not orthogonal, got {:?}",
+        rtr.data
+    );
+
+    // R' * kernel * R ~= original
+    let reconstruct = matrix_mult(&rotation.transpose(), &matrix_mult(&kernel, &rotation));
+    assert!(
+        approx_vector_eq(&reconstruct.data, &original.data),
+        "reconstruction mismatch, got {reconstruct:?} expected {original:?}",
+    );
+}
+
+
 fn main() {
-    // check_hessenberg_sym();
+    check_decomp_sym_reconstruct();
+    // check_decomp_sym();
     // check_decomp_sym();
     // for i in 0..1000 {
     //     check_decomp_cpx();
