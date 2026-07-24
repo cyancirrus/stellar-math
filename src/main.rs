@@ -122,6 +122,34 @@ fn check_iteration_cpx() -> NdArray {
     println!("final {output:?}");
     output
 }
+fn check_decomp_cpx() -> NdArray {
+    let c = 6;
+    let (rows, cols) = (c, c);
+    let stride = c;
+    let mut h = generate_random_vector(rows * cols);
+    let mut r = generate_identity_vector(rows, cols);
+    let mut p = vec![0f32; cols];
+    let mut w = vec![0f32; rows];
+    let input = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    // println!("before {input:?}");
+    full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+    let kernel = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    // println!("hessenberg {kernel:?}");
+    w.fill(0f32);
+    decomp_cpx(&mut h, &mut w, c, c, c);
+    let output = NdArray {
+        dims: vec![rows, cols],
+        data: h.clone(),
+    };
+    // println!("final {output:?}");
+    output
+}
 fn main() {
     // check_hessenberg_sym();
     // check_decomp_sym();
