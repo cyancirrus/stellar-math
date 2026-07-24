@@ -2,14 +2,15 @@
 use stellar::algebra::ndmethods::basic_mult;
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::matrix_mult;
-use stellar::decomposition::francis::primitives::{full_hessenberg, hessenberg};
+use stellar::decomposition::francis::primitives::{hessenberg};
+use stellar::decomposition::francis::verify::{full_hessenberg};
 use stellar::decomposition::lower_upper::LuPivotDecompose;
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::decomposition::schur::real_schur;
 use stellar::decomposition::sgivens::{
     apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
 };
-use stellar::equality::approximate::approx_vector_tol_eq;
+use stellar::equality::approximate::{approx_vector_eq, approx_vector_tol_eq};
 use stellar::random::generation::{
     generate_identity_vector, generate_random_matrix, generate_random_vector,
     generate_symmetric_vector,
@@ -52,7 +53,7 @@ fn check_hessen_sym() {
     println!("reconstruct {reconstruct:?}");
 }
 fn check_hessen() {
-    let dim = 7;
+    let dim = 4;
     let (rows, cols) = (dim, dim);
     let stride = dim;
     let mut h = generate_random_vector(rows * cols);
@@ -241,6 +242,8 @@ fn check_hessenberg_sym() {
 }
 
 fn main() {
+    // check_hessenberg_reconstruct_general();
+    // check_hessenberg_reconstruct_symmetric();
     // check_hessenberg_sym();
     // check_decomp_sym();
     // for i in 0..1000 {
@@ -250,7 +253,7 @@ fn main() {
     // check_iteration_cpx();
     // check_hessen_sym();
     // check_iteration_sym();
-    check_hessen();
+    // check_hessen();
     // test_orthogonal();
     // TODO
     // if range > 1 {

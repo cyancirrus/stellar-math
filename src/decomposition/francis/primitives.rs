@@ -172,43 +172,6 @@ pub fn hessenberg(
         lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
     }
 }
-/// full_hessenberg
-/// * h: matrix to create the hessenberg
-/// * r: rotation matrix should be identity on coldstart
-/// * p: projection vector
-/// * w: workspace vector
-/// * rows: number of rows
-/// * cols: number of cols
-/// * stride: stride of the data
-pub fn full_hessenberg(
-    h: &mut [f32],
-    r: &mut [f32],
-    p: &mut [f32],
-    w: &mut [f32],
-    rows: usize,
-    cols: usize,
-    stride: usize,
-) {
-    // stores tau
-    let mut offset = 0;
-    let mut active_range = rows;
-    let mut split_range = cols;
-    for o in 1..rows {
-        active_range -= 1;
-        split_range -= 1;
-        let (slice, t) = h.split_at_mut(offset + stride);
-        let slice = &mut slice[offset + o..offset + cols];
-        let proj = &mut p[..split_range];
-        let tau = params(slice, proj);
-        offset += stride;
-        if tau == 0f32 {
-            continue;
-        }
-        lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
-        rapply_householder(&mut t[o..], proj, w, tau, rows - o, split_range, stride);
-        lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
-    }
-}
 pub fn deflate(
     amount: usize,
     stride: usize,

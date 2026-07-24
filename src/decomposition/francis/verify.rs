@@ -178,3 +178,147 @@ fn full_francis_iteration_sym(
         apply_g_right(&mut r[row..], s1, s2, stride, range - o, cosine, -sine)
     }
 }
+/// full_hessenberg
+/// * h: matrix to create the hessenberg
+/// * r: rotation matrix should be identity on coldstart
+/// * p: projection vector
+/// * w: workspace vector
+/// * rows: number of rows
+/// * cols: number of cols
+/// * stride: stride of the data
+pub fn full_hessenberg(
+    h: &mut [f32],
+    r: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    rows: usize,
+    cols: usize,
+    stride: usize,
+) {
+    // stores tau
+    let mut offset = 0;
+    let mut active_range = rows;
+    let mut split_range = cols;
+    for o in 1..rows {
+        active_range -= 1;
+        split_range -= 1;
+        let (slice, t) = h.split_at_mut(offset + stride);
+        let slice = &mut slice[offset + o..offset + cols];
+        let proj = &mut p[..split_range];
+        let tau = params(slice, proj);
+        offset += stride;
+        if tau == 0f32 {
+            continue;
+        }
+        lapply_householder(&mut r[offset..], proj, w, tau, active_range, cols, stride);
+        rapply_householder(&mut t[o..], proj, w, tau, rows - o, split_range, stride);
+        lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
+    }
+}
+
+mod test_hessenberg_reconstructions {
+    use super::*;
+    use crate::equality::approximate::{approx_vector_eq, approx_vector_tol_eq};
+    use crate::algebra::ndmethods::matrix_mult;
+    use crate::random::generation::{
+        generate_identity_vector, generate_random_matrix, generate_random_vector,
+        generate_symmetric_vector,
+    };
+
+    #[test]
+    fn test_hessenberg_reconstruct_general() {
+        for dim in [1, 2, 4, 7] {
+            let (rows, cols) = (dim, dim);
+            let stride = dim;
+            let mut h = generate_random_vector(rows * cols);
+            let mut r = generate_identity_vector(rows, cols);
+            let mut p = vec![0f32; cols];
+            let mut w = vec![0f32; rows];
+            let original = NdArray {
+                dims: vec![rows, cols],
+                data: h.clone(),
+            };
+            full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+            let kernel = NdArray {
+                dims: vec![rows, cols],
+                data: h.clone(),
+            };
+            let rotation = NdArray {
+                dims: vec![rows, cols],
+                data: r.clone(),
+            };
+            // R R' ~= I
+            let rrt = matrix_mult(&rotation, &rotation.transpose());
+            let identity = generate_identity_vector(rows, cols);
+            assert!(
+                approx_vector_eq(&rrt.data, &identity),
+                "dim={dim}: R R' not orthogonal, got {:?}",
+                rrt.data
+            );
+            // R' R ~= I
+            let rtr = matrix_mult(&rotation.transpose(), &rotation);
+            assert!(
+                approx_vector_eq(&rtr.data, &identity),
+                "dim={dim}: R' R not orthogonal, got {:?}",
+                rtr.data
+            );
+            // R' H R ~= original
+            let reconstruct = matrix_mult(&rotation.transpose(), &matrix_mult(&kernel, &rotation));
+            assert!(
+                approx_vector_eq(&reconstruct.data, &original.data),
+                "dim={dim}: reconstruction mismatch, got {:?} expected {:?}",
+                reconstruct.data,
+                original.data
+            );
+        }
+    }
+    #[test]
+    fn test_hessenberg_reconstruct_symmetric() {
+        for dim in [1, 2, 4, 7] {
+            let (rows, cols) = (dim, dim);
+            let stride = dim;
+            let mut h = generate_symmetric_vector(dim);
+            let mut r = generate_identity_vector(rows, cols);
+            let mut p = vec![0f32; cols];
+            let mut w = vec![0f32; rows];
+            let original = NdArray {
+                dims: vec![rows, cols],
+                data: h.clone(),
+            };
+            full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
+            let kernel = NdArray {
+                dims: vec![rows, cols],
+                data: h.clone(),
+            };
+            let rotation = NdArray {
+                dims: vec![rows, cols],
+                data: r.clone(),
+            };
+            let identity = generate_identity_vector(rows, cols);
+            let rrt = matrix_mult(&rotation, &rotation.transpose());
+            assert!(
+                approx_vector_eq(&rrt.data, &identity),
+                "dim={dim}: R R' not orthogonal"
+            );
+            // symmetric-specific: hessenberg of a symmetric matrix should be
+            // tridiagonal, i.e. zero below the first subdiagonal
+            for i in 0..rows {
+                for j in 0..cols {
+                    if i > j + 1 {
+                        assert!(
+                            h[i * stride + j].abs() < 1e-2,
+                            "dim={dim}: expected tridiagonal, got h[{i}][{j}]={}",
+                            h[i * stride + j]
+                        );
+                    }
+                }
+            }
+            // R' H R ~= original
+            let reconstruct = matrix_mult(&rotation.transpose(), &matrix_mult(&kernel, &rotation));
+            assert!(
+                approx_vector_eq(&reconstruct.data, &original.data),
+                "dim={dim}: symmetric reconstruction mismatch"
+            );
+        }
+    }
+}
