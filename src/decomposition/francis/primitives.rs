@@ -1,6 +1,6 @@
 use crate::decomposition::francis::constants::{EPSILON, MAX_ITERS};
 /// params
-/// takes in data forom a matrix slice
+/// takes in data from a matrix slice
 /// zeros the incoming data and creates the householder vec
 ///
 /// if the vector is less than the tolerance the workspace vec

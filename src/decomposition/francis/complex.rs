@@ -1,3 +1,7 @@
+use crate::decomposition::francis::constants::{
+    EXCEPTION_SHIFT_OFFSET,
+    EXCEPTION_SHIFT_PERIOD,
+};
 use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
@@ -12,6 +16,7 @@ use crate::decomposition::francis::primitives::{
 };
 pub fn decomp_cpx(
     h: &mut [f32],
+    p: &mut [f32],
     w: &mut [f32],
     mut range: usize,
     size: usize,
@@ -19,6 +24,7 @@ pub fn decomp_cpx(
     max_iters: usize,
     tolerance: f32,
 ) {
+    p.fill(0f32);
     let s = range * stride;
     // error 1 supra-diagonal above the first real eigen
     // error 2 supra-diagonal above the second complex real eigen
@@ -26,13 +32,11 @@ pub fn decomp_cpx(
     let mut e2 = s.saturating_sub(stride + stride + 2);
     let mut tl = s.saturating_sub(stride + 2);
     let mut bl = s.saturating_sub(2);
-    let p = &mut [0f32; 3];
     let mut curriter = 0;
     let mut stall = 0;
     while range > 0 && curriter < max_iters {
         curriter += 1;
         if h[e1].abs() < tolerance {
-            stall = 0;
             deflate(
                 1,
                 stride,
@@ -43,6 +47,7 @@ pub fn decomp_cpx(
                 &mut bl,
                 &mut curriter,
             );
+            stall = 0;
         } else if h[e2].abs() < tolerance {
             // if e2 == 0 then we are hitting eigen which should be greater than tolerance
             deflate(
@@ -71,7 +76,8 @@ pub fn decomp_cpx(
         } else {
             if range == 2 {
                 francis_iteration_cpx_2x2(h, size, stride, tl, bl);
-            } else if (stall + 8) % 12 == 0 {
+        } else if (stall + EXCEPTION_SHIFT_OFFSET).is_multiple_of(EXCEPTION_SHIFT_PERIOD) {
+
                 exception_shift(h, w, stride, range, tl, bl);
                 francis_iteration_cpx(h, p, w, size, range, stride);
             } else {

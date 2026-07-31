@@ -49,7 +49,7 @@ pub fn francis_qr_cpx(
     tolerance: f32,
 ) {
     primitives::hessenberg(h, p, w, size, range, stride);
-    complex::decomp_cpx(h, w, range, size, stride, max_iters, tolerance);
+    complex::decomp_cpx(h, p, w, range, size, stride, max_iters, tolerance);
 }
 
 mod test_francis_interface {

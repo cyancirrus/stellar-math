@@ -1,5 +1,10 @@
-use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANCE};
 use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
+use crate::decomposition::francis::constants::{
+    ABSOLUTE_CAP,
+    MAX_ITERS, TOLERANCE,
+    EXCEPTION_SHIFT_OFFSET,
+    EXCEPTION_SHIFT_PERIOD,
+};
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
     params,
@@ -63,26 +68,25 @@ pub fn full_decomp_sym(
 }
 pub fn full_decomp_cpx(
     h: &mut [f32],
+    p: &mut [f32],
     r: &mut [f32],
     w: &mut [f32],
     mut range: usize,
     size: usize,
     stride: usize,
 ) -> bool {
+    p.fill(0f32);
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);
     let mut tl = s.saturating_sub(stride + 2);
     let mut bl = s.saturating_sub(2);
     let mut curriter = 0;
-    let _he1 = h[e1];
-    let _he2 = h[e2];
     let p = &mut [0f32; 3];
     let mut stall = 0;
     while range > 0 && curriter < MAX_ITERS {
         curriter += 1;
         if h[e1].abs() < TOLERANCE {
-            stall = 0;
             deflate(
                 1,
                 stride,
@@ -93,6 +97,7 @@ pub fn full_decomp_cpx(
                 &mut bl,
                 &mut curriter,
             );
+            stall = 0;
         } else if h[e2].abs() < TOLERANCE {
             // if e2 == 0 then we are hitting eigen which should be greater than tolerance
             deflate(
@@ -121,10 +126,7 @@ pub fn full_decomp_cpx(
         } else {
             if range == 2 {
                 full_francis_iteration_cpx_2x2(h, r, size, stride, tl, bl);
-            // } else if stall > 0 && (stall + 4) % 10 == 0 {
-            } else if (stall + 8) % 12 == 0 {
-                // } else if (stall + 4) % 10 == 0 {
-                // } else if stall == 6 {
+            } else if (stall + EXCEPTION_SHIFT_OFFSET).is_multiple_of(EXCEPTION_SHIFT_PERIOD) {
                 exception_shift(h, w, stride, range, tl, bl);
                 full_francis_iteration_cpx(h, r, p, w, size, range, stride, tl, bl);
             } else {
@@ -445,7 +447,7 @@ mod test_hessenberg_reconstructions {
         };
 
         full_hessenberg(&mut h, &mut r, &mut p, &mut w, rows, cols, stride);
-        let converged = full_decomp_cpx(&mut h, &mut r, &mut w, c, c, c);
+        let converged = full_decomp_cpx(&mut h, &mut p, &mut r, &mut w, c, c, c);
 
         let kernel = NdArray {
             dims: vec![rows, cols],
