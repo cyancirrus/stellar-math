@@ -1,10 +1,7 @@
-use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
 use crate::decomposition::francis::constants::{
-    ABSOLUTE_CAP,
-    MAX_ITERS, TOLERANCE,
-    EXCEPTION_SHIFT_OFFSET,
-    EXCEPTION_SHIFT_PERIOD,
+    ABSOLUTE_CAP, EXCEPTION_SHIFT_OFFSET, EXCEPTION_SHIFT_PERIOD, MAX_ITERS, TOLERANCE,
 };
+use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
     params,

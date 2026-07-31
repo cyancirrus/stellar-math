@@ -1,7 +1,4 @@
-use crate::decomposition::francis::constants::{
-    EXCEPTION_SHIFT_OFFSET,
-    EXCEPTION_SHIFT_PERIOD,
-};
+use crate::decomposition::francis::constants::{EXCEPTION_SHIFT_OFFSET, EXCEPTION_SHIFT_PERIOD};
 use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
 #[rustfmt::skip]
 use crate::decomposition::francis::primitives::{
@@ -76,8 +73,7 @@ pub fn decomp_cpx(
         } else {
             if range == 2 {
                 francis_iteration_cpx_2x2(h, size, stride, tl, bl);
-        } else if (stall + EXCEPTION_SHIFT_OFFSET).is_multiple_of(EXCEPTION_SHIFT_PERIOD) {
-
+            } else if (stall + EXCEPTION_SHIFT_OFFSET).is_multiple_of(EXCEPTION_SHIFT_PERIOD) {
                 exception_shift(h, w, stride, range, tl, bl);
                 francis_iteration_cpx(h, p, w, size, range, stride);
             } else {
