@@ -48,6 +48,7 @@ pub fn francis_qr_cpx(
     max_iters: usize,
     tolerance: f32,
 ) {
+    debug_assert!(size > 2);
     primitives::hessenberg(h, p, w, size, range, stride);
     complex::decomp_cpx(h, p, w, range, size, stride, max_iters, tolerance);
 }

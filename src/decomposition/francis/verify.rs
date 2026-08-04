@@ -28,7 +28,6 @@ pub fn full_decomp_sym(
     let mut tl = s.saturating_sub(stride + 2);
     let mut bl = s.saturating_sub(2);
     let mut curriter = 0;
-    let mut error = vec![];
     while range > 1 && curriter < MAX_ITERS {
         let scale = h[tl].abs() + h[bl+1].abs();
         curriter += 1;
@@ -43,7 +42,6 @@ pub fn full_decomp_sym(
                 &mut bl,
                 &mut curriter,
             );
-            error = vec![];
         } else if h[e2].abs() < TOLERANCE && curriter == MAX_ITERS {
             deflate(
                 2,
@@ -55,11 +53,9 @@ pub fn full_decomp_sym(
                 &mut bl,
                 &mut curriter,
             );
-            error = vec![];
         } else {
             full_francis_iteration_sym(h, r, size, range, stride, tl, bl);
         }
-        error.push(h[e1]);
     }
     range <= 1
 }

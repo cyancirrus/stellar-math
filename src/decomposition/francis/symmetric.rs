@@ -24,8 +24,8 @@ pub fn decomp_sym(
     let mut bl = s.saturating_sub(2);
     let mut curriter = 0;
     while range > 1 && curriter < max_iters {
-        let scale = h[tl].abs() + h[bl+1].abs();
         curriter += 1;
+        let scale = h[tl].abs() + h[bl+1].abs();
         if h[e1].abs() < (scale * tolerance).min(absolute) {
             deflate(
                 1,
