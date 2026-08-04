@@ -1,4 +1,3 @@
-use crate::algebra::ndmethods::create_identity_matrix;
 use crate::structure::ndarray::NdArray;
 
 const CONVERGENCE_CONDITION: f32 = 1e-6;
@@ -42,7 +41,6 @@ pub fn full_givens_iteration(
     }
     SingularValueDecomp { u, s, v }
 }
-
 pub fn givens_iteration(mut s: NdArray) -> Vec<f32> {
     // takes in bidiagonal and returns full SVD
     let m = s.dims[0];
@@ -70,18 +68,7 @@ pub fn givens_iteration(mut s: NdArray) -> Vec<f32> {
     }
     singular
 }
-
-pub fn embed_givens(n: usize, i: usize, j: usize, c: f32, s: f32) -> NdArray {
-    let mut array = create_identity_matrix(n);
-    array.data[i * n + i] = c;
-    array.data[i * n + j] = s;
-    array.data[j * n + i] = -s;
-    array.data[j * n + j] = c;
-    array
-}
-
 // m x n, m x m x n
-
 fn offdiag_norm(s: &NdArray) -> f32 {
     let m = s.dims[0];
     let n = s.dims[1];
@@ -92,7 +79,6 @@ fn offdiag_norm(s: &NdArray) -> f32 {
     }
     norm
 }
-
 pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
     let t: f32;
     let tt: f32;
@@ -120,65 +106,48 @@ pub fn implicit_givens_rotation(a: f32, b: f32) -> (f32, f32, f32) {
     // let r: f32 = (a.powi(2) + b.powi(2)).sqrt();
     (r, c, s)
 }
-
 pub fn apply_g_left(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
     // G * A
     // alpha, beta, gamma, delta,
     // c, s, -s, c
-    // let (m, n) = (a.dims[0], a.dims[1]);
     let n = a.dims[1];
+    let r1 = i * n;
+    let r2 = j * n;
     for k in 0..n {
         // alpha a[i*,k] + beta a[j*, k];
-        let i_replace = c * a.data[i * n + k] + s * a.data[j * n + k];
+        let i_replace = c * a.data[r1 + k] + s * a.data[r2 + k];
         // gamma a[i*,k] + delta a[j*, k];
-        let j_replace = -s * a.data[i * n + k] + c * a.data[j * n + k];
-        a.data[i * n + k] = i_replace;
-        a.data[j * n + k] = j_replace;
+        let j_replace = -s * a.data[r1 + k] + c * a.data[r2 + k];
+        a.data[r1 + k] = i_replace;
+        a.data[r2 + k] = j_replace;
     }
 }
-
-pub fn apply_gt_left(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
-    // G' * A
-    // transpose the negative sine
-    // alpha, beta, gamma, delta,
-    // c, -s, s, c
-    let n = a.dims[1];
-    for k in 0..n {
-        // alpha a[i*,j] + beta a[j*, j];
-        let i_replace = c * a.data[i * n + k] - s * a.data[j * n + k];
-        // gamma a[i*,j] + delta a[j*, j];
-        let j_replace = s * a.data[i * n + k] + c * a.data[j * n + k];
-        a.data[i * n + k] = i_replace;
-        a.data[j * n + k] = j_replace;
-    }
-}
-
 pub fn apply_g_right(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
     // A * G
     // alpha, beta, gamma, delta,
     // c, s, -s, c
     let (m, n) = (a.dims[0], a.dims[1]);
-    for l in 0..m {
+    let mut r = 0;
+    for _ in 0..m {
         // alpha a[l,i*] + gamma a[l, j*];
-        let i_replace = c * a.data[l * n + i] - s * a.data[l * n + j];
+        let i_replace = c * a.data[r + i] - s * a.data[r + j];
         // beta a[l,i*] + delta a[l, j*];
-        let j_replace = s * a.data[l * n + i] + c * a.data[l * n + j];
-        a.data[l * n + i] = i_replace;
-        a.data[l * n + j] = j_replace;
+        let j_replace = s * a.data[r + i] + c * a.data[r + j];
+        a.data[r + i] = i_replace;
+        a.data[r + j] = j_replace;
+        r += n;
     }
 }
-
+pub fn apply_gt_left(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
+    // G' * A
+    // transpose the negative sine
+    // alpha, beta, gamma, delta,
+    // c, -s, s, c
+    apply_g_left(a, i, j, c, -s);
+}
 pub fn apply_gt_right(a: &mut NdArray, i: usize, j: usize, c: f32, s: f32) {
     // A * G'
     // alpha, beta, gamma, delta,
     // c, -s, s, c
-    let (m, n) = (a.dims[0], a.dims[1]);
-    for l in 0..m {
-        // alpha a[l,i*] + gamma a[l, j*];
-        let i_replace = c * a.data[l * n + i] + s * a.data[l * n + j];
-        // beta a[l,i*] + delta a[l, j*];
-        let j_replace = -s * a.data[l * n + i] + c * a.data[l * n + j];
-        a.data[l * n + i] = i_replace;
-        a.data[l * n + j] = j_replace;
-    }
+    apply_g_right(a, i, j, c, -s);
 }
