@@ -160,15 +160,22 @@ pub fn hessenberg(
     for o in 1..rows {
         active_range -= 1;
         split_range -= 1;
-        let (slice, t) = h.split_at_mut(offset + stride);
-        let slice = &mut slice[offset + o..offset + cols];
+        let slice = &mut h[offset + o..offset + cols];
         let proj = &mut p[..split_range];
         let tau = params(slice, proj);
         offset += stride;
         if tau == 0f32 {
             continue;
         }
-        rapply_householder(&mut t[o..], proj, w, tau, rows - o, split_range, stride);
+        rapply_householder(
+            &mut h[offset + o..],
+            proj,
+            w,
+            tau,
+            rows - o,
+            split_range,
+            stride,
+        );
         lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
     }
 }

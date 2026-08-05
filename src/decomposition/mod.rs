@@ -1,6 +1,7 @@
 pub mod cholesky;
 pub mod francis;
 pub mod givens;
+pub mod golub_kahan;
 pub mod householder;
 pub mod lower_upper;
 pub mod lq;

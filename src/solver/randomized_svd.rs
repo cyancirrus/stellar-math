@@ -1,7 +1,7 @@
 use crate::algebra::ndmethods::{lt_matrix_mult, matrix_mult};
 use crate::decomposition::givens::{SingularValueDecomp, full_givens_iteration, givens_iteration};
+use crate::decomposition::golub_kahan::{full_golub_kahan, golub_kahan};
 use crate::decomposition::qr_matrix::QrDecomp;
-use crate::decomposition::svd::{full_golub_kahan, golub_kahan};
 use crate::random::generation::generate_random_matrix;
 use crate::structure::ndarray::NdArray;
 
