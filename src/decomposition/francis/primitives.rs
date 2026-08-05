@@ -204,13 +204,7 @@ pub fn complex_eig_pair(h: &mut [f32], tl: usize, bl: usize) -> bool {
 /// * w: workspace slice
 /// * range: number of rows in active window
 /// * stride: stride of the data format
-pub fn double_shift(
-    h: &mut [f32],
-    w: &mut [f32],
-    stride: usize,
-    tl: usize,
-    bl: usize,
-) {
+pub fn double_shift(h: &mut [f32], w: &mut [f32], stride: usize, tl: usize, bl: usize) {
     // u1 = a + bi;
     // u2 = a - bi;
     // M = H^2 - H(u1 + u2) +Iu1 *u2;
@@ -237,13 +231,7 @@ pub fn double_shift(
 /// * w: workspace slice
 /// * range: number of rows in active window
 /// * stride: stride of the data format
-pub fn exception_shift(
-    h: &mut [f32],
-    w: &mut [f32],
-    stride: usize,
-    tl: usize,
-    bl: usize,
-) {
+pub fn exception_shift(h: &mut [f32], w: &mut [f32], stride: usize, tl: usize, _bl: usize) {
     // u1 = a + bi;
     // u2 = a - bi;
     // M = H^2 - H(u1 + u2) +Iu1 *u2;
