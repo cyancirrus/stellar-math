@@ -208,7 +208,6 @@ pub fn double_shift(
     h: &mut [f32],
     w: &mut [f32],
     stride: usize,
-    _range: usize,
     tl: usize,
     bl: usize,
 ) {
@@ -242,7 +241,6 @@ pub fn exception_shift(
     h: &mut [f32],
     w: &mut [f32],
     stride: usize,
-    _range: usize,
     tl: usize,
     bl: usize,
 ) {
@@ -250,8 +248,7 @@ pub fn exception_shift(
     // u2 = a - bi;
     // M = H^2 - H(u1 + u2) +Iu1 *u2;
     // M = H^2 - H *trace + I * det;
-    let (_m00, m01) = (h[tl], h[tl + 1]);
-    let (_m10, _m11) = (h[bl], h[bl + 1]);
+    let m01 = h[tl + 1];
 
     let (h00, h01) = (h[0], h[1]);
     let (h10, h11) = (h[stride], h[stride + 1]);

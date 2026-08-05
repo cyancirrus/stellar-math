@@ -1,3 +1,4 @@
+#![allow(unused)]
 use crate::decomposition::francis::constants::{
     ABSOLUTE_CAP, EXCEPTION_SHIFT_OFFSET, EXCEPTION_SHIFT_PERIOD, MAX_ITERS, TOLERANCE,
 };
@@ -15,7 +16,7 @@ use crate::decomposition::francis::primitives::{
 };
 
 #[rustfmt::skip]
-pub fn full_decomp_sym(
+fn full_decomp_sym(
     h: &mut [f32],
     r: &mut [f32],
     mut range: usize,
@@ -59,7 +60,7 @@ pub fn full_decomp_sym(
     }
     range <= 1
 }
-pub fn full_decomp_cpx(
+fn full_decomp_cpx(
     h: &mut [f32],
     p: &mut [f32],
     r: &mut [f32],
@@ -120,10 +121,10 @@ pub fn full_decomp_cpx(
             if range == 2 {
                 full_francis_iteration_cpx_2x2(h, r, size, stride, tl, bl);
             } else if (stall + EXCEPTION_SHIFT_OFFSET).is_multiple_of(EXCEPTION_SHIFT_PERIOD) {
-                exception_shift(h, w, stride, range, tl, bl);
+                exception_shift(h, w, stride, tl, bl);
                 full_francis_iteration_cpx(h, r, p, w, size, range, stride, tl, bl);
             } else {
-                double_shift(h, w, stride, range, tl, bl);
+                double_shift(h, w, stride, tl, bl);
                 full_francis_iteration_cpx(h, r, p, w, size, range, stride, tl, bl);
             }
             stall += 1;
@@ -140,7 +141,7 @@ pub fn full_decomp_cpx(
 /// * size: static number of rows for rotations
 /// * range: number of rows in active window
 /// * stride: stride of the data format
-pub fn full_francis_iteration_cpx(
+fn full_francis_iteration_cpx(
     h: &mut [f32],
     r: &mut [f32],
     p: &mut [f32],
@@ -177,7 +178,7 @@ pub fn full_francis_iteration_cpx(
         lapply_householder(&mut r[offset..], proj, w, tau, bound, size, stride);
     }
 }
-pub fn full_francis_iteration_cpx_2x2(
+fn full_francis_iteration_cpx_2x2(
     h: &mut [f32],
     r: &mut [f32],
     size: usize,
@@ -200,7 +201,7 @@ pub fn full_francis_iteration_cpx_2x2(
 /// * stride: stride of the data format
 /// * tl: top left of the window for the eigens
 /// * bl: bottom left of the window for the eigens
-pub fn full_francis_iteration_sym(
+fn full_francis_iteration_sym(
     h: &mut [f32],
     r: &mut [f32],
     size: usize,
@@ -232,7 +233,7 @@ pub fn full_francis_iteration_sym(
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
-pub fn full_hessenberg(
+fn full_hessenberg(
     h: &mut [f32],
     r: &mut [f32],
     p: &mut [f32],
