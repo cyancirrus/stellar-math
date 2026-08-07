@@ -5,8 +5,8 @@ use stellar::structure::ndarray::NdArray;
 // A 4x4 identity matrix flattened into a single Vec<f32> (row-major order)
 
 fn main() {
-    let rows: usize = 6;
-    let cols: usize = 3;
+    let rows: usize = 8;
+    let cols: usize = 4;
     let card: usize = rows.min(cols);
     // let rows: usize = 6;
     // let cols: usize = 4;

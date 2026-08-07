@@ -132,32 +132,37 @@ pub fn decomp_ugivens(
     // while threshold < error && curriter < max_iters {
     {
         curriter += 1;
-        offset = stride;
+        offset = 0;
+        error = 0f32;
         // above diagonal element
         let (_, cosine, sine) =
             implicit_givens_rotation(h[0], h[1]);
         // apply_gt_right(h, k, k + 1, stride, card, cosine, sine);
         apply_gt_right(h, 0, 1, stride, 2, cosine, sine);
-        for k in 1..card.saturating_sub(2) {
-
-            // below diagonal element
+        // for k in 0..card.saturating_sub(2) {
+        for _ in 0..card.saturating_sub(2) {
+            println!("hello!");
+            // push zero into row
             let (_, cosine, sine) =
-                implicit_givens_rotation(h[offset + k], h[offset + stride + k]);
-            apply_g_left(h, k, k + 1, stride, 3, cosine, sine);
-
+                implicit_givens_rotation(h[offset], h[offset + stride]);
+            apply_g_left(&mut h[offset..], 0, 1, stride, 3, cosine, sine);
+            
+            // push zero into col
+            offset += 1;
             // above diagonal element
             let (_, cosine, sine) =
-                implicit_givens_rotation(h[offset + k], h[offset + k + 1]);
-            apply_gt_right(&mut h[offset ..], k, k + 1, stride, 3, cosine, sine);
+                implicit_givens_rotation(h[offset], h[offset + 1]);
+            apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cosine, sine);
+            error += h[offset].abs();
+            println!("adding error {:?} at idx{:?}", h[offset], offset); 
             offset += stride;
         }
-        let k = card.saturating_sub(2);
-        // above diagonal element
+        // push zero into row
         let (_, cosine, sine) =
-            implicit_givens_rotation(h[offset + k], h[offset + k + 1]);
-        apply_gt_right(&mut h[offset ..], k, k + 1, stride, 2, cosine, sine);
-        error = h[eidx].abs();
-        println!("error {:}", h[eidx]);
+            implicit_givens_rotation(h[offset], h[offset + stride]);
+        apply_g_left(&mut h[offset..], 0, 1, stride, 2, cosine, sine);
+        error += h[offset + 1].abs();
+        println!("adding error {:?} at idx{:?}", h[offset + 1], offset); 
     }
 }
 // #[rustfmt::skip]
