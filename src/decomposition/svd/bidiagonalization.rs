@@ -66,7 +66,7 @@ fn full_zero_col(
     let tau = params(&mut w[..ract], proj);
     b[0] = w[0];
     if tau == 0f32 { return; }
-    if ract != 0 { 
+    if cact != 0 { 
         lapply_householder(
             &mut b[1..],
             proj,
