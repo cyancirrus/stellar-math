@@ -55,7 +55,7 @@ fn main() {
     // let rows: usize = 3;
     // let cols: usize = 3;
     let rows: usize = 3;
-    let cols: usize = 4;
+    let cols: usize = 6;
     let card: usize = rows.min(cols);
     let mut u = create_identity_vector(rows, rows);
     let mut v = create_identity_vector(cols, cols);
