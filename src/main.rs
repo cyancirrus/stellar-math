@@ -102,10 +102,15 @@ fn main() {
     // println!("checking u_ortho {u_ortho:?}");
     
     println!("after bidiag {bidiag:?}");
-    let check = matrix_mult(&bidiag, &v.transpose());
+    let reconstruct = bidiag;
+
+    let reconstruct = matrix_mult(&u, &reconstruct);
+    let reconstruct = matrix_mult(&reconstruct, &v.transpose());
+    let u_ortho = matrix_mult(&u, &u.transpose());
     let v_ortho = matrix_mult(&v, &v.transpose());
     
-    println!("checking reconstruct {check:?}");
+    println!("checking reconstruct {reconstruct:?}");
+    println!("checking u_ortho {u_ortho:?}");
     println!("checking v_ortho {v_ortho:?}");
     // full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
 

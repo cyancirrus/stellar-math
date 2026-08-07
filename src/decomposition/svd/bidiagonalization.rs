@@ -217,10 +217,8 @@ pub fn full_ubidiagonal(
     for k in 0..card.saturating_sub(1) {
     // for k in 0..2 {
         println!("hello");
-        // full_zero_col(&mut b[o + k..], &mut u[k..], p, w, rows, ract, cact, stride);
-        // zero_row(&mut b[o + 1..], p, w, ract - 1, cact - 1, stride);
-        // full_zero_row( &mut b[o + k + 1..], &mut v[o + k + 1..], p, w, cols, ract - 1, cact - 1, stride,);
-        full_zero_row( &mut b[o + k + 1..], &mut v[k + 1 ..], p, w, cols, ract - 1, cact - 1, stride,);
+        full_zero_col(&mut b[o + k..], &mut u[k..], p, w, rows, ract, cact, stride);
+        full_zero_row(&mut b[o + k + 1..], &mut v[k + 1 ..], p, w, cols, ract - 1, cact - 1, stride);
         ract -= 1;
         cact -= 1;
         o += stride;
