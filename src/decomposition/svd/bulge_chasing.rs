@@ -30,7 +30,7 @@ pub fn full_decomp_ugivens(
         // push zero into col
         let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
         apply_gt_right(h, 0, 1, stride, 2, cos, sin);
-        apply_gt_left(v, 0, 1, cols, cols, cos, sin);
+        apply_gt_right(v, 0, 1, cols, cols, cos, sin);
         for _ in 0..interior {
             // push zero into row
             let (_, cos, sin) = implicit_givens_rotation(h[voffset], h[voffset + stride]);
