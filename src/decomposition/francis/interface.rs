@@ -52,8 +52,8 @@ pub fn francis_qr_cpx(
     primitives::hessenberg(h, p, w, size, range, stride);
     complex::decomp_cpx(h, p, w, range, size, stride, max_iters, tolerance);
 }
-
 mod test_francis_interface {
+    #![allow(dead_code)]
     use super::*;
 
     use crate::decomposition::francis::constants::{ABSOLUTE_CAP, MAX_ITERS, TOLERANCE};

@@ -8,24 +8,23 @@ use crate::decomposition::sgivens::{
     apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
 };
 
-
 fn zero_col(
     b: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
-    rrange:usize,
-    crange:usize,
-    stride:usize
+    rrange: usize,
+    crange: usize,
+    stride: usize,
 ) {
     let mut roffset = 0;
-    for k in 0..=rrange {
+    for k in 0..rrange {
         w[k] = b[roffset];
         b[roffset] = 0f32;
         roffset += stride;
     }
-    println!("active_range {rrange:}");
-    let proj = &mut p[..=rrange];
-    let tau = params(&mut w[..=rrange], proj);
+    println!("0COL    XXX rrange, crange (rrange {rrange:}, {crange:})");
+    let proj = &mut p[..rrange];
+    let tau = params(&mut w[..rrange], proj);
     b[0] = w[0];
     if tau != 0f32 {
         lapply_householder(
@@ -33,8 +32,8 @@ fn zero_col(
             proj,
             w,
             tau,
-            rrange + 1,
-            crange,
+            rrange,
+            crange.saturating_sub(1),
             stride,
         );
     }
@@ -43,14 +42,12 @@ fn zero_row(
     b: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
-    rrange:usize,
-    crange:usize,
-    stride:usize,
+    rrange: usize,
+    crange: usize,
+    stride: usize,
 ) {
     let slice = &mut b[..crange];
     let proj = &mut p[..crange];
-    println!("zeroing_row.. crange {crange:}");
-    println!("slice {slice:?}, proj {proj:?}");
     let tau = params(slice, proj);
     if tau != 0f32 {
         rapply_householder(
@@ -58,21 +55,21 @@ fn zero_row(
             proj,
             w,
             tau,
-            rrange,
+            rrange.saturating_sub(1),
             crange,
             stride,
         );
     }
 }
-
-/// bidiagonal
+/// # ubidiagonal :: upper bidiagonal
+///
 /// * h: matrix to create the bidiagonal
 /// * p: projection vector
 /// * w: workspace vector
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
-pub fn bidiagonal(
+pub fn ubidiagonal(
     b: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
@@ -81,18 +78,57 @@ pub fn bidiagonal(
     stride: usize,
 ) {
     // stores tau
-    let mut rrange = rows.saturating_sub(1);
-    let mut crange = cols.saturating_sub(1);
-    // let mut crange = cols;
+    let mut rrange = rows;
+    let mut crange = cols;
     let mut card = rows.min(cols);
     let mut submatrix = b;
     for o in 0..card.saturating_sub(1) {
-        // zero_row(submatrix, p, w, rrange, crange, stride,);
-        // zero_col(&mut submatrix[1..], p, w, rrange, crange, stride);
-        
-
         zero_col(submatrix, p, w, rrange, crange, stride);
-        zero_row(&mut submatrix[1..], p, w, rrange, crange, stride,);
+        zero_row(
+            &mut submatrix[1..],
+            p,
+            w,
+            rrange,
+            crange.saturating_sub(1),
+            stride,
+        );
+        submatrix = &mut submatrix[stride + 1..];
+        rrange -= 1;
+        crange -= 1;
+    }
+}
+
+/// # lbidiagonal :: lower bidiagonal
+///
+/// * h: matrix to create the bidiagonal
+/// * p: projection vector
+/// * w: workspace vector
+/// * rows: number of rows
+/// * cols: number of cols
+/// * stride: stride of the data
+pub fn lbidiagonal(
+    b: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    rows: usize,
+    cols: usize,
+    stride: usize,
+) {
+    // stores tau
+    let mut rrange = rows;
+    let mut crange = cols;
+    let mut card = rows.min(cols);
+    let mut submatrix = b;
+    for o in 0..card.saturating_sub(1) {
+        zero_row(submatrix, p, w, rrange, crange, stride);
+        zero_col(
+            &mut submatrix[stride..],
+            p,
+            w,
+            rrange.saturating_sub(1),
+            crange,
+            stride,
+        );
         submatrix = &mut submatrix[stride + 1..];
         rrange -= 1;
         crange -= 1;
