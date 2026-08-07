@@ -8,55 +8,41 @@ use crate::decomposition::sgivens::{
     apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
 };
 
-fn zero_col(
-    b: &mut [f32],
-    p: &mut [f32],
-    w: &mut [f32],
-    rrange: usize,
-    crange: usize,
-    stride: usize,
-) {
+fn zero_col(b: &mut [f32], p: &mut [f32], w: &mut [f32], ract: usize, cact: usize, stride: usize) {
     let mut roffset = 0;
-    for k in 0..rrange {
+    for k in 0..ract {
         w[k] = b[roffset];
         b[roffset] = 0f32;
         roffset += stride;
     }
-    println!("0COL    XXX rrange, crange (rrange {rrange:}, {crange:})");
-    let proj = &mut p[..rrange];
-    let tau = params(&mut w[..rrange], proj);
+    println!("0COL    XXX ract, cact (ract {ract:}, {cact:})");
+    let proj = &mut p[..ract];
+    let tau = params(&mut w[..ract], proj);
     b[0] = w[0];
-    if tau != 0f32 {
+    if tau != 0f32 && cact != 0 {
         lapply_householder(
             &mut b[1..],
             proj,
             w,
             tau,
-            rrange,
-            crange.saturating_sub(1),
+            ract,
+            cact.saturating_sub(1),
             stride,
         );
     }
 }
-fn zero_row(
-    b: &mut [f32],
-    p: &mut [f32],
-    w: &mut [f32],
-    rrange: usize,
-    crange: usize,
-    stride: usize,
-) {
-    let slice = &mut b[..crange];
-    let proj = &mut p[..crange];
+fn zero_row(b: &mut [f32], p: &mut [f32], w: &mut [f32], ract: usize, cact: usize, stride: usize) {
+    let slice = &mut b[..cact];
+    let proj = &mut p[..cact];
     let tau = params(slice, proj);
-    if tau != 0f32 {
+    if tau != 0f32 && ract != 0 {
         rapply_householder(
             &mut b[stride..],
             proj,
             w,
             tau,
-            rrange.saturating_sub(1),
-            crange,
+            ract.saturating_sub(1),
+            cact,
             stride,
         );
     }
@@ -77,24 +63,21 @@ pub fn ubidiagonal(
     cols: usize,
     stride: usize,
 ) {
-    // stores tau
-    let mut rrange = rows;
-    let mut crange = cols;
-    let mut card = rows.min(cols);
-    let mut submatrix = b;
-    for o in 0..card.saturating_sub(1) {
-        zero_col(submatrix, p, w, rrange, crange, stride);
-        zero_row(
-            &mut submatrix[1..],
-            p,
-            w,
-            rrange,
-            crange.saturating_sub(1),
-            stride,
-        );
-        submatrix = &mut submatrix[stride + 1..];
-        rrange -= 1;
-        crange -= 1;
+    let mut ract = rows;
+    let mut cact = cols;
+    let mut pivot = rows.min(cols).saturating_sub(1);
+    let mut o= 0;
+    for _ in 0..pivot {
+        zero_col(&mut b[o..], p, w, ract, cact, stride);
+        zero_row(&mut b[o+1..], p, w, ract - 1, cact - 1, stride);
+        ract -= 1;
+        cact -= 1;
+        o += stride + 1;
+    }
+    if cact > ract {
+        zero_row(&mut b[o..], p, w, ract - 1 , cact, stride);
+    } else if cact < ract {
+        zero_col(&mut b[o..], p, w, ract , cact - 1, stride);
     }
 }
 
@@ -114,24 +97,22 @@ pub fn lbidiagonal(
     cols: usize,
     stride: usize,
 ) {
-    // stores tau
-    let mut rrange = rows;
-    let mut crange = cols;
+    // rows and active columns
+    let mut ract = rows;
+    let mut cact = cols;
     let mut card = rows.min(cols);
-    let mut submatrix = b;
-    for o in 0..card.saturating_sub(1) {
-        zero_row(submatrix, p, w, rrange, crange, stride);
-        zero_col(
-            &mut submatrix[stride..],
-            p,
-            w,
-            rrange.saturating_sub(1),
-            crange,
-            stride,
-        );
-        submatrix = &mut submatrix[stride + 1..];
-        rrange -= 1;
-        crange -= 1;
+    let mut o = 0;
+    for _ in 0..card.saturating_sub(1) {
+        zero_row(&mut b[o ..], p, w, ract, cact, stride);
+        zero_col(&mut b[o + stride..], p, w, ract - 1, cact, stride);
+        o += stride + 1;
+        ract -= 1;
+        cact -= 1;
+    }
+    if cact > ract {
+        zero_row(&mut b[o..], p, w, ract - 1 , cact, stride);
+    } else if cact < ract {
+        zero_col(&mut b[o..], p, w, ract , cact - 1, stride);
     }
 }
 #[rustfmt::skip]
