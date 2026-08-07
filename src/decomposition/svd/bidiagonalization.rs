@@ -14,14 +14,13 @@ fn zero_col(
     p: &mut [f32],
     w: &mut [f32],
     o: usize,
-    offset:usize,
     rrange:usize,
     crange:usize,
     stride:usize
 ) {
     println!("o {o:}");
     let idx = o + 1;
-    let mut roffset = offset;
+    let mut roffset = 0;
     for k in 0..=rrange {
         w[k] = b[roffset + o];
         b[roffset + o] = 0f32;
@@ -30,10 +29,10 @@ fn zero_col(
     println!("active_range {rrange:}");
     let proj = &mut p[..=rrange];
     let tau = params(&mut w[..=rrange], proj);
-    b[offset + o] = w[0];
+    b[o] = w[0];
     if tau != 0f32 {
         lapply_householder(
-            &mut b[offset + idx..],
+            &mut b[idx..],
             proj,
             w,
             tau,
@@ -92,11 +91,10 @@ pub fn bidiagonal(
         println!("hello");
         let idx = o + 1;
         zero_col(
-            b,
+            &mut b[offset..],
             p,
             w,
             o,
-            offset,
             rrange,
             crange,
             stride,
