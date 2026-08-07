@@ -219,9 +219,10 @@ pub fn full_ubidiagonal(
     // for k in 0..1 {
     // for k in 0..2 {
         // full_zero_col(&mut b[o + k..], &mut u[k..], p, w, rows, ract, cact, stride);
-        full_zero_row(&mut b[o + k + 1..], &mut v[k + 1 ..], p, w, cols, ract - 1, cact - 1, stride);
+        full_zero_row(&mut b[o + k + 1..], &mut v[o + k + 1 ..], p, w, cols, ract - 1, cact - 1, stride);
         ract -= 1;
         cact -= 1;
+        o += cols;
         o += stride;
     }
     // if cact < ract {
