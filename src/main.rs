@@ -1,12 +1,13 @@
-use stellar::decomposition::svd::bidiagonalization::{decomp_givens, lbidiagonal, ubidiagonal};
+use stellar::decomposition::svd::bidiagonalization::{lbidiagonal, ubidiagonal};
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
 // A 4x4 identity matrix flattened into a single Vec<f32> (row-major order)
 
 fn main() {
-    let rows: usize = 3;
-    let cols: usize = 6;
+    let rows: usize = 6;
+    let cols: usize = 3;
+    let card: usize = rows.min(cols);
     // let rows: usize = 6;
     // let cols: usize = 4;
 
@@ -29,7 +30,7 @@ fn main() {
 
     println!("before matrix {input:?}");
 
-    lbidiagonal(&mut b, &mut p, &mut w, rows, cols, stride);
+    lbidiagonal(&mut b, &mut p, &mut w, rows, cols, card, stride);
     // ubidiagonal(&mut b, &mut p, &mut w, rows, cols, stride);
     let bidiag = NdArray {
         dims: vec![rows, cols],
@@ -37,7 +38,7 @@ fn main() {
     };
 
     println!("after bidiag {bidiag:?}");
-    // decomp_givens(&mut b, rows, cols, stride, 20, 1e-10, 1e-8);
+    // decomp_ugivens(&mut b, rows, cols, stride, 20, 1e-10, 1e-8);
 
     // let output = NdArray {
     //     dims: vec![rows, cols],

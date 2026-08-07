@@ -95,6 +95,7 @@ pub fn lbidiagonal(
     w: &mut [f32],
     rows: usize,
     cols: usize,
+    card: usize,
     stride: usize,
 ) {
     // rows and active columns
