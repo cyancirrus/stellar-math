@@ -60,23 +60,23 @@ pub fn ubidiagonal(
     w: &mut [f32],
     rows: usize,
     cols: usize,
-    card:usize,
+    card: usize,
     stride: usize,
 ) {
     let mut ract = rows;
     let mut cact = cols;
-    let mut o= 0;
+    let mut o = 0;
     for _ in 0..card.saturating_sub(1) {
         zero_col(&mut b[o..], p, w, ract, cact, stride);
-        zero_row(&mut b[o+1..], p, w, ract - 1, cact - 1, stride);
+        zero_row(&mut b[o + 1..], p, w, ract - 1, cact - 1, stride);
         ract -= 1;
         cact -= 1;
         o += stride + 1;
     }
     if cact > ract {
-        zero_row(&mut b[o..], p, w, ract - 1 , cact, stride);
+        zero_row(&mut b[o..], p, w, ract - 1, cact, stride);
     } else if cact < ract {
-        zero_col(&mut b[o..], p, w, ract , cact - 1, stride);
+        zero_col(&mut b[o..], p, w, ract, cact - 1, stride);
     }
 }
 
@@ -102,16 +102,16 @@ pub fn lbidiagonal(
     let mut cact = cols;
     let mut o = 0;
     for _ in 0..card.saturating_sub(1) {
-        zero_row(&mut b[o ..], p, w, ract, cact, stride);
+        zero_row(&mut b[o..], p, w, ract, cact, stride);
         zero_col(&mut b[o + stride..], p, w, ract - 1, cact, stride);
         o += stride + 1;
         ract -= 1;
         cact -= 1;
     }
     if cact > ract {
-        zero_row(&mut b[o..], p, w, ract - 1 , cact, stride);
+        zero_row(&mut b[o..], p, w, ract - 1, cact, stride);
     } else if cact < ract {
-        zero_col(&mut b[o..], p, w, ract , cact - 1, stride);
+        zero_col(&mut b[o..], p, w, ract, cact - 1, stride);
     }
 }
 #[rustfmt::skip]
@@ -125,7 +125,7 @@ pub fn decomp_ugivens(
 ) {
     let mut curriter=0;
     let mut offset:usize;
-    let mut eidx = (card * stride).saturating_sub(stride + 1);
+    let mut eidx = (card * stride).saturating_sub(2);
     println!("error {eidx:}");
     let mut error = f32::INFINITY;
     // let max_iters = 1;
