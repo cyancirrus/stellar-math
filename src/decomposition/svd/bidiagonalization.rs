@@ -128,22 +128,34 @@ pub fn decomp_ugivens(
     let mut eidx = (card * stride).saturating_sub(stride + 1);
     println!("error {eidx:}");
     let mut error = f32::INFINITY;
-    let max_iters = 1;
-    while threshold < error && curriter < max_iters {
+    // let max_iters = 1;
+    // while threshold < error && curriter < max_iters {
+    {
         curriter += 1;
-        offset = 0;
-        for k in 0..card.saturating_sub(1) {
+        offset = stride;
+        // above diagonal element
+        let (_, cosine, sine) =
+            implicit_givens_rotation(h[0], h[1]);
+        // apply_gt_right(h, k, k + 1, stride, card, cosine, sine);
+        apply_gt_right(h, 0, 1, stride, 2, cosine, sine);
+        for k in 1..card.saturating_sub(2) {
+
+            // below diagonal element
+            let (_, cosine, sine) =
+                implicit_givens_rotation(h[offset + k], h[offset + stride + k]);
+            apply_g_left(h, k, k + 1, stride, 3, cosine, sine);
+
             // above diagonal element
             let (_, cosine, sine) =
                 implicit_givens_rotation(h[offset + k], h[offset + k + 1]);
-            apply_gt_right(h, k, k + 1, stride, card, cosine, sine);
-            let (_, cosine, sine) =
-                implicit_givens_rotation(h[offset + k], h[offset + stride + k]);
-            // below diagonal element
-            apply_g_left(h, k, k + 1, stride, card, cosine, sine);
+            apply_gt_right(&mut h[offset ..], k, k + 1, stride, 3, cosine, sine);
             offset += stride;
-
         }
+        let k = card.saturating_sub(2);
+        // above diagonal element
+        let (_, cosine, sine) =
+            implicit_givens_rotation(h[offset + k], h[offset + k + 1]);
+        apply_gt_right(&mut h[offset ..], k, k + 1, stride, 2, cosine, sine);
         error = h[eidx].abs();
         println!("error {:}", h[eidx]);
     }
