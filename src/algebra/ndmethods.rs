@@ -1,21 +1,26 @@
 use crate::structure::ndarray::NdArray;
 use rayon::prelude::*;
 
-pub fn create_identity_matrix(n: usize) -> NdArray {
-    let mut data = vec![0f32; n * n];
-    let dims = vec![n; 2];
-    for i in 0..n {
-        data[i * n + i] = 1f32;
+pub fn create_identity_vector(rows: usize, cols: usize) -> Vec<f32> {
+    let mut data = vec![0f32; rows * cols];
+    let mut offset = 0;
+    for _ in 0..rows {
+        data[offset] = 1f32;
+        offset += 1 + cols;
     }
-    NdArray { dims, data }
+    data
+}
+pub fn create_identity_matrix(n: usize) -> NdArray {
+    NdArray {
+        dims: vec![n, n],
+        data: create_identity_vector(n, n),
+    }
 }
 pub fn create_identity_rectangle(m: usize, n: usize) -> NdArray {
-    let mut data = vec![0f32; m * n];
-    let dims = vec![m, n];
-    for i in 0..m.min(n) {
-        data[i * n + i] = 1f32;
+    NdArray {
+        dims: vec![m, n],
+        data: create_identity_vector(m, n),
     }
-    NdArray { dims, data }
 }
 
 pub fn par_tensor_mult(blocksize: usize, x: &NdArray, y: &NdArray) -> NdArray {

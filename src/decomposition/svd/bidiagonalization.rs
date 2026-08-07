@@ -45,6 +45,80 @@ fn zero_row(b: &mut [f32], p: &mut [f32], w: &mut [f32], ract: usize, cact: usiz
         );
     }
 }
+fn full_zero_col(
+    b: &mut [f32],
+    u: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    rows: usize,
+    ract: usize,
+    cact: usize,
+    stride: usize,
+) {
+    let mut roffset = 0;
+    for k in 0..ract {
+        w[k] = b[roffset];
+        b[roffset] = 0f32;
+        roffset += stride;
+    }
+    let proj = &mut p[..ract];
+    let tau = params(&mut w[..ract], proj);
+    b[0] = w[0];
+    if cact != 0 && tau != 0f32 {
+        lapply_householder(
+            &mut b[1..],
+            proj,
+            w,
+            tau,
+            ract,
+            cact.saturating_sub(1),
+            stride,
+        );
+        rapply_householder(
+            u,
+            proj,
+            w,
+            tau,
+            rows,
+            cact,
+            stride,
+        );
+    }
+}
+fn full_zero_row(
+    b: &mut [f32],
+    v: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    cols: usize,
+    ract: usize,
+    cact: usize,
+    stride: usize,
+) {
+    let slice = &mut b[..cact];
+    let proj = &mut p[..cact];
+    let tau = params(slice, proj);
+    if ract != 0 && tau != 0f32 {
+        rapply_householder(
+            &mut b[stride..],
+            proj,
+            w,
+            tau,
+            ract.saturating_sub(1),
+            cact,
+            stride,
+        );
+        rapply_householder(
+            &mut v[stride..],
+            proj,
+            w,
+            tau,
+            ract.saturating_sub(1),
+            cols,
+            stride,
+        );
+    }
+}
 /// # ubidiagonal :: upper bidiagonal
 ///
 /// * h: matrix to create the bidiagonal
@@ -122,6 +196,7 @@ pub fn lbidiagonal(
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
+#[rustfmt::skip]
 pub fn full_ubidiagonal(
     b: &mut [f32],
     u: &mut [f32],
@@ -136,16 +211,18 @@ pub fn full_ubidiagonal(
     let mut ract = rows;
     let mut cact = cols;
     let mut o = 0;
-    for _ in 0..card.saturating_sub(1) {
-        zero_col(&mut b[o..], p, w, ract, cact, stride);
-        zero_row(&mut b[o + 1..], p, w, ract - 1, cact - 1, stride);
+    for k in 0..card.saturating_sub(1) {
+    // for k in 0..1 {
+        println!("hello");
+        full_zero_col(&mut b[o + k..], &mut u[k..], p, w, rows, ract, cact, stride);
+        // full_zero_row( &mut b[o + k..], &mut v[o..], p, w, cols, ract - 1, cact - 1, stride,);
         ract -= 1;
         cact -= 1;
-        o += stride + 1;
+        o += stride;
     }
-    if cact > ract {
-        zero_row(&mut b[o..], p, w, ract - 1, cact, stride);
-    } else if cact < ract {
-        zero_col(&mut b[o..], p, w, ract, cact - 1, stride);
-    }
+    // if cact < ract {
+    //     full_zero_col(&mut b[o..], u, p, w, rows, ract, cact - 1, stride);
+    // } else if cact > ract {
+    //     full_zero_row(&mut b[o..], v, p, w, cols, ract - 1, cact, stride);
+    // }
 }
