@@ -47,13 +47,11 @@ fn zero_row(
     b: &mut [f32],
     p: &mut [f32],
     w: &mut [f32],
-    o: usize,
     offset:usize,
     rrange:usize,
     crange:usize,
     stride:usize,
 ) {
-    let idx = o + 1;
     let slice = &mut b[..crange];
     let proj = &mut p[..rrange];
     let tau = params(slice, proj);
@@ -105,17 +103,7 @@ pub fn bidiagonal(
 
         );
         println!("cols {cols:}, crange {crange:}, offset {offset:}");
-        zero_row(
-            &mut b[offset + idx ..],
-            p,
-            w,
-            o,
-            offset,
-            rrange,
-            crange,
-            stride,
-
-        );
+        zero_row( &mut b[offset + idx ..], p, w, offset, rrange, crange, stride,);
         offset += stride;
         rrange -= 1;
         crange -= 1;
