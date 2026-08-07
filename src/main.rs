@@ -55,12 +55,10 @@ fn main() {
     // let rows: usize = 3;
     // let cols: usize = 3;
     let rows: usize = 4;
-    let cols: usize = 2;
+    let cols: usize = 4;
     let card: usize = rows.min(cols);
     let mut u = create_identity_vector(rows, rows);
     let mut v = create_identity_vector(cols, cols);
-    // let rows: usize = 6;
-    // let cols: usize = 4;
 
     let stride: usize = cols;
     let maximum = rows.max(cols);
@@ -98,21 +96,18 @@ fn main() {
     println!("after bidiag {bidiag:?}");
     let check = matrix_mult(&u, &bidiag);
     let u_ortho = matrix_mult(&u, &u.transpose());
+    let v_ortho = matrix_mult(&v, &v.transpose());
     
-    println!("checking reconstruct {check:?}");
     println!("checking u_ortho {u_ortho:?}");
+    println!("checking v_ortho {v_ortho:?}");
     
     // println!("after bidiag {bidiag:?}");
-    // let reconstruct = bidiag;
+    let reconstruct = bidiag;
 
-    // let reconstruct = matrix_mult(&u, &reconstruct);
-    // let reconstruct = matrix_mult(&reconstruct, &v.transpose());
-    // // let u_ortho = matrix_mult(&u, &u.transpose());
-    // // let v_ortho = matrix_mult(&v, &v.transpose());
-    
-    // println!("checking reconstruct {reconstruct:?}");
+    let reconstruct = matrix_mult(&u, &reconstruct);
+    let reconstruct = matrix_mult(&reconstruct, &v.transpose());
+    println!("checking reconstruct {reconstruct:?}");
     // println!("checking u_ortho {u_ortho:?}");
-    // println!("checking v_ortho {v_ortho:?}");
     // full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
 
     // let output = NdArray {
