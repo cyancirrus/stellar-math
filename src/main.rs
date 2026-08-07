@@ -1,5 +1,8 @@
 use stellar::decomposition::svd::bidiagonalization::{
-    decomp_lgivens, decomp_ugivens, lbidiagonal, ubidiagonal,
+    lbidiagonal, ubidiagonal,
+};
+use stellar::decomposition::svd::bulge_chasing::{
+    decomp_lgivens, decomp_ugivens,
 };
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
@@ -32,7 +35,7 @@ fn main() {
 
     println!("before matrix {input:?}");
 
-    lbidiagonal(&mut b, &mut p, &mut w, rows, cols, card, stride);
+    ubidiagonal(&mut b, &mut p, &mut w, rows, cols, card, stride);
     // ubidiagonal(&mut b, &mut p, &mut w, rows, cols, stride);
     let bidiag = NdArray {
         dims: vec![rows, cols],
@@ -40,7 +43,7 @@ fn main() {
     };
 
     println!("after bidiag {bidiag:?}");
-    decomp_lgivens(&mut b, card, stride, 40, 1e-10, 1e-8);
+    decomp_ugivens(&mut b, card, stride, 40, 1e-10, 1e-8);
 
     let output = NdArray {
         dims: vec![rows, cols],
