@@ -214,8 +214,8 @@ pub fn full_ubidiagonal(
     let mut ract = rows;
     let mut cact = cols;
     let mut o = 0;
-    // for k in 0..card.saturating_sub(1) {
-    for k in 0..1 {
+    for k in 0..card.saturating_sub(1) {
+    // for k in 0..2 {
         println!("hello");
         // full_zero_col(&mut b[o + k..], &mut u[k..], p, w, rows, ract, cact, stride);
         // zero_row(&mut b[o + 1..], p, w, ract - 1, cact - 1, stride);
