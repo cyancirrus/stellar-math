@@ -123,59 +123,62 @@ pub fn decomp_ugivens(
     threshold: f32,
     absolute: f32,
 ) {
-    let mut curriter=0;
-    let mut offset:usize;
+    let bounds = card.saturating_sub(2);
     let mut error = f32::INFINITY;
-    let mut max_iters:usize=1;
-    while threshold < error && curriter < max_iters {
-        offset = 0;
-        error = 0f32;
-        curriter += 1;
+    for _ in 0..max_iters {
+        if error < threshold { break; }
+        let mut offset = 0;
         // push zero into col
-        let (_, cosine, sine) =
-            implicit_givens_rotation(h[0], h[1]);
-        apply_gt_right(h, 0, 1, stride, 2, cosine, sine);
-        for _ in 0..card.saturating_sub(2) {
+        let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
+        apply_gt_right(h, 0, 1, stride, 2, cos, sin);
+        for _ in 0..bounds {
             // push zero into row
-            let (_, cosine, sine) =
-                implicit_givens_rotation(h[offset], h[offset + stride]);
-            apply_g_left(&mut h[offset..], 0, 1, stride, 3, cosine, sine);
+            let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
+            apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
             // push zero into col
             offset += 1;
-            let (_, cosine, sine) =
-                implicit_givens_rotation(h[offset], h[offset + 1]);
-            apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cosine, sine);
+            let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
+            apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
             error += h[offset].abs();
             offset += stride;
         }
         // push zero into row
-        let (_, cosine, sine) =
-            implicit_givens_rotation(h[offset], h[offset + stride]);
-        apply_g_left(&mut h[offset..], 0, 1, stride, 2, cosine, sine);
+        let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
+        apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
         error += h[offset + 1].abs();
     }
 }
-// #[rustfmt::skip]
-// pub fn decomp_lgivens(
-//     h: &mut [f32],
-//     card: usize,
-//     stride: usize,
-//     max_iters:usize,
-//     tolerance: f32,
-//     absolute: f32,
-// ) {
-//     let mut curriter=0;
-//     while curriter < max_iters {
-//         curriter += 1;
-//         for i in 0..card.saturating_sub(1) {
-//             let (_, cosine, sine) =
-//                 implicit_givens_rotation(h[i * stride + i], h[(i + 1) * stride + i]);
-//             // below diagonal element
-//             apply_g_left(h, i, i + 1, stride, card, cosine, sine);
-
-//             let (_, cosine, sine) =
-//                 implicit_givens_rotation(h[i * stride + i], h[i * stride + i + 1]);
-//             apply_gt_right(h, i, i + 1, stride, card, cosine, sine);
-//         }
-//     }
-// }
+#[rustfmt::skip]
+pub fn decomp_lgivens(
+    h: &mut [f32],
+    card: usize,
+    stride: usize,
+    max_iters:usize,
+    threshold: f32,
+    absolute: f32,
+) {
+    let bounds = card.saturating_sub(2);
+    let mut error = f32::INFINITY;
+    for _ in 0..max_iters {
+        if error < threshold { break; }
+        let mut offset = 0;
+        // push zero into row
+        let (_, cos, sin) = implicit_givens_rotation(h[0], h[stride]);
+        apply_g_left(h, 0, 1, stride, 2, cos, sin);
+        for _ in 0..bounds {
+            // push zero into col
+            let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
+            apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
+            // push zero into row
+            offset += stride;
+            let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
+            apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
+            error += h[offset].abs();
+            offset += 1;
+        }
+        // // push zero into col
+        let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
+        apply_gt_right(&mut h[offset ..], 0, 1, stride, 2, cos, sin);
+        error += h[offset + stride].abs();
+    }
+}
