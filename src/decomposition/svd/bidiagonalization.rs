@@ -66,7 +66,7 @@ fn full_zero_col(
     let tau = params(&mut w[..ract], proj);
     b[0] = w[0];
     if tau == 0f32 { return; }
-        if cact != 0 { 
+    if ract != 0 { 
         lapply_householder(
             &mut b[1..],
             proj,
@@ -76,16 +76,16 @@ fn full_zero_col(
             cact.saturating_sub(1),
             stride,
         );
-        }
-        rapply_householder(
-            u,
-            proj,
-            w,
-            tau,
-            rows,
-            ract,
-            rows,
-        );
+    }
+    rapply_householder(
+        u,
+        proj,
+        w,
+        tau,
+        rows,
+        ract,
+        rows,
+    );
 }
 fn full_zero_row(
     b: &mut [f32],
