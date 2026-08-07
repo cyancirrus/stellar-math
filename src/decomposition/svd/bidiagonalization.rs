@@ -8,6 +8,69 @@ use crate::decomposition::sgivens::{
     apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
 };
 
+
+fn zero_col(
+    b: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    o: usize,
+    offset:usize,
+    rrange:usize,
+    crange:usize,
+    stride:usize
+) {
+    println!("o {o:}");
+    let idx = o + 1;
+    let mut roffset = offset;
+    for k in 0..=rrange {
+        w[k] = b[roffset + o];
+        b[roffset + o] = 0f32;
+        roffset += stride;
+    }
+    println!("active_range {rrange:}");
+    let proj = &mut p[..=rrange];
+    let tau = params(&mut w[..=rrange], proj);
+    b[offset + o] = w[0];
+    if tau != 0f32 {
+        lapply_householder(
+            &mut b[offset + idx..],
+            proj,
+            w,
+            tau,
+            rrange + 1,
+            crange,
+            stride,
+        );
+    }
+}
+fn zero_row(
+    b: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    o: usize,
+    offset:usize,
+    rrange:usize,
+    crange:usize,
+    stride:usize,
+) {
+    let idx = o + 1;
+    let slice = &mut b[offset + idx..offset + crange + idx];
+    // let slice = &mut b[offset + idx..offset + crange];
+    let proj = &mut p[..rrange];
+    let tau = params(slice, proj);
+    if tau != 0f32 {
+        rapply_householder(
+            &mut b[offset + stride + idx..],
+            proj,
+            w,
+            tau,
+            rrange,
+            crange,
+            stride,
+        );
+    }
+}
+
 /// bidiagonal
 /// * h: matrix to create the bidiagonal
 /// * p: projection vector
@@ -25,56 +88,41 @@ pub fn bidiagonal(
 ) {
     // stores tau
     let mut offset = 0;
-    let mut active_range = rows;
-    let mut split_range = cols;
-    for o in 0..rows - 1 {
-        active_range -= 1;
-        split_range -= 1;
-        {
-            let mut roffset = offset;
-            for k in 0..=active_range {
-                w[k] = b[roffset + o];
-                b[roffset + o] = 0f32;
-                roffset += stride;
-            }
-            let proj = &mut p[..=active_range];
-            let tau = params(&mut w[..=active_range], proj);
-            b[offset + o] = w[0];
-            if tau == 0f32 {
-                continue;
-            }
-            lapply_householder(
-                &mut b[offset + o + 1..],
-                proj,
-                w,
-                tau,
-                active_range + 1,
-                split_range,
-                stride,
-            );
-        }
-        {
-            let idx = o + 1;
-            let slice = &mut b[offset + idx..offset + cols];
-            let proj = &mut p[..split_range];
-            let tau = params(slice, proj);
-            if tau == 0f32 {
-                continue;
-            }
-            rapply_householder(
-                &mut b[offset + stride + idx..],
-                proj,
-                w,
-                tau,
-                rows - idx,
-                split_range,
-                stride,
-            );
-        }
-        offset += stride;
-    }
-}
+    let mut rrange = rows.saturating_sub(1);
+    let mut crange = cols.saturating_sub(1);
+    let mut card = rows.min(cols);
+    for o in 0..card.saturating_sub(1) {
+        println!("hello");
+        let idx = o + 1;
+        zero_col(
+            b,
+            p,
+            w,
+            o,
+            offset,
+            rrange,
+            crange,
+            stride,
 
+        );
+        println!("cols {cols:}, crange {crange:}, offset {offset:}");
+        zero_row( b,
+            p,
+            w,
+            o,
+            offset,
+            rrange,
+            crange,
+            stride,
+
+        );
+        offset += stride;
+        rrange -= 1;
+        crange -= 1;
+    }
+    println!("active_range {rrange:?}");
+    zero_col( b, p, w, card.saturating_sub(2), offset.saturating_sub(2), rrange, crange, stride,);
+}
 #[rustfmt::skip]
 pub fn decomp_givens(
     h: &mut [f32],
