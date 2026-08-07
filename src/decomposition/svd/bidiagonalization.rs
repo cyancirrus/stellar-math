@@ -120,21 +120,55 @@ pub fn decomp_ugivens(
     card: usize,
     stride: usize,
     max_iters:usize,
-    tolerance: f32,
+    threshold: f32,
     absolute: f32,
 ) {
     let mut curriter=0;
-    while curriter < max_iters {
+    let mut offset:usize;
+    let mut eidx = (card * stride).saturating_sub(stride + 1);
+    println!("error {eidx:}");
+    let mut error = f32::INFINITY;
+    let max_iters = 1;
+    while threshold < error && curriter < max_iters {
         curriter += 1;
-        for i in 0..card.saturating_sub(1) {
+        offset = 0;
+        for k in 0..card.saturating_sub(1) {
+            // above diagonal element
             let (_, cosine, sine) =
-                implicit_givens_rotation(h[i * stride + i], h[(i + 1) * stride + i]);
+                implicit_givens_rotation(h[offset + k], h[offset + k + 1]);
+            apply_gt_right(h, k, k + 1, stride, card, cosine, sine);
+            let (_, cosine, sine) =
+                implicit_givens_rotation(h[offset + k], h[offset + stride + k]);
             // below diagonal element
-            apply_g_left(h, i, i + 1, stride, card, cosine, sine);
+            apply_g_left(h, k, k + 1, stride, card, cosine, sine);
+            offset += stride;
 
-            let (_, cosine, sine) =
-                implicit_givens_rotation(h[i * stride + i], h[i * stride + i + 1]);
-            apply_gt_right(h, i, i + 1, stride, card, cosine, sine);
         }
+        error = h[eidx].abs();
+        println!("error {:}", h[eidx]);
     }
 }
+// #[rustfmt::skip]
+// pub fn decomp_lgivens(
+//     h: &mut [f32],
+//     card: usize,
+//     stride: usize,
+//     max_iters:usize,
+//     tolerance: f32,
+//     absolute: f32,
+// ) {
+//     let mut curriter=0;
+//     while curriter < max_iters {
+//         curriter += 1;
+//         for i in 0..card.saturating_sub(1) {
+//             let (_, cosine, sine) =
+//                 implicit_givens_rotation(h[i * stride + i], h[(i + 1) * stride + i]);
+//             // below diagonal element
+//             apply_g_left(h, i, i + 1, stride, card, cosine, sine);
+
+//             let (_, cosine, sine) =
+//                 implicit_givens_rotation(h[i * stride + i], h[i * stride + i + 1]);
+//             apply_gt_right(h, i, i + 1, stride, card, cosine, sine);
+//         }
+//     }
+// }
