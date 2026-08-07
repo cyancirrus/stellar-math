@@ -82,15 +82,18 @@ pub fn bidiagonal(
 ) {
     // stores tau
     let mut rrange = rows.saturating_sub(1);
+    let mut crange = 1;
     // let mut crange = cols.saturating_sub(1);
     let mut card = rows.min(cols);
     let mut submatrix = b;
     // for o in 0..card.saturating_sub(1) {
     for o in 0..1 {
-        // zero_row(submatrix, p, w, rrange, crange, stride,);
+        zero_row(submatrix, p, w, rrange, crange, stride,);
         // zero_col(&mut submatrix[1..], p, w, rrange, crange, stride);
-        zero_col(submatrix, p, w, rrange, crange, stride);
-        zero_row(&mut submatrix[1..], p, w, rrange, crange, stride,);
+        
+
+        // zero_col(submatrix, p, w, rrange, crange, stride);
+        // zero_row(&mut submatrix[1..], p, w, rrange, crange, stride,);
         submatrix = &mut submatrix[stride + 1..];
         rrange -= 1;
         crange -= 1;
