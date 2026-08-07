@@ -78,10 +78,9 @@ pub fn ubidiagonal(
         zero_col(&mut b[o..], p, w, ract, cact - 1, stride);
     }
 }
-
 /// # lbidiagonal :: lower bidiagonal
 ///
-/// * h: matrix to create the bidiagonal
+/// * b: matrix to create the bidiagonal
 /// * p: projection vector
 /// * w: workspace vector
 /// * rows: number of rows
@@ -106,6 +105,43 @@ pub fn lbidiagonal(
         o += stride + 1;
         ract -= 1;
         cact -= 1;
+    }
+    if cact > ract {
+        zero_row(&mut b[o..], p, w, ract - 1, cact, stride);
+    } else if cact < ract {
+        zero_col(&mut b[o..], p, w, ract, cact - 1, stride);
+    }
+}
+/// # full ubidiagonal :: upper bidiagonal
+///
+/// * b: matrix to create the bidiagonal
+/// * u: eigenvectors of AA' ie rowspace
+/// * v: eigenvectors of A'A ie colspace
+/// * p: projection vector
+/// * w: workspace vector
+/// * rows: number of rows
+/// * cols: number of cols
+/// * stride: stride of the data
+pub fn full_ubidiagonal(
+    b: &mut [f32],
+    u: &mut [f32],
+    v: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    rows: usize,
+    cols: usize,
+    card: usize,
+    stride: usize,
+) {
+    let mut ract = rows;
+    let mut cact = cols;
+    let mut o = 0;
+    for _ in 0..card.saturating_sub(1) {
+        zero_col(&mut b[o..], p, w, ract, cact, stride);
+        zero_row(&mut b[o + 1..], p, w, ract - 1, cact - 1, stride);
+        ract -= 1;
+        cact -= 1;
+        o += stride + 1;
     }
     if cact > ract {
         zero_row(&mut b[o..], p, w, ract - 1, cact, stride);

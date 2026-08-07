@@ -8,6 +8,52 @@ use crate::decomposition::sgivens::{
     apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
 };
 #[rustfmt::skip]
+pub fn full_decomp_ugivens(
+    h: &mut [f32],
+    u: &mut [f32],
+    v: &mut [f32],
+    card: usize,
+    rows: usize,
+    cols: usize,
+    stride: usize,
+    max_iters:usize,
+    threshold: f32,
+    absolute: f32,
+) {
+    let interior = card.saturating_sub(2);
+    let mut supdiag_norm = f32::INFINITY;
+    for _ in 0..max_iters {
+        if supdiag_norm < threshold { break; }
+        let mut offset = 0;
+        let mut uoffset = 0;
+        let mut voffset = 0;
+        // push zero into col
+        let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
+        apply_gt_right(h, 0, 1, stride, 2, cos, sin);
+        apply_gt_left(v, 0, 1, cols, cols, cos, sin);
+        for _ in 0..interior {
+            // push zero into row
+            let (_, cos, sin) = implicit_givens_rotation(h[voffset], h[voffset + stride]);
+            apply_g_left(&mut h[voffset..], 0, 1, stride, 3, cos, sin);
+            apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
+            // push zero into col
+            offset += 1;
+            let (_, cos, sin) = implicit_givens_rotation(h[voffset], h[voffset + 1]);
+            apply_gt_right(&mut h[voffset ..], 0, 1, stride, 3, cos, sin);
+            apply_gt_right(&mut v[voffset ..], 0, 1, cols, cols, cos, sin);
+            supdiag_norm += h[voffset].abs();
+            offset += stride;
+            voffset += stride;
+            uoffset += rows;
+        }
+        // push zero into row
+        let (_, cos, sin) = implicit_givens_rotation(h[voffset], h[voffset + stride]);
+        apply_g_left(&mut h[voffset..], 0, 1, stride, 2, cos, sin);
+        apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
+        supdiag_norm += h[voffset + 1].abs();
+    }
+}
+#[rustfmt::skip]
 pub fn decomp_ugivens(
     h: &mut [f32],
     card: usize,
@@ -16,15 +62,15 @@ pub fn decomp_ugivens(
     threshold: f32,
     absolute: f32,
 ) {
-    let bounds = card.saturating_sub(2);
-    let mut error = f32::INFINITY;
+    let interior = card.saturating_sub(2);
+    let mut supdiag_norm = f32::INFINITY;
     for _ in 0..max_iters {
-        if error < threshold { break; }
+        if supdiag_norm < threshold { break; }
         let mut offset = 0;
         // push zero into col
         let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
         apply_gt_right(h, 0, 1, stride, 2, cos, sin);
-        for _ in 0..bounds {
+        for _ in 0..interior {
             // push zero into row
             let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
             apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
@@ -32,13 +78,13 @@ pub fn decomp_ugivens(
             offset += 1;
             let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
             apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
-            error += h[offset].abs();
+            supdiag_norm += h[offset].abs();
             offset += stride;
         }
         // push zero into row
         let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
         apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
-        error += h[offset + 1].abs();
+        supdiag_norm += h[offset + 1].abs();
     }
 }
 #[rustfmt::skip]
@@ -50,16 +96,16 @@ pub fn decomp_lgivens(
     threshold: f32,
     absolute: f32,
 ) {
-    let bounds = card.saturating_sub(2);
-    let mut error = f32::INFINITY;
+    let interior = card.saturating_sub(2);
+    let mut subdiag_norm = f32::INFINITY;
     for _ in 0..max_iters {
-        if error < threshold { break; }
-        error = 0f32;
+        if subdiag_norm < threshold { break; }
+        subdiag_norm = 0f32;
         let mut offset = 0;
         // push zero into row
         let (_, cos, sin) = implicit_givens_rotation(h[0], h[stride]);
         apply_g_left(h, 0, 1, stride, 2, cos, sin);
-        for _ in 0..bounds {
+        for _ in 0..interior {
             // push zero into col
             let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
             apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
@@ -67,12 +113,12 @@ pub fn decomp_lgivens(
             offset += stride;
             let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
             apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
-            error += h[offset].abs();
+            subdiag_norm += h[offset].abs();
             offset += 1;
         }
         // // push zero into col
         let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
         apply_gt_right(&mut h[offset ..], 0, 1, stride, 2, cos, sin);
-        error += h[offset + stride].abs();
+        subdiag_norm += h[offset + stride].abs();
     }
 }
