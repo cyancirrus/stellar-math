@@ -15,11 +15,10 @@ fn zero_col(b: &mut [f32], p: &mut [f32], w: &mut [f32], ract: usize, cact: usiz
         b[roffset] = 0f32;
         roffset += stride;
     }
-    println!("0COL    XXX ract, cact (ract {ract:}, {cact:})");
     let proj = &mut p[..ract];
     let tau = params(&mut w[..ract], proj);
     b[0] = w[0];
-    if tau != 0f32 && cact != 0 {
+    if cact != 0 && tau != 0f32 {
         lapply_householder(
             &mut b[1..],
             proj,
@@ -35,7 +34,7 @@ fn zero_row(b: &mut [f32], p: &mut [f32], w: &mut [f32], ract: usize, cact: usiz
     let slice = &mut b[..cact];
     let proj = &mut p[..cact];
     let tau = params(slice, proj);
-    if tau != 0f32 && ract != 0 {
+    if ract != 0 && tau != 0f32 {
         rapply_householder(
             &mut b[stride..],
             proj,
@@ -61,13 +60,13 @@ pub fn ubidiagonal(
     w: &mut [f32],
     rows: usize,
     cols: usize,
+    card:usize,
     stride: usize,
 ) {
     let mut ract = rows;
     let mut cact = cols;
-    let mut pivot = rows.min(cols).saturating_sub(1);
     let mut o= 0;
-    for _ in 0..pivot {
+    for _ in 0..card.saturating_sub(1) {
         zero_col(&mut b[o..], p, w, ract, cact, stride);
         zero_row(&mut b[o+1..], p, w, ract - 1, cact - 1, stride);
         ract -= 1;
@@ -101,7 +100,6 @@ pub fn lbidiagonal(
     // rows and active columns
     let mut ract = rows;
     let mut cact = cols;
-    let mut card = rows.min(cols);
     let mut o = 0;
     for _ in 0..card.saturating_sub(1) {
         zero_row(&mut b[o ..], p, w, ract, cact, stride);
@@ -117,29 +115,26 @@ pub fn lbidiagonal(
     }
 }
 #[rustfmt::skip]
-pub fn decomp_givens(
+pub fn decomp_ugivens(
     h: &mut [f32],
-    mut range: usize,
-    size: usize,
+    card: usize,
     stride: usize,
     max_iters:usize,
     tolerance: f32,
     absolute: f32,
 ) {
     let mut curriter=0;
-    // left work
-
     while curriter < max_iters {
         curriter += 1;
-        for i in 0..range - 1 {
+        for i in 0..card.saturating_sub(1) {
             let (_, cosine, sine) =
                 implicit_givens_rotation(h[i * stride + i], h[(i + 1) * stride + i]);
             // below diagonal element
-            apply_g_left(h, i, i + 1, stride, range, cosine, sine);
+            apply_g_left(h, i, i + 1, stride, card, cosine, sine);
 
             let (_, cosine, sine) =
                 implicit_givens_rotation(h[i * stride + i], h[i * stride + i + 1]);
-            apply_gt_right(h, i, i + 1, stride, range, cosine, sine);
+            apply_gt_right(h, i, i + 1, stride, card, cosine, sine);
         }
     }
 }
