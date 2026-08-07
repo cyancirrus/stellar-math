@@ -19,7 +19,6 @@ fn zero_col(
     stride:usize
 ) {
     println!("o {o:}");
-    let idx = o + 1;
     let mut roffset = 0;
     for k in 0..=rrange {
         w[k] = b[roffset + o];
@@ -30,17 +29,17 @@ fn zero_col(
     let proj = &mut p[..=rrange];
     let tau = params(&mut w[..=rrange], proj);
     b[o] = w[0];
-    if tau != 0f32 {
-        lapply_householder(
-            &mut b[idx..],
-            proj,
-            w,
-            tau,
-            rrange + 1,
-            crange,
-            stride,
-        );
-    }
+    // if tau != 0f32 {
+    //     lapply_householder(
+    //         &mut b[o+1..],
+    //         proj,
+    //         w,
+    //         tau,
+    //         rrange + 1,
+    //         crange,
+    //         stride,
+    //     );
+    // }
 }
 fn zero_row(
     b: &mut [f32],
@@ -53,18 +52,20 @@ fn zero_row(
 ) {
     let slice = &mut b[..crange];
     let proj = &mut p[..rrange];
+    println!("zeroing_row.. crange {crange:}");
+    println!("slice {slice:?}, proj {proj:?}");
     let tau = params(slice, proj);
-    if tau != 0f32 {
-        rapply_householder(
-            &mut b[stride..],
-            proj,
-            w,
-            tau,
-            rrange,
-            crange,
-            stride,
-        );
-    }
+    // if tau != 0f32 {
+        // rapply_householder(
+        //     &mut b[stride..],
+        //     proj,
+        //     w,
+        //     tau,
+        //     rrange,
+        //     crange,
+        //     stride,
+        // );
+    // }
 }
 
 /// bidiagonal
@@ -88,10 +89,11 @@ pub fn bidiagonal(
     let mut crange = cols.saturating_sub(1);
     let mut card = rows.min(cols);
     for o in 0..card.saturating_sub(1) {
+    // for o in 0..1 {
         println!("hello");
-        let idx = o + 1;
+        let czero = &mut b[offset..];
         zero_col(
-            &mut b[offset..],
+            czero,
             p,
             w,
             o,
@@ -100,14 +102,13 @@ pub fn bidiagonal(
             stride,
 
         );
-        println!("cols {cols:}, crange {crange:}, offset {offset:}");
-        zero_row( &mut b[offset + idx ..], p, w, offset, rrange, crange, stride,);
+        let rzero = &mut b[offset+o+1..];
+        zero_row( rzero, p, w, offset, rrange, crange, stride,);
         offset += stride;
         rrange -= 1;
         crange -= 1;
     }
-    println!("active_range {rrange:?}");
-    zero_col( b, p, w, card.saturating_sub(2), offset.saturating_sub(2), rrange, crange, stride,);
+    // zero_col( &mut b[offset..], p, w, card.saturating_sub(2), rrange, crange, stride,);
 }
 #[rustfmt::skip]
 pub fn decomp_givens(
