@@ -5,8 +5,8 @@ use stellar::structure::ndarray::NdArray;
 // A 4x4 identity matrix flattened into a single Vec<f32> (row-major order)
 
 fn main() {
-    let rows: usize = 8;
-    let cols: usize = 4;
+    let rows: usize = 3;
+    let cols: usize = 8;
     let card: usize = rows.min(cols);
     // let rows: usize = 6;
     // let cols: usize = 4;
@@ -38,7 +38,7 @@ fn main() {
     };
 
     println!("after bidiag {bidiag:?}");
-    decomp_ugivens(&mut b, card, stride, 20, 1e-10, 1e-8);
+    decomp_ugivens(&mut b, card, stride, 40, 1e-10, 1e-8);
 
     let output = NdArray {
         dims: vec![rows, cols],

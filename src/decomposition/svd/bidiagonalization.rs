@@ -125,36 +125,27 @@ pub fn decomp_ugivens(
 ) {
     let mut curriter=0;
     let mut offset:usize;
-    let mut eidx = (card * stride).saturating_sub(2);
-    println!("error {eidx:}");
     let mut error = f32::INFINITY;
-    // let max_iters = 1;
-    // while threshold < error && curriter < max_iters {
-    {
-        curriter += 1;
+    let mut max_iters:usize=1;
+    while threshold < error && curriter < max_iters {
         offset = 0;
         error = 0f32;
-        // above diagonal element
+        curriter += 1;
+        // push zero into col
         let (_, cosine, sine) =
             implicit_givens_rotation(h[0], h[1]);
-        // apply_gt_right(h, k, k + 1, stride, card, cosine, sine);
         apply_gt_right(h, 0, 1, stride, 2, cosine, sine);
-        // for k in 0..card.saturating_sub(2) {
         for _ in 0..card.saturating_sub(2) {
-            println!("hello!");
             // push zero into row
             let (_, cosine, sine) =
                 implicit_givens_rotation(h[offset], h[offset + stride]);
             apply_g_left(&mut h[offset..], 0, 1, stride, 3, cosine, sine);
-            
             // push zero into col
             offset += 1;
-            // above diagonal element
             let (_, cosine, sine) =
                 implicit_givens_rotation(h[offset], h[offset + 1]);
             apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cosine, sine);
             error += h[offset].abs();
-            println!("adding error {:?} at idx{:?}", h[offset], offset); 
             offset += stride;
         }
         // push zero into row
@@ -162,7 +153,6 @@ pub fn decomp_ugivens(
             implicit_givens_rotation(h[offset], h[offset + stride]);
         apply_g_left(&mut h[offset..], 0, 1, stride, 2, cosine, sine);
         error += h[offset + 1].abs();
-        println!("adding error {:?} at idx{:?}", h[offset + 1], offset); 
     }
 }
 // #[rustfmt::skip]
