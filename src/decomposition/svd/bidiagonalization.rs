@@ -39,6 +39,7 @@ fn zero_row(b: &mut [f32], p: &mut [f32], w: &mut [f32], ract: usize, cact: usiz
             proj,
             w,
             tau,
+            //NOTE: THINK THIS SHOULD BE RACT
             ract.saturating_sub(1),
             cact,
             stride,
