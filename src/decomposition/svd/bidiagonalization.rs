@@ -100,7 +100,8 @@ fn full_zero_row(
     let slice = &mut b[..cact];
     let proj = &mut p[..cact];
     let tau = params(slice, proj);
-    if ract != 0 && tau != 0f32 {
+    if tau == 0f32 { return; }
+    if ract != 0 {
         rapply_householder(
             &mut b[stride..],
             proj,
@@ -110,18 +111,17 @@ fn full_zero_row(
             cact,
             stride,
         );
-        w.fill(0f32);
-        rapply_householder(
-            // &mut v[stride..],
-            v,
-            proj,
-            w,
-            tau,
-            cols,
-            cact,
-            cols,
-        );
     }
+    rapply_householder(
+        // &mut v[stride..],
+        v,
+        proj,
+        w,
+        tau,
+        cols,
+        cact,
+        cols,
+    );
 }
 /// # ubidiagonal :: upper bidiagonal
 ///
@@ -228,7 +228,6 @@ pub fn full_ubidiagonal(
     if cact < ract {
         full_zero_col(&mut b[offset + pivot..], &mut u[pivot..], p, w, rows, ract, cact - 1, stride);
     } else if cact > ract {
-        println!("shouldn't be here");
-        full_zero_row(&mut b[offset..], &mut v[pivot..], p, w, cols, ract - 1, cact, stride);
+        full_zero_row(&mut b[offset + pivot + 1..], &mut v[pivot + 1..], p, w, cols, ract - 1, cact - 1, stride);
     }
 }
