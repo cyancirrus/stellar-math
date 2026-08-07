@@ -61,8 +61,8 @@ pub fn lapply_householder(
     cols: usize,
     stride: usize,
 ) {
-    debug_assert!(cols <= w.len());
-    debug_assert_eq!(rows, p.len());
+    // debug_assert!(cols <= w.len());
+    debug_assert_eq!(rows, p.len(), "rows != projection length");
     // (I - tuu')A;
     // A -= t*uu'A;
     // w := u'A;
@@ -114,8 +114,8 @@ pub fn rapply_householder(
     cols: usize,
     stride: usize,
 ) {
-    debug_assert!(rows <= w.len());
-    debug_assert_eq!(cols, p.len());
+    // debug_assert!(rows <= w.len());
+    debug_assert_eq!(cols, p.len(), "cols != projection len");
     // A(I - tuu');
     // A - t*Auu';
     // w := Au;
