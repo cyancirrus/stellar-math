@@ -54,13 +54,12 @@ fn zero_row(
     stride:usize,
 ) {
     let idx = o + 1;
-    let slice = &mut b[offset + idx..offset + crange + idx];
-    // let slice = &mut b[offset + idx..offset + crange];
+    let slice = &mut b[..crange];
     let proj = &mut p[..rrange];
     let tau = params(slice, proj);
     if tau != 0f32 {
         rapply_householder(
-            &mut b[offset + stride + idx..],
+            &mut b[stride..],
             proj,
             w,
             tau,
@@ -106,7 +105,8 @@ pub fn bidiagonal(
 
         );
         println!("cols {cols:}, crange {crange:}, offset {offset:}");
-        zero_row( b,
+        zero_row(
+            &mut b[offset + idx ..],
             p,
             w,
             o,
