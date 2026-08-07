@@ -54,11 +54,11 @@ fn test() {
 fn main() {
     // let rows: usize = 3;
     // let cols: usize = 3;
-    let rows: usize = 6;
-    let cols: usize = 6;
+    let rows: usize = 4;
+    let cols: usize = 2;
     let card: usize = rows.min(cols);
-    let mut u = create_identity_vector(cols, card);
-    let mut v = create_identity_vector(card, rows);
+    let mut u = create_identity_vector(rows, rows);
+    let mut v = create_identity_vector(cols, cols);
     // let rows: usize = 6;
     // let cols: usize = 4;
 
@@ -74,7 +74,6 @@ fn main() {
     };
 
     println!("u {u:?}");
-
     println!("before matrix {input:?}");
 
     full_ubidiagonal(
@@ -86,34 +85,34 @@ fn main() {
     };
 
     let u = NdArray {
-        dims: vec![cols, cols],
+        dims: vec![rows, rows],
         data: u.clone(),
     };
     let v = NdArray {
-        dims: vec![rows, rows],
+        dims: vec![cols, cols],
         data: v.clone(),
     };
 
     println!("v {v:?}");
 
-    // println!("after bidiag {bidiag:?}");
-    // let check = matrix_mult(&u, &bidiag);
-    // let u_ortho = matrix_mult(&u, &u.transpose());
-    
-    // println!("checking reconstruct {check:?}");
-    // println!("checking u_ortho {u_ortho:?}");
-    
     println!("after bidiag {bidiag:?}");
-    let reconstruct = bidiag;
-
-    let reconstruct = matrix_mult(&u, &reconstruct);
-    let reconstruct = matrix_mult(&reconstruct, &v.transpose());
+    let check = matrix_mult(&u, &bidiag);
     let u_ortho = matrix_mult(&u, &u.transpose());
-    let v_ortho = matrix_mult(&v, &v.transpose());
     
-    println!("checking reconstruct {reconstruct:?}");
+    println!("checking reconstruct {check:?}");
     println!("checking u_ortho {u_ortho:?}");
-    println!("checking v_ortho {v_ortho:?}");
+    
+    // println!("after bidiag {bidiag:?}");
+    // let reconstruct = bidiag;
+
+    // let reconstruct = matrix_mult(&u, &reconstruct);
+    // let reconstruct = matrix_mult(&reconstruct, &v.transpose());
+    // // let u_ortho = matrix_mult(&u, &u.transpose());
+    // // let v_ortho = matrix_mult(&v, &v.transpose());
+    
+    // println!("checking reconstruct {reconstruct:?}");
+    // println!("checking u_ortho {u_ortho:?}");
+    // println!("checking v_ortho {v_ortho:?}");
     // full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
 
     // let output = NdArray {

@@ -4,7 +4,7 @@ use rayon::prelude::*;
 pub fn create_identity_vector(rows: usize, cols: usize) -> Vec<f32> {
     let mut data = vec![0f32; rows * cols];
     let mut offset = 0;
-    for _ in 0..rows {
+    for _ in 0..rows.min(cols) {
         data[offset] = 1f32;
         offset += 1 + cols;
     }
