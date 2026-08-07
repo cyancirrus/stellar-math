@@ -91,7 +91,7 @@ pub fn bidiagonal(
     for o in 0..card.saturating_sub(1) {
     // for o in 0..1 {
         println!("hello");
-        let czero = &mut b[offset+o..];
+        let czero = &mut b[offset..];
         zero_col(
             czero,
             p,
