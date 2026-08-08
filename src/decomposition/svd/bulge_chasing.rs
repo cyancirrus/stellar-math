@@ -47,14 +47,12 @@ pub fn full_decomp_ugivens(
             apply_gt_right(&mut v[offset..], 0, 1, cols, cols, cos, sin);
             supdiag_norm += h[offset].abs();
             offset += stride;
-            voffset += stride;
-            uoffset += rows;
         }
         // // push zero into row
-        // let (_, cos, sin) = implicit_givens_rotation(h[voffset], h[voffset + stride]);
-        // apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
-        // apply_g_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
-        // supdiag_norm += h[offset + 1].abs();
+        let (_, cos, sin) = implicit_givens_rotation(h[voffset], h[voffset + stride]);
+        apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
+        apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
+        supdiag_norm += h[offset + 1].abs();
     }
 }
 #[rustfmt::skip]
