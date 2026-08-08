@@ -113,7 +113,6 @@ fn full_zero_row(
         );
     }
     rapply_householder(
-        // &mut v[stride..],
         v,
         proj,
         w,
@@ -230,6 +229,7 @@ pub fn full_ubidiagonal(
         full_zero_col(&mut b[offset + pivot..], &mut u[pivot..], p, w, rows, ract, cact - 1, stride);
     } else if cact > ract {
         println!("THIS ONE IS BAD");
-        full_zero_row(&mut b[offset + pivot+1..], &mut v[pivot+1..], p, w, cols, ract - 1, cact-1, stride);
+        // full_zero_row(&mut b[offset + pivot+1..], &mut v[pivot+1..], p, w, cols, ract - 1, cact-1, stride);
+        full_zero_row(&mut b[offset + pivot..], &mut v[pivot..], p, w, cols, ract, cact, stride);
     }
 }
