@@ -47,7 +47,7 @@ pub fn full_decomp_ugivens(
             supdiag_norm += h[offset].abs();
             offset += stride;
             // voffset += stride;
-            // uoffset += rows;
+            uoffset += rows;
         }
         // push zero into row
         let (_, cos, sin) = implicit_givens_rotation(h[voffset], h[voffset + stride]);
