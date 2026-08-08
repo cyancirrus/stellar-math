@@ -53,7 +53,7 @@ fn test() {
 
 fn main() {
     let rows: usize = 5;
-    let cols: usize = 8;
+    let cols: usize = 5;
     // let rows: usize = 6;
     // let cols: usize = 3;
     let card: usize = rows.min(cols);
@@ -110,7 +110,7 @@ fn main() {
     // let mut v = create_identity_vector(cols, cols);
     
 
-    full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
+    // full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
     let u_matrix = NdArray {
         dims: vec![rows, rows],
         data: u.clone(),
@@ -119,11 +119,11 @@ fn main() {
         dims: vec![cols, cols],
         data: v.clone(),
     };
-    let output = NdArray {
-        dims: vec![rows, cols],
-        data: b.clone(),
-    };
-    println!("after rotations {output:?}");
+    // let output = NdArray {
+    //     dims: vec![rows, cols],
+    //     data: b.clone(),
+    // };
+    // println!("after rotations {output:?}");
     let u_ortho = matrix_mult(&u_matrix, &u_matrix.transpose());
     let v_ortho = matrix_mult(&v_matrix, &v_matrix.transpose());
     
