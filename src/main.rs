@@ -106,8 +106,8 @@ fn main() {
     // let reconstruct = matrix_mult(&u_matrix, &reconstruct);
     // let reconstruct = matrix_mult(&reconstruct, &v_matrix.transpose());
     // println!("checking reconstruct {reconstruct:?}");
-    let mut u = create_identity_vector(rows, rows);
-    let mut v = create_identity_vector(cols, cols);
+    // let mut u = create_identity_vector(rows, rows);
+    // let mut v = create_identity_vector(cols, cols);
     
 
     full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
@@ -127,8 +127,8 @@ fn main() {
     let u_ortho = matrix_mult(&u_matrix, &u_matrix.transpose());
     let v_ortho = matrix_mult(&v_matrix, &v_matrix.transpose());
     
-    // println!("checking u_ortho {u_ortho:?}");
-    // println!("checking v_ortho {v_ortho:?}");
+    println!("checking u_ortho {u_ortho:?}");
+    println!("checking v_ortho {v_ortho:?}");
     
     // println!("after bidiag {bidiag:?}");
     let reconstruct = NdArray {
