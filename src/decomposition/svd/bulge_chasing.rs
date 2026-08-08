@@ -1,4 +1,5 @@
 #![allow(unused)]
+#![allow(clippy::explicit_counter_loop)]
 use crate::decomposition::francis::constants::{EPSILON, MAX_ITERS};
 use crate::decomposition::francis::primitives::{
     deflate, lapply_householder, params, rapply_householder,
@@ -32,28 +33,28 @@ pub fn full_decomp_ugivens(
         let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
         apply_gt_right(h, 0, 1, stride, 2, cos, sin);
         apply_gt_right(v, 0, 1, cols, cols, cos, sin);
-        for _ in 0..interior {
-            // push zero into row
+        for _ in 0..1 {
+            // // push zero into row
             let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
             apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
             apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
-            // push zero into col
+            // // push zero into col
             offset += 1;
             uoffset += 1;
             voffset += 1;
             let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
             apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
-            apply_g_left(&mut v[voffset ..], 0, 1, cols, cols, cos, sin);
+            apply_gt_right(&mut v[offset..], 0, 1, cols, cols, cos, sin);
             supdiag_norm += h[offset].abs();
             offset += stride;
-            // voffset += stride;
+            voffset += stride;
             uoffset += rows;
         }
-        // push zero into row
-        let (_, cos, sin) = implicit_givens_rotation(h[voffset], h[voffset + stride]);
-        apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
-        apply_g_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
-        supdiag_norm += h[offset + 1].abs();
+        // // push zero into row
+        // let (_, cos, sin) = implicit_givens_rotation(h[voffset], h[voffset + stride]);
+        // apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
+        // apply_g_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
+        // supdiag_norm += h[offset + 1].abs();
     }
 }
 #[rustfmt::skip]
