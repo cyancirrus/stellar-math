@@ -233,7 +233,7 @@ pub fn full_ubidiagonal(
     } else if cact > ract {
         println!("THIS ONE IS BAD");
         println!("ract {ract:}");
-        full_zero_row(&mut b[offset + pivot+1..], &mut v[pivot+1..], p, w, cols, ract - 1, cact-1, stride);
-        // full_zero_row(&mut b[offset + pivot..], &mut v[pivot..], p, w, cols, ract, cact, stride);
+        // full_zero_row(&mut b[offset + pivot+1..], &mut v[pivot+1..], p, w, cols, ract - 1, cact-1, stride);
+        full_zero_row(&mut b[offset + pivot..], &mut v[pivot-1..], p, w, cols, 0, cact, stride);
     }
 }
