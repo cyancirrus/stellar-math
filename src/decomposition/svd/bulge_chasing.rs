@@ -24,7 +24,6 @@ pub fn full_decomp_ugivens(
     let interior = card.saturating_sub(2);
     let mut supdiag_norm = f32::INFINITY;
     for _ in 0..max_iters {
-    // for _ in 0..1 {
         if supdiag_norm < threshold { break; }
         let mut offset = 0;
         let mut uoffset = 0;
@@ -49,7 +48,7 @@ pub fn full_decomp_ugivens(
             offset += stride;
         }
         // // push zero into row
-        let (_, cos, sin) = implicit_givens_rotation(h[voffset], h[voffset + stride]);
+        let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
         apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
         apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
         supdiag_norm += h[offset + 1].abs();
