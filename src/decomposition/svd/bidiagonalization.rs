@@ -111,6 +111,8 @@ fn full_zero_row(
             cact,
             stride,
         );
+    } else {
+        println!("ract == 0 {ract:}");
     }
     rapply_householder(
         v,
