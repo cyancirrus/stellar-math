@@ -218,6 +218,7 @@ pub fn full_ubidiagonal(
     let mut voffset = 0;
     let mut pivot = card.saturating_sub(1);
     for k in 0..pivot {
+        println!("ract {ract:}");
         full_zero_col(&mut b[offset + k..], &mut u[k..], p, w, rows, ract, cact, stride);
         full_zero_row(&mut b[offset + k + 1..], &mut v[k + 1 ..], p, w, cols, ract - 1, cact - 1, stride);
         ract -= 1;
@@ -229,7 +230,8 @@ pub fn full_ubidiagonal(
         full_zero_col(&mut b[offset + pivot..], &mut u[pivot..], p, w, rows, ract, cact - 1, stride);
     } else if cact > ract {
         println!("THIS ONE IS BAD");
-        // full_zero_row(&mut b[offset + pivot+1..], &mut v[pivot+1..], p, w, cols, ract - 1, cact-1, stride);
-        full_zero_row(&mut b[offset + pivot..], &mut v[pivot..], p, w, cols, ract, cact, stride);
+        println!("ract {ract:}");
+        full_zero_row(&mut b[offset + pivot+1..], &mut v[pivot+1..], p, w, cols, ract - 1, cact-1, stride);
+        // full_zero_row(&mut b[offset + pivot..], &mut v[pivot..], p, w, cols, ract, cact, stride);
     }
 }
