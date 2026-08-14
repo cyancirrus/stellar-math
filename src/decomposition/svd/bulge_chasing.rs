@@ -22,8 +22,8 @@ pub fn full_decomp_ugivens(
 ) {
     let interior = card.saturating_sub(2);
     let mut supdiag_norm = f32::INFINITY;
-    for _ in 0..max_iters {
-    // for _ in 0..1 {
+    // for _ in 0..max_iters {
+    for _ in 0..1 {
         if supdiag_norm < threshold { break; }
         let mut offset = 0;
         let mut uoffset = 0;
@@ -32,26 +32,27 @@ pub fn full_decomp_ugivens(
         let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
         apply_gt_right(h, 0, 1, stride, 2, cos, sin);
         apply_gt_right(v, 0, 1, cols, cols, cos, sin);
-        // for _ in 0..interior {
-        //     // push zero into row
-        //     let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
-        //     apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
-        //     apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
-        //     // push zero into col
-        //     offset += 1;
-        //     uoffset += 1;
-        //     let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
-        //     apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
-        //     apply_gt_right(&mut v[voffset ..], 0, 1, cols, cols, cos, sin);
-        //     supdiag_norm += h[offset].abs();
-        //     voffset += 1;
-        //     offset += stride;
-        // }
-        // push zero into row
-        let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
-        apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
-        apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
-        supdiag_norm += h[offset + 1].abs();
+        for _ in 0..interior {
+            println!("interior");
+            // push zero into row
+            let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
+            apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
+            apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
+            // push zero into col
+            offset += 1;
+            voffset += 1;
+            let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
+            apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
+            apply_gt_right(&mut v[voffset ..], 0, 1, cols, cols, cos, sin);
+            supdiag_norm += h[offset].abs();
+            uoffset += 1;
+            offset += stride;
+        }
+        // // // push zero into row
+        // let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
+        // apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
+        // apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
+        // supdiag_norm += h[offset + 1].abs();
     }
 }
 #[rustfmt::skip]

@@ -52,10 +52,10 @@ fn test() {
 }
 
 fn main() {
-    // let rows: usize = 3;
-    // let cols: usize = 3;
-    let rows: usize = 2;
-    let cols: usize = 2;
+    // let rows: usize = 2;
+    // let cols: usize = 2;
+    let rows: usize = 3;
+    let cols: usize = 3;
     let card: usize = rows.min(cols);
     let mut u = create_identity_vector(rows, rows);
     let mut v = create_identity_vector(cols, cols);
@@ -133,7 +133,6 @@ fn main() {
     let reconstruct = singular;
 
     let reconstruct = matrix_mult(&umat, &reconstruct);
-    // let reconstruct = matrix_mult(&reconstruct, &v.transpose());
     let reconstruct = matrix_mult(&reconstruct, &vmat.transpose());
 
     let output = NdArray {
