@@ -3,7 +3,7 @@ use stellar::algebra::ndmethods::matrix_mult;
 use stellar::decomposition::svd::bulge_chasing::{decomp_lgivens, decomp_ugivens};
 use stellar::algebra::ndmethods::create_identity_vector;
 use stellar::decomposition::svd::bidiagonalization::{full_lbidiagonal, full_ubidiagonal};
-use stellar::decomposition::svd::bulge_chasing::full_decomp_ugivens;
+use stellar::decomposition::svd::bulge_chasing::{full_decomp_ugivens, full_decomp_lgivens};
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
@@ -156,12 +156,11 @@ fn main() {
     println!("checking reconstruct {reconstruct:?}");
     println!("--------------------");
 
-//     full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
-//     // decomp_ugivens(&mut b, card, stride,  40, 1e-10, 1e-8);
-//     let singular = NdArray {
-//         dims: vec![rows, cols],
-//         data: b.clone(),
-//     };
+    full_decomp_lgivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
+    let singular = NdArray {
+        dims: vec![rows, cols],
+        data: b.clone(),
+    };
     
     let umat = NdArray {
         dims: vec![rows, rows],
@@ -181,19 +180,19 @@ fn main() {
     println!("checking u_ortho {u_ortho:?}");
     println!("checking v_ortho {v_ortho:?}");
     
-//     // println!("after singular {singular:?}");
-//     let reconstruct = singular;
+    // println!("after singular {singular:?}");
+    let reconstruct = singular;
 
-//     let reconstruct = matrix_mult(&umat, &reconstruct);
-//     let reconstruct = matrix_mult(&reconstruct, &vmat.transpose());
+    let reconstruct = matrix_mult(&umat, &reconstruct);
+    let reconstruct = matrix_mult(&reconstruct, &vmat.transpose());
 
-//     let output = NdArray {
-//         dims: vec![rows, cols],
-//         data: b.clone(),
-//     };
-//     println!("singular values {output:?}");
-//     println!("-------------------------");
-//     println!("before matrix {input:?}");
-//     println!("checking reconstruct {reconstruct:?}");
-//     println!("-------------------------");
+    let output = NdArray {
+        dims: vec![rows, cols],
+        data: b.clone(),
+    };
+    println!("singular values {output:?}");
+    println!("-------------------------");
+    println!("before matrix {input:?}");
+    println!("checking reconstruct {reconstruct:?}");
+    println!("-------------------------");
 }
