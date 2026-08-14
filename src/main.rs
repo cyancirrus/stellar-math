@@ -2,7 +2,7 @@ use stellar::decomposition::svd::bidiagonalization::{lbidiagonal, ubidiagonal};
 use stellar::algebra::ndmethods::matrix_mult;
 use stellar::decomposition::svd::bulge_chasing::{decomp_lgivens, decomp_ugivens};
 use stellar::algebra::ndmethods::create_identity_vector;
-use stellar::decomposition::svd::bidiagonalization::full_ubidiagonal;
+use stellar::decomposition::svd::bidiagonalization::{full_lbidiagonal, full_ubidiagonal};
 use stellar::decomposition::svd::bulge_chasing::full_decomp_ugivens;
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
@@ -104,10 +104,10 @@ fn test() {
 }
 
 fn main() {
-    // let rows: usize = 2;
-    // let cols: usize = 2;
     let rows: usize = 4;
-    let cols: usize = 6;
+    let cols: usize = 4;
+    // let rows: usize = 2;
+    // let cols: usize = 6;
     let card: usize = rows.min(cols);
     let mut u = create_identity_vector(rows, rows);
     let mut v = create_identity_vector(cols, cols);
@@ -125,7 +125,7 @@ fn main() {
 
     println!("before matrix {input:?}");
 
-    full_ubidiagonal(
+    full_lbidiagonal(
         &mut b, &mut u, &mut v, &mut p, &mut w, rows, cols, card, stride,
     );
     let bidiag = NdArray {
@@ -156,44 +156,44 @@ fn main() {
     println!("checking reconstruct {reconstruct:?}");
     println!("--------------------");
 
-    full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
-    // decomp_ugivens(&mut b, card, stride,  40, 1e-10, 1e-8);
-    let singular = NdArray {
-        dims: vec![rows, cols],
-        data: b.clone(),
-    };
+//     full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
+//     // decomp_ugivens(&mut b, card, stride,  40, 1e-10, 1e-8);
+//     let singular = NdArray {
+//         dims: vec![rows, cols],
+//         data: b.clone(),
+//     };
     
-    let umat = NdArray {
-        dims: vec![rows, rows],
-        data: u.clone(),
-    };
-    let vmat = NdArray {
-        dims: vec![cols, cols],
-        data: v.clone(),
-    };
+//     let umat = NdArray {
+//         dims: vec![rows, rows],
+//         data: u.clone(),
+//     };
+//     let vmat = NdArray {
+//         dims: vec![cols, cols],
+//         data: v.clone(),
+//     };
 
-    println!("umat {umat:?}");
-    println!("vmat {vmat:?}");
+//     println!("umat {umat:?}");
+//     println!("vmat {vmat:?}");
 
-    let u_ortho = matrix_mult(&umat, &umat.transpose());
-    let v_ortho = matrix_mult(&vmat, &vmat.transpose());
+//     let u_ortho = matrix_mult(&umat, &umat.transpose());
+//     let v_ortho = matrix_mult(&vmat, &vmat.transpose());
     
-    println!("checking u_ortho {u_ortho:?}");
-    println!("checking v_ortho {v_ortho:?}");
+//     println!("checking u_ortho {u_ortho:?}");
+//     println!("checking v_ortho {v_ortho:?}");
     
-    // println!("after singular {singular:?}");
-    let reconstruct = singular;
+//     // println!("after singular {singular:?}");
+//     let reconstruct = singular;
 
-    let reconstruct = matrix_mult(&umat, &reconstruct);
-    let reconstruct = matrix_mult(&reconstruct, &vmat.transpose());
+//     let reconstruct = matrix_mult(&umat, &reconstruct);
+//     let reconstruct = matrix_mult(&reconstruct, &vmat.transpose());
 
-    let output = NdArray {
-        dims: vec![rows, cols],
-        data: b.clone(),
-    };
-    println!("singular values {output:?}");
-    println!("-------------------------");
-    println!("before matrix {input:?}");
-    println!("checking reconstruct {reconstruct:?}");
-    println!("-------------------------");
+//     let output = NdArray {
+//         dims: vec![rows, cols],
+//         data: b.clone(),
+//     };
+//     println!("singular values {output:?}");
+//     println!("-------------------------");
+//     println!("before matrix {input:?}");
+//     println!("checking reconstruct {reconstruct:?}");
+//     println!("-------------------------");
 }

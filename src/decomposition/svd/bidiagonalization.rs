@@ -226,6 +226,43 @@ pub fn full_ubidiagonal(
     if cact < ract {
         full_zero_col(&mut b[offset + pivot..], &mut u[pivot..], p, w, rows, ract, cact - 1, stride);
     } else if cact > ract {
-        full_zero_row(&mut b[offset + pivot+1..], &mut v[pivot+1..], p, w, cols, 0, cact-1, stride);
+        full_zero_row(&mut b[offset + pivot + 1..], &mut v[pivot + 1..], p, w, cols, 0, cact-1, stride);
     }
+}
+/// # full_lbidiagonal :: lower bidiagonal
+///
+/// * b: matrix to create the bidiagonal
+/// * p: projection vector
+/// * w: workspace vector
+/// * rows: number of rows
+/// * cols: number of cols
+/// * stride: stride of the data
+pub fn full_lbidiagonal(
+    b: &mut [f32],
+    u: &mut [f32],
+    v: &mut [f32],
+    p: &mut [f32],
+    w: &mut [f32],
+    rows: usize,
+    cols: usize,
+    card: usize,
+    stride: usize,
+) {
+    // rows and active columns
+    let mut ract = rows;
+    let mut cact = cols;
+    let mut offset = 0;
+    for k in 0..card.saturating_sub(1) {
+    // for k in 0..1 {
+        full_zero_row(&mut b[offset + k..], &mut v[k..], p, w, cols, ract - 1, cact, stride);
+        full_zero_col(&mut b[offset + k + stride..], &mut u[k + 1..],  p, w, rows, ract - 1, cact, stride);
+        ract -= 1;
+        cact -= 1;
+        offset += stride;
+    }
+    // if cact > ract {
+    //     full_zero_row(&mut b[o..], p, w, ract - 1, cact, stride);
+    // } else if cact < ract {
+    //     full_zero_col(&mut b[o..], p, w, ract, cact - 1, stride);
+    // }
 }
