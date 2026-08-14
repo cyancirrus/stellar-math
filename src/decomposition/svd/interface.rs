@@ -56,7 +56,6 @@ pub fn svd_decomposition(
         }
     }
 }
-
 #[cfg(test)]
 mod test_svd_diagonal_parity {
     use super::*;

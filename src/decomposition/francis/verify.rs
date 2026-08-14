@@ -69,7 +69,6 @@ fn full_decomp_cpx(
     size: usize,
     stride: usize,
 ) -> bool {
-    p.fill(0f32);
     let s = range * stride;
     let mut e1 = s.saturating_sub(stride + 1);
     let mut e2 = s.saturating_sub(stride + stride + 2);

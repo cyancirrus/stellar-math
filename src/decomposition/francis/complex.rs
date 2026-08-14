@@ -21,7 +21,6 @@ pub fn decomp_cpx(
     max_iters: usize,
     tolerance: f32,
 ) {
-    p.fill(0f32);
     let s = range * stride;
     // error 1 supra-diagonal above the first real eigen
     // error 2 supra-diagonal above the second complex real eigen
