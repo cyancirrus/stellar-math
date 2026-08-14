@@ -54,8 +54,8 @@ fn test() {
 fn main() {
     // let rows: usize = 3;
     // let cols: usize = 3;
-    let rows: usize = 4;
-    let cols: usize = 4;
+    let rows: usize = 2;
+    let cols: usize = 2;
     let card: usize = rows.min(cols);
     let mut u = create_identity_vector(rows, rows);
     let mut v = create_identity_vector(cols, cols);
@@ -80,7 +80,37 @@ fn main() {
         dims: vec![rows, cols],
         data: b.clone(),
     };
+    println!("after bidiag {bidiag:?}");
+    let umat = NdArray {
+        dims: vec![rows, rows],
+        data: u.clone(),
+    };
+    let vmat = NdArray {
+        dims: vec![cols, cols],
+        data: v.clone(),
+    };
+    let reconstruct = bidiag;
 
+    let reconstruct = matrix_mult(&umat, &reconstruct);
+    let reconstruct = matrix_mult(&reconstruct, &vmat.transpose());
+
+    let output = NdArray {
+        dims: vec![rows, cols],
+        data: b.clone(),
+    };
+    println!("after rotations {output:?}");
+    println!("-------------------------");
+    println!("before matrix {input:?}");
+    println!("checking reconstruct {reconstruct:?}");
+    println!("--------------------");
+
+    full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
+    // decomp_ugivens(&mut b, card, stride,  40, 1e-10, 1e-8);
+    let singular = NdArray {
+        dims: vec![rows, cols],
+        data: b.clone(),
+    };
+    
     let umat = NdArray {
         dims: vec![rows, rows],
         data: u.clone(),
@@ -93,26 +123,26 @@ fn main() {
     println!("umat {umat:?}");
     println!("vmat {vmat:?}");
 
-    println!("after bidiag {bidiag:?}");
     let u_ortho = matrix_mult(&umat, &umat.transpose());
     let v_ortho = matrix_mult(&vmat, &vmat.transpose());
     
     println!("checking u_ortho {u_ortho:?}");
     println!("checking v_ortho {v_ortho:?}");
     
-    // println!("after bidiag {bidiag:?}");
-    let reconstruct = bidiag;
+    // println!("after singular {singular:?}");
+    let reconstruct = singular;
 
     let reconstruct = matrix_mult(&umat, &reconstruct);
     // let reconstruct = matrix_mult(&reconstruct, &v.transpose());
     let reconstruct = matrix_mult(&reconstruct, &vmat.transpose());
-    println!("checking reconstruct {reconstruct:?}");
-    full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
-    // decomp_ugivens(&mut b, card, stride,  40, 1e-10, 1e-8);
 
     let output = NdArray {
         dims: vec![rows, cols],
         data: b.clone(),
     };
     println!("after rotations {output:?}");
+    println!("-------------------------");
+    println!("before matrix {input:?}");
+    println!("checking reconstruct {reconstruct:?}");
+    println!("-------------------------");
 }
