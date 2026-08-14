@@ -105,7 +105,7 @@ fn test() {
 
 fn main() {
     let rows: usize = 3;
-    let cols: usize = 6;
+    let cols: usize = 3;
     // let rows: usize = 2;
     // let cols: usize = 6;
     let card: usize = rows.min(cols);
@@ -163,23 +163,23 @@ fn main() {
 //         data: b.clone(),
 //     };
     
-//     let umat = NdArray {
-//         dims: vec![rows, rows],
-//         data: u.clone(),
-//     };
-//     let vmat = NdArray {
-//         dims: vec![cols, cols],
-//         data: v.clone(),
-//     };
+    let umat = NdArray {
+        dims: vec![rows, rows],
+        data: u.clone(),
+    };
+    let vmat = NdArray {
+        dims: vec![cols, cols],
+        data: v.clone(),
+    };
 
-//     println!("umat {umat:?}");
-//     println!("vmat {vmat:?}");
+    println!("umat {umat:?}");
+    println!("vmat {vmat:?}");
 
-//     let u_ortho = matrix_mult(&umat, &umat.transpose());
-//     let v_ortho = matrix_mult(&vmat, &vmat.transpose());
+    let u_ortho = matrix_mult(&umat, &umat.transpose());
+    let v_ortho = matrix_mult(&vmat, &vmat.transpose());
     
-//     println!("checking u_ortho {u_ortho:?}");
-//     println!("checking v_ortho {v_ortho:?}");
+    println!("checking u_ortho {u_ortho:?}");
+    println!("checking v_ortho {v_ortho:?}");
     
 //     // println!("after singular {singular:?}");
 //     let reconstruct = singular;
