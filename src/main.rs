@@ -1,17 +1,13 @@
-use stellar::decomposition::svd::bidiagonalization::{lbidiagonal, ubidiagonal};
 use stellar::algebra::ndmethods::matrix_mult;
-use stellar::decomposition::svd::bulge_chasing::{decomp_lgivens, decomp_ugivens};
 use stellar::algebra::ndmethods::create_identity_vector;
-use stellar::decomposition::svd::bidiagonalization::{full_lbidiagonal, full_ubidiagonal};
-use stellar::decomposition::svd::bulge_chasing::{full_decomp_ugivens, full_decomp_lgivens};
 use stellar::random::generation::generate_random_vector;
-use stellar::decomposition::svd::interface::full_svd_decomposition;
+use stellar::decomposition::svd::interface::{svd_decomposition, full_svd_decomposition};
 use stellar::structure::ndarray::NdArray;
 
 
 fn main() {
-    let rows: usize = 4;
-    let cols: usize = 6;
+    let rows: usize = 1;
+    let cols: usize = 2;
     let card: usize = rows.min(cols);
     let mut u = create_identity_vector(rows, rows);
     let mut v = create_identity_vector(cols, cols);
