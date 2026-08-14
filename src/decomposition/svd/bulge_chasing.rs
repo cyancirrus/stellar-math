@@ -1,11 +1,8 @@
-#![allow(unused)]
-use crate::decomposition::francis::constants::{EPSILON, MAX_ITERS};
-use crate::decomposition::francis::primitives::{
-    deflate, lapply_householder, params, rapply_householder,
-};
-use crate::decomposition::francis::symmetric::francis_iteration_sym;
+#[rustfmt::skip]
 use crate::decomposition::sgivens::{
-    apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
+    apply_g_left,
+    apply_gt_right,
+    implicit_givens_rotation,
 };
 #[rustfmt::skip]
 pub fn decomp_ugivens(
@@ -14,7 +11,6 @@ pub fn decomp_ugivens(
     stride: usize,
     max_iters:usize,
     threshold: f32,
-    absolute: f32,
 ) {
     let interior = card.saturating_sub(2);
     let mut supdiag_norm = f32::INFINITY;
@@ -48,7 +44,6 @@ pub fn decomp_lgivens(
     stride: usize,
     max_iters:usize,
     threshold: f32,
-    absolute: f32,
 ) {
     let interior = card.saturating_sub(2);
     let mut subdiag_norm = f32::INFINITY;
@@ -87,12 +82,10 @@ pub fn full_decomp_lgivens(
     stride: usize,
     max_iters:usize,
     threshold: f32,
-    absolute: f32,
 ) {
     let interior = card.saturating_sub(2);
     let mut subdiag_norm = f32::INFINITY;
     for _ in 0..max_iters {
-    // for _ in 0..1 {
         if subdiag_norm < threshold { break; }
         subdiag_norm = 0f32;
         let mut offset = 0;
@@ -136,7 +129,6 @@ pub fn full_decomp_ugivens(
     stride: usize,
     max_iters:usize,
     threshold: f32,
-    absolute: f32,
 ) {
     let interior = card.saturating_sub(2);
     let mut supdiag_norm = f32::INFINITY;

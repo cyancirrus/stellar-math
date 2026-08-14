@@ -1,12 +1,5 @@
-#![allow(unused)]
-use crate::decomposition::francis::constants::{EPSILON, MAX_ITERS};
-use crate::decomposition::francis::primitives::{
-    deflate, lapply_householder, params, rapply_householder,
-};
-use crate::decomposition::francis::symmetric::francis_iteration_sym;
-use crate::decomposition::sgivens::{
-    apply_g_left, apply_g_right, apply_gt_left, apply_gt_right, implicit_givens_rotation,
-};
+use crate::decomposition::francis::primitives::{lapply_householder, params, rapply_householder};
+use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
 fn full_zero_col(
     b: &mut [f32],
     u: &mut [f32],
@@ -26,8 +19,10 @@ fn full_zero_col(
     let proj = &mut p[..ract];
     let tau = params(&mut w[..ract], proj);
     b[0] = w[0];
-    if tau == 0f32 { return; }
-    if cact != 0 { 
+    if tau == 0f32 {
+        return;
+    }
+    if cact != 0 {
         lapply_householder(
             &mut b[1..],
             proj,
@@ -38,15 +33,7 @@ fn full_zero_col(
             stride,
         );
     }
-    rapply_householder(
-        u,
-        proj,
-        w,
-        tau,
-        rows,
-        ract,
-        rows,
-    );
+    rapply_householder(u, proj, w, tau, rows, ract, rows);
 }
 fn full_zero_row(
     b: &mut [f32],
@@ -61,27 +48,13 @@ fn full_zero_row(
     let slice = &mut b[..cact];
     let proj = &mut p[..cact];
     let tau = params(slice, proj);
-    if tau == 0f32 { return; }
-    if ract != 0 {
-        rapply_householder(
-            &mut b[stride..],
-            proj,
-            w,
-            tau,
-            ract,
-            cact,
-            stride,
-        );
+    if tau == 0f32 {
+        return;
     }
-    rapply_householder(
-        v,
-        proj,
-        w,
-        tau,
-        cols,
-        cact,
-        cols,
-    );
+    if ract != 0 {
+        rapply_householder(&mut b[stride..], proj, w, tau, ract, cact, stride);
+    }
+    rapply_householder(v, proj, w, tau, cols, cact, cols);
 }
 /// # full ubidiagonal :: upper bidiagonal
 ///
@@ -108,9 +81,7 @@ pub fn full_ubidiagonal(
     let mut ract = rows;
     let mut cact = cols;
     let mut offset = 0;
-    let mut uoffset = 0;
-    let mut voffset = 0;
-    let mut pivot = card.saturating_sub(1);
+    let pivot = card.saturating_sub(1);
     for k in 0..pivot {
         full_zero_col(&mut b[offset + k..], &mut u[k..], p, w, rows, ract, cact, stride);
         full_zero_row(&mut b[offset + k + 1..], &mut v[k + 1 ..], p, w, cols, ract - 1, cact - 1, stride);
@@ -124,7 +95,7 @@ pub fn full_ubidiagonal(
         full_zero_row(&mut b[offset + pivot + 1..], &mut v[pivot + 1..], p, w, cols, 0, cact-1, stride);
     }
 }
-/// # full_lbidiagonal :: lower bidiagonal
+/// # full lbidiagonal :: lower bidiagonal
 ///
 /// * b: matrix to create the bidiagonal
 /// * p: projection vector
@@ -146,19 +117,55 @@ pub fn full_lbidiagonal(
     // rows and active columns
     let mut ract = rows;
     let mut cact = cols;
-    let mut pivot = card.saturating_sub(1);
+    let pivot = card.saturating_sub(1);
     let mut offset = 0;
     for k in 0..pivot {
-        full_zero_row(&mut b[offset + k..], &mut v[k..], p, w, cols, ract - 1, cact, stride);
-        full_zero_col(&mut b[offset + k + stride..], &mut u[k + 1..],  p, w, rows, ract - 1, cact, stride);
+        full_zero_row(
+            &mut b[offset + k..],
+            &mut v[k..],
+            p,
+            w,
+            cols,
+            ract - 1,
+            cact,
+            stride,
+        );
+        full_zero_col(
+            &mut b[offset + k + stride..],
+            &mut u[k + 1..],
+            p,
+            w,
+            rows,
+            ract - 1,
+            cact,
+            stride,
+        );
         ract -= 1;
         cact -= 1;
         offset += stride;
     }
     if cact < ract {
-        full_zero_col(&mut b[offset + pivot + stride ..], &mut u[pivot + 1..], p, w, rows, ract-1, cact, stride);
+        full_zero_col(
+            &mut b[offset + pivot + stride..],
+            &mut u[pivot + 1..],
+            p,
+            w,
+            rows,
+            ract - 1,
+            cact,
+            stride,
+        );
     } else if cact > ract {
-        full_zero_row(&mut b[offset + pivot..], &mut v[pivot..], p, w, cols, 0, cact, stride);
+        full_zero_row(
+            &mut b[offset + pivot..],
+            &mut v[pivot..],
+            p,
+            w,
+            cols,
+            0,
+            cact,
+            stride,
+        );
     }
 }
 
@@ -171,7 +178,6 @@ pub fn full_decomp_lgivens(
     cols: usize, card: usize, stride: usize,
     max_iters:usize,
     threshold: f32,
-    absolute: f32,
 ) {
     let interior = card.saturating_sub(2);
     let mut subdiag_norm = f32::INFINITY;
@@ -220,7 +226,6 @@ pub fn full_decomp_ugivens(
     stride: usize,
     max_iters:usize,
     threshold: f32,
-    absolute: f32,
 ) {
     let interior = card.saturating_sub(2);
     let mut supdiag_norm = f32::INFINITY;
@@ -256,20 +261,13 @@ pub fn full_decomp_ugivens(
     }
 }
 
-
-
-
-
-
+#[cfg(test)]
 mod test_svd_reconstructions {
-    #![allow(dead_code)]
-    use super::*;
-    use crate::decomposition::svd::interface::{full_svd_decomposition, svd_decomposition};
-
-    use crate::algebra::ndmethods::matrix_mult;
-    use crate::equality::approximate::approx_vector_eq;
     use crate::algebra::ndmethods::create_identity_vector;
-    use crate::random::generation::{generate_random_vector};
+    use crate::algebra::ndmethods::matrix_mult;
+    use crate::decomposition::svd::interface::full_svd_decomposition;
+    use crate::equality::approximate::approx_vector_eq;
+    use crate::random::generation::generate_random_vector;
     use crate::structure::ndarray::NdArray;
 
     fn check_svd_reconstruct(rows: usize, cols: usize) -> (bool, bool, bool) {
@@ -290,7 +288,7 @@ mod test_svd_reconstructions {
         };
 
         full_svd_decomposition(
-            &mut b, &mut u, &mut v, &mut p, &mut w, rows, cols, card, stride, 40, 1e-10, 1e-8,
+            &mut b, &mut u, &mut v, &mut p, &mut w, rows, cols, card, stride, 40, 1e-10,
         );
 
         let singular = NdArray {
