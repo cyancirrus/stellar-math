@@ -254,7 +254,6 @@ pub fn full_lbidiagonal(
     let mut pivot = card.saturating_sub(1);
     let mut offset = 0;
     for k in 0..pivot {
-    // for k in 0..1 {
         full_zero_row(&mut b[offset + k..], &mut v[k..], p, w, cols, ract - 1, cact, stride);
         full_zero_col(&mut b[offset + k + stride..], &mut u[k + 1..],  p, w, rows, ract - 1, cact, stride);
         ract -= 1;
@@ -262,14 +261,10 @@ pub fn full_lbidiagonal(
         offset += stride;
     }
     if cact < ract {
-        full_zero_col(&mut b[offset + pivot..], &mut u[pivot..], p, w, rows, ract, cact - 1, stride);
+        println!("cact {cact:}, ract {ract:}");
+        full_zero_col(&mut b[offset + pivot + stride ..], &mut u[pivot + 1..], p, w, rows, ract-1, cact, stride);
     } else if cact > ract {
         println!("hello");
         full_zero_row(&mut b[offset + pivot..], &mut v[pivot..], p, w, cols, 0, cact, stride);
     }
-    // if cact > ract {
-    //     full_zero_row(&mut b[o..], p, w, ract - 1, cact, stride);
-    // } else if cact < ract {
-    //     full_zero_col(&mut b[o..], p, w, ract, cact - 1, stride);
-    // }
 }
