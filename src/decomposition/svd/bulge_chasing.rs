@@ -49,10 +49,10 @@ pub fn full_decomp_ugivens(
             offset += stride;
         }
         // // // push zero into row
-        // let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
-        // apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
-        // apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
-        // supdiag_norm += h[offset + 1].abs();
+        let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
+        apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
+        apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
+        supdiag_norm += h[offset + 1].abs();
     }
 }
 #[rustfmt::skip]
