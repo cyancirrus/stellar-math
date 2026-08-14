@@ -22,8 +22,8 @@ pub fn full_decomp_ugivens(
 ) {
     let interior = card.saturating_sub(2);
     let mut supdiag_norm = f32::INFINITY;
-    // for _ in 0..max_iters {
-    for _ in 0..1 {
+    for _ in 0..max_iters {
+    // for _ in 0..1 {
         if supdiag_norm < threshold { break; }
         let mut offset = 0;
         let mut uoffset = 0;
