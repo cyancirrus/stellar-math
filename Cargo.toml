@@ -64,5 +64,6 @@ debug = true
 
 [lints.clippy]
 too_many_arguments = "allow"
+explicit_counter_loop = "allow"
 needless_range_loop = "allow"
 manual_memcpy = "allow"

@@ -107,8 +107,8 @@ fn main() {
     // let reconstruct = matrix_mult(&reconstruct, &v.transpose());
     let reconstruct = matrix_mult(&reconstruct, &vmat.transpose());
     println!("checking reconstruct {reconstruct:?}");
-    // full_decomp_ugivens(&mut b, &mut u, &mut v, card, cols, card, stride, 40, 1e-10, 1e-8);
-    decomp_ugivens(&mut b, card, stride,  40, 1e-10, 1e-8);
+    full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
+    // decomp_ugivens(&mut b, card, stride,  40, 1e-10, 1e-8);
 
     let output = NdArray {
         dims: vec![rows, cols],
