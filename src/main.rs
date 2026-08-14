@@ -54,8 +54,8 @@ fn test() {
 fn main() {
     // let rows: usize = 3;
     // let cols: usize = 3;
-    let rows: usize = 6;
-    let cols: usize = 3;
+    let rows: usize = 4;
+    let cols: usize = 4;
     let card: usize = rows.min(cols);
     let mut u = create_identity_vector(rows, rows);
     let mut v = create_identity_vector(cols, cols);
@@ -71,7 +71,6 @@ fn main() {
         data: b.clone(),
     };
 
-    println!("u {u:?}");
     println!("before matrix {input:?}");
 
     full_ubidiagonal(
@@ -82,21 +81,21 @@ fn main() {
         data: b.clone(),
     };
 
-    let u = NdArray {
+    let umat = NdArray {
         dims: vec![rows, rows],
         data: u.clone(),
     };
-    let v = NdArray {
+    let vmat = NdArray {
         dims: vec![cols, cols],
         data: v.clone(),
     };
 
-    println!("v {v:?}");
+    println!("umat {umat:?}");
+    println!("vmat {vmat:?}");
 
     println!("after bidiag {bidiag:?}");
-    let check = matrix_mult(&u, &bidiag);
-    let u_ortho = matrix_mult(&u, &u.transpose());
-    let v_ortho = matrix_mult(&v, &v.transpose());
+    let u_ortho = matrix_mult(&umat, &umat.transpose());
+    let v_ortho = matrix_mult(&vmat, &vmat.transpose());
     
     println!("checking u_ortho {u_ortho:?}");
     println!("checking v_ortho {v_ortho:?}");
@@ -104,15 +103,15 @@ fn main() {
     // println!("after bidiag {bidiag:?}");
     let reconstruct = bidiag;
 
-    let reconstruct = matrix_mult(&u, &reconstruct);
-    let reconstruct = matrix_mult(&reconstruct, &v.transpose());
+    let reconstruct = matrix_mult(&umat, &reconstruct);
+    // let reconstruct = matrix_mult(&reconstruct, &v.transpose());
+    let reconstruct = matrix_mult(&reconstruct, &vmat.transpose());
     println!("checking reconstruct {reconstruct:?}");
-    // println!("checking u_ortho {u_ortho:?}");
-    // full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
+    full_decomp_ugivens(&mut b, &mut u, &mut v, rows, cols, card, stride, 40, 1e-10, 1e-8);
 
-    // let output = NdArray {
-    //     dims: vec![rows, cols],
-    //     data: b.clone(),
-    // };
+    let output = NdArray {
+        dims: vec![rows, cols],
+        data: b.clone(),
+    };
     // println!("after rotations {output:?}");
 }
