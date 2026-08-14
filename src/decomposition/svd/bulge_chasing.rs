@@ -91,8 +91,8 @@ pub fn full_decomp_lgivens(
 ) {
     let interior = card.saturating_sub(2);
     let mut subdiag_norm = f32::INFINITY;
-    // for _ in 0..max_iters {
-    for _ in 0..1 {
+    for _ in 0..max_iters {
+    // for _ in 0..1 {
         if subdiag_norm < threshold { break; }
         subdiag_norm = 0f32;
         let mut offset = 0;
