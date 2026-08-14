@@ -105,7 +105,7 @@ fn test() {
 
 fn main() {
     let rows: usize = 6;
-    let cols: usize = 6;
+    let cols: usize = 8;
     // let rows: usize = 2;
     // let cols: usize = 6;
     let card: usize = rows.min(cols);
