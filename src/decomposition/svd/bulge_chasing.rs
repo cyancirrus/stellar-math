@@ -16,6 +16,7 @@ pub fn decomp_ugivens(
     let mut supdiag_norm = f32::INFINITY;
     for _ in 0..max_iters {
         if supdiag_norm < threshold { break; }
+        supdiag_norm = 0f32;
         let mut offset = 0;
         // push zero into col
         let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);

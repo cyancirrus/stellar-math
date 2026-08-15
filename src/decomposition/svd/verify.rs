@@ -183,6 +183,7 @@ pub fn full_decomp_ugivens(
     let mut supdiag_norm = f32::INFINITY;
     for _ in 0..max_iters {
         if supdiag_norm < threshold { break; }
+        supdiag_norm = 0f32;
         let mut offset = 0;
         let mut uoffset = 0;
         let mut voffset = 0;
