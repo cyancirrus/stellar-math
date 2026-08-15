@@ -1,5 +1,7 @@
 use crate::decomposition::francis::primitives::{lapply_householder, params, rapply_householder};
 use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
+
+#[rustfmt::skip]
 fn full_zero_col(
     b: &mut [f32],
     u: &mut [f32],
@@ -19,9 +21,7 @@ fn full_zero_col(
     let proj = &mut p[..ract];
     let tau = params(&mut w[..ract], proj);
     b[0] = w[0];
-    if tau == 0f32 {
-        return;
-    }
+    if tau == 0f32 { return; }
     if cact != 0 {
         lapply_householder(&mut b[1..], proj, w, tau, ract, cact, stride);
     }
@@ -40,9 +40,7 @@ fn full_zero_row(
     let slice = &mut b[..cact];
     let proj = &mut p[..cact];
     let tau = params(slice, proj);
-    if tau == 0f32 {
-        return;
-    }
+    if tau == 0f32 { return; }
     if ract != 0 {
         rapply_householder(&mut b[stride..], proj, w, tau, ract, cact, stride);
     }
@@ -70,6 +68,7 @@ pub fn full_ubidiagonal(
     card: usize,
     stride: usize,
 ) {
+    debug_assert!(rows >= cols, "givens rotations do not handle");
     let mut ract = rows;
     let mut cact = cols;
     let mut offset = 0;
@@ -81,8 +80,8 @@ pub fn full_ubidiagonal(
         cact -= 1;
         offset += stride;
     }
-    if cols < rows {
-        full_zero_col(&mut b[offset + pivot..], &mut u[pivot..], p, w, rows, ract, cact - 1, stride);
+    if rows > cols {
+        full_zero_col(&mut b[offset + pivot..], &mut u[pivot..], p, w, rows, ract, 0, stride);
     }
 }
 /// # full_lbidiagonal :: lower bidiagonal
@@ -105,6 +104,7 @@ pub fn full_lbidiagonal(
     card: usize,
     stride: usize,
 ) {
+    debug_assert!(cols >= rows, "givens rotations do not handle");
     let mut ract = rows;
     let mut cact = cols;
     let mut offset = 0;
@@ -116,7 +116,7 @@ pub fn full_lbidiagonal(
         cact -= 1;
         offset += stride;
     }
-    if rows < cols {
+    if cols > rows {
         full_zero_row( &mut b[offset + pivot..], &mut v[pivot..], p, w, cols, 0, cact, stride);
     }
 }
@@ -133,7 +133,6 @@ pub fn full_decomp_lgivens(
     let interior = card.saturating_sub(2);
     let mut subdiag_norm = f32::INFINITY;
     for _ in 0..max_iters {
-    // for _ in 0..1 {
         if subdiag_norm < threshold { break; }
         subdiag_norm = 0f32;
         let mut offset = 0;

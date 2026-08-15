@@ -38,6 +38,7 @@ pub fn ubidiagonal(
     card: usize,
     stride: usize,
 ) {
+    debug_assert!(rows >= cols, "givens rotations do not handle");
     let mut ract = rows;
     let mut cact = cols;
     let mut offset = 0;
@@ -49,7 +50,7 @@ pub fn ubidiagonal(
         cact -= 1;
         offset += stride;
     }
-    if cols < rows {
+    if rows > cols {
         zero_col(&mut b[offset + pivot..], p, w, ract, 0, stride);
     }
 }
@@ -71,6 +72,7 @@ pub fn lbidiagonal(
     card: usize,
     stride: usize,
 ) {
+    debug_assert!(cols >= rows, "givens rotations do not handle");
     let mut ract = rows;
     let mut cact = cols;
     let pivot = card.saturating_sub(1);
