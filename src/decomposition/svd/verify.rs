@@ -1,9 +1,5 @@
-use crate::decomposition::francis::primitives::{
-    lapply_householder, params, rapply_householder,
-};
-use crate::decomposition::sgivens::{
-    apply_g_left, apply_gt_right, implicit_givens_rotation,
-};
+use crate::decomposition::francis::primitives::{lapply_householder, params, rapply_householder};
+use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
 fn full_zero_col(
     b: &mut [f32],
     u: &mut [f32],
@@ -23,27 +19,13 @@ fn full_zero_col(
     let proj = &mut p[..ract];
     let tau = params(&mut w[..ract], proj);
     b[0] = w[0];
-    if tau == 0f32 { return; }
-    if cact != 0 { 
-        lapply_householder(
-            &mut b[1..],
-            proj,
-            w,
-            tau,
-            ract,
-            cact-1,
-            stride,
-        );
+    if tau == 0f32 {
+        return;
     }
-    rapply_householder(
-        u,
-        proj,
-        w,
-        tau,
-        rows,
-        ract,
-        rows,
-    );
+    if cact != 0 {
+        lapply_householder(&mut b[1..], proj, w, tau, ract, cact, stride);
+    }
+    rapply_householder(u, proj, w, tau, rows, ract, rows);
 }
 fn full_zero_row(
     b: &mut [f32],
@@ -58,27 +40,13 @@ fn full_zero_row(
     let slice = &mut b[..cact];
     let proj = &mut p[..cact];
     let tau = params(slice, proj);
-    if tau == 0f32 { return; }
-    if ract != 0 {
-        rapply_householder(
-            &mut b[stride..],
-            proj,
-            w,
-            tau,
-            ract,
-            cact,
-            stride,
-        );
+    if tau == 0f32 {
+        return;
     }
-    rapply_householder(
-        v,
-        proj,
-        w,
-        tau,
-        cols,
-        cact,
-        cols,
-    );
+    if ract != 0 {
+        rapply_householder(&mut b[stride..], proj, w, tau, ract, cact, stride);
+    }
+    rapply_householder(v, proj, w, tau, cols, cact, cols);
 }
 /// # full ubidiagonal :: upper bidiagonal
 ///
@@ -107,7 +75,7 @@ pub fn full_ubidiagonal(
     let mut offset = 0;
     let pivot = card.saturating_sub(1);
     for k in 0..pivot {
-        full_zero_col(&mut b[offset + k..], &mut u[k..], p, w, rows, ract, cact, stride);
+        full_zero_col(&mut b[offset + k..], &mut u[k..], p, w, rows, ract, cact - 1, stride);
         full_zero_row(&mut b[offset + k + 1..], &mut v[k + 1 ..], p, w, cols, ract - 1, cact - 1, stride);
         ract -= 1;
         cact -= 1;
@@ -144,16 +112,52 @@ pub fn full_lbidiagonal(
     let pivot = card.saturating_sub(1);
     let mut offset = 0;
     for k in 0..pivot {
-        full_zero_row(&mut b[offset + k..], &mut v[k..], p, w, cols, ract - 1, cact, stride);
-        full_zero_col(&mut b[offset + k + stride..], &mut u[k + 1..],  p, w, rows, ract - 1, cact, stride);
+        full_zero_row(
+            &mut b[offset + k..],
+            &mut v[k..],
+            p,
+            w,
+            cols,
+            ract - 1,
+            cact,
+            stride,
+        );
+        full_zero_col(
+            &mut b[offset + k + stride..],
+            &mut u[k + 1..],
+            p,
+            w,
+            rows,
+            ract - 1,
+            cact - 1,
+            stride,
+        );
         ract -= 1;
         cact -= 1;
         offset += stride;
     }
     if cact < ract {
-        full_zero_col(&mut b[offset + pivot + stride ..], &mut u[pivot + 1..], p, w, rows, ract-1, cact, stride);
+        full_zero_col(
+            &mut b[offset + pivot + stride..],
+            &mut u[pivot + 1..],
+            p,
+            w,
+            rows,
+            ract - 1,
+            cact - 1,
+            stride,
+        );
     } else if cact > ract {
-        full_zero_row(&mut b[offset + pivot..], &mut v[pivot..], p, w, cols, 0, cact, stride);
+        full_zero_row(
+            &mut b[offset + pivot..],
+            &mut v[pivot..],
+            p,
+            w,
+            cols,
+            0,
+            cact,
+            stride,
+        );
     }
 }
 
@@ -250,12 +254,12 @@ pub fn full_decomp_ugivens(
 }
 #[cfg(test)]
 mod test_svd_reconstructions {
-    use crate::decomposition::svd::interface::{full_svd_decomposition};
+    use crate::decomposition::svd::interface::full_svd_decomposition;
 
+    use crate::algebra::ndmethods::create_identity_vector;
     use crate::algebra::ndmethods::matrix_mult;
     use crate::equality::approximate::approx_vector_eq;
-    use crate::algebra::ndmethods::create_identity_vector;
-    use crate::random::generation::{generate_random_vector};
+    use crate::random::generation::generate_random_vector;
     use crate::structure::ndarray::NdArray;
 
     fn check_svd_reconstruct(rows: usize, cols: usize) -> (bool, bool, bool) {

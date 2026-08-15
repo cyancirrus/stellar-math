@@ -10,15 +10,7 @@ fn zero_col(b: &mut [f32], p: &mut [f32], w: &mut [f32], ract: usize, cact: usiz
     let tau = params(&mut w[..ract], proj);
     b[0] = w[0];
     if cact != 0 && tau != 0f32 {
-        lapply_householder(
-            &mut b[1..],
-            proj,
-            w,
-            tau,
-            ract,
-            cact.saturating_sub(1),
-            stride,
-        );
+        lapply_householder(&mut b[1..], proj, w, tau, ract, cact, stride);
     }
 }
 fn zero_row(b: &mut [f32], p: &mut [f32], w: &mut [f32], ract: usize, cact: usize, stride: usize) {
@@ -51,17 +43,19 @@ pub fn ubidiagonal(
     let mut offset = 0;
     let pivot = card.saturating_sub(1);
     for k in 0..pivot {
-        zero_col(&mut b[offset + k..], p, w, ract, cact, stride);
+        zero_col(&mut b[offset + k..], p, w, ract, cact - 1, stride);
         zero_row(&mut b[offset + k + 1..], p, w, ract - 1, cact - 1, stride);
         ract -= 1;
         cact -= 1;
         offset += stride;
     }
-    if cact < ract {
+    if cols < rows {
         zero_col(&mut b[offset + pivot..], p, w, ract, 0, stride);
-    } else if cact > ract {
-        zero_row(&mut b[offset + pivot + 1..], p, w, 0, cact - 1, stride);
-    }
+    } 
+    // Bidiagonalization not supported wrong form
+    // if cols > rows {
+    //     zero_row(&mut b[offset + pivot + 1..], p, w, 0, cact - 1, stride);
+    // }
 }
 /// # lbidiagonal :: lower bidiagonal
 ///
@@ -71,6 +65,7 @@ pub fn ubidiagonal(
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
+#[rustfmt::skip]
 pub fn lbidiagonal(
     b: &mut [f32],
     p: &mut [f32],
@@ -87,21 +82,16 @@ pub fn lbidiagonal(
     let mut offset = 0;
     for k in 0..pivot {
         zero_row(&mut b[offset + k..], p, w, ract - 1, cact, stride);
-        zero_col(&mut b[offset + k + stride..], p, w, ract - 1, cact, stride);
+        zero_col(&mut b[offset + k + stride..], p, w, ract - 1, cact - 1, stride);
         ract -= 1;
         cact -= 1;
         offset += stride;
     }
-    if cact < ract {
-        zero_col(
-            &mut b[offset + pivot + stride..],
-            p,
-            w,
-            ract - 1,
-            cact,
-            stride,
-        );
-    } else if cact > ract {
+    if cols > rows {
         zero_row(&mut b[offset + pivot..], p, w, 0, cact, stride);
     }
+    // Bidiagonalization not supported wrong form
+    // if cols < rows {
+    //  zero_col(&mut b[offset + pivot + stride..], p, w, ract - 1, cact - 1, stride);
+    // }
 }
