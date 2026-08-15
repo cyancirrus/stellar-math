@@ -31,7 +31,7 @@ fn full_zero_col(
             w,
             tau,
             ract,
-            cact.saturating_sub(1),
+            cact-1,
             stride,
         );
     }
