@@ -158,23 +158,15 @@ pub fn hessenberg(
     let mut offset = 0;
     let mut active_range = rows;
     let mut split_range = cols;
-    for o in 1..rows {
+    for k in 1..rows {
         active_range -= 1;
         split_range -= 1;
-        let slice = &mut h[offset + o..offset + cols];
+        let slice = &mut h[offset + k..offset + cols];
         let proj = &mut p[..split_range];
         let tau = params(slice, proj);
         offset += stride;
         if tau == 0f32 { continue; }
-        rapply_householder(
-            &mut h[offset + o..],
-            proj,
-            w,
-            tau,
-            rows - o,
-            split_range,
-            stride,
-        );
+        rapply_householder(&mut h[offset + k..], proj, w, tau, rows - k, split_range, stride);
         lapply_householder(&mut h[offset..], proj, w, tau, active_range, cols, stride);
     }
 }
@@ -266,10 +258,10 @@ pub fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
     }
 }
 pub fn singular(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
+    let off_diag = m00 * m01 + m10 * m11;
     let m00 = m00 * m00 + m10 * m10;
     let m11 = m01 * m01 + m11 * m11;
     let d = (m00 - m11) / 2f32;
-    let off_diag = m00 * m01 + m10 * m11;
     let discriminate = d * d + off_diag * off_diag;
     m11 + d - d.signum() * discriminate.max(0f32).sqrt()
 }
