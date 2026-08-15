@@ -23,12 +23,13 @@ fn zero_row(b: &mut [f32], p: &mut [f32], w: &mut [f32], ract: usize, cact: usiz
 }
 /// # ubidiagonal :: upper bidiagonal
 ///
-/// * h: matrix to create the bidiagonal
+/// * b: matrix to create the bidiagonal
 /// * p: projection vector
 /// * w: workspace vector
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
+#[rustfmt::skip]
 pub fn ubidiagonal(
     b: &mut [f32],
     p: &mut [f32],

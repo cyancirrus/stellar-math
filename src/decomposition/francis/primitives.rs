@@ -145,6 +145,7 @@ pub fn rapply_householder(
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
+#[rustfmt::skip]
 pub fn hessenberg(
     h: &mut [f32],
     p: &mut [f32],
@@ -164,9 +165,7 @@ pub fn hessenberg(
         let proj = &mut p[..split_range];
         let tau = params(slice, proj);
         offset += stride;
-        if tau == 0f32 {
-            continue;
-        }
+        if tau == 0f32 { continue; }
         rapply_householder(
             &mut h[offset + o..],
             proj,
