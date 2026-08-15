@@ -265,3 +265,11 @@ pub fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
         m11 + d
     }
 }
+pub fn singular(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
+    eigen(
+        m00 * m00 + m10 * m10,
+        m00 * m01 + m10 * m11,
+        m01 * m00 + m11 * m10,
+        m01 * m01 + m11 * m11,
+    )
+}
