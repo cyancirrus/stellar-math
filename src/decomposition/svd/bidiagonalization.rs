@@ -71,7 +71,6 @@ pub fn lbidiagonal(
     card: usize,
     stride: usize,
 ) {
-    // rows and active columns
     let mut ract = rows;
     let mut cact = cols;
     let pivot = card.saturating_sub(1);

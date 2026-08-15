@@ -105,7 +105,6 @@ pub fn full_lbidiagonal(
     card: usize,
     stride: usize,
 ) {
-    // rows and active columns
     let mut ract = rows;
     let mut cact = cols;
     let mut offset = 0;
