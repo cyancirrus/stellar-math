@@ -40,7 +40,9 @@ fn full_zero_row(
     let slice = &mut b[..cact];
     let proj = &mut p[..cact];
     let tau = params(slice, proj);
-    if tau == 0f32 { return; }
+    if tau == 0f32 {
+        return;
+    }
     if ract != 0 {
         rapply_householder(&mut b[stride..], proj, w, tau, ract, cact, stride);
     }
