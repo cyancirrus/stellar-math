@@ -120,7 +120,6 @@ pub fn full_lbidiagonal(
         full_zero_row( &mut b[offset + pivot..], &mut v[pivot..], p, w, cols, 0, cact, stride);
     }
 }
-
 #[rustfmt::skip]
 pub fn full_decomp_lgivens(
     h: &mut [f32],
