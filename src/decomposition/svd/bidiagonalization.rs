@@ -51,7 +51,7 @@ pub fn ubidiagonal(
     }
     if cols < rows {
         zero_col(&mut b[offset + pivot..], p, w, ract, 0, stride);
-    } 
+    }
 }
 /// # lbidiagonal :: lower bidiagonal
 ///
