@@ -81,10 +81,8 @@ pub fn full_ubidiagonal(
         cact -= 1;
         offset += stride;
     }
-    if cact < ract {
+    if cols < rows {
         full_zero_col(&mut b[offset + pivot..], &mut u[pivot..], p, w, rows, ract, cact - 1, stride);
-    } else if cact > ract {
-        full_zero_row(&mut b[offset + pivot + 1..], &mut v[pivot + 1..], p, w, cols, 0, cact-1, stride);
     }
 }
 /// # full_lbidiagonal :: lower bidiagonal
@@ -95,6 +93,7 @@ pub fn full_ubidiagonal(
 /// * rows: number of rows
 /// * cols: number of cols
 /// * stride: stride of the data
+#[rustfmt::skip]
 pub fn full_lbidiagonal(
     b: &mut [f32],
     u: &mut [f32],
@@ -109,55 +108,17 @@ pub fn full_lbidiagonal(
     // rows and active columns
     let mut ract = rows;
     let mut cact = cols;
-    let pivot = card.saturating_sub(1);
     let mut offset = 0;
+    let pivot = card.saturating_sub(1);
     for k in 0..pivot {
-        full_zero_row(
-            &mut b[offset + k..],
-            &mut v[k..],
-            p,
-            w,
-            cols,
-            ract - 1,
-            cact,
-            stride,
-        );
-        full_zero_col(
-            &mut b[offset + k + stride..],
-            &mut u[k + 1..],
-            p,
-            w,
-            rows,
-            ract - 1,
-            cact - 1,
-            stride,
-        );
+        full_zero_row( &mut b[offset + k..], &mut v[k..], p, w, cols, ract - 1, cact, stride);
+        full_zero_col( &mut b[offset + k + stride..], &mut u[k + 1..], p, w, rows, ract - 1, cact - 1, stride);
         ract -= 1;
         cact -= 1;
         offset += stride;
     }
-    if cact < ract {
-        full_zero_col(
-            &mut b[offset + pivot + stride..],
-            &mut u[pivot + 1..],
-            p,
-            w,
-            rows,
-            ract - 1,
-            cact - 1,
-            stride,
-        );
-    } else if cact > ract {
-        full_zero_row(
-            &mut b[offset + pivot..],
-            &mut v[pivot..],
-            p,
-            w,
-            cols,
-            0,
-            cact,
-            stride,
-        );
+    if rows < cols {
+        full_zero_row( &mut b[offset + pivot..], &mut v[pivot..], p, w, cols, 0, cact, stride);
     }
 }
 

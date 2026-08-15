@@ -52,10 +52,6 @@ pub fn ubidiagonal(
     if cols < rows {
         zero_col(&mut b[offset + pivot..], p, w, ract, 0, stride);
     } 
-    // Bidiagonalization not supported wrong form
-    // if cols > rows {
-    //     zero_row(&mut b[offset + pivot + 1..], p, w, 0, cact - 1, stride);
-    // }
 }
 /// # lbidiagonal :: lower bidiagonal
 ///
@@ -90,8 +86,4 @@ pub fn lbidiagonal(
     if cols > rows {
         zero_row(&mut b[offset + pivot..], p, w, 0, cact, stride);
     }
-    // Bidiagonalization not supported wrong form
-    // if cols < rows {
-    //  zero_col(&mut b[offset + pivot + stride..], p, w, ract - 1, cact - 1, stride);
-    // }
 }
