@@ -16,7 +16,15 @@ pub fn decomp_ugivens(
     let mut supdiag_norm = f32::INFINITY;
     for _ in 0..max_iters {
         if supdiag_norm < threshold { break; }
-        supdiag_norm = 0f32;
+        supdiag_norm = iteration_ugivens(h, interior, stride);
+    }
+}
+fn iteration_ugivens(
+    h: &mut [f32],
+    interior: usize,
+    stride: usize,
+) -> f32 {
+        let mut supdiag_norm = 0f32;
         let mut offset = 0;
         // push zero into col
         let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
@@ -35,8 +43,7 @@ pub fn decomp_ugivens(
         // push zero into row
         let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
         apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
-        supdiag_norm += h[offset + 1].abs();
-    }
+        supdiag_norm + h[offset + 1].abs()
 }
 #[rustfmt::skip]
 pub fn decomp_lgivens(
