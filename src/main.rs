@@ -25,7 +25,7 @@ fn thing_upper() {
     let mut tolerance = 1e-6;
     let mut absolute = 1e-5;
 
-    let rows = 6;
+    let rows = 12;
     let cols = 6;
     let card = rows.min(cols);
     let stride = cols;
@@ -49,7 +49,7 @@ fn thing_upper() {
     println!("singular {smat:?}");
 }
 
-fn main() {
+fn full_upper() {
     let mut max_iters = 40;
     let mut tolerance = 1e-6;
     let mut absolute = 1e-5;
@@ -118,4 +118,8 @@ fn main() {
     let reconstruct = matrix_mult(&umat, &singular);
     let reconstruct = matrix_mult(&reconstruct, &vmat.transpose());
     println!("reconstruct {reconstruct:?}");
+}
+
+fn main() {
+    thing_upper();
 }
