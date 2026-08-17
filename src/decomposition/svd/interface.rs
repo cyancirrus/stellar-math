@@ -1,11 +1,11 @@
 use crate::decomposition::svd::bidiagonalization::{lbidiagonal, ubidiagonal};
-use crate::decomposition::svd::bulge_chasing::{decomp_lgivens, decomp_ugivens};
+use crate::decomposition::svd::bulge_chasing::{decomp_lsym, decomp_usym};
 #[rustfmt::skip]
 use crate::decomposition::svd::verify::{
     full_ubidiagonal,
     full_lbidiagonal,
-    full_decomp_ugivens,
-    full_decomp_lgivens
+    full_decomp_usym,
+    full_decomp_lsym
 };
 
 pub fn full_svd_decomposition(
@@ -19,17 +19,22 @@ pub fn full_svd_decomposition(
     card: usize,
     stride: usize,
     max_iters: usize,
-    threshold: f32,
+    tolerance: f32,
+    absolute: f32,
 ) {
     if cols > rows {
         full_lbidiagonal(b, u, v, p, w, rows, cols, card, stride);
         if rows > 1 {
-            full_decomp_lgivens(b, u, v, rows, cols, card, stride, max_iters, threshold);
+            full_decomp_lsym(
+                b, u, v, rows, cols, card, stride, max_iters, tolerance, absolute,
+            );
         }
     } else {
         full_ubidiagonal(b, u, v, p, w, rows, cols, card, stride);
         if cols > 1 {
-            full_decomp_ugivens(b, u, v, rows, cols, card, stride, max_iters, threshold);
+            full_decomp_usym(
+                b, u, v, rows, cols, card, stride, max_iters, tolerance, absolute,
+            );
         }
     }
 }
@@ -42,26 +47,80 @@ pub fn svd_decomposition(
     card: usize,
     stride: usize,
     max_iters: usize,
-    threshold: f32,
+    tolerance: f32,
+    absolute: f32,
 ) {
     if cols > rows {
         lbidiagonal(b, p, w, rows, cols, card, stride);
         if rows > 1 {
-            decomp_lgivens(b, card, stride, max_iters, threshold);
+            decomp_lsym(b, card, stride, max_iters, tolerance, absolute);
         }
     } else {
         ubidiagonal(b, p, w, rows, cols, card, stride);
         if cols > 1 {
-            decomp_ugivens(b, card, stride, max_iters, threshold);
+            decomp_usym(b, card, stride, max_iters, tolerance, absolute);
         }
     }
 }
+
+// pub fn full_svd_decomposition(
+//     b: &mut [f32],
+//     u: &mut [f32],
+//     v: &mut [f32],
+//     p: &mut [f32],
+//     w: &mut [f32],
+//     rows: usize,
+//     cols: usize,
+//     card: usize,
+//     stride: usize,
+//     max_iters: usize,
+//     threshold: f32,
+// ) {
+//     if cols > rows {
+//         full_lbidiagonal(b, u, v, p, w, rows, cols, card, stride);
+//         if rows > 1 {
+//             full_decomp_lgivens(b, u, v, rows, cols, card, stride, max_iters, threshold);
+//         }
+//     } else {
+//         full_ubidiagonal(b, u, v, p, w, rows, cols, card, stride);
+//         if cols > 1 {
+//             full_decomp_ugivens(b, u, v, rows, cols, card, stride, max_iters, threshold);
+//         }
+//     }
+// }
+// pub fn svd_decomposition(
+//     b: &mut [f32],
+//     p: &mut [f32],
+//     w: &mut [f32],
+//     rows: usize,
+//     cols: usize,
+//     card: usize,
+//     stride: usize,
+//     max_iters: usize,
+//     threshold: f32,
+// ) {
+//     if cols > rows {
+//         lbidiagonal(b, p, w, rows, cols, card, stride);
+//         if rows > 1 {
+//             decomp_lgivens(b, card, stride, max_iters, threshold);
+//         }
+//     } else {
+//         ubidiagonal(b, p, w, rows, cols, card, stride);
+//         if cols > 1 {
+//             decomp_ugivens(b, card, stride, max_iters, threshold);
+//         }
+//     }
+// }
 #[cfg(test)]
 mod test_svd_diagonal_parity {
     use super::*;
 
     use crate::algebra::ndmethods::create_identity_vector;
     use crate::random::generation::generate_random_vector;
+
+    const MAX_ITERS: usize = 40;
+    const TOLERANCE: f32 = 1e-10;
+    const ABSOLUTE: f32 = 1e-4;
 
     fn diagonal(b: &[f32], card: usize, stride: usize) -> Vec<f32> {
         (0..card).map(|i| b[i * stride + i]).collect()
@@ -90,8 +149,9 @@ mod test_svd_diagonal_parity {
             cols,
             card,
             stride,
-            40,
-            1e-10,
+            MAX_ITERS,
+            TOLERANCE,
+            ABSOLUTE,
         );
 
         // svd_decomposition path (no u/v accumulation)
@@ -106,8 +166,9 @@ mod test_svd_diagonal_parity {
             cols,
             card,
             stride,
-            40,
-            1e-10,
+            MAX_ITERS,
+            TOLERANCE,
+            ABSOLUTE,
         );
 
         let diag_full = diagonal(&b_full, card, stride);
@@ -163,9 +224,9 @@ mod test_svd_diagonal_parity {
 mod test_svd_convergence_rate {
     use super::*;
     use crate::random::generation::generate_random_vector;
-
+    const MAX_ITERS: usize = 40;
     const TOLERANCE: f32 = 1e-10;
-    const MAX_ITERS: usize = 80;
+    const ABSOLUTE: f32 = 1e-4;
     const CONVERGE_THRESHOLD: f32 = 1e-6;
 
     // off-diagonal energy just above the main diagonal (upper bidiagonal band)
@@ -195,7 +256,13 @@ mod test_svd_convergence_rate {
         sum_upper_bidiagonal(m, rows, stride) + sum_lower_bidiagonal(m, rows, stride)
     }
 
-    fn run_convergence_trial(rows: usize, cols: usize, max_iters: usize, tol: f32) -> f32 {
+    fn run_convergence_trial(
+        rows: usize,
+        cols: usize,
+        max_iters: usize,
+        tol: f32,
+        absolute: f32,
+    ) -> f32 {
         let card = rows.min(cols);
         let stride = cols;
         let maximum = rows.max(cols);
@@ -205,7 +272,7 @@ mod test_svd_convergence_rate {
         let mut p = vec![0f32; maximum];
 
         svd_decomposition(
-            &mut b, &mut p, &mut w, rows, cols, card, stride, max_iters, tol,
+            &mut b, &mut p, &mut w, rows, cols, card, stride, max_iters, tol, absolute,
         );
 
         off_diagonal_residual(&b, card, stride)
@@ -217,6 +284,7 @@ mod test_svd_convergence_rate {
         max_iters: usize,
         tol: f32,
         converge: f32,
+        absolute: f32,
     ) -> Result<(), String> {
         let mut failures = 0usize;
         let mut max_residual = 0f32;
@@ -226,7 +294,7 @@ mod test_svd_convergence_rate {
         let iterations = card * max_iters;
 
         for _ in 0..trials {
-            let residual = run_convergence_trial(rows, cols, iterations, tol);
+            let residual = run_convergence_trial(rows, cols, iterations, tol, absolute);
             sum_residual += residual as f64;
             if residual > max_residual {
                 max_residual = residual;
@@ -252,19 +320,33 @@ mod test_svd_convergence_rate {
             Ok(())
         }
     }
-
     #[test]
     fn test_convergence_rate_square_6x6() {
-        convergence_rate_report(6, 6, 10_000, MAX_ITERS, TOLERANCE, CONVERGE_THRESHOLD).unwrap();
+        convergence_rate_report(
+            6,
+            6,
+            10_000,
+            MAX_ITERS,
+            TOLERANCE,
+            CONVERGE_THRESHOLD,
+            ABSOLUTE,
+        )
+        .unwrap();
     }
 
     #[test]
     fn test_convergence_rate_square_various() {
         let mut errors = Vec::new();
         for dim in [2, 3, 4, 5, 8] {
-            if let Err(e) =
-                convergence_rate_report(dim, dim, 2_000, MAX_ITERS, TOLERANCE, CONVERGE_THRESHOLD)
-            {
+            if let Err(e) = convergence_rate_report(
+                dim,
+                dim,
+                2_000,
+                MAX_ITERS,
+                TOLERANCE,
+                CONVERGE_THRESHOLD,
+                ABSOLUTE,
+            ) {
                 errors.push(e);
             }
         }
@@ -275,9 +357,15 @@ mod test_svd_convergence_rate {
     fn test_convergence_rate_tall() {
         let mut errors = Vec::new();
         for (rows, cols) in [(4, 2), (6, 4), (8, 4), (10, 6)] {
-            if let Err(e) =
-                convergence_rate_report(rows, cols, 2_000, MAX_ITERS, TOLERANCE, CONVERGE_THRESHOLD)
-            {
+            if let Err(e) = convergence_rate_report(
+                rows,
+                cols,
+                2_000,
+                MAX_ITERS,
+                TOLERANCE,
+                CONVERGE_THRESHOLD,
+                ABSOLUTE,
+            ) {
                 errors.push(e);
             }
         }
@@ -288,9 +376,15 @@ mod test_svd_convergence_rate {
     fn test_convergence_rate_wide() {
         let mut errors = Vec::new();
         for (rows, cols) in [(2, 4), (4, 6), (4, 8), (6, 10)] {
-            if let Err(e) =
-                convergence_rate_report(rows, cols, 2_000, MAX_ITERS, TOLERANCE, CONVERGE_THRESHOLD)
-            {
+            if let Err(e) = convergence_rate_report(
+                rows,
+                cols,
+                2_000,
+                MAX_ITERS,
+                TOLERANCE,
+                CONVERGE_THRESHOLD,
+                ABSOLUTE,
+            ) {
                 errors.push(e);
             }
         }

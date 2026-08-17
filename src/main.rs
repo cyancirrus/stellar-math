@@ -6,13 +6,13 @@ use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
 use stellar::decomposition::svd::bidiagonalization::{lbidiagonal, ubidiagonal};
-use stellar::decomposition::svd::bulge_chasing::{decomp_usym, decomp_lsym};
+use stellar::decomposition::svd::bulge_chasing::{decomp_lsym, decomp_usym};
 #[rustfmt::skip]
 use stellar::decomposition::svd::verify::{
     full_ubidiagonal,
     full_lbidiagonal,
-    full_decomp_ugivens,
-    full_decomp_lgivens,
+    // full_decomp_ugivens,
+    // full_decomp_lgivens,
     full_decomp_usym,
 full_decomp_lsym,
 };
