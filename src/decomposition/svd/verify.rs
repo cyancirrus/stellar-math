@@ -125,7 +125,7 @@ pub fn full_lbidiagonal(
     }
 }
 #[rustfmt::skip]
-pub fn full_decomp_usym(
+pub fn full_decomp_ugivens(
     b: &mut [f32],
     u: &mut [f32],
     v: &mut [f32],
@@ -165,7 +165,7 @@ pub fn full_decomp_usym(
     }
 }
 #[rustfmt::skip]
-pub fn full_decomp_lsym(
+pub fn full_decomp_lgivens(
     b: &mut [f32],
     u: &mut [f32],
     v: &mut [f32],

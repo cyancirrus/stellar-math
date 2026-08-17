@@ -1,11 +1,11 @@
 use crate::decomposition::svd::bidiagonalization::{lbidiagonal, ubidiagonal};
-use crate::decomposition::svd::bulge_chasing::{decomp_lsym, decomp_usym};
+use crate::decomposition::svd::bulge_chasing::{decomp_lgivens, decomp_ugivens};
 #[rustfmt::skip]
 use crate::decomposition::svd::verify::{
     full_ubidiagonal,
     full_lbidiagonal,
-    full_decomp_usym,
-    full_decomp_lsym
+    full_decomp_ugivens,
+    full_decomp_lgivens
 };
 
 pub fn full_svd_decomposition(
@@ -25,14 +25,14 @@ pub fn full_svd_decomposition(
     if cols > rows {
         full_lbidiagonal(b, u, v, p, w, rows, cols, card, stride);
         if rows > 1 {
-            full_decomp_lsym(
+            full_decomp_lgivens(
                 b, u, v, rows, cols, card, stride, max_iters, tolerance, absolute,
             );
         }
     } else {
         full_ubidiagonal(b, u, v, p, w, rows, cols, card, stride);
         if cols > 1 {
-            full_decomp_usym(
+            full_decomp_ugivens(
                 b, u, v, rows, cols, card, stride, max_iters, tolerance, absolute,
             );
         }
@@ -53,12 +53,12 @@ pub fn svd_decomposition(
     if cols > rows {
         lbidiagonal(b, p, w, rows, cols, card, stride);
         if rows > 1 {
-            decomp_lsym(b, card, stride, max_iters, tolerance, absolute);
+            decomp_lgivens(b, card, stride, max_iters, tolerance, absolute);
         }
     } else {
         ubidiagonal(b, p, w, rows, cols, card, stride);
         if cols > 1 {
-            decomp_usym(b, card, stride, max_iters, tolerance, absolute);
+            decomp_ugivens(b, card, stride, max_iters, tolerance, absolute);
         }
     }
 }

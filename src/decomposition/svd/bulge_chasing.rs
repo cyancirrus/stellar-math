@@ -6,7 +6,7 @@ use crate::decomposition::sgivens::{
 };
 use crate::decomposition::svd::primitives::{deflate, singular};
 #[rustfmt::skip]
-pub fn decomp_usym(
+pub fn decomp_ugivens(
     b: &mut [f32],
     card: usize,
     stride: usize,
@@ -45,7 +45,7 @@ pub fn decomp_usym(
     }
 }
 #[rustfmt::skip]
-pub fn decomp_lsym(
+pub fn decomp_lgivens(
     b: &mut [f32],
     card: usize,
     stride: usize,
