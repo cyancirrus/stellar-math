@@ -257,11 +257,3 @@ pub fn eigen(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
         m11 + d
     }
 }
-pub fn singular(m00: f32, m01: f32, m10: f32, m11: f32) -> f32 {
-    let off_diag = m00 * m01 + m10 * m11;
-    let m00 = m00 * m00 + m10 * m10;
-    let m11 = m01 * m01 + m11 * m11;
-    let d = (m00 - m11) / 2f32;
-    let discriminate = d * d + off_diag * off_diag;
-    m11 + d - d.signum() * discriminate.max(0f32).sqrt()
-}

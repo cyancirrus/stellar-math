@@ -195,12 +195,7 @@ mod test_svd_convergence_rate {
         sum_upper_bidiagonal(m, rows, stride) + sum_lower_bidiagonal(m, rows, stride)
     }
 
-    fn run_convergence_trial(
-        rows: usize,
-        cols: usize,
-        max_iters: usize,
-        tol: f32,
-    ) -> f32 {
+    fn run_convergence_trial(rows: usize, cols: usize, max_iters: usize, tol: f32) -> f32 {
         let card = rows.min(cols);
         let stride = cols;
         let maximum = rows.max(cols);
@@ -210,9 +205,7 @@ mod test_svd_convergence_rate {
         let mut p = vec![0f32; maximum];
 
         svd_decomposition(
-            &mut b, &mut p, &mut w,
-            rows, cols, card, stride,
-            max_iters, tol,
+            &mut b, &mut p, &mut w, rows, cols, card, stride, max_iters, tol,
         );
 
         off_diagonal_residual(&b, card, stride)
@@ -229,7 +222,7 @@ mod test_svd_convergence_rate {
         let mut max_residual = 0f32;
         let mut sum_residual = 0f64;
         let card = rows.min(cols);
-        let convergence_threshold = (card as f32)* converge;
+        let convergence_threshold = (card as f32) * converge;
         let iterations = card * max_iters;
 
         for _ in 0..trials {
@@ -269,7 +262,9 @@ mod test_svd_convergence_rate {
     fn test_convergence_rate_square_various() {
         let mut errors = Vec::new();
         for dim in [2, 3, 4, 5, 8] {
-            if let Err(e) = convergence_rate_report(dim, dim, 2_000, MAX_ITERS, TOLERANCE, CONVERGE_THRESHOLD) {
+            if let Err(e) =
+                convergence_rate_report(dim, dim, 2_000, MAX_ITERS, TOLERANCE, CONVERGE_THRESHOLD)
+            {
                 errors.push(e);
             }
         }
@@ -280,7 +275,9 @@ mod test_svd_convergence_rate {
     fn test_convergence_rate_tall() {
         let mut errors = Vec::new();
         for (rows, cols) in [(4, 2), (6, 4), (8, 4), (10, 6)] {
-            if let Err(e) = convergence_rate_report(rows, cols, 2_000, MAX_ITERS, TOLERANCE, CONVERGE_THRESHOLD) {
+            if let Err(e) =
+                convergence_rate_report(rows, cols, 2_000, MAX_ITERS, TOLERANCE, CONVERGE_THRESHOLD)
+            {
                 errors.push(e);
             }
         }
@@ -291,7 +288,9 @@ mod test_svd_convergence_rate {
     fn test_convergence_rate_wide() {
         let mut errors = Vec::new();
         for (rows, cols) in [(2, 4), (4, 6), (4, 8), (6, 10)] {
-            if let Err(e) = convergence_rate_report(rows, cols, 2_000, MAX_ITERS, TOLERANCE, CONVERGE_THRESHOLD) {
+            if let Err(e) =
+                convergence_rate_report(rows, cols, 2_000, MAX_ITERS, TOLERANCE, CONVERGE_THRESHOLD)
+            {
                 errors.push(e);
             }
         }

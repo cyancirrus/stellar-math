@@ -4,32 +4,7 @@ use crate::decomposition::sgivens::{
     apply_gt_right,
     implicit_givens_rotation,
 };
-use crate::decomposition::francis::primitives::{
-    eigen,
-    singular,
-};
-
-const MAX_ITERS:usize=40;
-
-pub fn deflate(
-    amount: usize,
-    stride: usize,
-    range: &mut usize,
-    inter: &mut usize,
-    e1: &mut usize,
-    tl: &mut usize,
-    bl: &mut usize,
-    // stall: &mut usize,
-    curriter: &mut usize,
-) {
-    let shift = amount * stride + amount;
-    *range -= amount;
-    *inter = inter.saturating_sub(amount);
-    *e1 = e1.saturating_sub(shift);
-    *tl = tl.saturating_sub(shift);
-    *bl = bl.saturating_sub(shift);
-    *curriter = curriter.saturating_sub(MAX_ITERS >> 1);
-}
+use crate::decomposition::svd::primitives::{deflate, singular};
 #[rustfmt::skip]
 pub fn decomp_usym(
     b: &mut [f32],
@@ -71,42 +46,30 @@ pub fn decomp_usym(
     }
 }
 
-
 // (a00, a10) * (a00, a01)
 // (a01 a11)    (a10, a11)
 
-
-fn ugivens_iteration(
-    h: &mut [f32],
-    interior: usize,
-    stride: usize,
-    tl: usize,
-    bl: usize,
-) -> f32 {
-        let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
-        let mut supdiag_norm = 0f32;
-        let mut offset = 0;
-        // push zero into col
-        // let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
-        let sq_0 = h[0] * h[0] + h[1] * h[stride];
-        let sq_1 = h[0] * h[1] + h[stride] * h[stride + 1];
-        let (_, cos, sin) = implicit_givens_rotation(sq_0 - sing, sq_1);
-        apply_gt_right(h, 0, 1, stride, 2, cos, sin);
-        for _ in 0..interior {
-            // push zero into row
-            let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
-            apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
-            // push zero into col
-            offset += 1;
-            let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
-            apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
-            supdiag_norm += h[offset].abs();
-            offset += stride;
-        }
+fn ugivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, bl: usize) {
+    let mut offset = 0;
+    // push zero into col
+    let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
+    let sq_0 = h[0] * h[0] + h[1] * h[stride];
+    let sq_1 = h[0] * h[1] + h[stride] * h[stride + 1];
+    let (_, cos, sin) = implicit_givens_rotation(sq_0 - sing, sq_1);
+    apply_gt_right(h, 0, 1, stride, 2, cos, sin);
+    for _ in 0..interior {
         // push zero into row
         let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
-        apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
-        supdiag_norm + h[offset + 1].abs()
+        apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
+        // push zero into col
+        offset += 1;
+        let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
+        apply_gt_right(&mut h[offset..], 0, 1, stride, 3, cos, sin);
+        offset += stride;
+    }
+    // push zero into row
+    let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
+    apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
 }
 #[rustfmt::skip]
 pub fn decomp_lgivens(
@@ -142,31 +105,27 @@ pub fn decomp_lgivens(
         subdiag_norm += h[offset + stride].abs();
     }
 }
-fn iteration_ugivens(
-    h: &mut [f32],
-    interior: usize,
-    stride: usize,
-) -> f32 {
-        let mut supdiag_norm = 0f32;
-        let mut offset = 0;
-        // push zero into col
-        let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
-        apply_gt_right(h, 0, 1, stride, 2, cos, sin);
-        for _ in 0..interior {
-            // push zero into row
-            let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
-            apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
-            // push zero into col
-            offset += 1;
-            let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
-            apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
-            supdiag_norm += h[offset].abs();
-            offset += stride;
-        }
+fn iteration_ugivens(h: &mut [f32], interior: usize, stride: usize) -> f32 {
+    let mut supdiag_norm = 0f32;
+    let mut offset = 0;
+    // push zero into col
+    let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
+    apply_gt_right(h, 0, 1, stride, 2, cos, sin);
+    for _ in 0..interior {
         // push zero into row
         let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
-        apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
-        supdiag_norm + h[offset + 1].abs()
+        apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
+        // push zero into col
+        offset += 1;
+        let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
+        apply_gt_right(&mut h[offset..], 0, 1, stride, 3, cos, sin);
+        supdiag_norm += h[offset].abs();
+        offset += stride;
+    }
+    // push zero into row
+    let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
+    apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
+    supdiag_norm + h[offset + 1].abs()
 }
 #[rustfmt::skip]
 pub fn decomp_ugivens(
