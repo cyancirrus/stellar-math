@@ -59,9 +59,6 @@ fn ugivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, b
     let mut offset = 0;
     // push zero into col
     let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
-    // let sq_00 = h[0] * h[0] + h[1] * h[stride];
-    // let sq_00 = h[0] * h[0] + h[stride] * h[stride];
-    // let sq_01 = h[0] * h[1] + h[stride] * h[stride + 1];
     let sq_00 = h[0] * h[0];
     let sq_01 = h[0] * h[1];
     let (_, cos, sin) = implicit_givens_rotation(sq_00 - sing, sq_01);
@@ -96,14 +93,15 @@ pub fn decomp_lsym(
     let mut inter = card.saturating_sub(2);
     let s = card * stride;
     // error 1 supra-diagonal above the first real eigen
-    let mut tl = s.saturating_sub(stride + 2);
-    let mut bl = s.saturating_sub(2);
-    let mut e1 = s.saturating_sub(2);
+    let mut tl = (s + card).saturating_sub(2 + stride * 2);
+    let mut bl = (s + card).saturating_sub(stride + 2);
+    let mut e1 = (s + card).saturating_sub(stride + 2);
     let mut curriter = 0;
     while range > 1 && curriter < max_iters {
         curriter += 1;
         let scale = b[tl].abs() + b[bl+1].abs();
         if b[e1].abs() < (scale * tolerance).min(absolute) {
+            println!("deflating");
             deflate(
                 1,
                 stride,
@@ -123,17 +121,11 @@ pub fn decomp_lsym(
     }
 }
 
-// (a00, a01) * (a00, a10)
-// (a10, a11)   (a01, a11)
-
 #[rustfmt::skip]
 fn lgivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, bl: usize) {
     let mut offset = 0;
     // push zero into row
-    // let (_, cos, sin) = implicit_givens_rotation(h[0], h[stride]);
     let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
-    // let sq_00 = h[0] * h[0] + h[stride] * h[stride];
-    // let sq_10 = h[0] * h[stride] + h[stride] * h[stride + 1];
     let sq_00 = h[0] * h[0];
     let sq_10 = h[0] * h[stride];
     // let (_, cos, sin) = implicit_givens_rotation(h[0], h[stride]);
@@ -153,17 +145,6 @@ fn lgivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, b
     let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
     apply_gt_right(&mut h[offset ..], 0, 1, stride, 2, cos, sin);
 }
-
-
-
-
-
-
-
-
-
-
-
 #[rustfmt::skip]
 pub fn decomp_lgivens(
     h: &mut [f32],

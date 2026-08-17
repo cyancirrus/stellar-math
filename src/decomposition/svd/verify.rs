@@ -334,52 +334,10 @@ mod test_svd_reconstructions {
         assert!(recon_failures < 10, "too many reconstruction failures: {recon_failures}");
     }
 }
-// #[rustfmt::skip]
-// pub fn full_decomp_ugivens(
-//     h: &mut [f32],
-//     u: &mut [f32],
-//     v: &mut [f32],
-//     rows: usize,
-//     cols: usize,
-//     card: usize,
-//     stride: usize,
-//     max_iters:usize,
-//     threshold: f32,
-// ) {
-//     let interior = card.saturating_sub(2);
-//     let mut supdiag_norm = f32::INFINITY;
-//     for _ in 0..max_iters {
-//         if supdiag_norm < threshold { break; }
-//         supdiag_norm = 0f32;
-//         let mut offset = 0;
-//         let mut uoffset = 0;
-//         let mut voffset = 0;
-//         // push zero into col
-//         let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
-//         apply_gt_right(h, 0, 1, stride, 2, cos, sin);
-//         apply_gt_right(v, 0, 1, cols, cols, cos, sin);
-//         for _ in 0..interior {
-//             // push zero into row
-//             let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
-//             apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
-//             apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
-//             // push zero into col
-//             offset += 1;
-//             voffset += 1;
-//             let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
-//             apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
-//             apply_gt_right(&mut v[voffset ..], 0, 1, cols, cols, cos, sin);
-//             supdiag_norm += h[offset].abs();
-//             uoffset += 1;
-//             offset += stride;
-//         }
-//         // push zero into row
-//         let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
-//         apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
-//         apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
-//         supdiag_norm += h[offset + 1].abs();
-//     }
-// }
+
+
+
+
 #[rustfmt::skip]
 pub fn full_decomp_usym(
     b: &mut [f32],
@@ -464,4 +422,91 @@ fn full_ugivens_iteration(
     let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
     apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
     apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
+}
+
+#[rustfmt::skip]
+pub fn full_decomp_lsym(
+    b: &mut [f32],
+    u: &mut [f32],
+    v: &mut [f32],
+    rows: usize,
+    cols: usize,
+    card: usize,
+    stride: usize,
+    max_iters:usize,
+    tolerance: f32,
+    absolute: f32,
+) {
+    let mut range = card;
+    let mut inter = card.saturating_sub(2);
+    let s = card * stride;
+    // error 1 supra-diagonal above the first real eigen
+    let mut tl = (s + card).saturating_sub(2 + stride * 2);
+    let mut bl = (s + card).saturating_sub(stride + 2);
+    let mut e1 = (s + card).saturating_sub(stride + 2);
+    let mut curriter = 0;
+    while range > 1 && curriter < max_iters {
+        curriter += 1;
+        let scale = b[tl].abs() + b[bl+1].abs();
+        if b[e1].abs() < (scale * tolerance).min(absolute) {
+            deflate(
+                1,
+                stride,
+                &mut range,
+                &mut inter,
+                &mut e1,
+                &mut tl,
+                &mut bl,
+                &mut curriter,
+            );
+        } else {
+            full_lgivens_iteration(b, u, v, inter, rows, cols, stride, tl, bl);
+        }
+    }
+    if curriter == max_iters {
+        println!("budget-exceeded");
+    }
+}
+
+
+fn full_lgivens_iteration(
+    h: &mut [f32],
+    u: &mut [f32],
+    v: &mut [f32],
+    interior: usize,
+    rows: usize,
+    cols: usize,
+    stride: usize,
+    tl: usize,
+    bl: usize,
+) {
+    let mut offset = 0;
+    let mut uoffset = 0;
+    let mut voffset = 0;
+    // push zero into col
+    let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
+    let sq_00 = h[0] * h[0];
+    let sq_10 = h[0] * h[stride];
+    let (_, cos, sin) = implicit_givens_rotation(sq_00 - sing, sq_10);
+    apply_g_left(h, 0, 1, stride, 2, cos, sin);
+    apply_gt_right(u, 0, 1, rows, rows, cos, sin);
+    for _ in 0..interior {
+        // push zero into col
+        let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
+        apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
+        apply_gt_right(&mut v[voffset ..], 0, 1, cols, cols, cos, sin);
+        // push zero into row
+        offset += stride;
+        voffset += 1;
+        uoffset += 1;
+
+        let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
+        apply_g_left(&mut h[offset..], 0, 1, stride, 3, cos, sin);
+        apply_gt_right(&mut u[uoffset..], 0, 1, rows, rows, cos, sin);
+        offset += 1;
+    }
+    // // push zero into col
+    let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
+    apply_gt_right(&mut h[offset ..], 0, 1, stride, 2, cos, sin);
+    apply_gt_right(&mut v[voffset ..], 0, 1, cols, cols, cos, sin);
 }
