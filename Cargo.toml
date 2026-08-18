@@ -21,6 +21,7 @@ itertools = "0.14.0"
 csv = "1.3.1"
 criterion = "0.8"
 ndarray = "0.17.2"
+nalgebra = "0.35.0"
 pprof = { version = "0.15", features = ["flamegraph", "frame-pointer"] }
 plotters = { version = "0.3", features = ["full_palette"] }
 faer = { version = "0.24.0", features = ["std", "rayon"] }
@@ -43,6 +44,10 @@ harness = false
 [[bench]]
 name = "kernel"
 sample_size = 1
+harness = false
+
+[[bench]]
+name = "svd"
 harness = false
 
 [profile.release]

@@ -1,5 +1,6 @@
 #![allow(unused)]
 pub const LQ_SIZES: [usize; 4] = [8, 16, 32, 64];
+pub const SVD_SIZES: [usize; 4] = [8, 16, 32, 64];
 pub const S_MATRIX_ALLIGNED: [(usize, usize, usize); 4] =
     [(8, 8, 8), (16, 16, 16), (32, 32, 32), (64, 64, 64)];
 pub const S_MATRIX_UNALLIGNED: [(usize, usize, usize); 4] =
