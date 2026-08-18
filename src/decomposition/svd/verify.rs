@@ -1,6 +1,6 @@
 use crate::decomposition::francis::primitives::{lapply_householder, params, rapply_householder};
 use crate::decomposition::sgivens::{apply_g_left, apply_gt_right, implicit_givens_rotation};
-use crate::decomposition::svd::primitives::{deflate, singular};
+use crate::decomposition::svd::primitives::{deflate, lower_singular, upper_singular};
 
 #[rustfmt::skip]
 fn full_zero_col(
@@ -219,11 +219,10 @@ fn full_ugivens_iteration(
     let mut uoffset = 0;
     let mut voffset = 0;
     // push zero into col
-    // let (_, cos, sin) = implicit_givens_rotation(h[0], h[1]);
-    let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
-    let sq_0 = h[0] * h[0];
-    let sq_1 = h[0] * h[1];
-    let (_, cos, sin) = implicit_givens_rotation(sq_0 - sing, sq_1);
+    let s00 = h[0] * h[0];
+    let s01 = h[0] * h[1];
+    let sing = upper_singular(h[tl], h[tl + 1], h[bl + 1]);
+    let (_, cos, sin) = implicit_givens_rotation(s00 - sing, s01);
     apply_gt_right(h, 0, 1, stride, 2, cos, sin);
     apply_gt_right(v, 0, 1, cols, cols, cos, sin);
     for _ in 0..interior {
@@ -260,10 +259,10 @@ fn full_lgivens_iteration(
     let mut uoffset = 0;
     let mut voffset = 0;
     // push zero into col
-    let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
-    let sq_00 = h[0] * h[0];
-    let sq_10 = h[0] * h[stride];
-    let (_, cos, sin) = implicit_givens_rotation(sq_00 - sing, sq_10);
+    let s00 = h[0] * h[0];
+    let s10 = h[0] * h[stride];
+    let sing = lower_singular(h[tl], h[bl], h[bl + 1]);
+    let (_, cos, sin) = implicit_givens_rotation(s00 - sing, s10);
     apply_g_left(h, 0, 1, stride, 2, cos, sin);
     apply_gt_right(u, 0, 1, rows, rows, cos, sin);
     for _ in 0..interior {

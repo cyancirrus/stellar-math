@@ -4,7 +4,7 @@ use crate::decomposition::sgivens::{
     apply_gt_right,
     implicit_givens_rotation,
 };
-use crate::decomposition::svd::primitives::{deflate, singular, upper_singular};
+use crate::decomposition::svd::primitives::{deflate, lower_singular, upper_singular};
 #[rustfmt::skip]
 pub fn decomp_ugivens(
     b: &mut [f32],
@@ -85,11 +85,10 @@ fn ugivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, b
     let mut offset = 0;
     // push zero into col
     // let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
-    let sq_00 = h[0] * h[0];
-    let sq_01 = h[0] * h[1];
-    let sq_11 = h[1] * h[1] + h[stride + 1] * h[stride + 1];;
-    let sing = upper_singular(sq_00, sq_01, sq_11);
-    let (_, cos, sin) = implicit_givens_rotation(sq_00 - sing, sq_01);
+    let s00 = h[0] * h[0];
+    let s01 = h[0] * h[1];
+    let sing = upper_singular(h[tl], h[tl + 1], h[bl + 1]);
+    let (_, cos, sin) = implicit_givens_rotation(s00 - sing, s01);
     apply_gt_right(h, 0, 1, stride, 2, cos, sin);
     for _ in 0..interior {
         // push zero into row
@@ -110,10 +109,10 @@ fn ugivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, b
 fn lgivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, bl: usize) {
     let mut offset = 0;
     // push zero into row
-    let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
-    let sq_00 = h[0] * h[0];
-    let sq_10 = h[0] * h[stride];
-    let (_, cos, sin) = implicit_givens_rotation(sq_00 - sing, sq_10);
+    let s00 = h[0] * h[0];
+    let s10 = h[0] * h[stride];
+    let sing = lower_singular(h[tl], h[bl], h[bl + 1]);
+    let (_, cos, sin) = implicit_givens_rotation(s00 - sing, s10);
     apply_g_left(h, 0, 1, stride, 2, cos, sin);
     for _ in 0..interior {
         // push zero into col
