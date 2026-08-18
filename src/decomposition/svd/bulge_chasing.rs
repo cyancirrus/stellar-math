@@ -84,7 +84,6 @@ pub fn decomp_lgivens(
 fn ugivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, bl: usize) {
     let mut offset = 0;
     // push zero into col
-    // let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let s00 = h[0] * h[0];
     let s01 = h[0] * h[1];
     let sing = upper_singular(h[tl], h[tl + 1], h[bl + 1]);

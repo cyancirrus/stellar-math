@@ -26,7 +26,6 @@ pub fn lower_singular(m00: f32, m10: f32, m11: f32) -> f32 {
     let discriminate = d * d + off_diag * off_diag;
     s11 + d - d.signum() * discriminate.max(0f32).sqrt()
 }
-
 pub fn deflate(
     amount: usize,
     stride: usize,
