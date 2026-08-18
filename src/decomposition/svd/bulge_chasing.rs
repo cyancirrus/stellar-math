@@ -103,8 +103,6 @@ fn ugivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, b
     let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
     apply_g_left(&mut h[offset..], 0, 1, stride, 2, cos, sin);
 }
-
-#[rustfmt::skip]
 fn lgivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, bl: usize) {
     let mut offset = 0;
     // push zero into row
@@ -116,7 +114,7 @@ fn lgivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, b
     for _ in 0..interior {
         // push zero into col
         let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
-        apply_gt_right(&mut h[offset ..], 0, 1, stride, 3, cos, sin);
+        apply_gt_right(&mut h[offset..], 0, 1, stride, 3, cos, sin);
         // push zero into row
         offset += stride;
         let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + stride]);
@@ -125,5 +123,5 @@ fn lgivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, b
     }
     // // push zero into col
     let (_, cos, sin) = implicit_givens_rotation(h[offset], h[offset + 1]);
-    apply_gt_right(&mut h[offset ..], 0, 1, stride, 2, cos, sin);
+    apply_gt_right(&mut h[offset..], 0, 1, stride, 2, cos, sin);
 }
