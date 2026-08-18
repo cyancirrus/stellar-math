@@ -11,6 +11,16 @@ use crate::algebra::ndmethods::tensor_mult;
 use crate::decomposition::lu::lu_decompose;
 use std::cmp::Ordering;
 
+
+/// we have like measurement system 0 and prediction system 1
+///
+/// prediction <- this gives a new location (and then we track our variance in the measured)
+/// measruement <- kinda same it's like hey here is where i was here's some derives here's where i
+/// am most likes
+///
+/// k matrix is like hey we do the pseudoinverse of the measuremnt and then we take k * prediction
+
+
 struct State {
     theta: f32,
     velocity: f32,

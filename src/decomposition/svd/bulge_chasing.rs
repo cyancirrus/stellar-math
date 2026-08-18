@@ -4,7 +4,7 @@ use crate::decomposition::sgivens::{
     apply_gt_right,
     implicit_givens_rotation,
 };
-use crate::decomposition::svd::primitives::{deflate, singular};
+use crate::decomposition::svd::primitives::{deflate, singular, upper_singular};
 #[rustfmt::skip]
 pub fn decomp_ugivens(
     b: &mut [f32],
@@ -84,9 +84,11 @@ pub fn decomp_lgivens(
 fn ugivens_iteration(h: &mut [f32], interior: usize, stride: usize, tl: usize, bl: usize) {
     let mut offset = 0;
     // push zero into col
-    let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
+    // let sing = singular(h[tl], h[tl + 1], h[bl], h[bl + 1]);
     let sq_00 = h[0] * h[0];
     let sq_01 = h[0] * h[1];
+    let sq_11 = h[1] * h[1] + h[stride + 1] * h[stride + 1];;
+    let sing = upper_singular(sq_00, sq_01, sq_11);
     let (_, cos, sin) = implicit_givens_rotation(sq_00 - sing, sq_01);
     apply_gt_right(h, 0, 1, stride, 2, cos, sin);
     for _ in 0..interior {
