@@ -63,54 +63,6 @@ pub fn svd_decomposition(
     }
 }
 
-// pub fn full_svd_decomposition(
-//     b: &mut [f32],
-//     u: &mut [f32],
-//     v: &mut [f32],
-//     p: &mut [f32],
-//     w: &mut [f32],
-//     rows: usize,
-//     cols: usize,
-//     card: usize,
-//     stride: usize,
-//     max_iters: usize,
-//     threshold: f32,
-// ) {
-//     if cols > rows {
-//         full_lbidiagonal(b, u, v, p, w, rows, cols, card, stride);
-//         if rows > 1 {
-//             full_decomp_lgivens(b, u, v, rows, cols, card, stride, max_iters, threshold);
-//         }
-//     } else {
-//         full_ubidiagonal(b, u, v, p, w, rows, cols, card, stride);
-//         if cols > 1 {
-//             full_decomp_ugivens(b, u, v, rows, cols, card, stride, max_iters, threshold);
-//         }
-//     }
-// }
-// pub fn svd_decomposition(
-//     b: &mut [f32],
-//     p: &mut [f32],
-//     w: &mut [f32],
-//     rows: usize,
-//     cols: usize,
-//     card: usize,
-//     stride: usize,
-//     max_iters: usize,
-//     threshold: f32,
-// ) {
-//     if cols > rows {
-//         lbidiagonal(b, p, w, rows, cols, card, stride);
-//         if rows > 1 {
-//             decomp_lgivens(b, card, stride, max_iters, threshold);
-//         }
-//     } else {
-//         ubidiagonal(b, p, w, rows, cols, card, stride);
-//         if cols > 1 {
-//             decomp_ugivens(b, card, stride, max_iters, threshold);
-//         }
-//     }
-// }
 #[cfg(test)]
 mod test_svd_diagonal_parity {
     use super::*;
