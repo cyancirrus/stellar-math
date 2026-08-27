@@ -12,39 +12,31 @@ use stellar::structure::ndarray::NdArray;
 /// Dumb dense Q = I - Y*T*Y', built with plain matmul, no kernels/contractions.
 /// l_yt: packed [L \ Y'] storage after wy_decomposition, cols x cols.
 /// t_data: T after wy_decomposition, cols x cols.
-fn dumb_dense_q(l_yt: &[f32], t_data: &[f32], cols: usize) -> NdArray {
-    let mut y_prime_data = vec![0f32; cols * cols];
-    for i in 0..cols {
-        y_prime_data[i * cols + i] = 1.0; // implicit unit diagonal
+fn dumb_dense_q(l_yt: &[f32], t_data: &[f32], rows: usize, cols: usize) -> NdArray {
+    // Y' is rows x cols: implicit unit diagonal, strictly-right entries from l_yt
+    let mut y_prime_data = vec![0f32; rows * cols];
+    for i in 0..rows {
+        y_prime_data[i * cols + i] = 1.0;
         for j in (i + 1)..cols {
             y_prime_data[i * cols + j] = l_yt[i * cols + j];
         }
     }
-    let y_prime = NdArray {
-        dims: vec![cols, cols],
-        data: y_prime_data,
-    };
-    let t_mat = NdArray {
-        dims: vec![cols, cols],
-        data: t_data.to_vec(),
-    };
-    let y_mat = y_prime.transpose();
+    let y_prime = NdArray { dims: vec![rows, cols], data: y_prime_data };
+    let t_mat = NdArray { dims: vec![rows, rows], data: t_data.to_vec() };
+    let y_mat = y_prime.transpose(); // cols x rows
 
-    let yt = matrix_mult(&y_mat, &t_mat);
-    let ytyt = matrix_mult(&yt, &y_prime);
+    let yt = matrix_mult(&y_mat, &t_mat);   // cols x rows
+    let ytyt = matrix_mult(&yt, &y_prime);  // cols x cols
 
     let mut q_data = create_identity_vector(cols, cols);
     for idx in 0..q_data.len() {
         q_data[idx] -= ytyt.data[idx];
     }
-    NdArray {
-        dims: vec![cols, cols],
-        data: q_data,
-    }
+    NdArray { dims: vec![cols, cols], data: q_data }
 }
 
 fn check_q(input_data: &[f32], l_yt: &[f32], t_data: &[f32], rows: usize, cols: usize) {
-    let dense_q = dumb_dense_q(l_yt, t_data, cols);
+    let dense_q = dumb_dense_q(l_yt, t_data, rows, cols);
 
     let input_matrix = NdArray {
         dims: vec![rows, cols],
@@ -167,10 +159,10 @@ fn test_reconstruct() {
 }
 
 fn main() {
-    let (rows, cols, stride) = (2, 2, 2);
+    let (rows, cols, stride) = (4, 8, 8);
     let mut l_yt = generate_random_vector(rows * cols);
     // l_yt[2] = 0f32;
-    let mut t = generate_random_vector(cols * cols);
+    let mut t = generate_random_vector(rows * rows);
     let mut w = vec![0f32; cols];
 
     let mut o_buffer = create_identity_vector(cols, cols);

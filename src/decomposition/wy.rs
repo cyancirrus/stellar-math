@@ -87,7 +87,7 @@ fn triangle_iteration(
     // diagonal element stores the L[ii] element not householder
     let mut hoffset = 0;
     // h'Y :: Y
-    let koffset = k * h_dim;
+    let koffset = k * t_dim;
     let h_k_tail = r;
     // let h_k_tail = &h[koffset + k + 1..koffset + h_dim];
     for l in 0..k {
