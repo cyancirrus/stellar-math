@@ -12,8 +12,9 @@ use stellar::algebra::bmethods::contractions::{
 };
 
 fn main() {
-    let (rows, cols, stride) = (1, 2, 2);
+    let (rows, cols, stride) = (2, 2, 2);
     let mut l_yt = generate_random_vector(rows * cols);
+    l_yt[1] = 0f32;
     let mut t = generate_random_vector(cols * cols);
     let mut w = vec![0f32; cols];
     
@@ -53,7 +54,7 @@ fn main() {
         0,
         0,
         rows,
-        cols,
+        cols.saturating_sub(1),
         cols,
         stride,
         stride,
@@ -84,7 +85,7 @@ fn main() {
         0,
         0,
         rows,
-        cols,
+        cols.saturating_sub(1),
         cols,
         stride,
         stride,
