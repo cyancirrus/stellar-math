@@ -21,18 +21,27 @@ fn dumb_dense_q(l_yt: &[f32], t_data: &[f32], rows: usize, cols: usize) -> NdArr
             y_prime_data[i * cols + j] = l_yt[i * cols + j];
         }
     }
-    let y_prime = NdArray { dims: vec![rows, cols], data: y_prime_data };
-    let t_mat = NdArray { dims: vec![rows, rows], data: t_data.to_vec() };
+    let y_prime = NdArray {
+        dims: vec![rows, cols],
+        data: y_prime_data,
+    };
+    let t_mat = NdArray {
+        dims: vec![rows, rows],
+        data: t_data.to_vec(),
+    };
     let y_mat = y_prime.transpose(); // cols x rows
 
-    let yt = matrix_mult(&y_mat, &t_mat);   // cols x rows
-    let ytyt = matrix_mult(&yt, &y_prime);  // cols x cols
+    let yt = matrix_mult(&y_mat, &t_mat); // cols x rows
+    let ytyt = matrix_mult(&yt, &y_prime); // cols x cols
 
     let mut q_data = create_identity_vector(cols, cols);
     for idx in 0..q_data.len() {
         q_data[idx] -= ytyt.data[idx];
     }
-    NdArray { dims: vec![cols, cols], data: q_data }
+    NdArray {
+        dims: vec![cols, cols],
+        data: q_data,
+    }
 }
 
 fn check_q(input_data: &[f32], l_yt: &[f32], t_data: &[f32], rows: usize, cols: usize) {
