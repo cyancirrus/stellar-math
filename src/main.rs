@@ -224,7 +224,7 @@ fn main() {
     tensor_ut_contraction(
         &l_yt[1..],
         &o_buffer[stride..],
-        &mut t_buffer[..],
+        &mut t_buffer,
         0,
         0,
         rows.saturating_sub(1),
@@ -234,7 +234,7 @@ fn main() {
         stride,
         stride,
     );
-    println!("current {t_buffer:?}");
+    println!("current0 {t_buffer:?}");
     tensor_lt_contraction(
         &t,
         &t_buffer,
@@ -251,15 +251,15 @@ fn main() {
     for idx in 0..t_buffer.len() {
         t_buffer[idx] = s_buffer[idx];
     }
-    println!("current {t_buffer:?}");
+    println!("current1 {t_buffer:?}");
     tensor_tut_contraction(
         &l_yt[1..],
         &s_buffer[stride..],
         &mut t_buffer[..],
         0,
         0,
-        rows,
-        cols,
+        rows.saturating_sub(1),
+        cols.saturating_sub(1),
         cols,
         stride,
         stride,
