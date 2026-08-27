@@ -27,7 +27,7 @@
 //     pub h: NdArray,
 //     pub t: NdArray,
 // }
-const EPSILON:f32 = 1e-21;
+const EPSILON: f32 = 1e-21;
 /// params
 ///
 /// takes in a slice, where we find the rotation vector
