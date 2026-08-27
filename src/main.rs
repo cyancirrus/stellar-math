@@ -62,7 +62,7 @@ fn main() {
         &t,
         &t_buffer,
         &mut s_buffer,
-        1,
+        0,
         0,
         rows,
         rows,
