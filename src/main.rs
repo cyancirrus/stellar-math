@@ -12,15 +12,15 @@ use stellar::algebra::bmethods::contractions::{
 };
 
 fn main() {
-    let (rows, cols, stride) = (1, 1, 1);
+    let (rows, cols, stride) = (1, 2, 2);
     let mut l_yt = generate_random_vector(rows * cols);
-    let mut t = generate_random_vector(rows * cols);
+    let mut t = generate_random_vector(cols * cols);
     let mut w = vec![0f32; cols];
     
 
-    let mut o_buffer = create_identity_vector(rows, cols);
+    let mut o_buffer = create_identity_vector(cols, cols);
     let mut t_buffer = o_buffer.clone();
-    let mut s_buffer = vec![0f32; rows * cols];
+    let mut s_buffer = vec![0f32; cols * cols];
 
     let input = l_yt.clone();
     
@@ -48,18 +48,18 @@ fn main() {
     // XA = XL * (I - YTY');
     tensor_ut_contraction(
         &l_yt[1..],
-        &o_buffer[1..],
+        &o_buffer[stride..],
         &mut t_buffer,
         0,
         0,
         rows,
-        rows,
-        cols.saturating_sub(1),
+        cols,
+        cols,
         stride,
         stride,
         stride
     );
-    println!("t_buffer {t_buffer:?}");
+    println!("current {t_buffer:?}");
     tensor_lt_contraction(
         &t,
         &t_buffer,
@@ -67,7 +67,7 @@ fn main() {
         1,
         0,
         rows,
-        rows,
+        cols,
         cols,
         stride,
         stride,
@@ -76,15 +76,16 @@ fn main() {
     for idx in 0..t_buffer.len() {
         t_buffer[idx] = s_buffer[idx];
     }
+    println!("current {t_buffer:?}");
     tensor_tut_contraction(
         &l_yt[1..],
-        &s_buffer[1..],
+        &s_buffer[stride..],
         &mut t_buffer,
         0,
         0,
         rows,
-        rows,
-        cols.saturating_sub(1),
+        cols,
+        cols,
         stride,
         stride,
         stride
@@ -92,6 +93,7 @@ fn main() {
     for idx in 0..o_buffer.len() {
         o_buffer[idx] -= t_buffer[idx];
     }
+    println!("current {t_buffer:?}");
     t_buffer.fill(0f32);
     tensor_lt_contraction(
         &l_yt,
@@ -100,12 +102,13 @@ fn main() {
         1,
         0,
         rows,
-        rows,
+        cols,
         cols,
         stride,
         stride,
         stride
     );
+    println!("current {t_buffer:?}");
     
     let input = NdArray {
         dims: vec![rows, cols],
