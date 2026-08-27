@@ -32,18 +32,8 @@ pub fn bench_decomposition(c: &mut Criterion) {
                 },
                 |(mut b, mut u, mut v, mut p, mut w, rows, cols, card, stride)| {
                     let _: () = full_svd_decomposition(
-                        &mut b,
-                        &mut u,
-                        &mut v,
-                        &mut p,
-                        &mut w,
-                        rows,
-                        cols,
-                        card,
-                        stride,
-                        max_iters,
-                        tolerance,
-                        absolute,
+                        &mut b, &mut u, &mut v, &mut p, &mut w, rows, cols, card, stride,
+                        max_iters, tolerance, absolute,
                     );
                     black_box(())
                 },
@@ -55,9 +45,7 @@ pub fn bench_decomposition(c: &mut Criterion) {
                     let random_mat = generate_random_matrix(n, n);
                     nalgebra::DMatrix::from_fn(n, n, |i, j| random_mat.data[i * n + j])
                 },
-                |mat| {
-                    black_box(nalgebra::SVD::try_new(mat, true, true, 1e-6, 100))
-                },
+                |mat| black_box(nalgebra::SVD::try_new(mat, true, true, 1e-6, 100)),
             );
         });
         group.bench_with_input(BenchmarkId::new("Autumn_SVD", n), &n, |b, &n| {
@@ -77,15 +65,7 @@ pub fn bench_decomposition(c: &mut Criterion) {
                 },
                 |(mut b, mut p, mut w, rows, cols, card, stride)| {
                     let _: () = svd_decomposition(
-                        &mut b,
-                        &mut p,
-                        &mut w,
-                        rows,
-                        cols,
-                        card,
-                        stride,
-                        max_iters,
-                        tolerance,
+                        &mut b, &mut p, &mut w, rows, cols, card, stride, max_iters, tolerance,
                         absolute,
                     );
                     black_box(())
@@ -98,9 +78,7 @@ pub fn bench_decomposition(c: &mut Criterion) {
                     let random_mat = generate_random_matrix(n, n);
                     nalgebra::DMatrix::from_fn(n, n, |i, j| random_mat.data[i * n + j])
                 },
-                |mat| {
-                    black_box(nalgebra::SVD::try_new(mat, false, false, 1e-6, 100))
-                },
+                |mat| black_box(nalgebra::SVD::try_new(mat, false, false, 1e-6, 100)),
             );
         });
     }

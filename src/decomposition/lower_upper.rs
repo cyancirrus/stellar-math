@@ -42,9 +42,9 @@ impl LuPivotDecompose {
             if p != k {
                 swaps += 1;
                 let prow = p * n;
-                workspace.copy_from_slice(&mut m[krow..krow + n]);
+                workspace.copy_from_slice(&m[krow..krow + n]);
                 m.copy_within(prow..prow + n, krow);
-                m[prow..prow + n].copy_from_slice(&workspace);
+                m[prow..prow + n].copy_from_slice(workspace);
             }
             if scl.abs() > EPSILON {
                 let mut irow = krow;
