@@ -169,7 +169,7 @@ fn test_reconstruct() {
 fn main() {
     let (rows, cols, stride) = (2, 2, 2);
     let mut l_yt = generate_random_vector(rows * cols);
-    l_yt[2] = 0f32;
+    // l_yt[2] = 0f32;
     let mut t = generate_random_vector(cols * cols);
     let mut w = vec![0f32; cols];
 
