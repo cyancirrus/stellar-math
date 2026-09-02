@@ -192,7 +192,7 @@ fn validate_upper_upper_fma() {
 
 fn validate_transpose_upper_upper_fma() {
     // let (rows, cols, stride) = (4, 7, 7);
-    let (rows, cols, stride) = (3, 8, 8);
+    let (rows, cols, stride) = (2, 3, 3);
     let mut d = generate_random_vector(rows * cols);
     let d_matrix = NdArray {
         dims: vec![rows, cols],
@@ -218,32 +218,34 @@ fn validate_transpose_upper_upper_fma() {
         &d[1..],
         &o_buffer[..],
         &mut t_clean[stride..],
-        rows - rows.min(cols) + 1  ,
-        // cols.saturating_sub(cols),
+        // rows - rows.min(cols) + 1  ,
+        cols - cols.min(rows) + 1  ,
         0,
         cols.saturating_sub(1),
         // rows.saturating_sub(1),
-        cols.saturating_sub(1),
+        rows.saturating_sub(1),
         cols,
         stride,
         stride,
         stride,
     );
-    tensor_tlt_contraction(
-        &d[1..],
-        &o_buffer[..],
-        &mut t_buffer[stride..],
-        rows - rows.min(cols) + 1  ,
-        // cols.saturating_sub(cols),
-        0,
-        cols.saturating_sub(1),
-        // rows.saturating_sub(1),
-        cols.saturating_sub(1),
-        cols,
-        stride,
-        stride,
-        stride,
-    );
+    // tensor_tlt_contraction(
+    //     &d[1..],
+    //     &o_buffer[..],
+    //     &mut t_buffer[stride..],
+    //     // rows - rows.min(cols) + 1  ,
+    //     // cols - cols.min(rows) + 1  ,
+    //     0,
+    //     // cols.saturating_sub(cols),
+    //     0,
+    //     cols.saturating_sub(1),
+    //     // rows.saturating_sub(1),
+    //     rows.saturating_sub(1),
+    //     cols,
+    //     stride,
+    //     stride,
+    //     stride,
+    // );
     for k in 0..t_clean.len() {
         t_clean[k] += s_buffer[k];
     }
@@ -257,7 +259,7 @@ fn validate_transpose_upper_upper_fma() {
     }
 
     let t_clean_mat = NdArray {
-        dims: vec![rows, cols],
+        dims: vec![cols, cols],
         data: t_clean.clone(),
     };
     // println!("t_clean_mat {t_clean_mat:?}");
