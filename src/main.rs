@@ -1,7 +1,8 @@
 #![allow(unused)]
 use stellar::algebra::bmethods::contractions::{
-    tensor_lt_contraction, tensor_rut_contraction, tensor_tut_contraction, tensor_ut_contraction,
+    tensor_lt_contraction, tensor_rut_contraction, tensor_tut_contraction, tensor_ut_contraction, tensor_tlt_contraction
 };
+use stellar::algebra::bmethods::interface::{tensor_tut_kernel, tensor_tlt_kernel};
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
@@ -191,12 +192,17 @@ fn validate_upper_upper_fma() {
 
 fn validate_transpose_upper_upper_fma() {
     // let (rows, cols, stride) = (4, 7, 7);
-    let (rows, cols, stride) = (2, 2, 2);
+    let (rows, cols, stride) = (3, 3, 3);
     let mut d = generate_random_vector(rows * cols);
-    let mut t = generate_random_vector(cols * cols);
+    let d_matrix = NdArray {
+        dims: vec![rows, cols],
+        data:d.clone(),
+    };
+    println!("raw x_matrix {d_matrix:?}");
     let mut w = vec![0f32; cols];
 
-    let mut o_buffer = generate_random_vector(cols * cols);
+    let mut o_buffer = vec![1f32; cols * cols];
+    // let mut o_buffer = generate_random_vector(cols * cols);
     let mut t_buffer = o_buffer.clone();
     let mut t_clean = vec![0f32; cols * cols];
     // for testing
@@ -208,48 +214,54 @@ fn validate_transpose_upper_upper_fma() {
     };
     println!("input {input:?}");
 
-    tensor_tut_contraction(
+    tensor_tlt_contraction(
         &d[1..],
         &o_buffer[..],
         &mut t_clean[stride..],
+        rows - rows.min(cols) + 1  ,
+        // cols.saturating_sub(cols),
         0,
-        1,
         cols.saturating_sub(1),
-        rows.saturating_sub(1),
+        // rows.saturating_sub(1),
+        cols.saturating_sub(1),
         cols,
         stride,
         stride,
         stride,
     );
-    // tensor_tut_contraction(
-    //     &d[1..],
-    //     &o_buffer[stride..],
-    //     &mut t_buffer[stride..],
-    //     0,
-    //     0,
-    //     cols,
-    //     rows,
-    //     cols,
-    //     stride,
-    //     stride,
-    //     stride,
-    // );
-    // for k in 0..t_clean.len() {
-    //     // t_clean[k] += s_buffer[k];
-    // }
-    // println!("t_clean {t_clean:?}");
-    // println!("t_buffer {t_buffer:?}");
+    tensor_tlt_contraction(
+        &d[1..],
+        &o_buffer[..],
+        &mut t_buffer[stride..],
+        rows - rows.min(cols) + 1  ,
+        // cols.saturating_sub(cols),
+        0,
+        cols.saturating_sub(1),
+        // rows.saturating_sub(1),
+        cols.saturating_sub(1),
+        cols,
+        stride,
+        stride,
+        stride,
+    );
+    for k in 0..t_clean.len() {
+        t_clean[k] += s_buffer[k];
+    }
+    println!("t_clean {t_clean:?}");
+    println!("t_buffer {t_buffer:?}");
     for i in 0..rows {
         for j in 0..=i.min(cols) {
             d[i * stride + j] = 0f32;
         }
-        // d[i * stride + i] = 1f32;
+        d[i * stride + i] = 1f32;
     }
 
     let t_clean_mat = NdArray {
         dims: vec![rows, cols],
         data: t_clean.clone(),
     };
+    // println!("t_clean_mat {t_clean_mat:?}");
+    // println!("----------------------");
 
     // for i in 0..rows {
     //     for j in 0..i.min(cols) {
@@ -279,7 +291,66 @@ fn validate_transpose_upper_upper_fma() {
     println!("reference {reference:?}");
 }
 
+fn really_confused() {
+    // let (rows, cols, stride) = (4, 7, 7);
+    let (rows, cols, stride) = (3, 3, 3);
+    let mut d = generate_random_vector(rows * cols);
+    // for i in 0..rows {
+    //     for j in 0..=i {
+    //         d[i * cols + j] = 0f32;
+    //     }
+    // }
+    let d_matrix = NdArray {
+        dims: vec![rows, cols],
+        data:d.clone(),
+    };
+    println!("raw x_matrix {d_matrix:?}");
+    let mut w = vec![0f32; cols];
+
+    let mut o_buffer = vec![1f32; cols * cols];
+    // let mut o_buffer = generate_random_vector(cols * cols);
+    let mut t_buffer = o_buffer.clone();
+    let mut t_clean = vec![0f32; cols * cols];
+    // for testing
+    let mut s_buffer = o_buffer.clone();
+
+    let input = NdArray {
+        dims: vec![cols, cols],
+        data: o_buffer.clone()
+    };
+    for i in 0..rows {
+        for j in 0..i.min(cols) {
+            d[i * stride + j] = 0f32;
+        }
+        // d[i * stride + i] = 1f32;
+    }
+    let mut basis_matrix = NdArray {
+        dims: vec![rows, cols],
+        data: d.clone(),
+    };
+    let mut reconstruct = vec![0f32; cols * cols];
+    tensor_tlt_kernel(&d_matrix, &input, &mut reconstruct);
+    let reconstr_matrix = NdArray {
+        dims:vec![rows, cols],
+        data: reconstruct.clone(),
+    };
+    basis_matrix = basis_matrix.transpose();
+    println!("basis_matrix {basis_matrix:?}");
+    println!("----------------------");
+    let s_vector = NdArray {
+        dims: vec![cols, cols],
+        data: s_buffer,
+    };
+    let reference = matrix_mult(&basis_matrix, &s_vector);
+    println!("----------------------");
+    println!("reconst {reconstr_matrix:?}");
+    println!("reference {reference:?}");
+
+}
+
+
 fn main() {
+    // really_confused();
     // test_reconstruct();
     validate_transpose_upper_upper_fma();
 }

@@ -19,7 +19,6 @@ mod test_fma_behavior {
             fma_rupper_equivalence(i, k, j);
             fma_ltl_equivalence(i, k, j);
             fma_ltu_equivalence(i, k, j);
-            fma_ltl_equivalence(i, k, j);
         }
     }
     fn fma_matmul_equivalence(m: usize, p: usize, n: usize) {
