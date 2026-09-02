@@ -164,8 +164,6 @@ pub fn wy_decomposition(
     }
 }
 
-
-
 // #![allow(unused)]
 // use stellar::algebra::bmethods::contractions::{
 //     tensor_lt_contraction, tensor_rut_contraction, tensor_tut_contraction, tensor_ut_contraction,

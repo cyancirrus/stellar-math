@@ -1,8 +1,9 @@
 #![allow(unused)]
 use stellar::algebra::bmethods::contractions::{
-    tensor_lt_contraction, tensor_rut_contraction, tensor_tut_contraction, tensor_ut_contraction, tensor_tlt_contraction
+    tensor_lt_contraction, tensor_rut_contraction, tensor_tlt_contraction, tensor_tut_contraction,
+    tensor_ut_contraction,
 };
-use stellar::algebra::bmethods::interface::{tensor_tut_kernel, tensor_tlt_kernel};
+use stellar::algebra::bmethods::interface::{tensor_tlt_kernel, tensor_tut_kernel};
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
@@ -11,7 +12,7 @@ use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
 fn test_reconstruct() {
-    let (rows, cols, stride) = (1, 2, 2);
+    let (rows, cols, stride) = (2, 2, 2);
     let mut l_yt = generate_random_vector(rows * cols);
     let mut t = generate_random_vector(cols * cols);
     let mut w = vec![0f32; cols];
@@ -68,14 +69,27 @@ fn test_reconstruct() {
         t_buffer[idx] = s_buffer[idx];
     }
     println!("current1 {t_buffer:?}");
-    tensor_tut_contraction(
+    // tensor_tut_contraction(
+    //     &l_yt[1..],
+    //     &s_buffer[stride..],
+    //     &mut t_buffer[..],
+    //     0,
+    //     0,
+    //     rows.saturating_sub(1),
+    //     cols.saturating_sub(1),
+    //     cols,
+    //     stride,
+    //     stride,
+    //     stride,
+    // );
+    tensor_tlt_contraction(
         &l_yt[1..],
         &s_buffer[stride..],
-        &mut t_buffer[..],
+        &mut t_buffer[stride..],
+        cols - cols.min(rows) + 1,
         0,
-        0,
-        rows.saturating_sub(1),
         cols.saturating_sub(1),
+        rows.saturating_sub(1),
         cols,
         stride,
         stride,
@@ -130,7 +144,7 @@ fn validate_upper_upper_fma() {
 
     let input = NdArray {
         dims: vec![cols, cols],
-        data: o_buffer.clone()
+        data: o_buffer.clone(),
     };
     println!("input {input:?}");
 
@@ -192,11 +206,11 @@ fn validate_upper_upper_fma() {
 
 fn validate_transpose_upper_upper_fma() {
     // let (rows, cols, stride) = (4, 7, 7);
-    let (rows, cols, stride) = (2, 3, 3);
-    let mut d = generate_random_vector(rows * cols);
+    let (rows, cols, stride) = (3, 5, 5);
+    let mut d = generate_random_vector(cols * rows);
     let d_matrix = NdArray {
-        dims: vec![rows, cols],
-        data:d.clone(),
+        dims: vec![cols, rows],
+        data: d.clone(),
     };
     println!("raw x_matrix {d_matrix:?}");
     let mut w = vec![0f32; cols];
@@ -210,7 +224,7 @@ fn validate_transpose_upper_upper_fma() {
 
     let input = NdArray {
         dims: vec![cols, cols],
-        data: o_buffer.clone()
+        data: o_buffer.clone(),
     };
     println!("input {input:?}");
 
@@ -219,13 +233,17 @@ fn validate_transpose_upper_upper_fma() {
         &o_buffer[..],
         &mut t_clean[stride..],
         // rows - rows.min(cols) + 1  ,
-        0  ,
+        // cols - cols.min(rows) + 1,
+        cols - cols.min(rows) + 1,
         0,
         cols.saturating_sub(1),
-        // rows.saturating_sub(1),
         rows.saturating_sub(1),
         cols,
-        stride,
+        // cols.saturating_sub(1),
+        // rows.saturating_sub(1),
+        // cols,
+        // stride,
+        rows,
         stride,
         stride,
     );
@@ -249,33 +267,24 @@ fn validate_transpose_upper_upper_fma() {
     for k in 0..t_clean.len() {
         t_clean[k] += s_buffer[k];
     }
-    println!("t_clean {t_clean:?}");
-    println!("t_buffer {t_buffer:?}");
-    for i in 0..rows {
-        for j in 0..=i.min(cols) {
-            d[i * stride + j] = 0f32;
-        }
-        d[i * stride + i] = 1f32;
-    }
+    // println!("t_clean {t_clean:?}");
+    // println!("t_buffer {t_buffer:?}");
 
     let t_clean_mat = NdArray {
-        dims: vec![cols, cols],
+        dims: vec![rows, cols],
         data: t_clean.clone(),
     };
     // println!("t_clean_mat {t_clean_mat:?}");
     // println!("----------------------");
 
-    // for i in 0..rows {
-    //     for j in 0..i.min(cols) {
-    //         d[i * stride + j] = 0f32;
-    //     }
-    //     d[i * stride + i] = 1f32;
-    // }
     let mut basis_matrix = NdArray {
         dims: vec![rows, cols],
         data: d,
     };
     basis_matrix = basis_matrix.transpose();
+    filter_lower_trapezoid(&mut basis_matrix);
+    //TODO :: still doesn't work
+    set_diagonal_value(&mut basis_matrix, 1f32);
     println!("basis_matrix {basis_matrix:?}");
     println!("----------------------");
     let s_vector = NdArray {
@@ -293,64 +302,64 @@ fn validate_transpose_upper_upper_fma() {
     println!("reference {reference:?}");
 }
 
+pub fn filter_lower_trapezoid(a: &mut NdArray) {
+    let (rows, cols) = (a.dims[0], a.dims[1]);
+    let d = &mut a.data;
+    let t = cols.min(rows);
+    let s = rows.saturating_sub(cols);
+    // don't remove from last row
+    for i in 1..t {
+        for j in 0..i {
+            d[(rows - i - s) * cols - j - 1] = 0f32;
+        }
+    }
+}
+pub fn set_diagonal_value(a: &mut NdArray, c: f32) {
+    let (rows, cols) = (a.dims[0], a.dims[1]);
+    let d = &mut a.data;
+    let mx = cols.max(rows);
+    let mn = cols.min(rows);
+    let dmx_mn = mx - mn;
+    for k in 0..mn {
+        d[k * cols + dmx_mn + k] = c;
+    }
+}
+
 fn really_confused() {
-    // let (rows, cols, stride) = (4, 7, 7);
-    let (rows, cols, stride) = (3, 3, 3);
-    let mut d = generate_random_vector(rows * cols);
-    // for i in 0..rows {
-    //     for j in 0..=i {
-    //         d[i * cols + j] = 0f32;
-    //     }
-    // }
-    let d_matrix = NdArray {
-        dims: vec![rows, cols],
-        data:d.clone(),
-    };
-    println!("raw x_matrix {d_matrix:?}");
-    let mut w = vec![0f32; cols];
+    let (rows, cols) = (2, 6); // m, p — n = cols too, since y is p×n = cols×cols
+    let d = generate_random_vector(rows * cols);
 
-    let mut o_buffer = vec![1f32; cols * cols];
-    // let mut o_buffer = generate_random_vector(cols * cols);
-    let mut t_buffer = o_buffer.clone();
-    let mut t_clean = vec![0f32; cols * cols];
-    // for testing
-    let mut s_buffer = o_buffer.clone();
-
+    let o_buffer = vec![1f32; cols * cols]; // y: p x n
     let input = NdArray {
         dims: vec![cols, cols],
-        data: o_buffer.clone()
+        data: o_buffer.clone(),
     };
-    for i in 0..rows {
-        for j in 0..i.min(cols) {
-            d[i * stride + j] = 0f32;
-        }
-        // d[i * stride + i] = 1f32;
-    }
-    let mut basis_matrix = NdArray {
+
+    // x_base: the m x p logical matrix, trapezoid-filtered — this is the reference operand
+    let mut x_base = NdArray {
         dims: vec![rows, cols],
         data: d.clone(),
     };
-    let mut reconstruct = vec![0f32; cols * cols];
-    tensor_tlt_kernel(&d_matrix, &input, &mut reconstruct);
+
+    // x: same filtered matrix, but actually transposed in storage for the kernel
+    let mut x = x_base.clone();
+    x.transpose_inplace();
+    filter_lower_trapezoid(&mut x_base);
+    println!("x_base (filtered) {x_base:?}");
+
+    let mut reconstruct = vec![0f32; rows * cols]; // m*n, not cols*cols
+    tensor_tlt_kernel(&x, &input, &mut reconstruct);
     let reconstr_matrix = NdArray {
-        dims:vec![rows, cols],
+        dims: vec![rows, cols],
         data: reconstruct.clone(),
     };
-    basis_matrix = basis_matrix.transpose();
-    println!("basis_matrix {basis_matrix:?}");
-    println!("----------------------");
-    let s_vector = NdArray {
-        dims: vec![cols, cols],
-        data: s_buffer,
-    };
-    let reference = matrix_mult(&basis_matrix, &s_vector);
+
+    let reference = matrix_mult(&x_base, &input);
+
     println!("----------------------");
     println!("reconst {reconstr_matrix:?}");
     println!("reference {reference:?}");
-
 }
-
-
 fn main() {
     // really_confused();
     // test_reconstruct();
