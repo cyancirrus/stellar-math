@@ -213,7 +213,7 @@ fn validate_transpose_upper_upper_fma() {
         &o_buffer[..],
         &mut t_clean[stride..],
         0,
-        0,
+        1,
         cols.saturating_sub(1),
         rows.saturating_sub(1),
         cols,
