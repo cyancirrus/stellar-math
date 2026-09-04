@@ -108,6 +108,7 @@ pub fn basic_mult(x: &NdArray, y: &NdArray) -> NdArray {
     let x_cols = x.dims[1];
     let y_rows = y.dims[0];
     let y_cols = y.dims[1];
+    assert_eq!(x_cols, y_rows);
     assert_eq!(x_rows * x_cols, x.data.len());
     assert_eq!(y_rows * y_cols, y.data.len());
     let mut res = vec![0f32; x_rows * y_cols];
@@ -214,6 +215,7 @@ pub fn lt_basic_mult(x: &NdArray, y: &NdArray) -> NdArray {
     let x_cols = x.dims[0];
     let y_rows = y.dims[0];
     let y_cols = y.dims[1];
+    assert_eq!(x_cols, y_rows);
     assert_eq!(x_rows * x_cols, x.data.len());
     assert_eq!(y_rows * y_cols, y.data.len());
     let mut res = vec![0f32; x_rows * y_cols];
