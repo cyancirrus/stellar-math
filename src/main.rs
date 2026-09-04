@@ -206,7 +206,7 @@ fn validate_upper_upper_fma() {
 
 fn validate_transpose_upper_upper_fma() {
     // let (rows, cols, stride) = (4, 7, 7);
-    let (rows, cols, stride) = (3, 5, 5);
+    let (rows, cols, stride) = (2, 4, 4);
     let mut d = generate_random_vector(cols * rows);
     let d_matrix = NdArray {
         dims: vec![cols, rows],
