@@ -215,8 +215,8 @@ fn validate_transpose_upper_upper_fma() {
     println!("raw x_matrix {d_matrix:?}");
     let mut w = vec![0f32; cols];
 
-    let mut o_buffer = vec![1f32; cols * cols];
-    // let mut o_buffer = generate_random_vector(cols * cols);
+    // let mut o_buffer = vec![1f32; cols * cols];
+    let mut o_buffer = generate_random_vector(cols * cols);
     let mut t_buffer = vec![0f32; rows * cols];
     for k in 0..o_buffer.len() {
         t_buffer[k] = o_buffer[k];
