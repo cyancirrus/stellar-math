@@ -18,7 +18,7 @@ fn import_slice(target: &mut [f32], data:&[f32]) {
 }
 
 fn test_reconstruct() {
-    let (rows, cols, stride) = (2, 2, 2);
+    let (rows, cols, stride) = (8, 8, 8);
     debug_assert!(rows >= cols);
     let s_x = rows;
     let s_y = stride;
@@ -109,8 +109,11 @@ fn test_reconstruct() {
         stride,
     );
     // THIS IS WHAT FAILS IE THE RHS TERM
-    
-    let right_term = t_buffer.clone();
+    let mut q_argument = create_identity_vector(rows, cols);
+    for k in 0..t_buffer.len() {
+        q_argument[k] -= t_buffer[k];
+    }
+    let right_term = q_argument.clone();
     let right_term_matrix = NdArray {
         dims: vec![rows, cols],
         data: right_term.clone(),
@@ -120,7 +123,7 @@ fn test_reconstruct() {
     t_buffer.fill(0f32);
     tensor_lt_contraction(
         &l_yt,
-        &x_argument,
+        &q_argument,
         &mut t_buffer,
         1,
         0,
@@ -131,28 +134,18 @@ fn test_reconstruct() {
         stride,
         stride,
     );
-    let left_term = t_buffer.clone();
-    let left_term_matrix = NdArray {
+    let result = t_buffer.clone();
+    let result_matrix = NdArray {
         dims: vec![rows, cols],
-        data: left_term.clone(),
+        data: result.clone(),
     };
-    println!("left_term {left_term_matrix:?}");
-    let mut result = vec![0f32; rows * cols];
-    for k in 0.. rows * cols {
-        result[k] = left_term[k] - right_term[k];
-    }
-
     let input = NdArray {
         dims: vec![rows, cols],
         data: input.clone(),
     };
-    let reconstruct = NdArray {
-        dims: vec![rows, cols],
-        data: result.clone(),
-    };
     println!("input : {input:?}");
-    println!("reconstruct : {reconstruct:?}");
-    let reference = AutumnDecomp::new(input);
+    println!("reconstruct : {result_matrix:?}");
+    // let reference = AutumnDecomp::new(input);
     // println!("reference LQ {:?}", reference.h);
     // println!("reference LQ {:?}", reference.t);
 }
@@ -363,6 +356,7 @@ fn test_debug_set_diagonal() {
 
 fn main() {
     test_reconstruct();
+    // test_reconstruct_transpose();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
 }
