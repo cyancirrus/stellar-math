@@ -278,12 +278,11 @@ fn validate_transpose_upper_upper_fma() {
     // println!("----------------------");
 
     let mut basis_matrix = NdArray {
-        dims: vec![rows, cols],
+        dims: vec![cols, rows],
         data: d,
     };
     basis_matrix = basis_matrix.transpose();
     filter_lower_trapezoid(&mut basis_matrix);
-    //TODO :: still doesn't work
     set_diagonal_value(&mut basis_matrix, 1f32);
     println!("basis_matrix {basis_matrix:?}");
     println!("----------------------");
@@ -317,11 +316,10 @@ pub fn filter_lower_trapezoid(a: &mut NdArray) {
 pub fn set_diagonal_value(a: &mut NdArray, c: f32) {
     let (rows, cols) = (a.dims[0], a.dims[1]);
     let d = &mut a.data;
-    let mx = cols.max(rows);
     let mn = cols.min(rows);
-    let dmx_mn = mx - mn;
+    let dx = cols.saturating_sub(rows);
     for k in 0..mn {
-        d[k * cols + dmx_mn + k] = c;
+        d[k * cols + dx + k] = c;
     }
 }
 
@@ -360,7 +358,29 @@ fn really_confused() {
     println!("reconst {reconstr_matrix:?}");
     println!("reference {reference:?}");
 }
+
+fn debug_set_diagonal(rows:usize, cols:usize) {
+    let mut d = generate_random_vector(rows * cols);
+    let mut matrix = NdArray {
+        dims: vec![rows, cols],
+        data: d
+    };
+    filter_lower_trapezoid(&mut matrix);
+    set_diagonal_value(&mut matrix, 1000f32);
+    println!("set diagonal {matrix:?}");
+}
+
+fn test_debug_set_diagonal() {
+    let vals = vec![(1,2), (2,1), (4,4), (3,6), (6,3)];
+    for (r,c) in vals {
+        debug_set_diagonal(r, c);
+        println!("----------------------");
+    }
+}
+
+
 fn main() {
+    // test_debug_set_diagonal();
     // really_confused();
     // test_reconstruct();
     validate_transpose_upper_upper_fma();
