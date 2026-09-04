@@ -233,7 +233,7 @@ fn validate_upper_upper_fma() {
 
 fn validate_transpose_upper_upper_fma() {
     // let (rows, cols, stride) = (4, 7, 7);
-    let (rows, cols, stride) = (6, 3, 3);
+    let (rows, cols, stride) = (3, 3, 3);
     let mut d = generate_random_vector(cols * rows);
     let d_matrix = NdArray {
         dims: vec![cols, rows],
@@ -255,19 +255,19 @@ fn validate_transpose_upper_upper_fma() {
         data: o_buffer.clone(),
     };
     println!("input {input:?}");
-    tensor_tlt_contraction(
-        &d[1..],
-        &o_buffer[..],
-        &mut t_clean[stride..],
-        cols - cols.min(rows) + 1,
-        0,
-        rows.saturating_sub(1),
-        cols,
-        cols,
-        rows,
-        stride,
-        stride,
-    );
+    // tensor_tlt_contraction(
+    //     &d[1..],
+    //     &o_buffer[..],
+    //     &mut t_clean[stride..],
+    //     cols - cols.min(rows) + 1,
+    //     0,
+    //     rows.saturating_sub(1),
+    //     cols,
+    //     cols,
+    //     rows,
+    //     stride,
+    //     stride,
+    // );
     tensor_tlt_contraction(
         &d[1..],
         &o_buffer[..],
@@ -281,17 +281,17 @@ fn validate_transpose_upper_upper_fma() {
         stride,
         stride,
     );
-    for k in 0..s_buffer.len() {
-        t_clean[k] += s_buffer[k];
-    }
-    println!("t_clean {t_clean:?}");
+    // for k in 0..s_buffer.len() {
+    //     t_clean[k] += s_buffer[k];
+    // }
+    // println!("t_clean {t_clean:?}");
     println!("t_buffer {t_buffer:?}");
 
 
-    let t_clean_mat = NdArray {
-        dims: vec![rows, cols],
-        data: t_clean.clone(),
-    };
+    // let t_clean_mat = NdArray {
+    //     dims: vec![rows, cols],
+    //     data: t_clean.clone(),
+    // };
     // println!("t_clean_mat {t_clean_mat:?}");
     // println!("----------------------");
 
@@ -313,9 +313,9 @@ fn validate_transpose_upper_upper_fma() {
         data: t_buffer,
     };
     let reference = matrix_mult(&basis_matrix, &s_vector);
-    println!("t_clean_mat {t_clean_mat:?}");
+    // println!("t_clean_mat {t_clean_mat:?}");
     println!("----------------------");
-    // println!("reconst {reconst:?}");
+    println!("reconst {reconst:?}");
     println!("reference {reference:?}");
 }
 
