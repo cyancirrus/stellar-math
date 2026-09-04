@@ -11,14 +11,26 @@ use stellar::decomposition::wy::wy_decomposition;
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
+/// copies memory from b into a
+fn import_slice(target: &mut [f32], data:&[f32]) {
+    target[..data.len()].copy_from_slice(data);
+    target[data.len()..].fill(0f32);
+
+}
+
 fn test_reconstruct() {
     let (rows, cols, stride) = (2, 2, 2);
+    debug_assert!(rows >= cols);
+    let s_x = rows;
+    let s_y = stride;
+    let s_z = stride;
     let mut l_yt = generate_random_vector(rows * cols);
     let mut t = generate_random_vector(cols * cols);
     let mut w = vec![0f32; cols];
 
     let mut o_buffer = create_identity_vector(cols, cols);
-    let mut t_buffer = o_buffer.clone();
+    let mut t_buffer = vec![0f32; rows * cols];
+    import_slice(&mut t_buffer, &o_buffer);
     let mut s_buffer = vec![0f32; cols * cols];
 
     let input = l_yt.clone();
@@ -44,7 +56,7 @@ fn test_reconstruct() {
         &mut t_buffer,
         0,
         0,
-        rows.saturating_sub(1),
+        rows,
         cols.saturating_sub(1),
         cols,
         stride,
@@ -69,27 +81,14 @@ fn test_reconstruct() {
         t_buffer[idx] = s_buffer[idx];
     }
     println!("current1 {t_buffer:?}");
-    // tensor_tut_contraction(
-    //     &l_yt[1..],
-    //     &s_buffer[stride..],
-    //     &mut t_buffer[..],
-    //     0,
-    //     0,
-    //     rows.saturating_sub(1),
-    //     cols.saturating_sub(1),
-    //     cols,
-    //     stride,
-    //     stride,
-    //     stride,
-    // );
     tensor_tlt_contraction(
         &l_yt[1..],
         &s_buffer[stride..],
         &mut t_buffer[stride..],
         cols - cols.min(rows) + 1,
         0,
-        cols.saturating_sub(1),
         rows.saturating_sub(1),
+        cols,
         cols,
         stride,
         stride,
@@ -154,7 +153,7 @@ fn validate_upper_upper_fma() {
         &mut t_clean[..],
         0,
         0,
-        rows.saturating_sub(1),
+        rows,
         cols.saturating_sub(1),
         cols,
         stride,
@@ -167,7 +166,7 @@ fn validate_upper_upper_fma() {
         &mut t_buffer[..],
         0,
         0,
-        rows.saturating_sub(1),
+        rows,
         cols.saturating_sub(1),
         cols,
         stride,
@@ -218,10 +217,7 @@ fn validate_transpose_upper_upper_fma() {
     // let mut o_buffer = vec![1f32; cols * cols];
     let mut o_buffer = generate_random_vector(cols * cols);
     let mut t_buffer = vec![0f32; rows * cols];
-    for k in 0..o_buffer.len() {
-        t_buffer[k] = o_buffer[k];
-    }
-    // let mut t_buffer = o_buffer.clone();
+    import_slice(&mut t_buffer, &o_buffer);
     let mut t_clean = vec![0f32; rows * cols];
     // for testing
     let mut s_buffer = o_buffer.clone();
@@ -317,42 +313,6 @@ pub fn set_diagonal_value(a: &mut NdArray, c: f32) {
     }
 }
 
-fn really_confused() {
-    let (rows, cols) = (2, 6); // m, p — n = cols too, since y is p×n = cols×cols
-    let d = generate_random_vector(rows * cols);
-
-    let o_buffer = vec![1f32; cols * cols]; // y: p x n
-    let input = NdArray {
-        dims: vec![cols, cols],
-        data: o_buffer.clone(),
-    };
-
-    // x_base: the m x p logical matrix, trapezoid-filtered — this is the reference operand
-    let mut x_base = NdArray {
-        dims: vec![rows, cols],
-        data: d.clone(),
-    };
-
-    // x: same filtered matrix, but actually transposed in storage for the kernel
-    let mut x = x_base.clone();
-    x.transpose_inplace();
-    filter_lower_trapezoid(&mut x_base);
-    println!("x_base (filtered) {x_base:?}");
-
-    let mut reconstruct = vec![0f32; rows * cols]; // m*n, not cols*cols
-    tensor_tlt_kernel(&x, &input, &mut reconstruct);
-    let reconstr_matrix = NdArray {
-        dims: vec![rows, cols],
-        data: reconstruct.clone(),
-    };
-
-    let reference = matrix_mult(&x_base, &input);
-
-    println!("----------------------");
-    println!("reconst {reconstr_matrix:?}");
-    println!("reference {reference:?}");
-}
-
 fn debug_set_diagonal(rows:usize, cols:usize) {
     let mut d = generate_random_vector(rows * cols);
     let mut matrix = NdArray {
@@ -374,8 +334,7 @@ fn test_debug_set_diagonal() {
 
 
 fn main() {
-    // test_debug_set_diagonal();
-    // really_confused();
     // test_reconstruct();
-    validate_transpose_upper_upper_fma();
+    validate_upper_upper_fma();
+    // validate_transpose_upper_upper_fma();
 }
