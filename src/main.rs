@@ -1,9 +1,10 @@
 #![allow(unused)]
+use std::time::Instant;
 use stellar::algebra::bmethods::contractions::{
     tensor_lt_contraction, tensor_rut_contraction, tensor_tlt_contraction, tensor_tut_contraction,
     tensor_ut_contraction,
 };
-use stellar::algebra::bmethods::interface::{tensor_tlt_kernel, tensor_tut_kernel};
+use stellar::algebra::bmethods::interface::{tensor_kernel, tensor_tlt_kernel, tensor_tut_kernel};
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
@@ -19,6 +20,7 @@ fn import_slice(target: &mut [f32], data:&[f32]) {
 
 fn test_reconstruct() {
     let (rows, cols, stride) = (8, 8, 8);
+    let (s_x, s_y, s_z, s_t) = (rows, cols, cols, rows);
     debug_assert!(rows >= cols);
     let s_x = rows;
     let s_y = stride;
@@ -354,9 +356,103 @@ fn test_debug_set_diagonal() {
 }
 
 
-fn main() {
-    test_reconstruct();
-    // test_reconstruct_transpose();
-    // validate_upper_upper_fma();
-    // validate_transpose_upper_upper_fma();
+// fn main() {
+//     test_interview_intuition();
+//     // test_reconstruct();
+//     // test_reconstruct_transpose();
+//     // validate_upper_upper_fma();
+//     // validate_transpose_upper_upper_fma();
+// }
+
+
+ 
+ 
+ 
+fn generate_pattern_vector(n: usize, seed_offset: usize) -> Vec<f32> {
+    // Avoid all-ones / all-same-constant data: LLVM can const-fold or the
+    // kernel can hit unrepresentative cache behavior if every value is identical.
+    // Cheap non-constant fill, no RNG throughput cost.
+    (0..n)
+        .map(|i| (((i + seed_offset) % 997) as f32) * 0.001 - 0.5)
+        .collect()
 }
+fn bench_streamed_projection(mx: usize, mn: usize, chunk_rows: usize) {
+    // Build the small projection matrix once (stand-in for Q / Y,T applied form).
+    let proj_data = generate_pattern_vector(mn * mn, 0);
+    let proj = NdArray {
+        dims: vec![mn, mn],
+        data: proj_data,
+    };
+ 
+    let mut out_chunk = vec![0f32; chunk_rows * mn];
+    let num_full_chunks = mx / chunk_rows;
+    let remainder = mx % chunk_rows;
+ 
+    println!(
+        "Streaming {} rows x {} cols in chunks of {} ({} full chunks, remainder {})",
+        mx, mn, chunk_rows, num_full_chunks, remainder
+    );
+ 
+    let start = Instant::now();
+ 
+    for c in 0..num_full_chunks {
+        let y_data = generate_pattern_vector(chunk_rows * mn, c * 31 + 7);
+        let y_chunk = NdArray {
+            dims: vec![chunk_rows, mn],
+            data: y_data,
+        };
+ 
+        for v in out_chunk.iter_mut() {
+            *v = 0.0;
+        }
+        tensor_kernel(&y_chunk, &proj, &mut out_chunk);
+ 
+        // touch the output so it isn't optimized away; in a real pipeline
+        // this is where you'd write the chunk out or accumulate it
+        std::hint::black_box(&out_chunk);
+ 
+        if c % 10 == 0 {
+            println!(
+                "  chunk {}/{} done, elapsed {:.2?}",
+                c + 1,
+                num_full_chunks,
+                start.elapsed()
+            );
+        }
+    }
+ 
+    if remainder > 0 {
+        let y_data = generate_pattern_vector(remainder * mn, num_full_chunks * 31 + 7);
+        let y_chunk = NdArray {
+            dims: vec![remainder, mn],
+            data: y_data,
+        };
+        let mut out_rem = vec![0f32; remainder * mn];
+        tensor_kernel(&y_chunk, &proj, &mut out_rem);
+        std::hint::black_box(&out_rem);
+    }
+ 
+    let elapsed = start.elapsed();
+    println!("Total elapsed: {:.2?}", elapsed);
+ 
+    let total_flops = 2.0 * (mx as f64) * (mn as f64) * (mn as f64);
+    let gflops = total_flops / elapsed.as_secs_f64() / 1e9;
+    println!(
+        "Approx {:.3} GFLOPs total, {:.2} GFLOP/s effective",
+        total_flops / 1e9,
+        gflops
+    );
+}
+ 
+fn main() {
+    // Full interview-scale test: mx=5,000,000, mn=1,000
+    // Start smaller first to sanity check before committing to the full run —
+    // e.g. bench_streamed_projection(500_000, 1_000, 50_000);
+    let mx = 5_000_000;
+    let mn = 1_000;
+    let chunk_rows = 20_000; // ~20_000*1000*4 bytes = ~80MB per chunk buffer
+ 
+    bench_streamed_projection(mx, mn, chunk_rows);
+}
+ 
+
