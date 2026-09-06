@@ -28,11 +28,13 @@ fn test_left_apply_q() {
 
     let mut w = vec![0f32; cols];
     // these are x's ie this will be added at the end
-    let mut x_argument = create_identity_vector(cols, cols);
+    // let mut x_argument = create_identity_vector(cols, cols);
+    let mut x_argument = generate_random_vector(cols * cols);
     let mut o_buffer = x_argument.clone();
     let mut t_buffer = vec![0f32; rows * cols];
     let mut big_buffer = vec![0f32; cols * cols];
-    let mut q_argument = create_identity_vector(cols, cols);
+    // let mut q_argument = create_identity_vector(cols, cols);
+    let mut q_argument = x_argument.clone();
     import_slice(&mut t_buffer, &o_buffer[..rows * cols]);
     let t_buffer_mat = NdArray {
         dims: vec![rows, cols],
@@ -70,7 +72,12 @@ fn test_left_apply_q() {
         dims: vec![rows, cols],
         data: input.clone(),
     };
-    println!("input : {input:?}");
+    let arg_matrix = NdArray {
+        dims: vec![cols, cols],
+        data: x_argument.clone(),
+    };
+    let expected = matrix_mult(&input, &arg_matrix);
+    println!("expected : {expected:?}");
     println!("reconstruct : {result_matrix:?}");
     // let reference = AutumnDecomp::new(input);
     // println!("reference LQ {:?}", reference.h);
