@@ -20,6 +20,7 @@ fn import_slice(target: &mut [f32], data:&[f32]) {
 
 fn test_reconstruct() {
     let (rows, cols, stride) = (4, 8, 8);
+    // let (rows, cols, stride) = (2, 4, 4);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_z, s_t, s_tri) = (cols, cols, cols, cols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
@@ -101,6 +102,8 @@ fn test_reconstruct() {
     //
     //
     import_slice(&mut t_buffer, &s_buffer[..rows * s_t]);
+    import_slice(&mut big_buffer, &s_buffer);
+    println!("big_buffer {big_buffer:?}");
     // works and validated
     // [y']' * [ty'x ]
     // tensor_tlt_contraction(
@@ -113,16 +116,17 @@ fn test_reconstruct() {
     //     cols,
     //     cols,
     //     s_x,
-    //     s_t,
-    //     s_t,
+    //     s_t, s_t,
     // );
     tensor_tlt_contraction(
         &l_yt[1..],
         &s_buffer[..],
         &mut big_buffer[stride..],
-        cols - cols.min(rows) + 1,
+        // cols - cols.min(rows) + 1,
+        rows - rows.min(cols) + 1,
         0,
         cols.saturating_sub(1),
+        // cols.saturating_sub(1),
         rows,
         cols,
         s_x,
@@ -130,9 +134,13 @@ fn test_reconstruct() {
         s_t,
     );
     // THIS IS WHAT FAILS IE THE RHS TERM
-    let mut q_argument = create_identity_vector(rows, cols);
-    for k in 0..t_buffer.len() {
-        q_argument[k] -= t_buffer[k];
+    // let mut q_argument = create_identity_vector(rows, cols);
+    // for k in 0..t_buffer.len() {
+    //     q_argument[k] -= t_buffer[k];
+    // }
+    let mut q_argument = create_identity_vector(cols, cols);
+    for k in 0..big_buffer.len() {
+        q_argument[k] -= big_buffer[k];
     }
     println!("here length {:?}", t_buffer.len());
     let right_term = q_argument.clone();
@@ -252,15 +260,12 @@ fn validate_transpose_upper_upper_fma() {
     // in terms of output space
     let (rows, shared, cols) = (4, 2 , 4);
     let (s_x, s_y, s_t) = (rows, cols, cols); 
-    // let (rows, cols, stride) = (7, 4, 4);
-    // let (rows, cols, stride) = (3, 3, 3);
     let mut d = generate_random_vector(shared * rows);
     let d_matrix = NdArray {
         dims: vec![shared, rows],
         data: d.clone(),
     };
     println!("raw x_matrix {d_matrix:?}");
-// let mut o_buffer = vec![1f32; cols * cols];
     let mut o_buffer = generate_random_vector(shared * cols);
     let mut t_buffer = vec![0f32; rows * cols];
     import_slice(&mut t_buffer, &o_buffer[..shared * cols]);
@@ -273,19 +278,6 @@ fn validate_transpose_upper_upper_fma() {
         data: o_buffer.clone(),
     };
     println!("input {input:?}");
-    // tensor_tlt_contraction(
-    //     &d[1..],
-    //     &o_buffer[..],
-    //     &mut t_clean[stride..],
-    //     cols - cols.min(rows) + 1,
-    //     0,
-    //     rows.saturating_sub(1),
-    //     cols,
-    //     cols,
-    //     rows,
-    //     stride,
-    //     stride,
-    // );
     tensor_tlt_contraction(
         &d[1..],
         &o_buffer[..],
@@ -299,20 +291,7 @@ fn validate_transpose_upper_upper_fma() {
         s_y,
         s_t,
     );
-    // for k in 0..s_buffer.len() {
-    //     t_clean[k] += s_buffer[k];
-    // }
-    // println!("t_clean {t_clean:?}");
     println!("t_buffer {t_buffer:?}");
-
-
-    // let t_clean_mat = NdArray {
-    //     dims: vec![rows, cols],
-    //     data: t_clean.clone(),
-    // };
-    // println!("t_clean_mat {t_clean_mat:?}");
-    // println!("----------------------");
-
     let mut basis_matrix = NdArray {
         dims: vec![shared, rows],
         data: d,
@@ -382,7 +361,7 @@ fn test_debug_set_diagonal() {
 
 
 fn main() {
-    // test_reconstruct();
+    test_reconstruct();
     // validate_upper_upper_fma();
-    validate_transpose_upper_upper_fma();
+    // validate_transpose_upper_upper_fma();
 }
