@@ -179,10 +179,26 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
     target[data.len()..].fill(0f32);
 }
 
+pub fn lhs_apply_l(
+    l_yt: &[f32],
+    q_argument: &[f32],
+    t_buffer: &mut [f32],
+    rows: usize,
+    cols: usize,
+    acols: usize,
+    s_x: usize,
+    s_t: usize,
+) {
+    t_buffer.fill(0f32);
+    tensor_lt_contraction(
+        l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_x, s_t, s_t,
+    );
+}
+
 pub fn lhs_apply_q(
     l_yt: &[f32],
     tri: &[f32],
-    x_argument:&[f32],
+    x_argument: &[f32],
     t_buffer: &mut [f32],
     q_argument: &mut [f32],
     rows: usize,

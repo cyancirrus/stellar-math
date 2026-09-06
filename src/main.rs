@@ -8,7 +8,7 @@ use stellar::algebra::bmethods::interface::{tensor_kernel, tensor_tlt_kernel, te
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
-use stellar::decomposition::wy::{lhs_apply_q, wy_decomposition};
+use stellar::decomposition::wy::{lhs_apply_l, lhs_apply_q, wy_decomposition};
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
@@ -19,7 +19,7 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 }
 
 fn test_left_apply_q() {
-    let (rows, cols, acols) = (4, 6, 8);
+    let (rows, cols, acols) = (4, 8, 6);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_t, s_tri) = (cols, cols, acols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
@@ -47,21 +47,40 @@ fn test_left_apply_q() {
     println!("input_matrix {input_matrix:?}");
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
-    lhs_apply_q(&l_yt, &tri, &x_argument, &mut t_buffer, &mut q_argument, rows, cols, acols);
+    lhs_apply_q(
+        &l_yt,
+        &tri,
+        &x_argument,
+        &mut t_buffer,
+        &mut q_argument,
+        rows,
+        cols,
+        acols,
+    );
     t_buffer.fill(0f32);
-    tensor_lt_contraction(
+    lhs_apply_l(
         &l_yt,
         &q_argument,
         &mut t_buffer,
-        1,
-        0,
         rows,
         cols,
         acols,
         s_x,
         s_t,
-        s_t,
     );
+    // tensor_lt_contraction(
+    //     &l_yt,
+    //     &q_argument,
+    //     &mut t_buffer,
+    //     1,
+    //     0,
+    //     rows,
+    //     cols,
+    //     acols,
+    //     s_x,
+    //     s_t,
+    //     s_t,
+    // );
     let result = t_buffer.clone();
     let result_matrix = NdArray {
         dims: vec![rows, acols],
