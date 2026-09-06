@@ -203,7 +203,7 @@ pub fn lhs_apply_q(
         data: t_buffer.to_vec(),
     };
     println!("t_buffer {t_buffer_mat:?}");
-    let mut s_buffer = vec![0f32; cols * cols];
+    let mut s_buffer = vec![0f32; rows * acols];
 
     let l_yt_matrix = NdArray {
         dims: vec![rows, cols],
@@ -253,11 +253,10 @@ pub fn lhs_apply_q(
         s_t,
     );
     let current = NdArray {
-        dims: vec![rows, cols],
+        dims: vec![rows, acols],
         data: s_buffer.clone(),
     };
     println!("check TY' created {current:?}");
-    import_slice(t_buffer, &s_buffer[..rows * s_t]);
     import_slice(&mut big_buffer, &s_buffer);
     println!("big_buffer {big_buffer:?}");
     tensor_tlt_contraction(
