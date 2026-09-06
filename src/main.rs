@@ -19,7 +19,7 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 }
 
 fn test_left_apply_q() {
-    let (rows, cols, acols) = (2, 4, 4);
+    let (rows, cols, acols) = (2, 4, 2);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_t, s_tri) = (cols, cols, acols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
@@ -32,8 +32,6 @@ fn test_left_apply_q() {
         data: x_argument.clone(),
     };
     println!("argumnet rhs {x_mat:?}");
-    // let mut x_argument = create_identity_vector(cols, cols);
-    // let mut x_argument = generate_random_vector(cols * acols);
     let mut o_buffer = x_argument.clone();
     let mut t_buffer = vec![0f32; rows * acols];
     let mut big_buffer = vec![0f32; cols * acols];
@@ -51,9 +49,7 @@ fn test_left_apply_q() {
     };
     println!("input_matrix {input_matrix:?}");
 
-    println!("what?");
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
-    println!("what?");
     lhs_apply_q(&l_yt, &tri, &x_argument, &mut t_buffer, &mut q_argument, rows, cols, acols);
     t_buffer.fill(0f32);
     tensor_lt_contraction(
