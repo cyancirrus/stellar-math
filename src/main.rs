@@ -19,14 +19,15 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 }
 
 fn test_left_apply_q() {
-    let (rows, cols, acols) = (2, 4, 2);
+    let (rows, cols, acols) = (4, 8, 6);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_t, s_tri) = (cols, cols, acols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
     let mut tri = create_identity_vector(rows, rows);
 
     let mut w = vec![0f32; cols];
-    let mut x_argument = create_identity_vector(cols, acols);
+    let mut x_argument = generate_random_vector(cols * acols);
+    // let mut x_argument = create_identity_vector(cols, acols);
     let x_mat = NdArray {
         dims: vec![rows, acols],
         data: x_argument.clone(),
