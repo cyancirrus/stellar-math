@@ -28,16 +28,9 @@
 //     pub t: NdArray,
 // }
 use crate::algebra::bmethods::contractions::{
-    tensor_lt_contraction, tensor_rut_contraction, tensor_tlt_contraction, tensor_tut_contraction,
+    tensor_lt_contraction, tensor_tlt_contraction,
     tensor_ut_contraction,
 };
-use crate::algebra::bmethods::interface::{tensor_kernel, tensor_tlt_kernel, tensor_tut_kernel};
-use crate::algebra::ndmethods::create_identity_matrix;
-use crate::algebra::ndmethods::{create_identity_vector, matrix_mult};
-use crate::decomposition::lq::AutumnDecomp;
-use crate::random::generation::generate_random_vector;
-use crate::structure::ndarray::NdArray;
-use std::time::Instant;
 const EPSILON: f32 = 1e-21;
 /// params
 ///
@@ -61,7 +54,6 @@ fn params(v: &mut [f32]) -> f32 {
         *val *= inv_max_element;
         magnitude_squared += *val * *val;
     }
-    // let g = -v[0].signum() * magnitude_squared.sqrt();
     let g = v[0].signum() * magnitude_squared.sqrt();
     let scale = v[0] + g;
     let inv_scale = 1f32 / scale;
