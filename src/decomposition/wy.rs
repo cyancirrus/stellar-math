@@ -187,15 +187,17 @@ pub fn lhs_apply_q(
     q_argument: &mut [f32],
     rows: usize,
     cols: usize,
+    acols: usize,
 ) {
+    debug_assert!(t_buffer.len() >= rows * acols);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_t, s_tri) = (cols, cols, cols, rows);
 
     // these are x's ie this will be added at the end
     // let x_argument = create_identity_vector(cols, cols);
     let o_buffer = x_argument;
-    let mut big_buffer = vec![0f32; cols * cols];
-    import_slice(t_buffer, &o_buffer[..rows * cols]);
+    let mut big_buffer = vec![0f32; cols * acols];
+    import_slice(t_buffer, &o_buffer[..rows * acols]);
     let t_buffer_mat = NdArray {
         dims: vec![rows, cols],
         data: t_buffer.to_vec(),

@@ -19,7 +19,7 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 }
 
 fn test_left_apply_q() {
-    let (rows, cols, stride) = (4, 8, 8);
+    let (rows, cols, acols, stride) = (4, 8, 8, 8);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_z, s_t, s_tri) = (cols, cols, cols, cols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
@@ -29,10 +29,10 @@ fn test_left_apply_q() {
     // let mut x_argument = create_identity_vector(cols, cols);
     let mut x_argument = generate_random_vector(cols * cols);
     let mut o_buffer = x_argument.clone();
-    let mut t_buffer = vec![0f32; rows * cols];
-    let mut big_buffer = vec![0f32; cols * cols];
+    let mut t_buffer = vec![0f32; rows * acols];
+    let mut big_buffer = vec![0f32; cols * acols];
     let mut q_argument = x_argument.clone();
-    import_slice(&mut t_buffer, &o_buffer[..rows * cols]);
+    import_slice(&mut t_buffer, &o_buffer[..rows * acols]);
     let t_buffer_mat = NdArray {
         dims: vec![rows, cols],
         data: t_buffer.clone(),
@@ -43,7 +43,7 @@ fn test_left_apply_q() {
     let input = l_yt.clone();
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, stride);
-    lhs_apply_q(&l_yt, &tri, &x_argument, &mut t_buffer, &mut q_argument, rows, cols);
+    lhs_apply_q(&l_yt, &tri, &x_argument, &mut t_buffer, &mut q_argument, rows, cols, acols);
     t_buffer.fill(0f32);
     tensor_lt_contraction(
         &l_yt,
@@ -53,14 +53,14 @@ fn test_left_apply_q() {
         0,
         rows,
         cols,
-        cols,
+        acols,
         s_x,
         s_y,
         s_t,
     );
     let result = t_buffer.clone();
     let result_matrix = NdArray {
-        dims: vec![rows, cols],
+        dims: vec![rows, acols],
         data: result.clone(),
     };
     let input = NdArray {
@@ -68,7 +68,7 @@ fn test_left_apply_q() {
         data: input.clone(),
     };
     let arg_matrix = NdArray {
-        dims: vec![cols, cols],
+        dims: vec![cols, acols],
         data: x_argument.clone(),
     };
     let expected = matrix_mult(&input, &arg_matrix);
