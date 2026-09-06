@@ -19,7 +19,7 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 }
 
 fn test_left_apply_q() {
-    let (rows, cols, acols) = (4, 8, 6);
+    let (rows, cols, acols) = (4, 5, 8);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_t, s_tri) = (cols, cols, acols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
@@ -27,7 +27,6 @@ fn test_left_apply_q() {
 
     let mut w = vec![0f32; cols];
     let mut x_argument = generate_random_vector(cols * acols);
-    // let mut x_argument = create_identity_vector(cols, acols);
     let x_mat = NdArray {
         dims: vec![rows, acols],
         data: x_argument.clone(),
@@ -44,8 +43,6 @@ fn test_left_apply_q() {
         dims: vec![rows, cols],
         data: input.clone(),
     };
-    println!("input_matrix {input_matrix:?}");
-
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
     lhs_apply_q(
         &l_yt,
@@ -68,19 +65,6 @@ fn test_left_apply_q() {
         s_x,
         s_t,
     );
-    // tensor_lt_contraction(
-    //     &l_yt,
-    //     &q_argument,
-    //     &mut t_buffer,
-    //     1,
-    //     0,
-    //     rows,
-    //     cols,
-    //     acols,
-    //     s_x,
-    //     s_t,
-    //     s_t,
-    // );
     let result = t_buffer.clone();
     let result_matrix = NdArray {
         dims: vec![rows, acols],

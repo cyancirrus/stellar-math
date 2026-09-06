@@ -210,31 +210,12 @@ pub fn lhs_apply_q(
     let (s_x, s_t, s_tri) = (cols, acols, rows);
 
     // these are x's ie this will be added at the end
-    // let x_argument = create_identity_vector(cols, cols);
     let o_buffer = x_argument;
     let mut big_buffer = vec![0f32; cols * acols];
     import_slice(t_buffer, &o_buffer[..rows * acols]);
-    let t_buffer_mat = NdArray {
-        dims: vec![rows, acols],
-        data: t_buffer.to_vec(),
-    };
-    println!("t_buffer {t_buffer_mat:?}");
     let mut s_buffer = vec![0f32; rows * acols];
-
-    let l_yt_matrix = NdArray {
-        dims: vec![rows, cols],
-        data: l_yt.to_vec(),
-    };
-    let tri_matrix = NdArray {
-        dims: vec![rows, rows],
-        data: tri.to_vec(),
-    };
-    println!("l_yt : {l_yt_matrix:?}");
-    println!("tri : {tri_matrix:?}");
-
     // the compact WY representation: `A = L * (I - Y T Y')`.
     // A = LX - YTY'X;
-
     // y'x
     tensor_ut_contraction(
         &l_yt[1..],
@@ -249,11 +230,6 @@ pub fn lhs_apply_q(
         s_t,
         s_t,
     );
-    let current = NdArray {
-        dims: vec![rows, acols],
-        data: t_buffer.to_vec(),
-    };
-    println!("check Y' created {current:?}");
     // t * [y'x];
     tensor_lt_contraction(
         tri,
@@ -268,13 +244,7 @@ pub fn lhs_apply_q(
         s_t,
         s_t,
     );
-    let current = NdArray {
-        dims: vec![rows, acols],
-        data: s_buffer.clone(),
-    };
-    println!("check TY' created {current:?}");
     import_slice(&mut big_buffer, &s_buffer);
-    // println!("big_buffer {big_buffer:?}");
     tensor_tlt_contraction(
         &l_yt[1..],
         &s_buffer[..],
