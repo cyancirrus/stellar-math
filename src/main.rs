@@ -44,7 +44,7 @@ fn test_left_apply_q() {
     let input = l_yt.clone();
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, stride);
-    lhs_apply_q(&l_yt, &tri, &mut t_buffer, &mut q_argument, rows, cols);
+    lhs_apply_q(&l_yt, &tri, &x_argument, &mut t_buffer, &mut q_argument, rows, cols);
 
     // let mut t = create_identity_vector(cols, cols);
     t_buffer.fill(0f32);

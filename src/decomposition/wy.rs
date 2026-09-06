@@ -182,6 +182,7 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 pub fn lhs_apply_q(
     l_yt: &[f32],
     tri: &[f32],
+    x_argument:&[f32],
     t_buffer: &mut [f32],
     q_argument: &mut [f32],
     rows: usize,
@@ -191,8 +192,8 @@ pub fn lhs_apply_q(
     let (s_x, s_y, s_t, s_tri) = (cols, cols, cols, rows);
 
     // these are x's ie this will be added at the end
-    let x_argument = create_identity_vector(cols, cols);
-    let o_buffer = x_argument.clone();
+    // let x_argument = create_identity_vector(cols, cols);
+    let o_buffer = x_argument;
     let mut big_buffer = vec![0f32; cols * cols];
     import_slice(t_buffer, &o_buffer[..rows * cols]);
     let t_buffer_mat = NdArray {
