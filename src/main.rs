@@ -249,26 +249,27 @@ fn validate_upper_upper_fma() {
 }
 
 fn validate_transpose_upper_upper_fma() {
-    let (rows, cols, stride) = (7, 4, 4);
+    // in terms of output space
+    let (rows, shared, cols) = (4, 2 , 4);
+    let (s_x, s_y, s_t) = (rows, cols, cols); 
+    // let (rows, cols, stride) = (7, 4, 4);
     // let (rows, cols, stride) = (3, 3, 3);
-    let mut d = generate_random_vector(cols * rows);
+    let mut d = generate_random_vector(shared * rows);
     let d_matrix = NdArray {
-        dims: vec![cols, rows],
+        dims: vec![shared, rows],
         data: d.clone(),
     };
     println!("raw x_matrix {d_matrix:?}");
-    let mut w = vec![0f32; cols];
-
-    // let mut o_buffer = vec![1f32; cols * cols];
-    let mut o_buffer = generate_random_vector(cols * cols);
+// let mut o_buffer = vec![1f32; cols * cols];
+    let mut o_buffer = generate_random_vector(shared * cols);
     let mut t_buffer = vec![0f32; rows * cols];
-    import_slice(&mut t_buffer, &o_buffer);
+    import_slice(&mut t_buffer, &o_buffer[..shared * cols]);
     let mut t_clean = vec![0f32; rows * cols];
     // for testing
     let mut s_buffer = o_buffer.clone();
 
     let input = NdArray {
-        dims: vec![cols, cols],
+        dims: vec![shared, cols],
         data: o_buffer.clone(),
     };
     println!("input {input:?}");
@@ -288,15 +289,15 @@ fn validate_transpose_upper_upper_fma() {
     tensor_tlt_contraction(
         &d[1..],
         &o_buffer[..],
-        &mut t_buffer[stride..],
+        &mut t_buffer[s_t..],
         cols - cols.min(rows) + 1,
         0,
         rows.saturating_sub(1),
+        shared,
         cols,
-        cols,
-        rows,
-        stride,
-        stride,
+        s_x,
+        s_y,
+        s_t,
     );
     // for k in 0..s_buffer.len() {
     //     t_clean[k] += s_buffer[k];
@@ -313,7 +314,7 @@ fn validate_transpose_upper_upper_fma() {
     // println!("----------------------");
 
     let mut basis_matrix = NdArray {
-        dims: vec![cols, rows],
+        dims: vec![shared, rows],
         data: d,
     };
     basis_matrix = basis_matrix.transpose();
@@ -322,13 +323,15 @@ fn validate_transpose_upper_upper_fma() {
     println!("basis_matrix {basis_matrix:?}");
     println!("----------------------");
     let s_vector = NdArray {
-        dims: vec![cols, cols],
+        dims: vec![shared, cols],
         data: s_buffer,
     };
+    println!("s_vector {s_vector:?}");
     let reconst = NdArray {
         dims: vec![rows, cols],
         data: t_buffer,
     };
+    println!("reconst {reconst:?}");
     let reference = matrix_mult(&basis_matrix, &s_vector);
     // println!("t_clean_mat {t_clean_mat:?}");
     println!("----------------------");
