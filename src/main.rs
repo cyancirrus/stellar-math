@@ -36,10 +36,6 @@ fn test_left_apply_q() {
     let mut t_buffer = vec![0f32; rows * acols];
     let mut big_buffer = vec![0f32; cols * acols];
     let mut q_argument = x_argument.clone();
-    let t_buffer_mat = NdArray {
-        dims: vec![rows, acols],
-        data: t_buffer.clone(),
-    };
     let mut s_buffer = vec![0f32; cols * cols];
 
     let input = l_yt.clone();
@@ -62,7 +58,7 @@ fn test_left_apply_q() {
         cols,
         acols,
         s_x,
-        s_y,
+        s_t,
         s_t,
     );
     let result = t_buffer.clone();

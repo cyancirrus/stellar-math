@@ -191,7 +191,7 @@ pub fn lhs_apply_q(
 ) {
     debug_assert!(t_buffer.len() >= rows * acols);
     debug_assert!(cols >= rows);
-    let (s_x, s_y, s_t, s_tri) = (cols, cols, acols, rows);
+    let (s_x, s_t, s_tri) = (cols, acols, rows);
 
     // these are x's ie this will be added at the end
     // let x_argument = create_identity_vector(cols, cols);
@@ -222,7 +222,7 @@ pub fn lhs_apply_q(
     // y'x
     tensor_ut_contraction(
         &l_yt[1..],
-        &o_buffer[s_y..],
+        &o_buffer[s_t..],
         t_buffer,
         0,
         0,
@@ -230,7 +230,7 @@ pub fn lhs_apply_q(
         cols.saturating_sub(1),
         acols,
         s_x,
-        s_y,
+        s_t,
         s_t,
     );
     let current = NdArray {
