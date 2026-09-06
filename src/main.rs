@@ -19,7 +19,7 @@ fn import_slice(target: &mut [f32], data:&[f32]) {
 }
 
 fn test_reconstruct() {
-    let (rows, cols, stride) = (8, 8, 8);
+    let (rows, cols, stride) = (4, 8, 8);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_z, s_t, s_tri) = (cols, cols, cols, cols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
@@ -30,6 +30,7 @@ fn test_reconstruct() {
     let mut x_argument = create_identity_vector(cols, cols);
     let mut o_buffer = x_argument.clone();
     let mut t_buffer = vec![0f32; rows * cols];
+    let mut big_buffer = vec![0f32; cols * cols];
     import_slice(&mut t_buffer, &o_buffer[..rows * cols]);
     let t_buffer_mat = NdArray {
         dims: vec![rows, cols],
@@ -74,6 +75,7 @@ fn test_reconstruct() {
         dims: vec![rows, cols],
         data: t_buffer.clone(),
     };
+    println!("check Y' created {current:?}");
     // t * [y'x];
     tensor_lt_contraction(
         &tri,
@@ -95,17 +97,33 @@ fn test_reconstruct() {
     };
     println!("check TY' created {current:?}");
     // VALIDATED AS CORRECT
+    //
+    //
+    //
     import_slice(&mut t_buffer, &s_buffer[..rows * s_t]);
     // works and validated
     // [y']' * [ty'x ]
+    // tensor_tlt_contraction(
+    //     &l_yt[1..],
+    //     &s_buffer[..],
+    //     &mut t_buffer[stride..],
+    //     cols - cols.min(rows) + 1,
+    //     0,
+    //     rows.saturating_sub(1),
+    //     cols,
+    //     cols,
+    //     s_x,
+    //     s_t,
+    //     s_t,
+    // );
     tensor_tlt_contraction(
         &l_yt[1..],
         &s_buffer[..],
-        &mut t_buffer[stride..],
+        &mut big_buffer[stride..],
         cols - cols.min(rows) + 1,
         0,
-        rows.saturating_sub(1),
-        cols,
+        cols.saturating_sub(1),
+        rows,
         cols,
         s_x,
         s_t,
@@ -116,10 +134,11 @@ fn test_reconstruct() {
     for k in 0..t_buffer.len() {
         q_argument[k] -= t_buffer[k];
     }
+    println!("here length {:?}", t_buffer.len());
     let right_term = q_argument.clone();
     let right_term_matrix = NdArray {
-        dims: vec![rows, cols],
-        data: right_term.clone(),
+        dims: vec![cols, cols],
+        data: big_buffer.clone(),
     };
     println!("right_term {right_term_matrix:?}");
     // let mut t = create_identity_vector(cols, cols);
@@ -230,8 +249,8 @@ fn validate_upper_upper_fma() {
 }
 
 fn validate_transpose_upper_upper_fma() {
-    // let (rows, cols, stride) = (4, 7, 7);
-    let (rows, cols, stride) = (3, 3, 3);
+    let (rows, cols, stride) = (7, 4, 4);
+    // let (rows, cols, stride) = (3, 3, 3);
     let mut d = generate_random_vector(cols * rows);
     let d_matrix = NdArray {
         dims: vec![cols, rows],
@@ -360,8 +379,7 @@ fn test_debug_set_diagonal() {
 
 
 fn main() {
-    test_reconstruct();
-    // test_reconstruct_transpose();
+    // test_reconstruct();
     // validate_upper_upper_fma();
-    // validate_transpose_upper_upper_fma();
+    validate_transpose_upper_upper_fma();
 }
