@@ -189,7 +189,7 @@ pub fn lhs_apply_l(
     s_x: usize,
     s_t: usize,
 ) {
-    t_buffer.fill(0f32);
+    debug_assert!(t_buffer.len() >= rows * acols);
     tensor_lt_contraction(
         l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_x, s_t, s_t,
     );
@@ -200,18 +200,16 @@ pub fn lhs_apply_q(
     tri: &[f32],
     x_argument: &mut [f32],
     t_buffer: &mut [f32],
+    s_buffer: &mut [f32],
     rows: usize,
     cols: usize,
     acols: usize,
 ) {
     debug_assert!(t_buffer.len() >= rows * acols);
+    debug_assert!(s_buffer.len() >= rows * acols);
     debug_assert!(cols >= rows);
     let (s_x, s_t, s_tri) = (cols, acols, rows);
-
-    // these are x's ie this will be added at the end
-    let mut big_buffer = vec![0f32; cols * acols];
     import_slice(t_buffer, &x_argument[..rows * acols]);
-    let mut s_buffer = vec![0f32; rows * acols];
     // A = LX - YTY'X;
     // y'x
     tensor_ut_contraction(
@@ -231,7 +229,7 @@ pub fn lhs_apply_q(
     tensor_lt_contraction(
         tri,
         t_buffer,
-        &mut s_buffer,
+        s_buffer,
         1,
         0,
         rows,
@@ -241,11 +239,14 @@ pub fn lhs_apply_q(
         s_t,
         s_t,
     );
-    import_slice(&mut big_buffer, &s_buffer);
+    for k in 0..rows * acols {
+        s_buffer[k] = -s_buffer[k];
+        x_argument[k] += s_buffer[k];
+    }
     tensor_tlt_contraction(
         &l_yt[1..],
         &s_buffer[..],
-        &mut big_buffer[acols..],
+        &mut x_argument[acols..],
         rows - rows.min(cols) + 1,
         0,
         cols.saturating_sub(1),
@@ -255,7 +256,4 @@ pub fn lhs_apply_q(
         s_t,
         s_t,
     );
-    for k in 0..cols * acols {
-        x_argument[k] -= big_buffer[k];
-    }
 }

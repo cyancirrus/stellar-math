@@ -19,7 +19,7 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 }
 
 fn test_left_apply_q() {
-    let (rows, cols, acols) = (4, 5, 8);
+    let (rows, cols, acols) = (4, 6, 8);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_t, s_tri) = (cols, cols, acols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
@@ -32,12 +32,10 @@ fn test_left_apply_q() {
         dims: vec![rows, acols],
         data: x_argument.clone(),
     };
-    println!("argumnet rhs {x_mat:?}");
     let mut o_buffer = x_argument.clone();
     let mut t_buffer = vec![0f32; rows * acols];
-    let mut big_buffer = vec![0f32; cols * acols];
     let mut q_argument = x_argument.clone();
-    let mut s_buffer = vec![0f32; cols * cols];
+    let mut s_buffer = vec![0f32; rows * acols];
 
     let input = l_yt.clone();
     let input_matrix = NdArray {
@@ -50,6 +48,7 @@ fn test_left_apply_q() {
         &tri,
         &mut x_argument,
         &mut t_buffer,
+        &mut s_buffer,
         rows,
         cols,
         acols,
