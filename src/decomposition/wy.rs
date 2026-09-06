@@ -191,7 +191,7 @@ pub fn lhs_apply_q(
 ) {
     debug_assert!(t_buffer.len() >= rows * acols);
     debug_assert!(cols >= rows);
-    let (s_x, s_y, s_t, s_tri) = (cols, cols, cols, rows);
+    let (s_x, s_y, s_t, s_tri) = (cols, cols, acols, rows);
 
     // these are x's ie this will be added at the end
     // let x_argument = create_identity_vector(cols, cols);
@@ -199,7 +199,7 @@ pub fn lhs_apply_q(
     let mut big_buffer = vec![0f32; cols * acols];
     import_slice(t_buffer, &o_buffer[..rows * acols]);
     let t_buffer_mat = NdArray {
-        dims: vec![rows, cols],
+        dims: vec![rows, acols],
         data: t_buffer.to_vec(),
     };
     println!("t_buffer {t_buffer_mat:?}");
@@ -228,13 +228,13 @@ pub fn lhs_apply_q(
         0,
         rows,
         cols.saturating_sub(1),
-        cols,
+        acols,
         s_x,
         s_y,
         s_t,
     );
     let current = NdArray {
-        dims: vec![rows, cols],
+        dims: vec![rows, acols],
         data: t_buffer.to_vec(),
     };
     println!("check Y' created {current:?}");
@@ -247,7 +247,7 @@ pub fn lhs_apply_q(
         0,
         rows,
         cols,
-        cols,
+        acols,
         s_tri,
         s_t,
         s_t,
@@ -258,16 +258,16 @@ pub fn lhs_apply_q(
     };
     println!("check TY' created {current:?}");
     import_slice(&mut big_buffer, &s_buffer);
-    println!("big_buffer {big_buffer:?}");
+    // println!("big_buffer {big_buffer:?}");
     tensor_tlt_contraction(
         &l_yt[1..],
         &s_buffer[..],
-        &mut big_buffer[s_x..],
+        &mut big_buffer[acols..],
         rows - rows.min(cols) + 1,
         0,
         cols.saturating_sub(1),
         rows,
-        cols,
+        acols,
         s_x,
         s_t,
         s_t,

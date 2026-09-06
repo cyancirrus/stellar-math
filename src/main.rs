@@ -19,30 +19,37 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 }
 
 fn test_left_apply_q() {
-    let (rows, cols, acols, stride) = (4, 8, 8, 8);
+    let (rows, cols, acols) = (2, 4, 4);
     debug_assert!(cols >= rows);
-    let (s_x, s_y, s_z, s_t, s_tri) = (cols, cols, cols, cols, rows);
+    let (s_x, s_y, s_t, s_tri) = (cols, cols, acols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
     let mut tri = create_identity_vector(rows, rows);
 
     let mut w = vec![0f32; cols];
+    let mut x_argument = create_identity_vector(cols, acols);
     // let mut x_argument = create_identity_vector(cols, cols);
-    let mut x_argument = generate_random_vector(cols * cols);
+    // let mut x_argument = generate_random_vector(cols * acols);
     let mut o_buffer = x_argument.clone();
     let mut t_buffer = vec![0f32; rows * acols];
     let mut big_buffer = vec![0f32; cols * acols];
     let mut q_argument = x_argument.clone();
     import_slice(&mut t_buffer, &o_buffer[..rows * acols]);
     let t_buffer_mat = NdArray {
-        dims: vec![rows, cols],
+        dims: vec![rows, acols],
         data: t_buffer.clone(),
     };
-    println!("t_buffer {t_buffer_mat:?}");
     let mut s_buffer = vec![0f32; cols * cols];
 
     let input = l_yt.clone();
+    let input_matrix = NdArray {
+        dims: vec![rows, cols],
+        data: input.clone(),
+    };
+    println!("input_matrix {input_matrix:?}");
 
-    wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, stride);
+    println!("what?");
+    wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
+    println!("what?");
     lhs_apply_q(&l_yt, &tri, &x_argument, &mut t_buffer, &mut q_argument, rows, cols, acols);
     t_buffer.fill(0f32);
     tensor_lt_contraction(
