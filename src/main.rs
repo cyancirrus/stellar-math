@@ -27,13 +27,17 @@ fn test_left_apply_q() {
 
     let mut w = vec![0f32; cols];
     let mut x_argument = create_identity_vector(cols, acols);
+    let x_mat = NdArray {
+        dims: vec![rows, acols],
+        data: x_argument.clone(),
+    };
+    println!("argumnet rhs {x_mat:?}");
     // let mut x_argument = create_identity_vector(cols, cols);
     // let mut x_argument = generate_random_vector(cols * acols);
     let mut o_buffer = x_argument.clone();
     let mut t_buffer = vec![0f32; rows * acols];
     let mut big_buffer = vec![0f32; cols * acols];
     let mut q_argument = x_argument.clone();
-    import_slice(&mut t_buffer, &o_buffer[..rows * acols]);
     let t_buffer_mat = NdArray {
         dims: vec![rows, acols],
         data: t_buffer.clone(),
