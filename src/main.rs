@@ -27,6 +27,7 @@ fn test_left_apply_q() {
 
     let mut w = vec![0f32; cols];
     let mut x_argument = generate_random_vector(cols * acols);
+    let mut x_original = x_argument.clone();
     let x_mat = NdArray {
         dims: vec![rows, acols],
         data: x_argument.clone(),
@@ -47,9 +48,8 @@ fn test_left_apply_q() {
     lhs_apply_q(
         &l_yt,
         &tri,
-        &x_argument,
+        &mut x_argument,
         &mut t_buffer,
-        &mut q_argument,
         rows,
         cols,
         acols,
@@ -57,7 +57,7 @@ fn test_left_apply_q() {
     t_buffer.fill(0f32);
     lhs_apply_l(
         &l_yt,
-        &q_argument,
+        &x_argument,
         &mut t_buffer,
         rows,
         cols,
@@ -76,7 +76,7 @@ fn test_left_apply_q() {
     };
     let arg_matrix = NdArray {
         dims: vec![cols, acols],
-        data: x_argument.clone(),
+        data: x_original.clone(),
     };
     let expected = matrix_mult(&input, &arg_matrix);
     println!("expected : {expected:?}");

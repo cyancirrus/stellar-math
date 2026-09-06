@@ -194,13 +194,12 @@ pub fn lhs_apply_l(
         l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_x, s_t, s_t,
     );
 }
-
+/// the compact WY representation: `A = (I - Y T Y')X`.
 pub fn lhs_apply_q(
     l_yt: &[f32],
     tri: &[f32],
-    x_argument: &[f32],
+    x_argument: &mut [f32],
     t_buffer: &mut [f32],
-    q_argument: &mut [f32],
     rows: usize,
     cols: usize,
     acols: usize,
@@ -210,11 +209,10 @@ pub fn lhs_apply_q(
     let (s_x, s_t, s_tri) = (cols, acols, rows);
 
     // these are x's ie this will be added at the end
-    let o_buffer = x_argument;
+    let o_buffer = x_argument.to_vec();
     let mut big_buffer = vec![0f32; cols * acols];
     import_slice(t_buffer, &o_buffer[..rows * acols]);
     let mut s_buffer = vec![0f32; rows * acols];
-    // the compact WY representation: `A = L * (I - Y T Y')`.
     // A = LX - YTY'X;
     // y'x
     tensor_ut_contraction(
@@ -258,7 +256,7 @@ pub fn lhs_apply_q(
         s_t,
         s_t,
     );
-    for k in 0..big_buffer.len() {
-        q_argument[k] -= big_buffer[k];
+    for k in 0..cols * acols {
+        x_argument[k] -= big_buffer[k];
     }
 }
