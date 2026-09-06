@@ -8,7 +8,7 @@ use stellar::algebra::bmethods::interface::{tensor_kernel, tensor_tlt_kernel, te
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
-use stellar::decomposition::wy::wy_decomposition;
+use stellar::decomposition::wy::{wy_decomposition, lhs_apply_q};
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
@@ -16,6 +16,65 @@ use stellar::structure::ndarray::NdArray;
 fn import_slice(target: &mut [f32], data:&[f32]) {
     target[..data.len()].copy_from_slice(data);
     target[data.len()..].fill(0f32);
+}
+
+fn test_left_apply_q() {
+    let (rows, cols, stride) = (4, 8, 8);
+    // let (rows, cols, stride) = (2, 4, 4);
+    debug_assert!(cols >= rows);
+    let (s_x, s_y, s_z, s_t, s_tri) = (cols, cols, cols, cols, rows);
+    let mut l_yt = generate_random_vector(rows * cols);
+    let mut tri = create_identity_vector(rows, rows);
+
+    let mut w = vec![0f32; cols];
+    // these are x's ie this will be added at the end
+    let mut x_argument = create_identity_vector(cols, cols);
+    let mut o_buffer = x_argument.clone();
+    let mut t_buffer = vec![0f32; rows * cols];
+    let mut big_buffer = vec![0f32; cols * cols];
+    let mut q_argument = create_identity_vector(cols, cols);
+    import_slice(&mut t_buffer, &o_buffer[..rows * cols]);
+    let t_buffer_mat = NdArray {
+        dims: vec![rows, cols],
+        data: t_buffer.clone(),
+    };
+    println!("t_buffer {t_buffer_mat:?}");
+    let mut s_buffer = vec![0f32; cols * cols];
+
+    let input = l_yt.clone();
+
+    wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, stride);
+lhs_apply_q(&l_yt, &tri, &mut t_buffer, &mut q_argument, rows, cols);
+
+    // let mut t = create_identity_vector(cols, cols);
+    t_buffer.fill(0f32);
+    tensor_lt_contraction(
+        &l_yt,
+        &q_argument,
+        &mut t_buffer,
+        1,
+        0,
+        rows,
+        cols,
+        cols,
+        s_x,
+        s_y,
+        s_t,
+    );
+    let result = t_buffer.clone();
+    let result_matrix = NdArray {
+        dims: vec![rows, cols],
+        data: result.clone(),
+    };
+    let input = NdArray {
+        dims: vec![rows, cols],
+        data: input.clone(),
+    };
+    println!("input : {input:?}");
+    println!("reconstruct : {result_matrix:?}");
+    // let reference = AutumnDecomp::new(input);
+    // println!("reference LQ {:?}", reference.h);
+    // println!("reference LQ {:?}", reference.t);
 }
 
 fn test_reconstruct() {
@@ -361,7 +420,8 @@ fn test_debug_set_diagonal() {
 
 
 fn main() {
-    test_reconstruct();
+test_left_apply_q();
+    // test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
 }
