@@ -20,20 +20,17 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 
 fn test_left_apply_q() {
     let (rows, cols, stride) = (4, 8, 8);
-    // let (rows, cols, stride) = (2, 4, 4);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_z, s_t, s_tri) = (cols, cols, cols, cols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
     let mut tri = create_identity_vector(rows, rows);
 
     let mut w = vec![0f32; cols];
-    // these are x's ie this will be added at the end
     // let mut x_argument = create_identity_vector(cols, cols);
     let mut x_argument = generate_random_vector(cols * cols);
     let mut o_buffer = x_argument.clone();
     let mut t_buffer = vec![0f32; rows * cols];
     let mut big_buffer = vec![0f32; cols * cols];
-    // let mut q_argument = create_identity_vector(cols, cols);
     let mut q_argument = x_argument.clone();
     import_slice(&mut t_buffer, &o_buffer[..rows * cols]);
     let t_buffer_mat = NdArray {
@@ -47,8 +44,6 @@ fn test_left_apply_q() {
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, stride);
     lhs_apply_q(&l_yt, &tri, &x_argument, &mut t_buffer, &mut q_argument, rows, cols);
-
-    // let mut t = create_identity_vector(cols, cols);
     t_buffer.fill(0f32);
     tensor_lt_contraction(
         &l_yt,
@@ -79,9 +74,6 @@ fn test_left_apply_q() {
     let expected = matrix_mult(&input, &arg_matrix);
     println!("expected : {expected:?}");
     println!("reconstruct : {result_matrix:?}");
-    // let reference = AutumnDecomp::new(input);
-    // println!("reference LQ {:?}", reference.h);
-    // println!("reference LQ {:?}", reference.t);
 }
 
 fn test_reconstruct() {
