@@ -20,21 +20,22 @@ fn import_slice(target: &mut [f32], data:&[f32]) {
 
 fn test_reconstruct() {
     let (rows, cols, stride) = (8, 8, 8);
-    let (s_x, s_y, s_z, s_t) = (rows, cols, cols, rows);
-    debug_assert!(rows >= cols);
-    let s_x = rows;
-    let s_y = stride;
-    let s_z = stride;
+    debug_assert!(cols >= rows);
+    let (s_x, s_y, s_z, s_t, s_tri) = (cols, cols, cols, cols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
-    // let mut t = generate_random_vector(cols * cols);
-    let mut tri = create_identity_vector(cols, cols);
+    let mut tri = create_identity_vector(rows, rows);
 
     let mut w = vec![0f32; cols];
-    // these are x''s
+    // these are x's ie this will be added at the end
     let mut x_argument = create_identity_vector(cols, cols);
     let mut o_buffer = x_argument.clone();
     let mut t_buffer = vec![0f32; rows * cols];
-    import_slice(&mut t_buffer, &o_buffer);
+    import_slice(&mut t_buffer, &o_buffer[..rows * cols]);
+    let t_buffer_mat = NdArray {
+        dims: vec![rows, cols],
+        data: t_buffer.clone(),
+    };
+    println!("t_buffer {t_buffer_mat:?}");
     let mut s_buffer = vec![0f32; cols * cols];
 
     let input = l_yt.clone();
@@ -58,22 +59,21 @@ fn test_reconstruct() {
     // y'x
     tensor_ut_contraction(
         &l_yt[1..],
-        &o_buffer[stride..],
+        &o_buffer[s_y..],
         &mut t_buffer,
         0,
         0,
         rows,
         cols.saturating_sub(1),
         cols,
-        stride,
-        stride,
-        stride,
+        s_x,
+        s_y,
+        s_t,
     );
     let current = NdArray {
         dims: vec![rows, cols],
         data: t_buffer.clone(),
     };
-    println!("check Y' created {current:?}");
     // t * [y'x];
     tensor_lt_contraction(
         &tri,
@@ -81,12 +81,13 @@ fn test_reconstruct() {
         &mut s_buffer,
         1,
         0,
+        // rows,
         rows,
         cols,
         cols,
-        stride,
-        stride,
-        stride,
+        s_tri,
+        s_t,
+        s_t,
     );
     let current = NdArray {
         dims: vec![rows, cols],
@@ -94,7 +95,7 @@ fn test_reconstruct() {
     };
     println!("check TY' created {current:?}");
     // VALIDATED AS CORRECT
-    import_slice(&mut t_buffer, &s_buffer);
+    import_slice(&mut t_buffer, &s_buffer[..rows * s_t]);
     // works and validated
     // [y']' * [ty'x ]
     tensor_tlt_contraction(
@@ -106,9 +107,9 @@ fn test_reconstruct() {
         rows.saturating_sub(1),
         cols,
         cols,
-        stride,
-        stride,
-        stride,
+        s_x,
+        s_t,
+        s_t,
     );
     // THIS IS WHAT FAILS IE THE RHS TERM
     let mut q_argument = create_identity_vector(rows, cols);
@@ -132,9 +133,9 @@ fn test_reconstruct() {
         rows,
         cols,
         cols,
-        stride,
-        stride,
-        stride,
+        s_x,
+        s_y,
+        s_t,
     );
     let result = t_buffer.clone();
     let result_matrix = NdArray {
@@ -159,7 +160,9 @@ fn validate_upper_upper_fma() {
     let mut w = vec![0f32; cols];
 
     let mut o_buffer = generate_random_vector(cols * cols);
-    let mut t_buffer = o_buffer.clone();
+    // let mut t_buffer = o_buffer.clone();
+    let mut t_buffer = vec![0f32; rows * cols];
+    import_slice(&mut t_buffer, &o_buffer[0..rows * cols]);
     let mut t_clean = vec![0f32; cols * cols];
     // for testing
     let mut s_buffer = o_buffer.clone();
@@ -219,7 +222,7 @@ fn validate_upper_upper_fma() {
     };
     let reconst = NdArray {
         dims: vec![rows, cols],
-        data: t_clean,
+        data: t_buffer,
     };
     let reference = matrix_mult(&basis_matrix, &s_vector);
     println!("reconst {reconst:?}");
@@ -356,103 +359,9 @@ fn test_debug_set_diagonal() {
 }
 
 
-// fn main() {
-//     test_interview_intuition();
-//     // test_reconstruct();
-//     // test_reconstruct_transpose();
-//     // validate_upper_upper_fma();
-//     // validate_transpose_upper_upper_fma();
-// }
-
-
- 
- 
- 
-fn generate_pattern_vector(n: usize, seed_offset: usize) -> Vec<f32> {
-    // Avoid all-ones / all-same-constant data: LLVM can const-fold or the
-    // kernel can hit unrepresentative cache behavior if every value is identical.
-    // Cheap non-constant fill, no RNG throughput cost.
-    (0..n)
-        .map(|i| (((i + seed_offset) % 997) as f32) * 0.001 - 0.5)
-        .collect()
-}
-fn bench_streamed_projection(mx: usize, mn: usize, chunk_rows: usize) {
-    // Build the small projection matrix once (stand-in for Q / Y,T applied form).
-    let proj_data = generate_pattern_vector(mn * mn, 0);
-    let proj = NdArray {
-        dims: vec![mn, mn],
-        data: proj_data,
-    };
- 
-    let mut out_chunk = vec![0f32; chunk_rows * mn];
-    let num_full_chunks = mx / chunk_rows;
-    let remainder = mx % chunk_rows;
- 
-    println!(
-        "Streaming {} rows x {} cols in chunks of {} ({} full chunks, remainder {})",
-        mx, mn, chunk_rows, num_full_chunks, remainder
-    );
- 
-    let start = Instant::now();
- 
-    for c in 0..num_full_chunks {
-        let y_data = generate_pattern_vector(chunk_rows * mn, c * 31 + 7);
-        let y_chunk = NdArray {
-            dims: vec![chunk_rows, mn],
-            data: y_data,
-        };
- 
-        for v in out_chunk.iter_mut() {
-            *v = 0.0;
-        }
-        tensor_kernel(&y_chunk, &proj, &mut out_chunk);
- 
-        // touch the output so it isn't optimized away; in a real pipeline
-        // this is where you'd write the chunk out or accumulate it
-        std::hint::black_box(&out_chunk);
- 
-        if c % 10 == 0 {
-            println!(
-                "  chunk {}/{} done, elapsed {:.2?}",
-                c + 1,
-                num_full_chunks,
-                start.elapsed()
-            );
-        }
-    }
- 
-    if remainder > 0 {
-        let y_data = generate_pattern_vector(remainder * mn, num_full_chunks * 31 + 7);
-        let y_chunk = NdArray {
-            dims: vec![remainder, mn],
-            data: y_data,
-        };
-        let mut out_rem = vec![0f32; remainder * mn];
-        tensor_kernel(&y_chunk, &proj, &mut out_rem);
-        std::hint::black_box(&out_rem);
-    }
- 
-    let elapsed = start.elapsed();
-    println!("Total elapsed: {:.2?}", elapsed);
- 
-    let total_flops = 2.0 * (mx as f64) * (mn as f64) * (mn as f64);
-    let gflops = total_flops / elapsed.as_secs_f64() / 1e9;
-    println!(
-        "Approx {:.3} GFLOPs total, {:.2} GFLOP/s effective",
-        total_flops / 1e9,
-        gflops
-    );
-}
- 
 fn main() {
-    // Full interview-scale test: mx=5,000,000, mn=1,000
-    // Start smaller first to sanity check before committing to the full run —
-    // e.g. bench_streamed_projection(500_000, 1_000, 50_000);
-    let mx = 5_000_000;
-    let mn = 1_000;
-    let chunk_rows = 20_000; // ~20_000*1000*4 bytes = ~80MB per chunk buffer
- 
-    bench_streamed_projection(mx, mn, chunk_rows);
+    test_reconstruct();
+    // test_reconstruct_transpose();
+    // validate_upper_upper_fma();
+    // validate_transpose_upper_upper_fma();
 }
- 
-
