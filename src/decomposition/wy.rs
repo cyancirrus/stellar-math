@@ -27,7 +27,6 @@
 //     pub h: NdArray,
 //     pub t: NdArray,
 // }
-use std::time::Instant;
 use crate::algebra::bmethods::contractions::{
     tensor_lt_contraction, tensor_rut_contraction, tensor_tlt_contraction, tensor_tut_contraction,
     tensor_ut_contraction,
@@ -38,6 +37,7 @@ use crate::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use crate::decomposition::lq::AutumnDecomp;
 use crate::random::generation::generate_random_vector;
 use crate::structure::ndarray::NdArray;
+use std::time::Instant;
 const EPSILON: f32 = 1e-21;
 /// params
 ///
@@ -174,16 +174,21 @@ pub fn wy_decomposition(
     }
 }
 /// copies memory from b into a
-fn import_slice(target: &mut [f32], data:&[f32]) {
+fn import_slice(target: &mut [f32], data: &[f32]) {
     target[..data.len()].copy_from_slice(data);
     target[data.len()..].fill(0f32);
 }
 
-pub fn lhs_apply_q(l_yt:&[f32], tri:&[f32], t_buffer:&mut [f32], q_argument:&mut [f32], rows:usize, cols:usize) {
-    let mx = cols.max(rows);
-    // debug_assert!(t_buffer.len() >= mx * mx);
+pub fn lhs_apply_q(
+    l_yt: &[f32],
+    tri: &[f32],
+    t_buffer: &mut [f32],
+    q_argument: &mut [f32],
+    rows: usize,
+    cols: usize,
+) {
     debug_assert!(cols >= rows);
-    let (s_x, s_y, s_z, s_t, s_tri) = (cols, cols, cols, cols, rows);
+    let (s_x, s_y, s_t, s_tri) = (cols, cols, cols, rows);
 
     // these are x's ie this will be added at the end
     let x_argument = create_identity_vector(cols, cols);
@@ -196,8 +201,6 @@ pub fn lhs_apply_q(l_yt:&[f32], tri:&[f32], t_buffer:&mut [f32], q_argument:&mut
     };
     println!("t_buffer {t_buffer_mat:?}");
     let mut s_buffer = vec![0f32; cols * cols];
-
-
 
     let l_yt_matrix = NdArray {
         dims: vec![rows, cols],
@@ -212,7 +215,7 @@ pub fn lhs_apply_q(l_yt:&[f32], tri:&[f32], t_buffer:&mut [f32], q_argument:&mut
 
     // the compact WY representation: `A = L * (I - Y T Y')`.
     // A = LX - YTY'X;
-    
+
     // y'x
     tensor_ut_contraction(
         &l_yt[1..],
@@ -234,8 +237,8 @@ pub fn lhs_apply_q(l_yt:&[f32], tri:&[f32], t_buffer:&mut [f32], q_argument:&mut
     println!("check Y' created {current:?}");
     // t * [y'x];
     tensor_lt_contraction(
-        &tri,
-        &t_buffer,
+        tri,
+        t_buffer,
         &mut s_buffer,
         1,
         0,
@@ -270,18 +273,4 @@ pub fn lhs_apply_q(l_yt:&[f32], tri:&[f32], t_buffer:&mut [f32], q_argument:&mut
     for k in 0..big_buffer.len() {
         q_argument[k] -= big_buffer[k];
     }
-    // t_buffer.fill(0f32);
-    // tensor_lt_contraction(
-    //     &l_yt,
-    //     &q_argument,
-    //     t_buffer,
-    //     1,
-    //     0,
-    //     rows,
-    //     cols,
-    //     cols,
-    //     s_x,
-    //     s_y,
-    //     s_t,
-    // );
 }

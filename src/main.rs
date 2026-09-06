@@ -8,12 +8,12 @@ use stellar::algebra::bmethods::interface::{tensor_kernel, tensor_tlt_kernel, te
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
-use stellar::decomposition::wy::{wy_decomposition, lhs_apply_q};
+use stellar::decomposition::wy::{lhs_apply_q, wy_decomposition};
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
 /// copies memory from b into a
-fn import_slice(target: &mut [f32], data:&[f32]) {
+fn import_slice(target: &mut [f32], data: &[f32]) {
     target[..data.len()].copy_from_slice(data);
     target[data.len()..].fill(0f32);
 }
@@ -44,7 +44,7 @@ fn test_left_apply_q() {
     let input = l_yt.clone();
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, stride);
-lhs_apply_q(&l_yt, &tri, &mut t_buffer, &mut q_argument, rows, cols);
+    lhs_apply_q(&l_yt, &tri, &mut t_buffer, &mut q_argument, rows, cols);
 
     // let mut t = create_identity_vector(cols, cols);
     t_buffer.fill(0f32);
@@ -116,7 +116,7 @@ fn test_reconstruct() {
 
     // the compact WY representation: `A = L * (I - Y T Y')`.
     // A = LX - YTY'X;
-    
+
     // y'x
     tensor_ut_contraction(
         &l_yt[1..],
@@ -317,8 +317,8 @@ fn validate_upper_upper_fma() {
 
 fn validate_transpose_upper_upper_fma() {
     // in terms of output space
-    let (rows, shared, cols) = (4, 2 , 4);
-    let (s_x, s_y, s_t) = (rows, cols, cols); 
+    let (rows, shared, cols) = (4, 2, 4);
+    let (s_x, s_y, s_t) = (rows, cols, cols);
     let mut d = generate_random_vector(shared * rows);
     let d_matrix = NdArray {
         dims: vec![shared, rows],
@@ -399,11 +399,11 @@ pub fn set_diagonal_value(a: &mut NdArray, c: f32) {
     }
 }
 
-fn debug_set_diagonal(rows:usize, cols:usize) {
+fn debug_set_diagonal(rows: usize, cols: usize) {
     let mut d = generate_random_vector(rows * cols);
     let mut matrix = NdArray {
         dims: vec![rows, cols],
-        data: d
+        data: d,
     };
     filter_lower_trapezoid(&mut matrix);
     set_diagonal_value(&mut matrix, 1000f32);
@@ -411,16 +411,15 @@ fn debug_set_diagonal(rows:usize, cols:usize) {
 }
 
 fn test_debug_set_diagonal() {
-    let vals = vec![(1,2), (2,1), (4,4), (3,6), (6,3)];
-    for (r,c) in vals {
+    let vals = vec![(1, 2), (2, 1), (4, 4), (3, 6), (6, 3)];
+    for (r, c) in vals {
         debug_set_diagonal(r, c);
         println!("----------------------");
     }
 }
 
-
 fn main() {
-test_left_apply_q();
+    test_left_apply_q();
     // test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
