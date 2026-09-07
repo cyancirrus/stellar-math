@@ -39,8 +39,14 @@ fn test_left_apply_qt() {
 
     // apply Q
     lhs_apply_q(
-        &l_yt, &tri, &mut x_argument, &mut t_buffer, &mut s_buffer,
-        rows, cols, acols,
+        &l_yt,
+        &tri,
+        &mut x_argument,
+        &mut t_buffer,
+        &mut s_buffer,
+        rows,
+        cols,
+        acols,
     );
     let after_q = x_argument.clone();
     t_buffer.fill(0f32);
@@ -48,13 +54,28 @@ fn test_left_apply_qt() {
 
     // apply Q' - should undo it: Q'Qx == x
     lhs_apply_qt(
-        &l_yt, &tri, &mut x_argument, &mut t_buffer, &mut s_buffer,
-        rows, cols, acols,
+        &l_yt,
+        &tri,
+        &mut x_argument,
+        &mut t_buffer,
+        &mut s_buffer,
+        rows,
+        cols,
+        acols,
     );
 
-    let roundtrip = NdArray { dims: vec![cols, acols], data: x_argument.clone() };
-    let original = NdArray { dims: vec![cols, acols], data: x_original.clone() };
-    let mid = NdArray { dims: vec![cols, acols], data: after_q };
+    let roundtrip = NdArray {
+        dims: vec![cols, acols],
+        data: x_argument.clone(),
+    };
+    let original = NdArray {
+        dims: vec![cols, acols],
+        data: x_original.clone(),
+    };
+    let mid = NdArray {
+        dims: vec![cols, acols],
+        data: after_q,
+    };
     println!("original  : {original:?}");
     println!("after Q   : {mid:?}");
     println!("Q'Qx      : {roundtrip:?}");

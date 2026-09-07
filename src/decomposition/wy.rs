@@ -28,8 +28,7 @@
 //     pub t: NdArray,
 // }
 use crate::algebra::bmethods::contractions::{
-    tensor_lt_contraction, tensor_tlt_contraction,
-    tensor_ut_contraction, tensor_tut_contraction
+    tensor_lt_contraction, tensor_tlt_contraction, tensor_tut_contraction, tensor_ut_contraction,
 };
 const EPSILON: f32 = 1e-21;
 /// params
@@ -219,17 +218,7 @@ pub fn lhs_apply_q(
     );
     // t * [y'x];
     tensor_lt_contraction(
-        tri,
-        t_buffer,
-        s_buffer,
-        1,
-        0,
-        rows,
-        cols,
-        acols,
-        s_tri,
-        s_t,
-        s_t,
+        tri, t_buffer, s_buffer, 1, 0, rows, cols, acols, s_tri, s_t, s_t,
     );
     for k in 0..rows * acols {
         s_buffer[k] = -s_buffer[k];
@@ -282,18 +271,7 @@ pub fn lhs_apply_qt(
     );
     // t * [y'x];
     tensor_tut_contraction(
-        tri,
-        t_buffer,
-        s_buffer,
-        
-        0,
-        0,
-        cols,
-        rows,
-        acols,
-        s_tri,
-        s_t,
-        s_t,
+        tri, t_buffer, s_buffer, 0, 0, cols, rows, acols, s_tri, s_t, s_t,
     );
     for k in 0..rows * acols {
         s_buffer[k] = -s_buffer[k];
