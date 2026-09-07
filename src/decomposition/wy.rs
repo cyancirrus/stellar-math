@@ -29,7 +29,7 @@
 // }
 use crate::algebra::bmethods::contractions::{
     tensor_lt_contraction, tensor_tlt_contraction,
-    tensor_ut_contraction,
+    tensor_ut_contraction, tensor_tut_contraction
 };
 const EPSILON: f32 = 1e-21;
 /// params
@@ -226,6 +226,70 @@ pub fn lhs_apply_q(
         0,
         rows,
         cols,
+        acols,
+        s_tri,
+        s_t,
+        s_t,
+    );
+    for k in 0..rows * acols {
+        s_buffer[k] = -s_buffer[k];
+        x_argument[k] += s_buffer[k];
+    }
+    tensor_tlt_contraction(
+        &l_yt[1..],
+        &s_buffer[..],
+        &mut x_argument[acols..],
+        rows - rows.min(cols) + 1,
+        0,
+        cols.saturating_sub(1),
+        rows,
+        acols,
+        s_x,
+        s_t,
+        s_t,
+    );
+}
+/// the compact WY representation: `A = (I - Y T' Y')X`.
+pub fn lhs_apply_qt(
+    l_yt: &[f32],
+    tri: &[f32],
+    x_argument: &mut [f32],
+    t_buffer: &mut [f32],
+    s_buffer: &mut [f32],
+    rows: usize,
+    cols: usize,
+    acols: usize,
+) {
+    debug_assert!(t_buffer.len() >= rows * acols);
+    debug_assert!(s_buffer.len() >= rows * acols);
+    debug_assert!(cols >= rows);
+    let (s_x, s_t, s_tri) = (cols, acols, rows);
+    import_slice(t_buffer, &x_argument[..rows * acols]);
+    // A = LX - YTY'X;
+    // y'x
+    tensor_ut_contraction(
+        &l_yt[1..],
+        &x_argument[s_t..],
+        t_buffer,
+        0,
+        0,
+        rows,
+        cols.saturating_sub(1),
+        acols,
+        s_x,
+        s_t,
+        s_t,
+    );
+    // t * [y'x];
+    tensor_tut_contraction(
+        tri,
+        t_buffer,
+        s_buffer,
+        
+        0,
+        0,
+        cols,
+        rows,
         acols,
         s_tri,
         s_t,

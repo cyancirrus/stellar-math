@@ -8,14 +8,56 @@ use stellar::algebra::bmethods::interface::{tensor_kernel, tensor_tlt_kernel, te
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
-use stellar::decomposition::wy::{lhs_apply_l, lhs_apply_q, wy_decomposition};
+use stellar::decomposition::wy::{lhs_apply_l, lhs_apply_q, lhs_apply_qt, wy_decomposition};
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
+
+//TODO: Essentially need to ensure the apply q' works tomorrow
 
 /// copies memory from b into a
 fn import_slice(target: &mut [f32], data: &[f32]) {
     target[..data.len()].copy_from_slice(data);
     target[data.len()..].fill(0f32);
+}
+
+fn test_left_apply_qt() {
+    let (rows, cols, acols) = (2, 3, 6);
+    debug_assert!(cols >= rows);
+
+    let mut l_yt = generate_random_vector(rows * cols);
+    let mut tri = create_identity_vector(rows, rows);
+    let mut w = vec![0f32; cols];
+
+    let mut x_argument = generate_random_vector(cols * acols);
+    // let mut x_argument = create_identity_vector(cols , acols);
+    let x_original = x_argument.clone();
+
+    let mut t_buffer = vec![0f32; rows * acols];
+    let mut s_buffer = vec![0f32; rows * acols];
+
+    wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
+
+    // apply Q
+    lhs_apply_q(
+        &l_yt, &tri, &mut x_argument, &mut t_buffer, &mut s_buffer,
+        rows, cols, acols,
+    );
+    let after_q = x_argument.clone();
+    t_buffer.fill(0f32);
+    s_buffer.fill(0f32);
+
+    // apply Q' - should undo it: Q'Qx == x
+    lhs_apply_qt(
+        &l_yt, &tri, &mut x_argument, &mut t_buffer, &mut s_buffer,
+        rows, cols, acols,
+    );
+
+    let roundtrip = NdArray { dims: vec![cols, acols], data: x_argument.clone() };
+    let original = NdArray { dims: vec![cols, acols], data: x_original.clone() };
+    let mid = NdArray { dims: vec![cols, acols], data: after_q };
+    println!("original  : {original:?}");
+    println!("after Q   : {mid:?}");
+    println!("Q'Qx      : {roundtrip:?}");
 }
 
 fn test_left_apply_q() {
@@ -424,7 +466,8 @@ fn test_debug_set_diagonal() {
 }
 
 fn main() {
-    test_left_apply_q();
+    test_left_apply_qt();
+    // test_left_apply_q();
     // test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();

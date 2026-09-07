@@ -79,21 +79,21 @@ pub fn benchmark_kernels(c: &mut Criterion) {
     //         )
     //     });
     // });
-    group.bench_function("Scalar Kernel", |b_inner| {
-        b_inner.iter(|| {
-            default::kernel_mult_scalar(
-                black_box(a.as_ptr()),
-                black_box(b.as_ptr()),
-                black_box(c_out.as_mut_ptr()),
-                block,
-                block,
-                block,
-                stride,
-                stride,
-                stride,
-            )
-        });
-    });
+    // group.bench_function("Scalar Kernel", |b_inner| {
+    //     b_inner.iter(|| {
+    //         default::kernel_mult_scalar(
+    //             black_box(a.as_ptr()),
+    //             black_box(b.as_ptr()),
+    //             black_box(c_out.as_mut_ptr()),
+    //             block,
+    //             block,
+    //             block,
+    //             stride,
+    //             stride,
+    //             stride,
+    //         )
+    //     });
+    // });
     group.finish();
 }
 
