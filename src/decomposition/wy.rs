@@ -291,3 +291,19 @@ pub fn lhs_apply_qt(
         s_t,
     );
 }
+pub fn forward_solve(l_yt:&[f32], s_x:usize, x: &mut [f32], y:&[f32], rows:usize) {
+    let mut offset = 0;
+    for i in 0..rows {
+        let mut dot = 0f32;
+        for j in 0..i {
+            dot += l_yt[offset + j] * x[j];
+        }
+        // dot + lii * x_i = y_i
+        x[i] = (y[i] - dot) / l_yt[offset + i];
+        offset += s_x;
+    }
+}
+pub fn solve(l_yt: &[f32], tri: &[f32], s_x:usize, x:&mut [f32], y:&[f32], t_buffer:&mut [f32], s_buffer:&mut [f32],rows:usize, cols:usize) {
+    forward_solve(l_yt, s_x, x, y, rows);
+    lhs_apply_qt(l_yt, tri, x, t_buffer, s_buffer, rows, cols, 1 ); 
+}
