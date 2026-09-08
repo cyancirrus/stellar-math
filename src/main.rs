@@ -25,7 +25,6 @@ fn test_solves() {
     let mut s_buffer = vec![0f32; rows * acols];
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
-    println!("hello?");
     solve(
         &l_yt,
         &tri,

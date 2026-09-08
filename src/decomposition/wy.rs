@@ -305,65 +305,54 @@ pub fn lhs_apply_qt(
 //         offset += s_x;
 //     }
 // }
-pub fn forward_solve_works(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_x: usize, rows: usize, acols:usize) {
-    let mut offset = 0;
-    debug_assert!(w.len() >= acols);
-    for i in 0..rows {
-        w.fill(0f32);
-        for k in 0..i {
-            for j in 0..acols {
-                w[j] += l_yt[offset + k] * x[k * acols + j];
-            }
-        }
-        println!("w_j {w:?}");
-        for j in 0..acols {
-            // dot + lii * x_i = y_i
-            x[i*acols + j] = (y[i *acols + j] - w[j]) / l_yt[offset + i];
-        }
-        offset += s_x;
-    }
-}
-pub fn forward_solve(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_x: usize, rows: usize, acols:usize) {
-    debug_assert!(w.len() >= acols);
-    for j in 0..acols {
+/// Solves Ax = y;
+///  * l_yt : [l\y'] <- compressed mem storage form of WY(LQ)
+///  * x    : the x in Ax=y for which we are solving can be a matrixvec
+///  * y    : the y in Ax=y for which we are solving can be a matrixvec
+///  * w    : workspace vector so canquickly scan sum per record
+///  * s_a  : stride of the storage of l_yt ie A
+///  * rows : number of rows in l_yt ie A
+///  * tcols: target columns ie number of cols in x and in y
+pub fn forward_solve(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_a: usize, rows: usize, tcols:usize) {
+    debug_assert!(w.len() >= tcols);
+    debug_assert!(x.len() >= y.len());
+    for j in 0..tcols {
         // l00 * x_0j = y_0i
         x[j] = y[j] / l_yt[0];
     }
-    let mut offset = s_x;
-    let mut koffset;
-    let mut xoffset = acols;
+    let mut offset = s_a;
+    let mut toffset = tcols;
     for i in 1..rows {
-        for j in 0..acols {
+        for j in 0..tcols {
             w[j] = l_yt[offset] * x[j];
         }
-        koffset = acols;
+        let mut koffset = tcols;
         for k in 1..i {
-            for j in 0..acols {
+            for j in 0..tcols {
                 w[j] += l_yt[offset + k] * x[koffset + j];
             }
-            koffset += acols;
+            koffset += tcols;
         }
-        for j in 0..acols {
+        for j in 0..tcols {
             // dot + lii * x_i = y_i
-            // x[i*acols + j] = (y[i *acols + j] - w[j]) / l_yt[offset + i];
-            x[xoffset + j] = (y[xoffset + j] - w[j]) / l_yt[offset + i];
+            x[toffset + j] = (y[toffset + j] - w[j]) / l_yt[offset + i];
         }
-        offset += s_x;
-        xoffset += acols;
+        offset += s_a;
+        toffset += tcols;
     }
 }
 pub fn solve(
     l_yt: &[f32],
     tri: &[f32],
-    s_x: usize,
+    s_a: usize,
     x: &mut [f32],
     y: &[f32],
     t_buffer: &mut [f32],
     s_buffer: &mut [f32],
     rows: usize,
     cols: usize,
-    acols: usize,
+    tcols: usize,
 ) {
-    forward_solve(l_yt, x, y, t_buffer, s_x, rows, acols);
-    lhs_apply_qt(l_yt, tri, x, t_buffer, s_buffer, rows, cols, acols);
+    forward_solve(l_yt, x, y, t_buffer, s_a, rows, tcols);
+    lhs_apply_qt(l_yt, tri, x, t_buffer, s_buffer, rows, cols, tcols);
 }
