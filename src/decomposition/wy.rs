@@ -305,21 +305,47 @@ pub fn lhs_apply_qt(
 //         offset += s_x;
 //     }
 // }
-pub fn forward_solve(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_x: usize, rows: usize, acols:usize) {
+pub fn forward_solve_works(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_x: usize, rows: usize, acols:usize) {
     let mut offset = 0;
     debug_assert!(w.len() >= acols);
     for i in 0..rows {
         w.fill(0f32);
-        for j in 0..acols {
-            w[j] = l_yt[offset] * x[j];
-        }
-        for k in 1..i {
+        for k in 0..i {
             for j in 0..acols {
                 w[j] += l_yt[offset + k] * x[k * acols + j];
             }
         }
+        println!("w_j {w:?}");
         for j in 0..acols {
             // dot + lii * x_i = y_i
+            x[i*acols + j] = (y[i *acols + j] - w[j]) / l_yt[offset + i];
+        }
+        offset += s_x;
+    }
+}
+pub fn forward_solve(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_x: usize, rows: usize, acols:usize) {
+    debug_assert!(w.len() >= acols);
+    for j in 0..acols {
+        // l00 * x_0j = y_0i
+        x[j] = y[j] / l_yt[0];
+    }
+    let mut offset = s_x;
+    let mut koffset;
+    // let mut xoffset;
+    for i in 1..rows {
+        for j in 0..acols {
+            w[j] = l_yt[offset] * x[j];
+        }
+        koffset = acols;
+        for k in 1..i {
+            for j in 0..acols {
+                w[j] += l_yt[offset + k] * x[koffset + j];
+            }
+            koffset += acols;
+        }
+        for j in 0..acols {
+            // dot + lii * x_i = y_i
+            // x[i*acols + j] = (y[i *acols + j] - w[j]) / l_yt[offset + i];
             x[i*acols + j] = (y[i *acols + j] - w[j]) / l_yt[offset + i];
         }
         offset += s_x;
