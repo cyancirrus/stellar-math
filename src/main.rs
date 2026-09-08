@@ -522,7 +522,7 @@ fn test_debug_set_diagonal() {
 }
 
 fn main() {
-    test_solves();
+    // test_solves();
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
@@ -530,7 +530,7 @@ fn main() {
     // println!("-----------------------------");
     // test_left_apply_qt();
     // // test_left_apply_q();
-    // test_reconstruct();
+    test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
 }

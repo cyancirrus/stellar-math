@@ -187,6 +187,7 @@ pub fn lhs_apply_l(
     );
 }
 /// the compact WY representation: `A = (I - Y T Y')X`.
+#[rustfmt::skip]
 pub fn lhs_apply_q(
     l_yt: &[f32],
     tri: &[f32],
@@ -220,8 +221,18 @@ pub fn lhs_apply_q(
     );
     // t * [y'x];
     tensor_lt_contraction(
-        tri, t_buffer, s_buffer, 1, 0, rows, // cols,
-        rows, acols, s_tri, s_t, s_t,
+        tri,
+        t_buffer,
+        s_buffer,
+        1,
+        0,
+        rows,
+        // cols,
+        rows,
+        acols,
+        s_tri,
+        s_t,
+        s_t,
     );
     for k in 0..rows * acols {
         s_buffer[k] = -s_buffer[k];
