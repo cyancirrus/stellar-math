@@ -13,7 +13,7 @@ use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
 fn test_solves() {
-    let (rows, cols, acols) = (3, 3, 1);
+    let (rows, cols, acols) = (3, 3, 2);
     debug_assert!(cols >= rows);
     let mut l_yt = generate_random_vector(rows * cols);
     let original = l_yt.clone();
@@ -36,6 +36,7 @@ fn test_solves() {
         &mut s_buffer,
         rows,
         cols,
+        acols,
     );
     let expected = NdArray {
         dims: vec![rows, acols],
@@ -52,7 +53,6 @@ fn test_solves() {
         data: original,
     };
     let reconstruct = matrix_mult(&original_mat, &x_inferred);
-    println!("reconstru {:?}", reconstruct.data);
     println!("expected {expected:?}");
     println!("reconstruct {reconstruct:?}");
 }

@@ -305,6 +305,24 @@ pub fn forward_solve(l_yt: &[f32], s_x: usize, x: &mut [f32], y: &[f32], rows: u
         offset += s_x;
     }
 }
+pub fn forward_solve_matrix(l_yt: &[f32], s_x: usize, x: &mut [f32], y: &[f32], rows: usize, acols:usize) {
+    let mut offset = 0;
+    let mut dot = vec![0f32; acols];
+    debug_assert!(dot.len() >= acols);
+    for i in 0..rows {
+        dot.fill(0f32);
+        for k in 0..i {
+            for j in 0..acols {
+                dot[j] += l_yt[offset + k] * x[k * acols + j];
+            }
+        }
+        for j in 0..acols {
+            // dot + lii * x_i = y_i
+            x[i*acols + j] = (y[i *acols + j] - dot[j]) / l_yt[offset + i];
+        }
+        offset += s_x;
+    }
+}
 pub fn solve(
     l_yt: &[f32],
     tri: &[f32],
@@ -315,9 +333,11 @@ pub fn solve(
     s_buffer: &mut [f32],
     rows: usize,
     cols: usize,
+    acols: usize,
 ) {
-    forward_solve(l_yt, s_x, x, y, rows);
+    forward_solve_matrix(l_yt, s_x, x, y, rows, acols);
+    // forward_solve(l_yt, s_x, x, y, rows);
     println!("after forward");
-    lhs_apply_qt(l_yt, tri, x, t_buffer, s_buffer, rows, cols, 1);
+    lhs_apply_qt(l_yt, tri, x, t_buffer, s_buffer, rows, cols, acols);
     println!("after lhs_apply_qt");
 }
