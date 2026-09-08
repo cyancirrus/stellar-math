@@ -293,32 +293,34 @@ pub fn lhs_apply_qt(
         s_t,
     );
 }
-pub fn forward_solve(l_yt: &[f32], s_x: usize, x: &mut [f32], y: &[f32], rows: usize) {
+// pub fn forward_solve(l_yt: &[f32], s_x: usize, x: &mut [f32], y: &[f32], rows: usize) {
+//     let mut offset = 0;
+//     for i in 0..rows {
+//         let mut dot = 0f32;
+//         for j in 0..i {
+//             dot += l_yt[offset + j] * x[j];
+//         }
+//         // dot + lii * x_i = y_i
+//         x[i] = (y[i] - dot) / l_yt[offset + i];
+//         offset += s_x;
+//     }
+// }
+pub fn forward_solve(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_x: usize, rows: usize, acols:usize) {
     let mut offset = 0;
+    debug_assert!(w.len() >= acols);
     for i in 0..rows {
-        let mut dot = 0f32;
-        for j in 0..i {
-            dot += l_yt[offset + j] * x[j];
+        w.fill(0f32);
+        for j in 0..acols {
+            w[j] = l_yt[offset] * x[j];
         }
-        // dot + lii * x_i = y_i
-        x[i] = (y[i] - dot) / l_yt[offset + i];
-        offset += s_x;
-    }
-}
-pub fn forward_solve_matrix(l_yt: &[f32], s_x: usize, x: &mut [f32], y: &[f32], rows: usize, acols:usize) {
-    let mut offset = 0;
-    let mut dot = vec![0f32; acols];
-    debug_assert!(dot.len() >= acols);
-    for i in 0..rows {
-        dot.fill(0f32);
-        for k in 0..i {
+        for k in 1..i {
             for j in 0..acols {
-                dot[j] += l_yt[offset + k] * x[k * acols + j];
+                w[j] += l_yt[offset + k] * x[k * acols + j];
             }
         }
         for j in 0..acols {
             // dot + lii * x_i = y_i
-            x[i*acols + j] = (y[i *acols + j] - dot[j]) / l_yt[offset + i];
+            x[i*acols + j] = (y[i *acols + j] - w[j]) / l_yt[offset + i];
         }
         offset += s_x;
     }
@@ -335,9 +337,6 @@ pub fn solve(
     cols: usize,
     acols: usize,
 ) {
-    forward_solve_matrix(l_yt, s_x, x, y, rows, acols);
-    // forward_solve(l_yt, s_x, x, y, rows);
-    println!("after forward");
+    forward_solve(l_yt, x, y, t_buffer, s_x, rows, acols);
     lhs_apply_qt(l_yt, tri, x, t_buffer, s_buffer, rows, cols, acols);
-    println!("after lhs_apply_qt");
 }

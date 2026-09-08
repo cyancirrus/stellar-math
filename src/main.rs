@@ -13,7 +13,7 @@ use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
 fn test_solves() {
-    let (rows, cols, acols) = (3, 3, 2);
+    let (rows, cols, acols) = (2, 3, 4);
     debug_assert!(cols >= rows);
     let mut l_yt = generate_random_vector(rows * cols);
     let original = l_yt.clone();
