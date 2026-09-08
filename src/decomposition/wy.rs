@@ -331,7 +331,7 @@ pub fn forward_solve(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_x: 
     }
     let mut offset = s_x;
     let mut koffset;
-    // let mut xoffset;
+    let mut xoffset = acols;
     for i in 1..rows {
         for j in 0..acols {
             w[j] = l_yt[offset] * x[j];
@@ -346,9 +346,10 @@ pub fn forward_solve(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_x: 
         for j in 0..acols {
             // dot + lii * x_i = y_i
             // x[i*acols + j] = (y[i *acols + j] - w[j]) / l_yt[offset + i];
-            x[i*acols + j] = (y[i *acols + j] - w[j]) / l_yt[offset + i];
+            x[xoffset + j] = (y[xoffset + j] - w[j]) / l_yt[offset + i];
         }
         offset += s_x;
+        xoffset += acols;
     }
 }
 pub fn solve(
