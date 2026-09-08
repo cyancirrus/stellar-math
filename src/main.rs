@@ -8,11 +8,54 @@ use stellar::algebra::bmethods::interface::{tensor_kernel, tensor_tlt_kernel, te
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
-use stellar::decomposition::wy::{lhs_apply_l, lhs_apply_q, lhs_apply_qt, wy_decomposition};
+use stellar::decomposition::wy::{lhs_apply_l, lhs_apply_q, lhs_apply_qt, solve, wy_decomposition};
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
-//TODO: Essentially need to ensure the apply q' works tomorrow
+fn test_solves() {
+    let (rows, cols, acols) = (3, 3, 1);
+    debug_assert!(cols >= rows);
+    let mut l_yt = generate_random_vector(rows * cols);
+    let original = l_yt.clone();
+    let mut tri = create_identity_vector(rows, rows);
+    let mut w = vec![0f32; cols];
+    let mut x_argument = generate_random_vector(cols * acols);
+    let y_argument = generate_random_vector(rows * acols);
+    let mut t_buffer = vec![0f32; rows * acols];
+    let mut s_buffer = vec![0f32; rows * acols];
+
+    wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
+    println!("hello?");
+    solve(
+        &l_yt,
+        &tri,
+        cols,
+        &mut x_argument,
+        &y_argument,
+        &mut t_buffer,
+        &mut s_buffer,
+        rows,
+        cols,
+    );
+    let expected = NdArray {
+        dims: vec![rows, acols],
+        data: y_argument,
+    };
+    println!("expected {expected:?}");
+    let x_inferred = NdArray {
+        dims: vec![cols, acols],
+        data: x_argument,
+    };
+    println!("x_inferred {x_inferred:?}");
+    let original_mat = NdArray {
+        dims: vec![rows, cols],
+        data: original,
+    };
+    let reconstruct = matrix_mult(&original_mat, &x_inferred);
+    println!("reconstru {:?}", reconstruct.data);
+    println!("expected {expected:?}");
+    println!("reconstruct {reconstruct:?}");
+}
 
 /// copies memory from b into a
 fn import_slice(target: &mut [f32], data: &[f32]) {
@@ -487,7 +530,8 @@ fn test_debug_set_diagonal() {
 }
 
 fn main() {
-    test_left_apply_qt();
+    test_solves();
+    // test_left_apply_qt();
     // test_left_apply_q();
     // test_reconstruct();
     // validate_upper_upper_fma();

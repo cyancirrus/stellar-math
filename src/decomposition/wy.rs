@@ -230,7 +230,8 @@ pub fn lhs_apply_q(
         &mut x_argument[acols..],
         rows - rows.min(cols) + 1,
         0,
-        cols.saturating_sub(1),
+        // cols.saturating_sub(1),
+        rows.min(cols.saturating_sub(1)),
         rows,
         acols,
         s_x,
@@ -283,7 +284,8 @@ pub fn lhs_apply_qt(
         &mut x_argument[acols..],
         rows - rows.min(cols) + 1,
         0,
-        cols.saturating_sub(1),
+        // cols.saturating_sub(1),
+        rows.min(cols.saturating_sub(1)),
         rows,
         acols,
         s_x,
@@ -291,7 +293,7 @@ pub fn lhs_apply_qt(
         s_t,
     );
 }
-pub fn forward_solve(l_yt:&[f32], s_x:usize, x: &mut [f32], y:&[f32], rows:usize) {
+pub fn forward_solve(l_yt: &[f32], s_x: usize, x: &mut [f32], y: &[f32], rows: usize) {
     let mut offset = 0;
     for i in 0..rows {
         let mut dot = 0f32;
@@ -303,7 +305,19 @@ pub fn forward_solve(l_yt:&[f32], s_x:usize, x: &mut [f32], y:&[f32], rows:usize
         offset += s_x;
     }
 }
-pub fn solve(l_yt: &[f32], tri: &[f32], s_x:usize, x:&mut [f32], y:&[f32], t_buffer:&mut [f32], s_buffer:&mut [f32],rows:usize, cols:usize) {
+pub fn solve(
+    l_yt: &[f32],
+    tri: &[f32],
+    s_x: usize,
+    x: &mut [f32],
+    y: &[f32],
+    t_buffer: &mut [f32],
+    s_buffer: &mut [f32],
+    rows: usize,
+    cols: usize,
+) {
     forward_solve(l_yt, s_x, x, y, rows);
-    lhs_apply_qt(l_yt, tri, x, t_buffer, s_buffer, rows, cols, 1 ); 
+    println!("after forward");
+    lhs_apply_qt(l_yt, tri, x, t_buffer, s_buffer, rows, cols, 1);
+    println!("after lhs_apply_qt");
 }
