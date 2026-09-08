@@ -14,13 +14,14 @@ use stellar::structure::ndarray::NdArray;
 
 fn test_solves() {
     // let (rows, cols, tcols) = (2, 4, 8);
-    let (rows, cols, tcols) = (4, 8, 12);
+    // let (rows, cols, tcols) = (4, 8, 12);
+    let (rows, cols, tcols) = (4, 12, 8);
     debug_assert!(cols >= rows);
     let mut l_yt = generate_random_vector(rows * cols);
     let original = l_yt.clone();
     let mut tri = create_identity_vector(rows, rows);
     let mut w = vec![0f32; cols];
-    let mut x_argument = generate_random_vector(cols * tcols);
+    let mut x_argument = vec![0f32; cols * tcols];
     let y_argument = generate_random_vector(rows * tcols);
     let mut t_buffer = vec![0f32; rows * tcols];
     let mut s_buffer = vec![0f32; rows * tcols];
@@ -29,11 +30,11 @@ fn test_solves() {
     solve(
         &l_yt,
         &tri,
-        cols,
         &mut x_argument,
         &y_argument,
         &mut t_buffer,
         &mut s_buffer,
+        cols,
         rows,
         cols,
         tcols,
@@ -42,7 +43,6 @@ fn test_solves() {
         dims: vec![rows, tcols],
         data: y_argument,
     };
-    println!("expected {expected:?}");
     let x_inferred = NdArray {
         dims: vec![cols, tcols],
         data: x_argument,
@@ -64,40 +64,35 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 }
 
 fn test_left_apply_qt() {
-    // let (rows, cols, acols) = (2, 3, 6);
-    // let (rows, cols, acols) = (2, 4, 8);
-    let (rows, cols, acols) = (1, 3, 4);
+    let (rows, cols, acols) = (2, 4, 8);
     debug_assert!(cols >= rows);
 
     let mut l_yt = generate_random_vector(rows * cols);
     let mut tri = create_identity_vector(rows, rows);
     let mut w = vec![0f32; cols];
 
-    // let mut x_argument = generate_random_vector(cols * acols);
-    let mut x_argument = create_identity_vector(cols , acols);
+    // only rows*acols worth of "real" data, zero-padded to cols*acols
+    let mut x_argument = vec![0f32; cols * acols];
+    let w_seed = generate_random_vector(rows * acols); // or identity_vector(rows, acols)
+    x_argument[..rows * acols].copy_from_slice(&w_seed);
     let x_original = x_argument.clone();
+    // // let (rows, cols, acols) = (2, 3, 6);
+    // let (rows, cols, acols) = (2, 4, 8);
+    // debug_assert!(cols >= rows);
+
+    // let mut l_yt = generate_random_vector(rows * cols);
+    // let mut tri = create_identity_vector(rows, rows);
+    // let mut w = vec![0f32; cols];
+
+    // // let mut x_argument = generate_random_vector(cols * acols);
+    // let mut x_argument = create_identity_vector(cols , acols);
+    // let x_original = x_argument.clone();
 
     let mut t_buffer = vec![0f32; rows * acols];
     let mut s_buffer = vec![0f32; rows * acols];
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
 
-    // apply Q
-    lhs_apply_q(
-        &l_yt,
-        &tri,
-        &mut x_argument,
-        &mut t_buffer,
-        &mut s_buffer,
-        rows,
-        cols,
-        acols,
-    );
-    let after_q = x_argument.clone();
-    t_buffer.fill(0f32);
-    s_buffer.fill(0f32);
-
-    // apply Q' - should undo it: Q'Qx == x
     lhs_apply_qt(
         &l_yt,
         &tri,
@@ -109,6 +104,22 @@ fn test_left_apply_qt() {
         acols,
     );
 
+    let after_qt = x_argument.clone();
+    t_buffer.fill(0f32);
+    s_buffer.fill(0f32);
+    // apply Q
+    lhs_apply_q(
+        &l_yt,
+        &tri,
+        &mut x_argument,
+        &mut t_buffer,
+        &mut s_buffer,
+        rows,
+        cols,
+        acols,
+    );
+
+    // apply Q' - should undo it: Q'Qx == x
     let roundtrip = NdArray {
         dims: vec![cols, acols],
         data: x_argument.clone(),
@@ -119,11 +130,11 @@ fn test_left_apply_qt() {
     };
     let mid = NdArray {
         dims: vec![cols, acols],
-        data: after_q,
+        data: after_qt,
     };
     println!("original  : {original:?}");
-    println!("after Q   : {mid:?}");
-    println!("Q'Qx      : {roundtrip:?}");
+    println!("after Q'   : {mid:?}");
+    println!("QQ'x      : {roundtrip:?}");
 }
 
 fn test_left_apply_q() {
@@ -275,30 +286,14 @@ fn test_reconstruct() {
     //
     import_slice(&mut t_buffer, &s_buffer[..rows * s_t]);
     import_slice(&mut big_buffer, &s_buffer);
-    println!("big_buffer {big_buffer:?}");
     // works and validated
-    // [y']' * [ty'x ]
-    // tensor_tlt_contraction(
-    //     &l_yt[1..],
-    //     &s_buffer[..],
-    //     &mut t_buffer[stride..],
-    //     cols - cols.min(rows) + 1,
-    //     0,
-    //     rows.saturating_sub(1),
-    //     cols,
-    //     cols,
-    //     s_x,
-    //     s_t, s_t,
-    // );
     tensor_tlt_contraction(
         &l_yt[1..],
         &s_buffer[..],
         &mut big_buffer[stride..],
-        // cols - cols.min(rows) + 1,
         rows - rows.min(cols) + 1,
         0,
         cols.saturating_sub(1),
-        // cols.saturating_sub(1),
         rows,
         cols,
         s_x,
@@ -306,15 +301,10 @@ fn test_reconstruct() {
         s_t,
     );
     // THIS IS WHAT FAILS IE THE RHS TERM
-    // let mut q_argument = create_identity_vector(rows, cols);
-    // for k in 0..t_buffer.len() {
-    //     q_argument[k] -= t_buffer[k];
-    // }
     let mut q_argument = create_identity_vector(cols, cols);
     for k in 0..big_buffer.len() {
         q_argument[k] -= big_buffer[k];
     }
-    println!("here length {:?}", t_buffer.len());
     let right_term = q_argument.clone();
     let right_term_matrix = NdArray {
         dims: vec![cols, cols],
@@ -533,8 +523,13 @@ fn test_debug_set_diagonal() {
 
 fn main() {
     test_solves();
+    // println!("-----------------------------");
+    // println!("-----------------------------");
+    // println!("-----------------------------");
+    // println!("-----------------------------");
+    // println!("-----------------------------");
     // test_left_apply_qt();
-    // test_left_apply_q();
+    // // test_left_apply_q();
     // test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();

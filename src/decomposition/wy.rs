@@ -30,6 +30,7 @@
 use crate::algebra::bmethods::contractions::{
     tensor_lt_contraction, tensor_tlt_contraction, tensor_tut_contraction, tensor_ut_contraction,
 };
+use crate::structure::ndarray::NdArray;
 const EPSILON: f32 = 1e-21;
 /// params
 ///
@@ -201,6 +202,7 @@ pub fn lhs_apply_q(
     debug_assert!(cols >= rows);
     let (s_x, s_t, s_tri) = (cols, acols, rows);
     import_slice(t_buffer, &x_argument[..rows * acols]);
+
     // A = LX - YTY'X;
     // y'x
     tensor_ut_contraction(
@@ -218,18 +220,8 @@ pub fn lhs_apply_q(
     );
     // t * [y'x];
     tensor_lt_contraction(
-        tri,
-        t_buffer,
-        s_buffer,
-        1,
-        0,
-        rows,
-        // cols,
-        rows,
-        acols,
-        s_tri,
-        s_t,
-            s_t,
+        tri, t_buffer, s_buffer, 1, 0, rows, // cols,
+        rows, acols, s_tri, s_t, s_t,
     );
     for k in 0..rows * acols {
         s_buffer[k] = -s_buffer[k];
@@ -241,7 +233,8 @@ pub fn lhs_apply_q(
         &mut x_argument[acols..],
         rows - rows.min(cols) + 1,
         0,
-        cols.saturating_sub(1),
+        // cols.saturating_sub(1),
+        rows.saturating_sub(1),
         rows,
         acols,
         s_x,
@@ -273,8 +266,9 @@ pub fn lhs_apply_qt(
         t_buffer,
         0,
         0,
+        rows.saturating_sub(1),
+        // cols.saturating_sub(1),
         rows,
-        cols.saturating_sub(1),
         acols,
         s_x,
         s_t,
@@ -282,18 +276,8 @@ pub fn lhs_apply_qt(
     );
     // t * [y'x];
     tensor_tut_contraction(
-        tri,
-        t_buffer,
-        s_buffer,
-        0,
-        0,
-        // cols,
-        rows,
-        rows,
-        acols,
-        s_tri,
-        s_t,
-        s_t,
+        tri, t_buffer, s_buffer, 0, 0, // cols,
+        rows, rows, acols, s_tri, s_t, s_t,
     );
     for k in 0..rows * acols {
         s_buffer[k] = -s_buffer[k];
@@ -305,8 +289,6 @@ pub fn lhs_apply_qt(
         &mut x_argument[acols..],
         rows - rows.min(cols) + 1,
         0,
-        // rows.saturating_sub(1),
-        // cols.saturating_sub(1),
         cols.saturating_sub(1),
         rows,
         acols,
@@ -323,7 +305,15 @@ pub fn lhs_apply_qt(
 ///  * s_a  : stride of the storage of l_yt ie A
 ///  * rows : number of rows in l_yt ie A
 ///  * tcols: target columns ie number of cols in x and in y
-pub fn forward_solve(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_a: usize, rows: usize, tcols:usize) {
+pub fn forward_solve(
+    l_yt: &[f32],
+    x: &mut [f32],
+    y: &[f32],
+    w: &mut [f32],
+    s_a: usize,
+    rows: usize,
+    tcols: usize,
+) {
     debug_assert!(w.len() >= tcols);
     debug_assert!(x.len() >= y.len());
     for j in 0..tcols {
@@ -354,11 +344,11 @@ pub fn forward_solve(l_yt: &[f32], x: &mut [f32], y: &[f32], w:&mut [f32], s_a: 
 pub fn solve(
     l_yt: &[f32],
     tri: &[f32],
-    s_a: usize,
     x: &mut [f32],
     y: &[f32],
     t_buffer: &mut [f32],
     s_buffer: &mut [f32],
+    s_a: usize,
     rows: usize,
     cols: usize,
     tcols: usize,
