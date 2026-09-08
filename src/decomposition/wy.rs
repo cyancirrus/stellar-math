@@ -218,7 +218,18 @@ pub fn lhs_apply_q(
     );
     // t * [y'x];
     tensor_lt_contraction(
-        tri, t_buffer, s_buffer, 1, 0, rows, cols, acols, s_tri, s_t, s_t,
+        tri,
+        t_buffer,
+        s_buffer,
+        1,
+        0,
+        rows,
+        // cols,
+        rows,
+        acols,
+        s_tri,
+        s_t,
+            s_t,
     );
     for k in 0..rows * acols {
         s_buffer[k] = -s_buffer[k];
@@ -230,8 +241,7 @@ pub fn lhs_apply_q(
         &mut x_argument[acols..],
         rows - rows.min(cols) + 1,
         0,
-        // cols.saturating_sub(1),
-        rows.min(cols.saturating_sub(1)),
+        cols.saturating_sub(1),
         rows,
         acols,
         s_x,
@@ -272,7 +282,18 @@ pub fn lhs_apply_qt(
     );
     // t * [y'x];
     tensor_tut_contraction(
-        tri, t_buffer, s_buffer, 0, 0, cols, rows, acols, s_tri, s_t, s_t,
+        tri,
+        t_buffer,
+        s_buffer,
+        0,
+        0,
+        // cols,
+        rows,
+        rows,
+        acols,
+        s_tri,
+        s_t,
+        s_t,
     );
     for k in 0..rows * acols {
         s_buffer[k] = -s_buffer[k];
@@ -284,8 +305,9 @@ pub fn lhs_apply_qt(
         &mut x_argument[acols..],
         rows - rows.min(cols) + 1,
         0,
+        // rows.saturating_sub(1),
         // cols.saturating_sub(1),
-        rows.min(cols.saturating_sub(1)),
+        cols.saturating_sub(1),
         rows,
         acols,
         s_x,
@@ -293,18 +315,6 @@ pub fn lhs_apply_qt(
         s_t,
     );
 }
-// pub fn forward_solve(l_yt: &[f32], s_x: usize, x: &mut [f32], y: &[f32], rows: usize) {
-//     let mut offset = 0;
-//     for i in 0..rows {
-//         let mut dot = 0f32;
-//         for j in 0..i {
-//             dot += l_yt[offset + j] * x[j];
-//         }
-//         // dot + lii * x_i = y_i
-//         x[i] = (y[i] - dot) / l_yt[offset + i];
-//         offset += s_x;
-//     }
-// }
 /// Solves Ax = y;
 ///  * l_yt : [l\y'] <- compressed mem storage form of WY(LQ)
 ///  * x    : the x in Ax=y for which we are solving can be a matrixvec

@@ -13,16 +13,17 @@ use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
 fn test_solves() {
-    let (rows, cols, acols) = (2, 3, 4);
+    // let (rows, cols, tcols) = (2, 4, 8);
+    let (rows, cols, tcols) = (4, 8, 12);
     debug_assert!(cols >= rows);
     let mut l_yt = generate_random_vector(rows * cols);
     let original = l_yt.clone();
     let mut tri = create_identity_vector(rows, rows);
     let mut w = vec![0f32; cols];
-    let mut x_argument = generate_random_vector(cols * acols);
-    let y_argument = generate_random_vector(rows * acols);
-    let mut t_buffer = vec![0f32; rows * acols];
-    let mut s_buffer = vec![0f32; rows * acols];
+    let mut x_argument = generate_random_vector(cols * tcols);
+    let y_argument = generate_random_vector(rows * tcols);
+    let mut t_buffer = vec![0f32; rows * tcols];
+    let mut s_buffer = vec![0f32; rows * tcols];
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
     solve(
@@ -35,15 +36,15 @@ fn test_solves() {
         &mut s_buffer,
         rows,
         cols,
-        acols,
+        tcols,
     );
     let expected = NdArray {
-        dims: vec![rows, acols],
+        dims: vec![rows, tcols],
         data: y_argument,
     };
     println!("expected {expected:?}");
     let x_inferred = NdArray {
-        dims: vec![cols, acols],
+        dims: vec![cols, tcols],
         data: x_argument,
     };
     println!("x_inferred {x_inferred:?}");
@@ -63,15 +64,17 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 }
 
 fn test_left_apply_qt() {
-    let (rows, cols, acols) = (2, 3, 6);
+    // let (rows, cols, acols) = (2, 3, 6);
+    // let (rows, cols, acols) = (2, 4, 8);
+    let (rows, cols, acols) = (1, 3, 4);
     debug_assert!(cols >= rows);
 
     let mut l_yt = generate_random_vector(rows * cols);
     let mut tri = create_identity_vector(rows, rows);
     let mut w = vec![0f32; cols];
 
-    let mut x_argument = generate_random_vector(cols * acols);
-    // let mut x_argument = create_identity_vector(cols , acols);
+    // let mut x_argument = generate_random_vector(cols * acols);
+    let mut x_argument = create_identity_vector(cols , acols);
     let x_original = x_argument.clone();
 
     let mut t_buffer = vec![0f32; rows * acols];
