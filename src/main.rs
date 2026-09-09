@@ -12,10 +12,11 @@ use stellar::decomposition::wy::{lhs_apply_l, lhs_apply_q, lhs_apply_qt, solve, 
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
+// TODO: fails with (4,4,8)
 fn test_solves() {
     // let (rows, cols, tcols) = (2, 4, 8);
     // let (rows, cols, tcols) = (4, 8, 12);
-    let (rows, cols, tcols) = (4, 12, 8);
+    let (rows, cols, tcols) = (4, 4, 8);
     debug_assert!(cols >= rows);
     let mut l_yt = generate_random_vector(rows * cols);
     let original = l_yt.clone();

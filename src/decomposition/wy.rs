@@ -281,7 +281,7 @@ pub fn lhs_apply_qt(
         0,
         rows.saturating_sub(1),
         // cols.saturating_sub(1),
-        rows,
+        rows.saturating_sub(1),
         acols,
         s_a,
         s_t,
