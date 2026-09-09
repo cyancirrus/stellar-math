@@ -72,7 +72,6 @@ fn test_left_apply_qt() {
     let mut w = vec![0f32; cols];
 
     // only rows*acols worth of "real" data, zero-padded to cols*acols
-    // TODO: i think there's a memory leak the line below should work
     let mut x_argument = generate_random_vector(rows * acols);
     // let mut canary = vec![0f32;16];
     // let mut canary = 0f32;
