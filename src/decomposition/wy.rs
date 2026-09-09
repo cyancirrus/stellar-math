@@ -290,15 +290,36 @@ pub fn lhs_apply_qt(
         tri, t_buffer, s_buffer, 0, 0, // cols,
         rows, rows, acols, s_tri, s_t, s_t,
     );
+    for k in 0..t_buffer.len() {
+        let v = -s_buffer[k];
+        t_buffer[k] = v;
+        s_buffer[k] = x_argument[k] + v;
+    }
+    tensor_tlt_contraction(
+        &l_yt[1..],
+        &t_buffer[..],
+        &mut s_buffer[acols..],
+        rows - rows.min(cols) + 1,
+        0,
+        cols.saturating_sub(1),
+        // rows.saturating_sub(1),
+        rows,
+        acols,
+        s_x,
+        s_t,
+        s_t,
+    );
+    // let mut v_buffer = vec![0f32; rows * acols];
+    // let mut w_buffer = vec![0f32; rows * acols];
     // for k in 0..s_buffer.len() {
     //     let v = -s_buffer[k];
-    //     t_buffer[k] = v;
-    //     s_buffer[k] = x_argument[k] + v;
+    //     v_buffer[k] = v;
+    //     w_buffer[k] = x_argument[k] + v;
     // }
     // tensor_tlt_contraction(
     //     &l_yt[1..],
-    //     &t_buffer[..],
-    //     &mut s_buffer[acols..],
+    //     &v_buffer[..],
+    //     &mut w_buffer[acols..],
     //     rows - rows.min(cols) + 1,
     //     0,
     //     cols.saturating_sub(1),
@@ -309,23 +330,26 @@ pub fn lhs_apply_qt(
     //     s_t,
     //     s_t,
     // );
-    for k in 0..rows * acols {
-        s_buffer[k] = -s_buffer[k];
-        x_argument[k] += s_buffer[k];
-    }
-    tensor_tlt_contraction(
-        &l_yt[1..],
-        &s_buffer[..],
-        &mut x_argument[acols..],
-        rows - rows.min(cols) + 1,
-        0,
-        cols.saturating_sub(1),
-        rows,
-        acols,
-        s_x,
-        s_t,
-        s_t,
-    );
+    // println!("x_argument {x_argument:?}");
+    // for k in 0..rows * acols {
+    //     s_buffer[k] = -s_buffer[k];
+    //     x_argument[k] += s_buffer[k];
+    // }
+    // tensor_tlt_contraction(
+    //     &l_yt[1..],
+    //     &s_buffer[..],
+    //     &mut x_argument[acols..],
+    //     rows - rows.min(cols) + 1,
+    //     0,
+    //     cols.saturating_sub(1),
+    //     rows,
+    //     acols,
+    //     s_x,
+    //     s_t,
+    //     s_t,
+    // );
+    // println!("x_argument {x_argument:?}");
+    // println!("w_buffer {w_buffer:?}");
 }
 /// Solves Ax = y;
 ///  * l_yt : [l\y'] <- compressed mem storage form of WY(LQ)

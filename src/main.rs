@@ -24,7 +24,7 @@ fn test_solves() {
     let mut x_argument = vec![0f32; cols * tcols];
     let y_argument = generate_random_vector(rows * tcols);
     let mut t_buffer = vec![0f32; rows * tcols];
-    let mut s_buffer = vec![0f32; rows * tcols];
+    let mut s_buffer = vec![0f32; cols * tcols];
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
     solve(
@@ -45,7 +45,7 @@ fn test_solves() {
     };
     let x_inferred = NdArray {
         dims: vec![cols, tcols],
-        data: x_argument,
+        data: s_buffer,
     };
     println!("x_inferred {x_inferred:?}");
     let original_mat = NdArray {
@@ -89,11 +89,12 @@ fn test_left_apply_qt() {
     // let x_original = x_argument.clone();
 
     let mut t_buffer = vec![0f32; rows * acols];
-    let mut s_buffer = vec![0f32; rows * acols];
+    let mut s_buffer = vec![0f32; cols * acols];
     let mut w_buffer = vec![0f32; rows * acols];
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
-
+    // TODO: make the first output buffer cols x tcols 
+    // output buffer needs to be cols x tcols
     lhs_apply_qt(
         &l_yt,
         &tri,
@@ -105,16 +106,16 @@ fn test_left_apply_qt() {
         acols,
     );
 
-    let after_qt = x_argument.clone();
+    let after_qt = s_buffer.clone();
     t_buffer.fill(0f32);
-    s_buffer.fill(0f32);
+    // s_buffer.fill(0f32);
     // apply Q
     lhs_apply_q(
         &l_yt,
         &tri,
-        &x_argument,
+        &s_buffer,
         &mut w_buffer,
-        &mut s_buffer,
+        &mut t_buffer,
         rows,
         cols,
         acols,
@@ -123,7 +124,7 @@ fn test_left_apply_qt() {
     // apply Q' - should undo it: Q'Qx == x
     let roundtrip = NdArray {
         dims: vec![rows, acols],
-        data: s_buffer.clone(),
+        data: t_buffer.clone(),
     };
     let original = NdArray {
         dims: vec![cols, acols],
