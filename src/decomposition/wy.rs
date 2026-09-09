@@ -233,7 +233,7 @@ pub fn lhs_apply_q(
         s_t,
         s_t,
     );
-    for k in 0..s_buffer.len() {
+    for k in 0..rows * acols {
         let v = -s_buffer[k];
         t_buffer[k] = v;
         s_buffer[k] = x_argument[k] + v;
@@ -302,7 +302,7 @@ pub fn lhs_apply_qt(
         s_t,
         s_t,
     );
-    for k in 0..t_buffer.len() {
+    for k in 0..rows * acols {
         let v = -s_buffer[k];
         t_buffer[k] = v;
         s_buffer[k] = x_argument[k] + v;
@@ -314,6 +314,7 @@ pub fn lhs_apply_qt(
         // rows - rows.min(cols) + 1,
         1,
         0,
+        // acols.saturating_sub(1),
         cols.saturating_sub(1),
         rows,
         acols,

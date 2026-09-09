@@ -73,21 +73,24 @@ fn test_left_apply_qt() {
 
     // only rows*acols worth of "real" data, zero-padded to cols*acols
     // TODO: i think there's a memory leak the line below should work
-    // let mut x_argument = generate_random_vector(rows * acols);
-    //
+    let mut x_argument = generate_random_vector(rows * acols);
+    // let mut canary = vec![0f32;16];
+    // let mut canary = 0f32;
+    // let mut canary = vec![ 0f32; (cols - rows) * acols];
     // comapared to this
-    let mut x_argument = vec![0f32; cols * acols];
-    let w_seed = generate_random_vector(rows * acols); // or identity_vector(rows, acols)
-    x_argument[..rows * acols].copy_from_slice(&w_seed);
-    let x_original = x_argument.clone();
+    // let mut x_argument = vec![0f32; cols * acols];
+    // let w_seed = generate_random_vector(rows * acols); // or identity_vector(rows, acols)
+    // x_argument[..rows * acols].copy_from_slice(&w_seed);
+    // let x_original = x_argument.clone();
     // so i think somewhere in the lhs_apply_qt something is to braod
 
-    let mut t_buffer = vec![0f32; rows * acols];
+    let mut t_buffer = vec![0f32; cols * acols];
     let mut s_buffer = vec![0f32; cols * acols];
     let mut w_buffer = vec![0f32; rows * acols];
-    println!("x_argument {x_argument:?}");
+    // println!("canary {canary:?}");
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
+    // println!("canary {canary:?}");
     // output buffer needs to be cols x tcols
     lhs_apply_qt(
         &l_yt,
@@ -99,7 +102,7 @@ fn test_left_apply_qt() {
         cols,
         acols,
     );
-    println!("x_argument {x_argument:?}");
+    // println!("canary {canary:?}");
 
     let after_qt = s_buffer.clone();
     t_buffer.fill(0f32);
@@ -114,6 +117,7 @@ fn test_left_apply_qt() {
         cols,
         acols,
     );
+    // println!("canary {canary:?}");
     // apply Q' - should undo it: Q'Qx == x
     let roundtrip = NdArray {
         dims: vec![rows, acols],
@@ -127,8 +131,9 @@ fn test_left_apply_qt() {
         dims: vec![cols, acols],
         data: after_qt,
     };
-    println!("original  : {original:?}");
     println!("after Q'   : {mid:?}");
+    println!("---------------------");
+    println!("original  : {original:?}");
     println!("QQ'x      : {roundtrip:?}");
 }
 
@@ -376,13 +381,13 @@ fn test_debug_set_diagonal() {
 }
 
 fn main() {
-    test_solves();
+    // test_solves();
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
-    // test_left_apply_qt();
+    test_left_apply_qt();
     // // test_left_apply_q();
     // test_reconstruct();
     // validate_upper_upper_fma();
