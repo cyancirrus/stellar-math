@@ -106,6 +106,7 @@ fn test_left_apply_qt() {
 
     let after_qt = s_buffer.clone();
     t_buffer.fill(0f32);
+    //TODO: test that it was the ping-pogn here which was causing memory leak
     // apply Q
     lhs_apply_q(
         &l_yt,
@@ -387,9 +388,9 @@ fn main() {
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
-    test_left_apply_qt();
+    // test_left_apply_qt();
     // // test_left_apply_q();
-    // test_reconstruct();
+    test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
 }
