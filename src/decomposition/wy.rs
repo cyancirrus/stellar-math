@@ -238,6 +238,8 @@ pub fn lhs_apply_q(
         s_buffer[k] = -s_buffer[k];
         x_argument[k] += s_buffer[k];
     }
+    // t is triangular ie [t; 0]; ie tall with 0s in bottom
+    // this means we can change the apply dim to go over non-zero rows
     tensor_tlt_contraction(
         &l_yt[1..],
         &s_buffer[..],
@@ -270,7 +272,7 @@ pub fn lhs_apply_qt(
     let (s_x, s_t, s_tri) = (cols, acols, rows);
     import_slice(t_buffer, &x_argument[..rows * acols]);
     // A = LX - YTY'X;
-    // y'x
+    // y'x ; we can reduce work b/c now t is triangular is [t, 0];
     tensor_ut_contraction(
         &l_yt[1..],
         &x_argument[s_t..],
@@ -339,8 +341,9 @@ pub fn forward_solve(
         }
         let mut koffset = tcols;
         for k in 1..i {
+            let scalar = l_yt[offset + k];
             for j in 0..tcols {
-                w[j] += l_yt[offset + k] * x[koffset + j];
+                w[j] += scalar * x[koffset + j];
             }
             koffset += tcols;
         }

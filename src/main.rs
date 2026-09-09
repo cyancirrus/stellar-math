@@ -137,7 +137,7 @@ fn test_left_apply_qt() {
     println!("QQ'x      : {roundtrip:?}");
 }
 
-fn test_left_apply_q() {
+fn test_reconstruct() {
     let (rows, cols, acols) = (4, 6, 8);
     debug_assert!(cols >= rows);
     let (s_x, s_y, s_t, s_tri) = (cols, cols, acols, rows);
@@ -199,147 +199,6 @@ fn test_left_apply_q() {
     let expected = matrix_mult(&input, &arg_matrix);
     println!("expected : {expected:?}");
     println!("reconstruct : {result_matrix:?}");
-}
-
-fn test_reconstruct() {
-    let (rows, cols, stride) = (4, 8, 8);
-    // let (rows, cols, stride) = (2, 4, 4);
-    debug_assert!(cols >= rows);
-    let (s_x, s_y, s_z, s_t, s_tri) = (cols, cols, cols, cols, rows);
-    let mut l_yt = generate_random_vector(rows * cols);
-    let mut tri = create_identity_vector(rows, rows);
-
-    let mut w = vec![0f32; cols];
-    // these are x's ie this will be added at the end
-    let mut x_argument = create_identity_vector(cols, cols);
-    let mut o_buffer = x_argument.clone();
-    let mut t_buffer = vec![0f32; rows * cols];
-    let mut big_buffer = vec![0f32; cols * cols];
-    import_slice(&mut t_buffer, &o_buffer[..rows * cols]);
-    let t_buffer_mat = NdArray {
-        dims: vec![rows, cols],
-        data: t_buffer.clone(),
-    };
-    println!("t_buffer {t_buffer_mat:?}");
-    let mut s_buffer = vec![0f32; cols * cols];
-
-    let input = l_yt.clone();
-
-    wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, stride);
-
-    let l_yt_matrix = NdArray {
-        dims: vec![rows, cols],
-        data: l_yt.clone(),
-    };
-    let tri_matrix = NdArray {
-        dims: vec![rows, rows],
-        data: tri.clone(),
-    };
-    println!("l_yt : {l_yt_matrix:?}");
-    println!("tri : {tri_matrix:?}");
-
-    // the compact WY representation: `A = L * (I - Y T Y')`.
-    // A = LX - YTY'X;
-
-    // y'x
-    tensor_ut_contraction(
-        &l_yt[1..],
-        &o_buffer[s_y..],
-        &mut t_buffer,
-        0,
-        0,
-        rows,
-        cols.saturating_sub(1),
-        cols,
-        s_x,
-        s_y,
-        s_t,
-    );
-    let current = NdArray {
-        dims: vec![rows, cols],
-        data: t_buffer.clone(),
-    };
-    println!("check Y' created {current:?}");
-    // t * [y'x];
-    tensor_lt_contraction(
-        &tri,
-        &t_buffer,
-        &mut s_buffer,
-        1,
-        0,
-        // rows,
-        rows,
-        cols,
-        cols,
-        s_tri,
-        s_t,
-        s_t,
-    );
-    let current = NdArray {
-        dims: vec![rows, cols],
-        data: s_buffer.clone(),
-    };
-    println!("check TY' created {current:?}");
-    // VALIDATED AS CORRECT
-    //
-    //
-    //
-    import_slice(&mut t_buffer, &s_buffer[..rows * s_t]);
-    import_slice(&mut big_buffer, &s_buffer);
-    // works and validated
-    tensor_tlt_contraction(
-        &l_yt[1..],
-        &s_buffer[..],
-        &mut big_buffer[stride..],
-        rows - rows.min(cols) + 1,
-        0,
-        cols.saturating_sub(1),
-        rows,
-        cols,
-        s_x,
-        s_t,
-        s_t,
-    );
-    // THIS IS WHAT FAILS IE THE RHS TERM
-    let mut q_argument = create_identity_vector(cols, cols);
-    for k in 0..big_buffer.len() {
-        q_argument[k] -= big_buffer[k];
-    }
-    let right_term = q_argument.clone();
-    let right_term_matrix = NdArray {
-        dims: vec![cols, cols],
-        data: big_buffer.clone(),
-    };
-    println!("right_term {right_term_matrix:?}");
-    // let mut t = create_identity_vector(cols, cols);
-    t_buffer.fill(0f32);
-    tensor_lt_contraction(
-        &l_yt,
-        &q_argument,
-        &mut t_buffer,
-        1,
-        0,
-        rows,
-        cols,
-        cols,
-        s_x,
-        s_y,
-        s_t,
-    );
-    let result = t_buffer.clone();
-    let result_matrix = NdArray {
-        dims: vec![rows, cols],
-        data: result.clone(),
-    };
-    let input = NdArray {
-        dims: vec![rows, cols],
-        data: input.clone(),
-    };
-    println!("input : {input:?}");
-    println!("reconstruct : {result_matrix:?}");
-    // let reference = AutumnDecomp::new(input);
-    // println!("reference LQ {:?}", reference.h);
-    // println!("reference LQ {:?}", reference.t);
 }
 
 fn validate_upper_upper_fma() {
@@ -522,7 +381,7 @@ fn test_debug_set_diagonal() {
 }
 
 fn main() {
-    // test_solves();
+    test_solves();
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
@@ -530,7 +389,7 @@ fn main() {
     // println!("-----------------------------");
     // test_left_apply_qt();
     // // test_left_apply_q();
-    test_reconstruct();
+    // test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
 }
