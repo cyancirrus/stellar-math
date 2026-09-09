@@ -112,7 +112,7 @@ fn test_left_apply_qt() {
     lhs_apply_q(
         &l_yt,
         &tri,
-        &t_buffer,
+        &x_argument,
         &mut w_buffer,
         &mut s_buffer,
         rows,
@@ -122,8 +122,8 @@ fn test_left_apply_qt() {
 
     // apply Q' - should undo it: Q'Qx == x
     let roundtrip = NdArray {
-        dims: vec![cols, acols],
-        data: x_argument.clone(),
+        dims: vec![rows, acols],
+        data: s_buffer.clone(),
     };
     let original = NdArray {
         dims: vec![cols, acols],
@@ -388,9 +388,9 @@ fn main() {
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
-    // test_left_apply_qt();
+    test_left_apply_qt();
     // // test_left_apply_q();
-    test_reconstruct();
+    // test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
 }
