@@ -72,43 +72,37 @@ fn test_left_apply_qt() {
     let mut w = vec![0f32; cols];
 
     // only rows*acols worth of "real" data, zero-padded to cols*acols
+    // TODO: i think there's a memory leak the line below should work
+    // let mut x_argument = generate_random_vector(rows * acols);
+    //
+    // comapared to this
     let mut x_argument = vec![0f32; cols * acols];
     let w_seed = generate_random_vector(rows * acols); // or identity_vector(rows, acols)
     x_argument[..rows * acols].copy_from_slice(&w_seed);
     let x_original = x_argument.clone();
-    // // let (rows, cols, acols) = (2, 3, 6);
-    // let (rows, cols, acols) = (2, 4, 8);
-    // debug_assert!(cols >= rows);
-
-    // let mut l_yt = generate_random_vector(rows * cols);
-    // let mut tri = create_identity_vector(rows, rows);
-    // let mut w = vec![0f32; cols];
-
-    // // let mut x_argument = generate_random_vector(cols * acols);
-    // let mut x_argument = create_identity_vector(cols , acols);
-    // let x_original = x_argument.clone();
+    // so i think somewhere in the lhs_apply_qt something is to braod
 
     let mut t_buffer = vec![0f32; rows * acols];
     let mut s_buffer = vec![0f32; cols * acols];
     let mut w_buffer = vec![0f32; rows * acols];
+    println!("x_argument {x_argument:?}");
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
-    // TODO: make the first output buffer cols x tcols 
     // output buffer needs to be cols x tcols
     lhs_apply_qt(
         &l_yt,
         &tri,
-        &mut x_argument,
+        &x_argument,
         &mut t_buffer,
         &mut s_buffer,
         rows,
         cols,
         acols,
     );
+    println!("x_argument {x_argument:?}");
 
     let after_qt = s_buffer.clone();
     t_buffer.fill(0f32);
-    // s_buffer.fill(0f32);
     // apply Q
     lhs_apply_q(
         &l_yt,
@@ -120,15 +114,14 @@ fn test_left_apply_qt() {
         cols,
         acols,
     );
-
     // apply Q' - should undo it: Q'Qx == x
     let roundtrip = NdArray {
         dims: vec![rows, acols],
         data: t_buffer.clone(),
     };
     let original = NdArray {
-        dims: vec![cols, acols],
-        data: x_original.clone(),
+        dims: vec![rows, acols],
+        data: x_argument.clone(),
     };
     let mid = NdArray {
         dims: vec![cols, acols],
@@ -383,13 +376,13 @@ fn test_debug_set_diagonal() {
 }
 
 fn main() {
-    // test_solves();
+    test_solves();
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
-    test_left_apply_qt();
+    // test_left_apply_qt();
     // // test_left_apply_q();
     // test_reconstruct();
     // validate_upper_upper_fma();

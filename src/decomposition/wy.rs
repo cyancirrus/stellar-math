@@ -254,10 +254,12 @@ pub fn lhs_apply_q(
     );
 }
 /// the compact WY representation: `A = (I - Y T' Y')X`.
+/// applies (I - YTY[thin]')x;
+#[rustfmt::skip]
 pub fn lhs_apply_qt(
     l_yt: &[f32],
     tri: &[f32],
-    x_argument: &mut [f32],
+    x_argument: &[f32],
     t_buffer: &mut [f32],
     s_buffer: &mut [f32],
     rows: usize,
@@ -267,7 +269,7 @@ pub fn lhs_apply_qt(
     debug_assert!(t_buffer.len() >= rows * acols);
     debug_assert!(s_buffer.len() >= rows * acols);
     debug_assert!(cols >= rows);
-    let (s_x, s_t, s_tri) = (cols, acols, rows);
+    let (s_a, s_t, s_tri) = (cols, acols, rows);
     import_slice(t_buffer, &x_argument[..rows * acols]);
     // A = LX - YTY'X;
     // y'x ; we can reduce work b/c now t is triangular is [t, 0];
@@ -281,14 +283,24 @@ pub fn lhs_apply_qt(
         // cols.saturating_sub(1),
         rows,
         acols,
-        s_x,
+        s_a,
         s_t,
         s_t,
     );
     // t * [y'x];
     tensor_tut_contraction(
-        tri, t_buffer, s_buffer, 0, 0, // cols,
-        rows, rows, acols, s_tri, s_t, s_t,
+        tri,
+        t_buffer,
+        s_buffer,
+        0,
+        0,
+        // cols,
+        rows,
+        rows,
+        acols,
+        s_tri,
+        s_t,
+        s_t,
     );
     for k in 0..t_buffer.len() {
         let v = -s_buffer[k];
@@ -299,57 +311,16 @@ pub fn lhs_apply_qt(
         &l_yt[1..],
         &t_buffer[..],
         &mut s_buffer[acols..],
-        rows - rows.min(cols) + 1,
+        // rows - rows.min(cols) + 1,
+        1,
         0,
         cols.saturating_sub(1),
-        // rows.saturating_sub(1),
         rows,
         acols,
-        s_x,
+        s_a,
         s_t,
         s_t,
     );
-    // let mut v_buffer = vec![0f32; rows * acols];
-    // let mut w_buffer = vec![0f32; rows * acols];
-    // for k in 0..s_buffer.len() {
-    //     let v = -s_buffer[k];
-    //     v_buffer[k] = v;
-    //     w_buffer[k] = x_argument[k] + v;
-    // }
-    // tensor_tlt_contraction(
-    //     &l_yt[1..],
-    //     &v_buffer[..],
-    //     &mut w_buffer[acols..],
-    //     rows - rows.min(cols) + 1,
-    //     0,
-    //     cols.saturating_sub(1),
-    //     // rows.saturating_sub(1),
-    //     rows,
-    //     acols,
-    //     s_x,
-    //     s_t,
-    //     s_t,
-    // );
-    // println!("x_argument {x_argument:?}");
-    // for k in 0..rows * acols {
-    //     s_buffer[k] = -s_buffer[k];
-    //     x_argument[k] += s_buffer[k];
-    // }
-    // tensor_tlt_contraction(
-    //     &l_yt[1..],
-    //     &s_buffer[..],
-    //     &mut x_argument[acols..],
-    //     rows - rows.min(cols) + 1,
-    //     0,
-    //     cols.saturating_sub(1),
-    //     rows,
-    //     acols,
-    //     s_x,
-    //     s_t,
-    //     s_t,
-    // );
-    // println!("x_argument {x_argument:?}");
-    // println!("w_buffer {w_buffer:?}");
 }
 /// Solves Ax = y;
 ///  * l_yt : [l\y'] <- compressed mem storage form of WY(LQ)
