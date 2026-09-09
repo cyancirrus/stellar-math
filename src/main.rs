@@ -112,7 +112,7 @@ fn test_left_apply_qt() {
     lhs_apply_q(
         &l_yt,
         &tri,
-        &mut t_buffer,
+        &t_buffer,
         &mut w_buffer,
         &mut s_buffer,
         rows,
@@ -382,7 +382,7 @@ fn test_debug_set_diagonal() {
 }
 
 fn main() {
-    test_solves();
+    // test_solves();
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
