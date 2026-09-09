@@ -124,11 +124,8 @@ pub fn wy_decomposition(
     cols: usize,
     stride: usize,
 ) {
-    // pub fn new(mut l_yt: NdArray, mut t_mat: NdArray, w: &mut [f32]) -> Self {
-    // let (rows, cols) = (l_yt.dims[0], l_yt.dims[1]);
     debug_assert!(rows <= cols);
     debug_assert!(rows <= w.len());
-    // let t = &mut t_mat.data;
     t.fill(0f32);
     let mut active_range = rows;
     let mut offset = 0;
@@ -247,7 +244,6 @@ pub fn lhs_apply_q(
         // cols.saturating_sub(1),
         rows.saturating_sub(1),
         rows.saturating_sub(1),
-        // rows,
         acols,
         s_x,
         s_t,
