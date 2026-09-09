@@ -30,7 +30,6 @@
 use crate::algebra::bmethods::contractions::{
     tensor_lt_contraction, tensor_tlt_contraction, tensor_tut_contraction, tensor_ut_contraction,
 };
-use crate::structure::ndarray::NdArray;
 const EPSILON: f32 = 1e-21;
 /// params
 ///
@@ -234,16 +233,16 @@ pub fn lhs_apply_q(
         s_t,
         s_t,
     );
-    for k in 0..rows * acols {
-        s_buffer[k] = -s_buffer[k];
-        x_argument[k] += s_buffer[k];
+    // TODO: i think this is correct form
+    for k in 0..s_buffer.len() {
+        let v = -s_buffer[k];
+        t_buffer[k] = v;
+        s_buffer[k] = x_argument[k] + v;
     }
-    // t is triangular ie [t; 0]; ie tall with 0s in bottom
-    // this means we can change the apply dim to go over non-zero rows
     tensor_tlt_contraction(
         &l_yt[1..],
-        &s_buffer[..],
-        &mut x_argument[acols..],
+        &t_buffer[..],
+        &mut s_buffer[acols..],
         rows - rows.min(cols) + 1,
         0,
         // cols.saturating_sub(1),
@@ -254,6 +253,28 @@ pub fn lhs_apply_q(
         s_t,
         s_t,
     );
+
+
+//     for k in 0..rows * acols {
+//         s_buffer[k] = -s_buffer[k];
+//         x_argument[k] += s_buffer[k];
+//     }
+//     // t is triangular ie [t; 0]; ie tall with 0s in bottom
+//     // this means we can change the apply dim to go over non-zero rows
+//     tensor_tlt_contraction(
+//         &l_yt[1..],
+//         &s_buffer[..],
+//         &mut x_argument[acols..],
+//         rows - rows.min(cols) + 1,
+//         0,
+//         // cols.saturating_sub(1),
+//         rows.saturating_sub(1),
+//         rows,
+//         acols,
+//         s_x,
+//         s_t,
+//         s_t,
+//     );
 }
 /// the compact WY representation: `A = (I - Y T' Y')X`.
 pub fn lhs_apply_qt(
@@ -328,7 +349,7 @@ pub fn forward_solve(
     tcols: usize,
 ) {
     debug_assert!(w.len() >= tcols);
-    debug_assert!(x.len() >= y.len());
+    debug_assert!(x.len() >= rows * tcols);
     for j in 0..tcols {
         // l00 * x_0j = y_0i
         x[j] = y[j] / l_yt[0];
@@ -347,9 +368,10 @@ pub fn forward_solve(
             }
             koffset += tcols;
         }
+        let inv_scalar = 1f32 / l_yt[offset + i];
         for j in 0..tcols {
             // dot + lii * x_i = y_i
-            x[toffset + j] = (y[toffset + j] - w[j]) / l_yt[offset + i];
+            x[toffset + j] = inv_scalar * (y[toffset + j] - w[j]);
         }
         offset += s_a;
         toffset += tcols;

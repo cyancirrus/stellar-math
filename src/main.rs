@@ -90,6 +90,7 @@ fn test_left_apply_qt() {
 
     let mut t_buffer = vec![0f32; rows * acols];
     let mut s_buffer = vec![0f32; rows * acols];
+    let mut w_buffer = vec![0f32; rows * acols];
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
 
@@ -111,8 +112,8 @@ fn test_left_apply_qt() {
     lhs_apply_q(
         &l_yt,
         &tri,
-        &mut x_argument,
         &mut t_buffer,
+        &mut w_buffer,
         &mut s_buffer,
         rows,
         cols,
@@ -175,7 +176,7 @@ fn test_reconstruct() {
     t_buffer.fill(0f32);
     lhs_apply_l(
         &l_yt,
-        &x_argument,
+        &s_buffer,
         &mut t_buffer,
         rows,
         cols,
@@ -389,7 +390,7 @@ fn main() {
     // println!("-----------------------------");
     // test_left_apply_qt();
     // // test_left_apply_q();
-    // test_reconstruct();
+    test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
 }
