@@ -61,7 +61,7 @@ pub fn apply_gt_left(
     // transpose the negative sine
     // alpha, beta, gamma, delta,
     // c, -s, s, c
-    apply_g_left(a, i, j, stride, range, c, s);
+    apply_g_left(a, i, j, stride, range, c, -s);
 }
 pub fn apply_g_right(
     a: &mut [f32],

@@ -91,6 +91,7 @@ fn triangle_iteration(
     // h'Y :: Y
     let koffset = k * t_dim;
     let h_k_tail = r;
+    // NOTE: kernel(todo-rows, h_k_tail); 
     for l in 0..k {
         // initial element of householder vector is 1
         let mut dot = h[hoffset + k];
@@ -104,6 +105,7 @@ fn triangle_iteration(
     let mut toffset = 0;
     let (t_upper, t_target) = t.split_at_mut(koffset);
 
+    // NOTE: kernel_tut(t_target, w after scale by -tau);
     // h'T :: T ~ bottom-left triangular
     for l in 0..k {
         // outer product iteration style
@@ -142,6 +144,11 @@ pub fn wy_decomposition(
 
         let split_range = v_tail.len();
         let mut roffset = 0;
+        // X(I - vv');
+        // w := Xv;
+        // => X -= wv';
+        // NOTE: can calculate w' via tensor_kernel(x, v) => w;
+        // scan over trail-rows -= w * v_tail[j];
         for _ in 0..active_range {
             let mut wi = trail_rows[roffset + k];
             {
