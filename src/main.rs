@@ -165,7 +165,7 @@ fn test_reconstruct() {
     lhs_apply_q(
         &l_yt,
         &tri,
-        &mut x_argument,
+        &x_argument,
         &mut t_buffer,
         &mut s_buffer,
         rows,
