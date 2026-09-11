@@ -374,7 +374,6 @@ fn test_debug_set_diagonal() {
         println!("----------------------");
     }
 }
-
 pub fn benchmark_lq() {
     // let rows = 64;
     // let cols = 128;
@@ -386,7 +385,7 @@ pub fn benchmark_lq() {
     let mut a = vec![0.0; rows * cols];
     for (i, val) in a.iter_mut().enumerate() {
         let idx = i as f32;
-        *val = (idx.sin() * 43758.5453).fract();
+        *val = (idx.sin() * 43758.54).fract();
     }
 
     let mut t = vec![0.0; rows * rows];
@@ -396,10 +395,78 @@ pub fn benchmark_lq() {
 
     // Warmup run
     let mut a_warmup = a.clone();
+    let mut a_active = NdArray {
+        dims: vec![rows, cols],
+        data: a_warmup.to_vec(),
+    };
+    let decomp = AutumnDecomp::new(a_active);
+
+    // Benchmark decomposition
+    let iterations = 10;
+    let start = Instant::now();
+    for _ in 0..iterations {
+        let mut a_active = NdArray {
+            dims: vec![rows, cols],
+            data: a.to_vec(),
+        };
+    AutumnDecomp::new(a_active);
+        // wy_decomposition(&mut a_warmup, &mut t, &mut w, rows, cols, stride);
+    }
+    let duration = start.elapsed();
+    println!(
+        "WY Decomposition ({}x{}) avg time over {} runs: {:.2?}",
+        rows,
+        cols,
+        iterations,
+        duration / iterations
+    );
+
+    // Benchmark apply Q
+    let x_argument = vec![1.0; cols * rows];
+    let start = Instant::now();
+    for _ in 0..iterations {
+        let mut x_arg = x_argument.clone();
+        decomp.left_apply_q(
+            
+            &mut x_arg,
+            &mut w,
+            cols,
+            rows,
+        );
+    }
+    let duration = start.elapsed();
+    println!(
+        "LHS Apply Q avg time over {} runs: {:.2?}",
+        iterations,
+        duration / iterations
+    );
+}
+
+pub fn benchmark_wy() {
+    // let rows = 64;
+    // let cols = 128;
+    let rows = 512;
+    let cols = 1024;
+    let stride = cols;
+
+    // Generate pseudo-random test data (simple deterministic pattern to avoid external crates)
+    let mut a = vec![0.0; rows * cols];
+    for (i, val) in a.iter_mut().enumerate() {
+        let idx = i as f32;
+        *val = (idx.sin() * 43758.54).fract();
+    }
+
+    let mut t = vec![0.0; rows * rows];
+    let mut w = vec![0.0; rows];
+    let mut t_buffer = vec![0.0; cols * cols];
+    let mut s_buffer = vec![0.0; cols * cols];
+
+    // Warmup run
+    let mut a_warmup = a.clone();
     wy_decomposition(&mut a_warmup, &mut t, &mut w, rows, cols, stride);
 
     // Benchmark decomposition
-    let iterations = 50;
+    let iterations = 10;
     let start = Instant::now();
     for _ in 0..iterations {
         a_warmup.copy_from_slice(&a);
@@ -437,6 +504,14 @@ pub fn benchmark_lq() {
     );
 }
 fn main() {
+    println!("------------------------------------------------");
+    println!("--------------------- LQ-----------------------");
+    println!("------------------------------------------------");
+    benchmark_lq();
+    println!("------------------------------------------------");
+    println!("--------------------- WY -----------------------");
+    println!("------------------------------------------------");
+    benchmark_wy();
     // test_solves();
     // println!("-----------------------------");
     // println!("-----------------------------");
@@ -445,8 +520,7 @@ fn main() {
     // println!("-----------------------------");
     // test_left_apply_qt();
     // // test_left_apply_q();
-    test_reconstruct();
+    // test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
-    // benchmark_lq();
 }

@@ -28,10 +28,9 @@
 //     pub t: NdArray,
 // }
 use crate::algebra::bmethods::contractions::{
-    tensor_contraction, tensor_lt_contraction, tensor_tcontraction, tensor_tlt_contraction,
+    tensor_contraction, tensor_lt_contraction, tensor_tlt_contraction,
     tensor_tut_contraction, tensor_ut_contraction,
 };
-use crate::structure::ndarray::NdArray;
 const EPSILON: f32 = 1e-21;
 /// params
 ///
@@ -152,12 +151,11 @@ pub fn wy_decomposition(
         triangle_iteration(done_rows, t, v_tail, w, cols, rows, k, tau);
 
         let split_range = v_tail.len();
-        let mut roffset = 0;
         w.fill(0f32);
         if active_range > 0 {
             tensor_contraction(
                 &trail_rows[k+1 ..],
-                &v_tail,
+                v_tail,
                 w,
                 active_range,
                 split_range,
