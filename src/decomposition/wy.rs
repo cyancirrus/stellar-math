@@ -153,25 +153,27 @@ pub fn wy_decomposition(
 
         let split_range = v_tail.len();
         let mut roffset = 0;
-        // X(I - vv');
-        // w := Xv;
-        // => X -= wv';
-        // NOTE: can calculate w' via tensor_kernel(x, v) => w;
-        // scan over trail-rows -= w * v_tail[j];
-        for _ in 0..active_range {
-            let mut wi = trail_rows[roffset + k];
-            {
-                let mut targ_suffix = &mut trail_rows[roffset + k + 1..roffset + cols];
-                targ_suffix = &mut targ_suffix[..split_range];
-                for j in 0..split_range {
-                    wi += targ_suffix[j] * v_tail[j];
-                }
-                wi *= tau;
-                for j in 0..split_range {
-                    targ_suffix[j] -= wi * v_tail[j];
-                }
+        w.fill(0f32);
+        if active_range > 0 {
+            tensor_contraction(
+                &trail_rows[k+1 ..],
+                &v_tail,
+                w,
+                active_range,
+                split_range,
+                1,
+                stride,
+                1,
+                1
+            );
+        }
+        let mut roffset = k;
+        for i in 0..active_range {
+            w[i] = tau * w[i] + tau * trail_rows[roffset];
+            trail_rows[roffset] -= w[i];
+            for j in 0..split_range {
+                trail_rows[roffset + j + 1] -= w[i] * v_tail[j];
             }
-            trail_rows[roffset + k] -= wi;
             roffset += stride;
         }
         offset += stride;
