@@ -89,60 +89,43 @@ fn triangle_iteration(
 ) {
     // T[k] = ((T, 0), (-tau[k]* h[k]' Y[k-1]T[k-1], tau));
     // diagonal element stores the L[ii] element not householder
+    let koffset = k * t_dim;
+    t[koffset + k] = tau;
+    if k == 0 { return; }
+    
     let mut hoffset = 0;
     // h'Y :: Y
-    let koffset = k * t_dim;
     w.fill(0f32);
-    if k > 0 {
-        tensor_contraction(
-            &h[k + 1..],
-            r,
-            w,
-            k,
-            // r.len(),
-            h_dim.saturating_sub(k + 1),
-            1,
-            h_dim,
-            1,
-            1,
-        );
-        let (t_upper, t_target) = t.split_at_mut(koffset);
-        for l in 0..k {
-            w[l] = -tau * h[hoffset + k] -tau * w[l];
-            // w[l] *= -tau;
-            // w[l] += h[hoffset + k];
-            // w[l] *= -tau;
-            hoffset += h_dim;
-        }
-        tensor_tut_contraction(
-            t_upper,
-            w,
-            t_target,
-            0,
-            0,
-            k,
-            t_dim.saturating_sub(1),
-            1,
-            t_dim,
-            1,
-            1,
-        );
+    tensor_contraction(
+        &h[k + 1..],
+        r,
+        w,
+        k,
+        // r.len(),
+        h_dim.saturating_sub(k + 1),
+        1,
+        h_dim,
+        1,
+        1,
+    );
+    let (t_upper, t_target) = t.split_at_mut(koffset);
+    for l in 0..k {
+        w[l] = -tau * h[hoffset + k] -tau * w[l];
+        hoffset += h_dim;
     }
-    // let mut toffset = 0;
-    // let (t_upper, t_target) = t.split_at_mut(koffset);
-
-    // // NOTE: kernel_tut(t_target, w after scale by -tau);
-    // // h'T :: T ~ bottom-left triangular
-    // for l in 0..k {
-    //     // outer product iteration style
-    //     let outer = -w[l] * tau;
-    //     let t_tail = &t_upper[toffset..=toffset + l];
-    //     for j in 0..=l {
-    //         t_target[j] += outer * t_tail[j];
-    //     }
-    //     toffset += t_dim;
-    // }
-    t[koffset + k] = tau;
+    tensor_tut_contraction(
+        t_upper,
+        w,
+        t_target,
+        0,
+        0,
+        k,
+        t_dim.saturating_sub(1),
+        1,
+        t_dim,
+        1,
+        1,
+    );
 }
 pub fn wy_decomposition(
     l_yt: &mut [f32],
