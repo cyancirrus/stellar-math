@@ -27,8 +27,9 @@
 //     pub h: NdArray,
 //     pub t: NdArray,
 // }
+use crate::structure::ndarray::NdArray;
 use crate::algebra::bmethods::contractions::{
-    tensor_lt_contraction, tensor_tlt_contraction, tensor_tut_contraction, tensor_ut_contraction,
+    tensor_lt_contraction, tensor_tlt_contraction, tensor_tut_contraction, tensor_ut_contraction, tensor_contraction, tensor_tcontraction
 };
 const EPSILON: f32 = 1e-21;
 /// params
@@ -90,20 +91,30 @@ fn triangle_iteration(
     let mut hoffset = 0;
     // h'Y :: Y
     let koffset = k * t_dim;
-    let h_k_tail = r;
-    // NOTE: kernel(todo-rows, h_k_tail); 
+    // let h_k_tail = r;
+    println!("w {w:?}");
+    w.fill(0f32);
     for l in 0..k {
-        // initial element of householder vector is 1
-        let mut dot = h[hoffset + k];
-        let h_i_tail = &h[hoffset + k + 1..hoffset + h_dim];
-        for j in 0..h_k_tail.len() {
-            dot += h_i_tail[j] * h_k_tail[j];
-        }
-        w[l] = dot;
+        w[l] = h[hoffset + k];
         hoffset += h_dim;
+    }
+    if k > 0 {
+        tensor_contraction(
+            &h[k + 1..],
+            r,
+            w,
+            k,
+            // r.len(),
+            h_dim.saturating_sub(k + 1),
+            1,
+            h_dim,
+            1,
+            1,
+        );
     }
     let mut toffset = 0;
     let (t_upper, t_target) = t.split_at_mut(koffset);
+    
 
     // NOTE: kernel_tut(t_target, w after scale by -tau);
     // h'T :: T ~ bottom-left triangular

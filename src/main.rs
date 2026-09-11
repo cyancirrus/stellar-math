@@ -143,7 +143,11 @@ fn test_reconstruct() {
     let (s_x, s_y, s_t, s_tri) = (cols, cols, acols, rows);
     let mut l_yt = generate_random_vector(rows * cols);
     let mut tri = create_identity_vector(rows, rows);
-
+    let input_matrix = NdArray {
+        dims: vec![rows, cols],
+        data: l_yt.clone(),
+    };
+    println!("input_matrix {input_matrix:?}");
     let mut w = vec![0f32; cols];
     let mut x_argument = generate_random_vector(cols * acols);
     let mut x_original = x_argument.clone();
@@ -380,20 +384,6 @@ fn test_debug_set_diagonal() {
     }
 }
 
-// fn main() {
-//     // test_solves();
-//     // println!("-----------------------------");
-//     // println!("-----------------------------");
-//     // println!("-----------------------------");
-//     // println!("-----------------------------");
-//     // println!("-----------------------------");
-//     // test_left_apply_qt();
-//     // // test_left_apply_q();
-//     test_reconstruct();
-//     // validate_upper_upper_fma();
-//     // validate_transpose_upper_upper_fma();
-// }
-
 pub fn benchmark_lq() {
     let rows = 64;
     let cols = 128;
@@ -456,5 +446,16 @@ pub fn benchmark_lq() {
     );
 }
 fn main() {
-    benchmark_lq();
+    // test_solves();
+    // println!("-----------------------------");
+    // println!("-----------------------------");
+    // println!("-----------------------------");
+    // println!("-----------------------------");
+    // println!("-----------------------------");
+    // test_left_apply_qt();
+    // // test_left_apply_q();
+    test_reconstruct();
+    // validate_upper_upper_fma();
+    // validate_transpose_upper_upper_fma();
+    // benchmark_lq();
 }
