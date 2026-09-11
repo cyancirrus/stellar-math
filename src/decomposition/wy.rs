@@ -112,9 +112,32 @@ fn triangle_iteration(
             1,
         );
     }
+
     let mut toffset = 0;
     let (t_upper, t_target) = t.split_at_mut(koffset);
-    
+    let temp_t_upper = t_upper.to_vec();
+    let mut temp_t_target = t_target.to_vec();
+    let mut temp_tau_outer= w.to_vec();
+    for l in 0..k {
+        temp_tau_outer[l] *= - tau;
+    }
+    if k > 0 {
+        tensor_tut_contraction(
+            &temp_t_upper,
+            &temp_tau_outer,
+            &mut temp_t_target,
+            0,
+            0,
+            k,
+            t_dim.saturating_sub(1),
+            1,
+            t_dim,
+            1,
+            1,
+
+        );
+    }
+    println!("recreation {temp_t_target:?}");
 
     // NOTE: kernel_tut(t_target, w after scale by -tau);
     // h'T :: T ~ bottom-left triangular
@@ -127,6 +150,24 @@ fn triangle_iteration(
         }
         toffset += t_dim;
     }
+    println!("actual {t_target:?}");
+
+
+    // let mut toffset = 0;
+    // let (t_upper, t_target) = t.split_at_mut(koffset);
+    
+
+    // // NOTE: kernel_tut(t_target, w after scale by -tau);
+    // // h'T :: T ~ bottom-left triangular
+    // for l in 0..k {
+    //     // outer product iteration style
+    //     let outer = -w[l] * tau;
+    //     let t_tail = &t_upper[toffset..=toffset + l];
+    //     for j in 0..=l {
+    //         t_target[j] += outer * t_tail[j];
+    //     }
+    //     toffset += t_dim;
+    // }
     t[koffset + k] = tau;
 }
 pub fn wy_decomposition(
