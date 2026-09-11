@@ -177,16 +177,7 @@ fn test_reconstruct() {
         acols,
     );
     t_buffer.fill(0f32);
-    lhs_apply_l(
-        &l_yt,
-        &s_buffer,
-        &mut t_buffer,
-        rows,
-        cols,
-        acols,
-        s_x,
-        s_t,
-    );
+    lhs_apply_l(&l_yt, &s_buffer, &mut t_buffer, rows, cols, acols, s_x, s_t);
     let result = t_buffer.clone();
     let result_matrix = NdArray {
         dims: vec![rows, acols],
@@ -454,8 +445,8 @@ fn main() {
     // println!("-----------------------------");
     // test_left_apply_qt();
     // // test_left_apply_q();
-    test_reconstruct();
+    // test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
-    // benchmark_lq();
+    benchmark_lq();
 }

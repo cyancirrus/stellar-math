@@ -27,10 +27,11 @@
 //     pub h: NdArray,
 //     pub t: NdArray,
 // }
-use crate::structure::ndarray::NdArray;
 use crate::algebra::bmethods::contractions::{
-    tensor_lt_contraction, tensor_tlt_contraction, tensor_tut_contraction, tensor_ut_contraction, tensor_contraction, tensor_tcontraction
+    tensor_contraction, tensor_lt_contraction, tensor_tcontraction, tensor_tlt_contraction,
+    tensor_tut_contraction, tensor_ut_contraction,
 };
+use crate::structure::ndarray::NdArray;
 const EPSILON: f32 = 1e-21;
 /// params
 ///
@@ -91,11 +92,7 @@ fn triangle_iteration(
     let mut hoffset = 0;
     // h'Y :: Y
     let koffset = k * t_dim;
-    // w.fill(0f32);
-    for l in 0..k {
-        w[l] = h[hoffset + k];
-        hoffset += h_dim;
-    }
+    w.fill(0f32);
     if k > 0 {
         tensor_contraction(
             &h[k + 1..],
@@ -109,13 +106,14 @@ fn triangle_iteration(
             1,
             1,
         );
-    }
-
-    let (t_upper, t_target) = t.split_at_mut(koffset);
-    for l in 0..k {
-        w[l] *= - tau;
-    }
-    if k > 0 {
+        let (t_upper, t_target) = t.split_at_mut(koffset);
+        for l in 0..k {
+            w[l] = -tau * h[hoffset + k] -tau * w[l];
+            // w[l] *= -tau;
+            // w[l] += h[hoffset + k];
+            // w[l] *= -tau;
+            hoffset += h_dim;
+        }
         tensor_tut_contraction(
             t_upper,
             w,
@@ -128,12 +126,10 @@ fn triangle_iteration(
             t_dim,
             1,
             1,
-
         );
     }
     // let mut toffset = 0;
     // let (t_upper, t_target) = t.split_at_mut(koffset);
-    
 
     // // NOTE: kernel_tut(t_target, w after scale by -tau);
     // // h'T :: T ~ bottom-left triangular
