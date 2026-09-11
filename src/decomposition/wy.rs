@@ -91,9 +91,7 @@ fn triangle_iteration(
     let mut hoffset = 0;
     // h'Y :: Y
     let koffset = k * t_dim;
-    // let h_k_tail = r;
-    println!("w {w:?}");
-    w.fill(0f32);
+    // w.fill(0f32);
     for l in 0..k {
         w[l] = h[hoffset + k];
         hoffset += h_dim;
@@ -113,19 +111,15 @@ fn triangle_iteration(
         );
     }
 
-    let mut toffset = 0;
     let (t_upper, t_target) = t.split_at_mut(koffset);
-    let temp_t_upper = t_upper.to_vec();
-    let mut temp_t_target = t_target.to_vec();
-    let mut temp_tau_outer= w.to_vec();
     for l in 0..k {
-        temp_tau_outer[l] *= - tau;
+        w[l] *= - tau;
     }
     if k > 0 {
         tensor_tut_contraction(
-            &temp_t_upper,
-            &temp_tau_outer,
-            &mut temp_t_target,
+            t_upper,
+            w,
+            t_target,
             0,
             0,
             k,
@@ -137,22 +131,6 @@ fn triangle_iteration(
 
         );
     }
-    println!("recreation {temp_t_target:?}");
-
-    // NOTE: kernel_tut(t_target, w after scale by -tau);
-    // h'T :: T ~ bottom-left triangular
-    for l in 0..k {
-        // outer product iteration style
-        let outer = -w[l] * tau;
-        let t_tail = &t_upper[toffset..=toffset + l];
-        for j in 0..=l {
-            t_target[j] += outer * t_tail[j];
-        }
-        toffset += t_dim;
-    }
-    println!("actual {t_target:?}");
-
-
     // let mut toffset = 0;
     // let (t_upper, t_target) = t.split_at_mut(koffset);
     

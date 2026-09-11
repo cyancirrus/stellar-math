@@ -385,10 +385,10 @@ fn test_debug_set_diagonal() {
 }
 
 pub fn benchmark_lq() {
-    let rows = 64;
-    let cols = 128;
-    // let rows = 512;
-    // let cols = 1024;
+    // let rows = 64;
+    // let cols = 128;
+    let rows = 512;
+    let cols = 1024;
     let stride = cols;
 
     // Generate pseudo-random test data (simple deterministic pattern to avoid external crates)
