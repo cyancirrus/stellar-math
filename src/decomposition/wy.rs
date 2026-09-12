@@ -152,19 +152,18 @@ pub fn wy_decomposition(
 
         let split_range = v_tail.len();
         w.fill(0f32);
-        if active_range > 0 {
-            tensor_contraction(
-                &trail_rows[k+1 ..],
-                v_tail,
-                w,
-                active_range,
-                split_range,
-                1,
-                stride,
-                1,
-                1
-            );
-        }
+        if active_range == 0 { return; }
+        tensor_contraction(
+            &trail_rows[k+1 ..],
+            v_tail,
+            w,
+            active_range,
+            split_range,
+            1,
+            stride,
+            1,
+            1
+        );
         let mut roffset = k;
         for i in 0..active_range {
             w[i] = tau * w[i] + tau * trail_rows[roffset];

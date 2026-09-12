@@ -375,10 +375,11 @@ fn test_debug_set_diagonal() {
     }
 }
 pub fn benchmark_lq() {
-    // let rows = 64;
-    // let cols = 128;
-    let rows = 512;
-    let cols = 1024;
+    let rows = 64;
+    let cols = 128;
+    // let rows = 512;
+    // let rows = 256;
+    // let cols = 1024;
     let stride = cols;
 
     // Generate pseudo-random test data (simple deterministic pattern to avoid external crates)
@@ -414,7 +415,7 @@ pub fn benchmark_lq() {
     }
     let duration = start.elapsed();
     println!(
-        "WY Decomposition ({}x{}) avg time over {} runs: {:.2?}",
+        "LQ Decomposition ({}x{}) avg time over {} runs: {:.2?}",
         rows,
         cols,
         iterations,
@@ -443,10 +444,10 @@ pub fn benchmark_lq() {
 }
 
 pub fn benchmark_wy() {
-    // let rows = 64;
-    // let cols = 128;
-    let rows = 512;
-    let cols = 1024;
+    let rows = 64;
+    let cols = 128;
+    // let rows = 256;
+    // let cols = 1024;
     let stride = cols;
 
     // Generate pseudo-random test data (simple deterministic pattern to avoid external crates)
@@ -482,9 +483,22 @@ pub fn benchmark_wy() {
     );
 
     // Benchmark apply Q
-    let x_argument = vec![1.0; cols * rows];
+    let mut x_argument = vec![1.0; cols * rows];
+    let y_argument = vec![1.0; cols * rows];
     let start = Instant::now();
     for _ in 0..iterations {
+        // solve(
+        //     &a_warmup,
+        //     &t,
+        //     &mut x_argument,
+        //     &y_argument,
+        //     &mut t_buffer,
+        //     &mut s_buffer,
+        //     rows,
+        //     cols,
+        //     rows,
+        //     1
+        // )
         lhs_apply_q(
             &a_warmup,
             &t,
