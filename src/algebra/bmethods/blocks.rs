@@ -325,7 +325,7 @@ pub fn tensor_tlt_block(
     // diagonal
     // suffix c: chunk, suffix a: actual
     // let d_add = p - p.min(m) + 1;
-    t_d.par_chunks_mut(MC * s_t)
+    t_d[..s_t * m].par_chunks_mut(MC * s_t)
         .enumerate()
         .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
@@ -335,7 +335,6 @@ pub fn tensor_tlt_block(
                 let d_xt = PC * s_x;
                 let ma = diff_min(m, mc_idx * MC, MC);
                 // let (xend, tend) = (ma * s_x, ma * s_t);
-                let tend = ma * s_t;
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
                     pack(&t[nc..], t_accum, ma, na, NC, s_t);
