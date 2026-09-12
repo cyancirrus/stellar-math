@@ -21,12 +21,6 @@
 // - **Factorization form:** `A = LQ`, where `Q` is expressed implicitly via
 //   the compact WY representation: `A = L * (I - Y T Y')`.
 //
-// *(Struct form below is kept only as a thin, allocating wrapper around the
-// 0-alloc routine, for callers who want ownership instead of borrowing.)*
-// pub struct LqBlockDecomp {
-//     pub h: NdArray,
-//     pub t: NdArray,
-// }
 use crate::algebra::bmethods::interface::{
     stride_kernel, stride_lt_kernel, stride_tlt_kernel, stride_tut_kernel, stride_ut_kernel
 };
