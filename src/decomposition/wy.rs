@@ -27,12 +27,8 @@
 //     pub h: NdArray,
 //     pub t: NdArray,
 // }
-use crate::algebra::bmethods::contractions::{
-    tensor_contraction, tensor_lt_contraction, tensor_tlt_contraction, tensor_tut_contraction,
-    tensor_ut_contraction,
-};
 use crate::algebra::bmethods::interface::{
-    stride_kernel, stride_lt_kernel, stride_tlt_kernel, stride_tut_kernel, stride_ut_kernel,
+    stride_kernel, stride_lt_kernel, stride_tlt_kernel, stride_tut_kernel, stride_ut_kernel
 };
 const EPSILON: f32 = 1e-21;
 /// params
@@ -100,8 +96,7 @@ fn triangle_iteration(
     let mut hoffset = 0;
     // h'Y :: Y
     w.fill(0f32);
-    // stride_kernel(
-        tensor_contraction(
+    stride_kernel(
         &h[k + 1..],
         r,
         w,
@@ -118,11 +113,9 @@ fn triangle_iteration(
         w[l] = -tau * h[hoffset + k] - tau * w[l];
         hoffset += h_dim;
     }
-    // stride_tut_kernel(
-        tensor_tut_contraction(
+    stride_tut_kernel(
         t_upper, w, t_target, 0, 0, 
-        k, 
-                                                        // t_dim.saturating_sub(1),
+        k,
         k, 1, t_dim, 1, 1,
     );
 }
@@ -155,8 +148,7 @@ pub fn wy_decomposition(
         if active_range == 0 {
             return;
         }
-        // stride_kernel(
-            tensor_contraction(
+        stride_kernel(
             &trail_rows[k + 1..],
             v_tail,
             w,
@@ -196,7 +188,7 @@ pub fn lhs_apply_l(
     s_t: usize,
 ) {
     debug_assert!(t_buffer.len() >= rows * acols);
-    tensor_lt_contraction(
+    stride_lt_kernel(
         l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_x, s_t, s_t,
     );
 }
@@ -220,8 +212,7 @@ pub fn lhs_apply_q(
 
     // A = LX - YTY'X;
     // y'x
-    // stride_ut_kernel(
-    tensor_ut_contraction(
+    stride_ut_kernel(
         &l_yt[1..],
         &x_argument[s_t..],
         t_buffer,
@@ -235,8 +226,7 @@ pub fn lhs_apply_q(
         s_t,
     );
     // t * [y'x];
-    // stride_lt_kernel(
-    tensor_lt_contraction(
+    stride_lt_kernel(
         tri,
         t_buffer,
         s_buffer,
@@ -255,10 +245,9 @@ pub fn lhs_apply_q(
         t_buffer[k] = v;
         s_buffer[k] = x_argument[k] + v;
     }
-    // stride_tlt_kernel(
-    tensor_tlt_contraction(
+    stride_tlt_kernel(
         &l_yt[1..],
-        &t_buffer[..],
+        t_buffer,
         &mut s_buffer[acols..],
         rows - rows.min(cols) + 1,
         0,
@@ -291,8 +280,7 @@ pub fn lhs_apply_qt(
     import_slice(t_buffer, &x_argument[..rows * acols]);
     // A = LX - YTY'X;
     // y'x ; we can reduce work b/c now t is triangular is [t, 0];
-    // stride_ut_kernel(
-    tensor_ut_contraction(
+    stride_ut_kernel(
         &l_yt[1..],
         &x_argument[s_t..],
         t_buffer,
@@ -306,8 +294,7 @@ pub fn lhs_apply_qt(
         s_t,
     );
     // t * [y'x];
-    // stride_tut_kernel(
-    tensor_tut_contraction(
+    stride_tut_kernel(
         tri,
         t_buffer,
         s_buffer,
@@ -326,15 +313,12 @@ pub fn lhs_apply_qt(
         t_buffer[k] = v;
         s_buffer[k] = x_argument[k] + v;
     }
-    // stride_tlt_kernel(
-    tensor_tlt_contraction(
+    stride_tlt_kernel(
         &l_yt[1..],
         &t_buffer[..],
         &mut s_buffer[acols..],
-        // rows - rows.min(cols) + 1,
         1,
         0,
-        // acols.saturating_sub(1),
         cols.saturating_sub(1),
         rows,
         acols,

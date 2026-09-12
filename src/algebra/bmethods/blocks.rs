@@ -38,25 +38,22 @@ pub fn tensor_block(
             PACK.with(|workspace_cell| {
                 let (x_pack, y_pack, t_accum) = &mut *workspace_cell.borrow_mut();
                 let dy = PC * s_y;
-                // let (xend, mut yend, tend);
-                let (_xend, mut yend, tend);
-                let rows = x.len() / s_x;
+                // let rows = x.len().div_ceil(s_x);
+                let rows = x.len().div_ceil(s_x);
                 let ma = rows;
-                (_xend, tend) = (ma * s_x, ma * s_t);
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
+                    pack(&t[nc..], t_accum, ma, na, NC, s_t);
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
-                        yend = pa * s_y;
                         pack(&x[pc..], x_pack, ma, pa, PC, s_x);
-                        pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
+                        pack(&y_d[yoffset + nc..], y_pack, pa, na, NC, s_y);
                         tensor_contraction(x_pack, y_pack, t_accum, ma, pa, na, PC, NC, NC);
                         yoffset += dy;
                     }
                     // unpack
-                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                    pack(t_accum, &mut t[nc..], ma, na, s_t, NC);
                 }
             })
         });
