@@ -100,8 +100,8 @@ fn triangle_iteration(
     let mut hoffset = 0;
     // h'Y :: Y
     w.fill(0f32);
-    stride_kernel(
-        // tensor_contraction(
+    // stride_kernel(
+        tensor_contraction(
         &h[k + 1..],
         r,
         w,
@@ -118,9 +118,11 @@ fn triangle_iteration(
         w[l] = -tau * h[hoffset + k] - tau * w[l];
         hoffset += h_dim;
     }
-    stride_tut_kernel(
-        // // tensor_tut_contraction(
-        t_upper, w, t_target, 0, 0, k, // t_dim.saturating_sub(1),
+    // stride_tut_kernel(
+        tensor_tut_contraction(
+        t_upper, w, t_target, 0, 0, 
+        k, 
+                                                        // t_dim.saturating_sub(1),
         k, 1, t_dim, 1, 1,
     );
 }
@@ -153,8 +155,8 @@ pub fn wy_decomposition(
         if active_range == 0 {
             return;
         }
-        stride_kernel(
-            // tensor_contraction(
+        // stride_kernel(
+            tensor_contraction(
             &trail_rows[k + 1..],
             v_tail,
             w,
@@ -218,8 +220,8 @@ pub fn lhs_apply_q(
 
     // A = LX - YTY'X;
     // y'x
-    stride_ut_kernel(
-    // tensor_ut_contraction(
+    // stride_ut_kernel(
+    tensor_ut_contraction(
         &l_yt[1..],
         &x_argument[s_t..],
         t_buffer,
@@ -233,8 +235,8 @@ pub fn lhs_apply_q(
         s_t,
     );
     // t * [y'x];
-    stride_lt_kernel(
-    // tensor_lt_contraction(
+    // stride_lt_kernel(
+    tensor_lt_contraction(
         tri,
         t_buffer,
         s_buffer,
@@ -253,8 +255,8 @@ pub fn lhs_apply_q(
         t_buffer[k] = v;
         s_buffer[k] = x_argument[k] + v;
     }
-    stride_tlt_kernel(
-    // tensor_tlt_contraction(
+    // stride_tlt_kernel(
+    tensor_tlt_contraction(
         &l_yt[1..],
         &t_buffer[..],
         &mut s_buffer[acols..],
@@ -289,8 +291,8 @@ pub fn lhs_apply_qt(
     import_slice(t_buffer, &x_argument[..rows * acols]);
     // A = LX - YTY'X;
     // y'x ; we can reduce work b/c now t is triangular is [t, 0];
-    stride_ut_kernel(
-    // tensor_ut_contraction(
+    // stride_ut_kernel(
+    tensor_ut_contraction(
         &l_yt[1..],
         &x_argument[s_t..],
         t_buffer,
@@ -304,8 +306,8 @@ pub fn lhs_apply_qt(
         s_t,
     );
     // t * [y'x];
-    stride_tut_kernel(
-    // tensor_tut_contraction(
+    // stride_tut_kernel(
+    tensor_tut_contraction(
         tri,
         t_buffer,
         s_buffer,
@@ -324,8 +326,8 @@ pub fn lhs_apply_qt(
         t_buffer[k] = v;
         s_buffer[k] = x_argument[k] + v;
     }
-    stride_tlt_kernel(
-    // tensor_tlt_contraction(
+    // stride_tlt_kernel(
+    tensor_tlt_contraction(
         &l_yt[1..],
         &t_buffer[..],
         &mut s_buffer[acols..],

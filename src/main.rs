@@ -66,31 +66,21 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 fn test_left_apply_qt() {
     let (rows, cols, acols) = (2, 4, 8);
     // let (rows, cols, acols) = (256, 1024, 8);
+    // let (rows, cols, acols) = (128, 128, 4);
     debug_assert!(cols >= rows);
 
     let mut l_yt = generate_random_vector(rows * cols);
     let mut tri = create_identity_vector(rows, rows);
-    let mut w = vec![0f32; cols];
-
-    // only rows*acols worth of "real" data, zero-padded to cols*acols
+    let mut w = vec![0f32; rows];
     let mut x_argument = generate_random_vector(rows * acols);
-    // let mut canary = vec![0f32;16];
-    // let mut canary = 0f32;
-    // let mut canary = vec![ 0f32; (cols - rows) * acols];
-    // comapared to this
-    // let mut x_argument = vec![0f32; cols * acols];
-    // let w_seed = generate_random_vector(rows * acols); // or identity_vector(rows, acols)
-    // x_argument[..rows * acols].copy_from_slice(&w_seed);
-    // let x_original = x_argument.clone();
-    // so i think somewhere in the lhs_apply_qt something is to braod
+    
+    let mut t_buffer = vec![0f32; cols * cols];
+    let mut s_buffer = vec![0f32; cols * cols];
+    let mut w_buffer = vec![0f32; cols * cols ];
 
-    let mut t_buffer = vec![0f32; cols * acols];
-    let mut s_buffer = vec![0f32; cols * acols];
-    let mut w_buffer = vec![0f32; rows * acols];
-    // println!("canary {canary:?}");
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
-    // println!("canary {canary:?}");
+    println!("hello");
     // output buffer needs to be cols x tcols
     lhs_apply_qt(
         &l_yt,
@@ -102,11 +92,10 @@ fn test_left_apply_qt() {
         cols,
         acols,
     );
-    // println!("canary {canary:?}");
+    println!("world");
 
     let after_qt = s_buffer.clone();
     t_buffer.fill(0f32);
-    //TODO: test that it was the ping-pogn here which was causing memory leak
     // apply Q
     lhs_apply_q(
         &l_yt,
@@ -129,7 +118,7 @@ fn test_left_apply_qt() {
         data: x_argument.clone(),
     };
     let mid = NdArray {
-        dims: vec![cols, acols],
+        dims: vec![rows, acols],
         data: after_qt,
     };
     // println!("after Q'   : {mid:?}");
@@ -534,24 +523,51 @@ pub fn benchmark_wy() {
         duration / iterations
     );
 }
+
+fn test_run() {
+    // let rows = 64;
+    // let cols = 128;
+    let rows = 256;
+    let cols = 1024;
+    let stride = cols;
+
+    // Generate pseudo-random test data (simple deterministic pattern to avoid external crates)
+    let mut a = vec![0.0; rows * cols];
+    for (i, val) in a.iter_mut().enumerate() {
+        let idx = i as f32;
+        *val = (idx.sin() * 43758.54).fract();
+    }
+
+    let mut t = vec![0.0; rows * rows];
+    let mut w = vec![0.0; rows];
+    let mut t_buffer = vec![0.0; cols * cols];
+    let mut s_buffer = vec![0.0; cols * cols];
+
+    // Warmup run
+    let mut a_warmup = a.clone();
+    wy_decomposition(&mut a_warmup, &mut t, &mut w, rows, cols, stride);
+}
+
+
 fn main() {
-    println!("------------------------------------------------");
-    println!("--------------------- LQ-----------------------");
-    println!("------------------------------------------------");
-    benchmark_lq();
-    println!("------------------------------------------------");
-    println!("--------------------- WY -----------------------");
-    println!("------------------------------------------------");
-    benchmark_wy();
-    // test_solves();
-    // println!("-----------------------------");
-    // println!("-----------------------------");
-    // println!("-----------------------------");
-    // println!("-----------------------------");
-    // println!("-----------------------------");
-    // test_left_apply_qt();
-    // // test_left_apply_q();
-    // test_reconstruct();
-    // validate_upper_upper_fma();
-    // validate_transpose_upper_upper_fma();
+    // test_run();
+    // println!("------------------------------------------------");
+    // println!("--------------------- LQ-----------------------");
+    // println!("------------------------------------------------");
+    // // benchmark_lq();
+    // println!("------------------------------------------------");
+    // println!("--------------------- WY -----------------------");
+    // println!("------------------------------------------------");
+    // benchmark_wy();
+    // // test_solves();
+    // // println!("-----------------------------");
+    // // println!("-----------------------------");
+    // // println!("-----------------------------");
+    // // println!("-----------------------------");
+    // // println!("-----------------------------");
+    test_left_apply_qt();
+    // // // test_left_apply_q();
+    // // test_reconstruct();
+    // // validate_upper_upper_fma();
+    // // validate_transpose_upper_upper_fma();
 }
