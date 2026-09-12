@@ -65,6 +65,7 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
 
 fn test_left_apply_qt() {
     let (rows, cols, acols) = (2, 4, 8);
+    // let (rows, cols, acols) = (256, 1024, 8);
     debug_assert!(cols >= rows);
 
     let mut l_yt = generate_random_vector(rows * cols);
@@ -131,8 +132,8 @@ fn test_left_apply_qt() {
         dims: vec![cols, acols],
         data: after_qt,
     };
-    println!("after Q'   : {mid:?}");
-    println!("---------------------");
+    // println!("after Q'   : {mid:?}");
+    // println!("---------------------");
     println!("original  : {original:?}");
     println!("QQ'x      : {roundtrip:?}");
 }
@@ -375,11 +376,11 @@ fn test_debug_set_diagonal() {
     }
 }
 pub fn benchmark_lq() {
-    let rows = 64;
-    let cols = 128;
-    // let rows = 512;
+    // let rows = 64;
+    // let cols = 128;
+    let rows = 512;
     // let rows = 256;
-    // let cols = 1024;
+    let cols = 1024;
     let stride = cols;
 
     // Generate pseudo-random test data (simple deterministic pattern to avoid external crates)
@@ -410,7 +411,7 @@ pub fn benchmark_lq() {
             dims: vec![rows, cols],
             data: a.to_vec(),
         };
-    AutumnDecomp::new(a_active);
+        AutumnDecomp::new(a_active);
         // wy_decomposition(&mut a_warmup, &mut t, &mut w, rows, cols, stride);
     }
     let duration = start.elapsed();
@@ -427,13 +428,7 @@ pub fn benchmark_lq() {
     let start = Instant::now();
     for _ in 0..iterations {
         let mut x_arg = x_argument.clone();
-        decomp.left_apply_q(
-            
-            &mut x_arg,
-            &mut w,
-            cols,
-            rows,
-        );
+        decomp.left_apply_q(&mut x_arg, &mut w, cols, rows);
     }
     let duration = start.elapsed();
     println!(
@@ -444,10 +439,10 @@ pub fn benchmark_lq() {
 }
 
 pub fn benchmark_wy() {
-    let rows = 64;
-    let cols = 128;
-    // let rows = 256;
-    // let cols = 1024;
+    // let rows = 64;
+    // let cols = 128;
+    let rows = 256;
+    let cols = 1024;
     let stride = cols;
 
     // Generate pseudo-random test data (simple deterministic pattern to avoid external crates)
@@ -499,6 +494,28 @@ pub fn benchmark_wy() {
         //     rows,
         //     1
         // )
+        lhs_apply_q(
+            &a_warmup,
+            &t,
+            &x_argument,
+            &mut t_buffer,
+            &mut s_buffer,
+            rows,
+            cols,
+            rows,
+        );
+    }
+    let duration = start.elapsed();
+    println!(
+        "LHS Apply Q' avg time over {} runs: {:.2?}",
+        iterations,
+        duration / iterations
+    );
+    // Benchmark apply Q
+    let mut x_argument = vec![1.0; cols * rows];
+    let y_argument = vec![1.0; cols * rows];
+    let start = Instant::now();
+    for _ in 0..iterations {
         lhs_apply_q(
             &a_warmup,
             &t,

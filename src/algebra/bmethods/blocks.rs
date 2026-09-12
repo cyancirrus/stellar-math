@@ -50,7 +50,7 @@ pub fn tensor_block(
                         let pa = diff_min(p, pc, PC);
                         // let pa = diff_min(p, pc, PC);
                         yend = pa * s_y;
-                        pack(&x[pc..xend], x_pack, ma, pa, PC, s_x);
+                        pack(&x[pc..], x_pack, ma, pa, PC, s_x);
                         pack(&y_d[yoffset + nc..yoffset + yend], y_pack, pa, na, NC, s_y);
                         tensor_contraction(x_pack, y_pack, t_accum, ma, pa, na, PC, NC, NC);
                         yoffset += dy;
@@ -338,7 +338,7 @@ pub fn tensor_tlt_block(
                 let tend = ma * s_t;
                 for nc in (0..n).step_by(NC) {
                     let na = diff_min(n, nc, NC);
-                    pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
+                    pack(&t[nc..], t_accum, ma, na, NC, s_t);
                     // base column offset
                     let mut xoffset = mc_idx * MC;
                     let mut yoffset = 0;
@@ -355,7 +355,7 @@ pub fn tensor_tlt_block(
                         xoffset += d_xt;
                     }
                     // unpack
-                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
+                    pack(t_accum, &mut t[nc..], ma, na, s_t, NC);
                 }
             })
         });
@@ -376,7 +376,8 @@ pub fn tensor_tut_block(
     // diagonal
     // suffix c: chunk, suffix a: actual
     // let d_sub = m.saturating_sub(p);
-    t_d.par_chunks_mut(MC * s_t)
+    t_d[..s_t * m].par_chunks_mut(MC * s_t)
+        // t_d.par_chunks_mut(MC * s_t)
         .enumerate()
         .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
@@ -390,7 +391,7 @@ pub fn tensor_tut_block(
                     let na = diff_min(n, nc, NC);
                     pack(&t[nc..tend], t_accum, ma, na, NC, s_t);
                     // base column offset
-                    let mut xoffset = mc_idx * MC;
+                    let mut xoffset = mc_idx * MC; // col steps
                     let mut yoffset = 0;
                     for pc in (0..p).step_by(PC) {
                         let pa = diff_min(p, pc, PC);
@@ -411,9 +412,9 @@ pub fn tensor_tut_block(
                         );
                         yoffset += dy;
                         xoffset += d_xt;
+                        // unpack
+                        pack(t_accum, &mut t[nc..], ma, na, s_t, NC);
                     }
-                    // unpack
-                    pack(t_accum, &mut t[nc..tend], ma, na, s_t, NC);
                 }
             })
         });

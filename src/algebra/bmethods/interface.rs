@@ -113,15 +113,15 @@ fn assert_stride_capacity(
     s_t: usize,
 ) {
     debug_assert!(
-        r_x * s_x <= x.len(),
+        r_x * s_x + r_y <= x.len() + s_x,
         "valid x-vector not large enough for dims"
     );
     debug_assert!(
-        r_y * s_y <= y.len(),
+        r_y * s_y + r_t <= y.len() + s_y,
         "invalid y-vector not large enough for dims"
     );
     debug_assert!(
-        r_t * s_t <= t.len(),
+        r_x * s_t + r_t <= t.len() + s_t,
         "invalid t-vector not large enough for dims"
     );
 }
@@ -222,7 +222,7 @@ pub fn stride_tut_kernel(x: &[f32], y: &[f32], t: &mut [f32], d_add: usize, d_su
     #[cfg(debug_assertions)]
     assert_stride_bounds(m, n, n, s_x, s_y, s_t);
     #[cfg(debug_assertions)]
-    assert_stride_capacity(x, y, t, p, p, m, s_x, s_y, s_t);
+    assert_stride_capacity(x, y, t, m, p, n, s_x, s_y, s_t);
     if m <= MINIKERN_GATE && n <= MINIKERN_GATE {
         tensor_tut_contraction(x, y, t, d_add, d_sub, m, p, n, s_x, s_y, s_t);
     } else {
