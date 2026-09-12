@@ -362,10 +362,13 @@ fn test_debug_set_diagonal() {
     }
 }
 
+
+
 pub fn benchmark_wy() {
     // let rows = 64;
     // let cols = 128;
-    let rows = 512;
+    // let rows = 256;
+    let rows = 256;
     let cols = 1024;
     let stride = cols;
 
@@ -378,15 +381,15 @@ pub fn benchmark_wy() {
 
     let mut t = vec![0.0; rows * rows];
     let mut w = vec![0.0; rows];
-    let mut t_buffer = vec![0.0; rows * rows];
-    let mut s_buffer = vec![0.0; rows * rows];
+    let mut t_buffer = vec![0.0; cols * cols];
+    let mut s_buffer = vec![0.0; cols * cols];
 
     // Warmup run
     let mut a_warmup = a.clone();
     wy_decomposition(&mut a_warmup, &mut t, &mut w, rows, cols, stride);
 
     // Benchmark decomposition
-    let iterations = 50;
+    let iterations = 10;
     let start = Instant::now();
     for _ in 0..iterations {
         a_warmup.copy_from_slice(&a);
@@ -402,7 +405,42 @@ pub fn benchmark_wy() {
     );
 
     // Benchmark apply Q
-    let x_argument = vec![1.0; cols * rows];
+    let mut x_argument = vec![1.0; cols * rows];
+    let y_argument = vec![1.0; cols * rows];
+    let start = Instant::now();
+    for _ in 0..iterations {
+        // solve(
+        //     &a_warmup,
+        //     &t,
+        //     &mut x_argument,
+        //     &y_argument,
+        //     &mut t_buffer,
+        //     &mut s_buffer,
+        //     rows,
+        //     cols,
+        //     rows,
+        //     1
+        // )
+        lhs_apply_q(
+            &a_warmup,
+            &t,
+            &x_argument,
+            &mut t_buffer,
+            &mut s_buffer,
+            rows,
+            cols,
+            rows,
+        );
+    }
+    let duration = start.elapsed();
+    println!(
+        "LHS Apply Q' avg time over {} runs: {:.2?}",
+        iterations,
+        duration / iterations
+    );
+    // Benchmark apply Q
+    let mut x_argument = vec![1.0; cols * rows];
+    let y_argument = vec![1.0; cols * rows];
     let start = Instant::now();
     for _ in 0..iterations {
         lhs_apply_q(
