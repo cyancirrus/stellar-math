@@ -170,6 +170,41 @@ fn import_slice(target: &mut [f32], data: &[f32]) {
     target[..data.len()].copy_from_slice(data);
     target[data.len()..].fill(0f32);
 }
+/// the compact WY representation: `A = (I - Y T Y')X`.
+#[rustfmt::skip]
+pub fn lhs_apply_q(
+    l_yt: &[f32],
+    tri: &[f32],
+    x_argument: &[f32],
+    t_buffer: &mut [f32],
+    s_buffer: &mut [f32],
+    rows: usize,
+    cols: usize,
+    acols: usize,
+) {
+    debug_assert!(t_buffer.len() >= rows * acols);
+    debug_assert!(s_buffer.len() >= rows * acols);
+    debug_assert!(cols >= rows);
+    stride_lhs_apply_q( l_yt, tri, x_argument, t_buffer, s_buffer, rows, cols, acols, cols, rows, acols, acols);
+}
+/// the compact WY representation: `A = (I - Y T' Y')X`.
+/// applies (I - YTY[thin]')x;
+#[rustfmt::skip]
+pub fn lhs_apply_qt(
+    l_yt: &[f32],
+    tri: &[f32],
+    x_argument: &[f32],
+    t_buffer: &mut [f32],
+    s_buffer: &mut [f32],
+    rows: usize,
+    cols: usize,
+    acols: usize,
+) {
+    debug_assert!(t_buffer.len() >= rows * acols);
+    debug_assert!(s_buffer.len() >= rows * acols);
+    debug_assert!(cols >= rows);
+    stride_lhs_apply_qt(l_yt, tri, x_argument, t_buffer, s_buffer, rows, cols, acols, cols, rows, acols, acols);
+}
 
 pub fn lhs_apply_l(
     l_yt: &[f32],
@@ -178,14 +213,48 @@ pub fn lhs_apply_l(
     rows: usize,
     cols: usize,
     acols: usize,
+) {
+    debug_assert!(t_buffer.len() >= rows * acols);
+    stride_lt_kernel(
+        l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, cols, acols, acols,
+    );
+    // stride_lt_kernel(
+    //     l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_x, s_t, s_t,
+    // );
+}
+
+pub fn stride_lhs_apply_l(
+    l_yt: &[f32],
+    q_argument: &[f32],
+    t_buffer: &mut [f32],
+    rows: usize,
+    cols: usize,
+    acols: usize,
+    s_a: usize,
     s_x: usize,
     s_t: usize,
 ) {
     debug_assert!(t_buffer.len() >= rows * acols);
     stride_lt_kernel(
-        l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_x, s_t, s_t,
+        l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_a, s_x, s_t,
     );
 }
+
+// pub fn lhs_apply_l(
+//     l_yt: &[f32],
+//     q_argument: &[f32],
+//     t_buffer: &mut [f32],
+//     rows: usize,
+//     cols: usize,
+//     acols: usize,
+//     s_x: usize,
+//     s_t: usize,
+// ) {
+//     debug_assert!(t_buffer.len() >= rows * acols);
+//     stride_lt_kernel(
+//         l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_x, s_t, s_t,
+//     );
+// }
 /// the compact WY representation: `A = (I - Y T Y')X`.
 #[rustfmt::skip]
 pub fn stride_lhs_apply_q(
@@ -258,42 +327,6 @@ pub fn stride_lhs_apply_q(
         s_t,
     );
 }
-/// the compact WY representation: `A = (I - Y T Y')X`.
-#[rustfmt::skip]
-pub fn lhs_apply_q(
-    l_yt: &[f32],
-    tri: &[f32],
-    x_argument: &[f32],
-    t_buffer: &mut [f32],
-    s_buffer: &mut [f32],
-    rows: usize,
-    cols: usize,
-    acols: usize,
-) {
-    debug_assert!(t_buffer.len() >= rows * acols);
-    debug_assert!(s_buffer.len() >= rows * acols);
-    debug_assert!(cols >= rows);
-    stride_lhs_apply_q( l_yt, tri, x_argument, t_buffer, s_buffer, rows, cols, acols, cols, rows, acols, acols);
-}
-/// the compact WY representation: `A = (I - Y T' Y')X`.
-/// applies (I - YTY[thin]')x;
-#[rustfmt::skip]
-pub fn lhs_apply_qt(
-    l_yt: &[f32],
-    tri: &[f32],
-    x_argument: &[f32],
-    t_buffer: &mut [f32],
-    s_buffer: &mut [f32],
-    rows: usize,
-    cols: usize,
-    acols: usize,
-) {
-    debug_assert!(t_buffer.len() >= rows * acols);
-    debug_assert!(s_buffer.len() >= rows * acols);
-    debug_assert!(cols >= rows);
-    // let (s_a, s_t, s_tri) = (cols, acols, rows);
-    stride_lhs_apply_qt(l_yt, tri, x_argument, t_buffer, s_buffer, rows, cols, acols, cols, rows, acols, acols);
-}
 #[rustfmt::skip]
 pub fn stride_lhs_apply_qt(
     l_yt: &[f32],
@@ -312,7 +345,6 @@ pub fn stride_lhs_apply_qt(
     debug_assert!(t_buffer.len() >= rows * acols);
     debug_assert!(s_buffer.len() >= rows * acols);
     debug_assert!(cols >= rows);
-    // let (s_a, s_t, s_tri) = (cols, acols, rows);
     import_slice(t_buffer, &x_argument[..rows * acols]);
     // A = LX - YTY'X;
     // y'x ; we can reduce work b/c now t is triangular is [t, 0];
