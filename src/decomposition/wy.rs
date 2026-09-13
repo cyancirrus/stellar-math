@@ -88,7 +88,7 @@ fn triangle_iteration(
     }
 
     let mut hoffset = 0;
-    // h'Y :: Y
+    // Y'h :: Y
     w.fill(0f32);
     stride_kernel(
         &h[k + 1..],
@@ -101,6 +101,7 @@ fn triangle_iteration(
         1,
         1,
     );
+    // -tau * X; // currently don't have scalar capabilities in kernel
     let (t_upper, t_target) = t.split_at_mut(koffset);
     for l in 0..k {
         w[l] = -tau * h[hoffset + k] - tau * w[l];
@@ -148,6 +149,7 @@ pub fn wy_decomposition(
             1,
             1,
         );
+        // X - tau * UU'X; // currently don't have scalar capabilities in kernel
         let mut roffset = k;
         for i in 0..active_range {
             w[i] = tau * w[i] + tau * trail_rows[roffset];
@@ -402,7 +404,7 @@ pub fn forward_solve(
     s_y: usize,
 ) {
     debug_assert!(w.len() >= tcols);
-    debug_assert!(x.len() >= rows * tcols);
+    debug_assert!(x.len() >= rows * s_x);
     for j in 0..tcols {
         // l00 * x_0j = y_0i
         x[j] = y[j] / l_yt[0];

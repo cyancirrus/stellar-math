@@ -118,6 +118,12 @@ cargo expand --lib --features avx2 kernel::avx2::unalligned
 cargo test schur_decomposition
 ```
 
+CACHE SIZES
+```
+sysctl hw.l1dcachesize hw.l1icachesize hw.l2cachesize hw.l3cachesize
+```
+
+
 
 ## License
 
