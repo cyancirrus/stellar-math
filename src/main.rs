@@ -77,9 +77,7 @@ fn test_left_apply_qt() {
     let mut t_buffer = vec![0f32; cols * acols];
     let mut s_buffer = vec![0f32; cols * acols];
     let mut w_buffer = vec![0f32; rows * acols];
-    println!("a");
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
-    println!("b");
     lhs_apply_qt(
         &l_yt,
         &tri,
@@ -90,7 +88,6 @@ fn test_left_apply_qt() {
         cols,
         acols,
     );
-    println!("c");
 
     let after_qt = s_buffer.clone();
     t_buffer.fill(0f32);
@@ -104,7 +101,6 @@ fn test_left_apply_qt() {
         cols,
         acols,
     );
-    println!("d");
     let roundtrip = NdArray {
         dims: vec![rows, acols],
         data: t_buffer.clone(),
@@ -361,8 +357,6 @@ fn test_debug_set_diagonal() {
     }
 }
 
-
-
 pub fn benchmark_wy() {
     // let rows = 64;
     // let cols = 128;
@@ -460,13 +454,13 @@ pub fn benchmark_wy() {
     );
 }
 fn main() {
-    test_solves();
+    // test_solves();
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
-    // benchmark_wy();
+    benchmark_wy();
     // test_left_apply_qt();
     // // test_left_apply_q();
     // test_reconstruct();

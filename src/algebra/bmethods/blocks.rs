@@ -322,7 +322,8 @@ pub fn tensor_tlt_block(
     // diagonal
     // suffix c: chunk, suffix a: actual
     // let d_add = p - p.min(m) + 1;
-    t_d[..s_t * m].par_chunks_mut(MC * s_t)
+    t_d[..s_t * m]
+        .par_chunks_mut(MC * s_t)
         .enumerate()
         .for_each(|(mc_idx, t)| {
             PACK.with(|workspace_cell| {
@@ -372,7 +373,8 @@ pub fn tensor_tut_block(
     // diagonal
     // suffix c: chunk, suffix a: actual
     // let d_sub = m.saturating_sub(p);
-    t_d[..s_t * m].par_chunks_mut(MC * s_t)
+    t_d[..s_t * m]
+        .par_chunks_mut(MC * s_t)
         // t_d.par_chunks_mut(MC * s_t)
         .enumerate()
         .for_each(|(mc_idx, t)| {
