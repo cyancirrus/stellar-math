@@ -218,9 +218,6 @@ pub fn lhs_apply_l(
     stride_lt_kernel(
         l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, cols, acols, acols,
     );
-    // stride_lt_kernel(
-    //     l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_x, s_t, s_t,
-    // );
 }
 
 pub fn stride_lhs_apply_l(
@@ -239,22 +236,6 @@ pub fn stride_lhs_apply_l(
         l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_a, s_x, s_t,
     );
 }
-
-// pub fn lhs_apply_l(
-//     l_yt: &[f32],
-//     q_argument: &[f32],
-//     t_buffer: &mut [f32],
-//     rows: usize,
-//     cols: usize,
-//     acols: usize,
-//     s_x: usize,
-//     s_t: usize,
-// ) {
-//     debug_assert!(t_buffer.len() >= rows * acols);
-//     stride_lt_kernel(
-//         l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, s_x, s_t, s_t,
-//     );
-// }
 /// the compact WY representation: `A = (I - Y T Y')X`.
 #[rustfmt::skip]
 pub fn stride_lhs_apply_q(
@@ -475,9 +456,11 @@ pub fn forward_solve(
     x: &mut [f32],
     y: &[f32],
     w: &mut [f32],
-    s_a: usize,
     rows: usize,
     tcols: usize,
+    s_a: usize,
+    s_x: usize,
+    s_y: usize,
 ) {
     debug_assert!(w.len() >= tcols);
     debug_assert!(x.len() >= rows * tcols);
@@ -486,7 +469,9 @@ pub fn forward_solve(
         x[j] = y[j] / l_yt[0];
     }
     let mut offset = s_a;
-    let mut toffset = tcols;
+    // let mut toffset = tcols;
+    let mut xoffset = s_x;
+    let mut yoffset = s_y;
     for i in 1..rows {
         for j in 0..tcols {
             w[j] = l_yt[offset] * x[j];
@@ -502,10 +487,14 @@ pub fn forward_solve(
         let inv_scalar = 1f32 / l_yt[offset + i];
         for j in 0..tcols {
             // dot + lii * x_i = y_i
-            x[toffset + j] = inv_scalar * (y[toffset + j] - w[j]);
+            // x[toffset + j] = inv_scalar * (y[toffset + j] - w[j]);
+            x[xoffset + j] = inv_scalar * (y[yoffset + j] - w[j]);
         }
         offset += s_a;
-        toffset += tcols;
+        xoffset += s_x;
+        yoffset += s_y;
+        // offset += s_a;
+        // toffset += tcols;
     }
 }
 pub fn solve(
@@ -520,6 +509,71 @@ pub fn solve(
     cols: usize,
     tcols: usize,
 ) {
-    forward_solve(l_yt, x, y, t_buffer, s_a, rows, tcols);
+    forward_solve(l_yt, x, y, t_buffer, rows, tcols, s_a, tcols, tcols);
     lhs_apply_qt(l_yt, tri, x, t_buffer, s_buffer, rows, cols, tcols);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// -------------------------------
+// pub fn forward_solve(
+//     l_yt: &[f32],
+//     x: &mut [f32],
+//     y: &[f32],
+//     w: &mut [f32],
+//     s_a: usize,
+//     rows: usize,
+//     tcols: usize,
+// ) {
+//     debug_assert!(w.len() >= tcols);
+//     debug_assert!(x.len() >= rows * tcols);
+//     for j in 0..tcols {
+//         // l00 * x_0j = y_0i
+//         x[j] = y[j] / l_yt[0];
+//     }
+//     let mut offset = s_a;
+//     let mut toffset = tcols;
+//     for i in 1..rows {
+//         for j in 0..tcols {
+//             w[j] = l_yt[offset] * x[j];
+//         }
+//         let mut koffset = tcols;
+//         for k in 1..i {
+//             let scalar = l_yt[offset + k];
+//             for j in 0..tcols {
+//                 w[j] += scalar * x[koffset + j];
+//             }
+//             koffset += tcols;
+//         }
+//         let inv_scalar = 1f32 / l_yt[offset + i];
+//         for j in 0..tcols {
+//             // dot + lii * x_i = y_i
+//             x[toffset + j] = inv_scalar * (y[toffset + j] - w[j]);
+//         }
+//         offset += s_a;
+//         toffset += tcols;
+//     }
+// }
