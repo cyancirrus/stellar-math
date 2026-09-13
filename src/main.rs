@@ -35,7 +35,6 @@ fn test_solves() {
         &y_argument,
         &mut t_buffer,
         &mut s_buffer,
-        cols,
         rows,
         cols,
         tcols,
@@ -419,7 +418,6 @@ pub fn benchmark_wy() {
         //     rows,
         //     cols,
         //     rows,
-        //     1
         // )
         lhs_apply_q(
             &a_warmup,
