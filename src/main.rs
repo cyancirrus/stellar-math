@@ -143,9 +143,9 @@ fn test_reconstruct() {
         data: x_argument.clone(),
     };
     let mut o_buffer = x_argument.clone();
-    let mut t_buffer = vec![0f32; rows * acols];
+    let mut t_buffer = vec![0f32; cols * acols];
     let mut q_argument = x_argument.clone();
-    let mut s_buffer = vec![0f32; rows * acols];
+    let mut s_buffer = vec![0f32; cols * acols];
 
     let input = l_yt.clone();
     let input_matrix = NdArray {
@@ -468,10 +468,10 @@ fn main() {
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
-    benchmark_wy();
+    // benchmark_wy();
     // test_left_apply_qt();
     // // test_left_apply_q();
-    // test_reconstruct();
+    test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
 }
