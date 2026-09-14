@@ -21,7 +21,6 @@
 // - **Factorization form:** `A = LQ`, where `Q` is expressed implicitly via
 //   the compact WY representation: `A = L * (I - Y T Y')`.
 //
-use crate::algebra::bmethods::contractions::tensor_contraction;
 use crate::algebra::bmethods::interface::{
     stride_kernel, stride_lt_kernel, stride_tlt_kernel, stride_tut_kernel, stride_ut_kernel,
 };
@@ -91,7 +90,7 @@ fn triangle_iteration(
 
     let mut hoffset = 0;
     // Y'h :: Y
-    w.fill(0f32);
+    // w.fill(0f32);
     stride_kernel(
         &h[k + 1..],
         r,
@@ -160,6 +159,7 @@ pub fn wy_decomposition(
                 trail_rows[roffset + j + 1] -= w[i] * v_tail[j];
             }
             roffset += stride;
+            w[i] = 0f32;
         }
         offset += stride;
     }

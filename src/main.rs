@@ -16,7 +16,7 @@ fn test_solves() {
     // let (rows, cols, tcols) = (2, 4, 8);
     // let (rows, cols, tcols) = (4, 8, 12);
     // let (rows, cols, tcols) = (4, 4, 8);
-    let (rows, cols, tcols) = (16, 24, 24);
+    let (rows, cols, tcols) = (14, 24, 24);
     // let (rows, cols, tcols) = (64, 64, 64);
     debug_assert!(cols >= rows);
     let mut l_yt = generate_random_vector(rows * cols);
@@ -456,7 +456,7 @@ pub fn benchmark_wy() {
     );
 }
 fn main() {
-    test_solves();
+    // test_solves();
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
@@ -465,7 +465,7 @@ fn main() {
     // benchmark_wy();
     // test_left_apply_qt();
     // // test_left_apply_q();
-    // test_reconstruct();
+    test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
 }
