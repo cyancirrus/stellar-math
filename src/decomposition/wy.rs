@@ -21,6 +21,9 @@
 // - **Factorization form:** `A = LQ`, where `Q` is expressed implicitly via
 //   the compact WY representation: `A = L * (I - Y T Y')`.
 //
+use crate::algebra::bmethods::contractions::{
+    tensor_contraction
+};
 use crate::algebra::bmethods::interface::{
     stride_kernel, stride_lt_kernel, stride_tlt_kernel, stride_tut_kernel, stride_ut_kernel,
 };
@@ -525,8 +528,7 @@ pub fn kernel_forward_solve(
     for b in 0..blocks {
         let i = b << 3;
         let m = SIMD_WIDTH.min(rows - i);
-        h.fill(0f32);
-        println!("offset {offset:?}");
+        // h.fill(0f32);
         stride_kernel(
             &l_yt[offset..],
             x,
@@ -539,27 +541,25 @@ pub fn kernel_forward_solve(
             s_y
 
         );
-        // println!("h {h:?}");
         let mut roffset = 0;
         let original = xoffset;
 
         for r in 0..m { 
             let mut koffset = original;
             let w_i = &mut h[roffset..roffset + s_x];
-            for k in 0..=r {
+            for k in 0..r {
                 let scalar = l_yt[offset + i + k];
                 for j in 0..tcols {
                     w_i[j] += scalar * x[koffset + j];
                 }
                 koffset += s_x;
             }
-            // let inv_scalar = 1f32 / l_yt[offset + r];
             let inv_scalar = 1f32 / l_yt[offset + i + r];
             for j in 0..tcols {
                 // dot + lii * x_i = y_i
                 x[xoffset + j] = inv_scalar * (y[yoffset + j] - w_i[j]);
+                w_i[j] = 0f32;
             }
-            println!("w_i: {}, {w_i:?}", r);
             offset += s_a;
             yoffset += s_y;
             xoffset += s_x;
