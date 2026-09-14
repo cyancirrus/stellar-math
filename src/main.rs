@@ -453,13 +453,13 @@ pub fn benchmark_wy() {
     );
 }
 fn main() {
-    // test_solves();
+    test_solves();
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
     // println!("-----------------------------");
-    benchmark_wy();
+    // benchmark_wy();
     // test_left_apply_qt();
     // // test_left_apply_q();
     // test_reconstruct();
