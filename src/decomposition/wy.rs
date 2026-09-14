@@ -21,9 +21,7 @@
 // - **Factorization form:** `A = LQ`, where `Q` is expressed implicitly via
 //   the compact WY representation: `A = L * (I - Y T Y')`.
 //
-use crate::algebra::bmethods::contractions::{
-    tensor_contraction
-};
+use crate::algebra::bmethods::contractions::tensor_contraction;
 use crate::algebra::bmethods::interface::{
     stride_kernel, stride_lt_kernel, stride_tlt_kernel, stride_tut_kernel, stride_ut_kernel,
 };
@@ -169,7 +167,8 @@ pub fn wy_decomposition(
 /// copies memory from b into a
 fn import_slice(target: &mut [f32], data: &[f32]) {
     target[..data.len()].copy_from_slice(data);
-    target[data.len()..].fill(0f32);
+    // target[data.len()..].fill(0f32);
+    // target[data.len()..];
 }
 /// the compact WY representation: `A = (I - Y T Y')X`.
 #[rustfmt::skip]
@@ -523,28 +522,16 @@ pub fn kernel_forward_solve(
     let mut offset = 0;
     let mut xoffset = 0;
     let mut yoffset = 0;
-    let blocks = rows >> 3;
-    
-    for b in 0..blocks {
-        let i = b << 3;
-        let m = SIMD_WIDTH.min(rows - i);
-        // h.fill(0f32);
-        stride_kernel(
-            &l_yt[offset..],
-            x,
-            h, 
-            m,
-            i,
-            tcols,
-            s_a,
-            s_x,
-            s_y
+    let mut i = 0;
+    let blocks = rows.div_ceil(SIMD_WIDTH);
 
-        );
+    for _ in 0..blocks {
+        let m = SIMD_WIDTH.min(rows - i);
+        stride_kernel(&l_yt[offset..], x, h, m, i, tcols, s_a, s_x, s_y);
         let mut roffset = 0;
         let original = xoffset;
 
-        for r in 0..m { 
+        for r in 0..m {
             let mut koffset = original;
             let w_i = &mut h[roffset..roffset + s_x];
             for k in 0..r {
@@ -565,5 +552,6 @@ pub fn kernel_forward_solve(
             xoffset += s_x;
             roffset += s_x;
         }
+        i += SIMD_WIDTH;
     }
 }
