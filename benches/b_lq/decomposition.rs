@@ -136,7 +136,7 @@ pub fn bench_solve(c: &mut Criterion) {
 
                     let y_argument = generate_random_vector(n * tcols);
                     let x_argument = vec![0.0f32; n * tcols];
-                    let t_buffer = vec![0.0f32; n * tcols];
+                    let t_buffer = vec![0.0f32; 8 * n * tcols];
                     let s_buffer = vec![0.0f32; n * tcols];
                     (l_yt, tri, x_argument, y_argument, t_buffer, s_buffer)
                 },

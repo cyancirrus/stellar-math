@@ -5,8 +5,8 @@ use criterion::{criterion_group, criterion_main};
 
 criterion_group!(
     benches_apply,
-    decomposition::bench_decomposition,
-    decomposition::bench_apply,
+    // decomposition::bench_decomposition,
+    // decomposition::bench_apply,
     decomposition::bench_solve,
     // left_apply_q::bench_apply_left_q,
     // left_apply_q::bench_apply_left_qt,

@@ -17,17 +17,20 @@ fn test_solves() {
     // let (rows, cols, tcols) = (4, 8, 12);
     // let (rows, cols, tcols) = (4, 4, 8);
     let (rows, cols, tcols) = (16, 24, 24);
+    // let (rows, cols, tcols) = (64, 64, 64);
     debug_assert!(cols >= rows);
     let mut l_yt = generate_random_vector(rows * cols);
     let original = l_yt.clone();
     let mut tri = create_identity_vector(rows, rows);
-    let mut w = vec![0f32; cols];
+    // let mut w = vec![0f32; cols];
+    let mut w = vec![0f32; cols << 3];
     let mut x_argument = vec![0f32; cols * tcols];
     let y_argument = generate_random_vector(rows * tcols);
     let mut t_buffer = vec![0f32; rows * tcols];
     let mut s_buffer = vec![0f32; cols * tcols];
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
+    println!("hello");
     solve(
         &l_yt,
         &tri,

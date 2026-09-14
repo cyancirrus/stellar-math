@@ -446,10 +446,33 @@ pub fn solve(
     cols: usize,
     tcols: usize,
 ) {
-    stride_solve(
+    fast_solve(
         l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
     );
+    // stride_solve(
+    //     l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
+    // );
 }
+pub fn fast_solve(
+    l_yt: &[f32],
+    tri: &[f32],
+    x: &mut [f32],
+    y: &[f32],
+    t_buffer: &mut [f32],
+    s_buffer: &mut [f32],
+    rows: usize,
+    cols: usize,
+    tcols: usize,
+    s_a: usize,
+    s_x: usize,
+    s_t: usize,
+) {
+    kernel_forward_solve(l_yt, x, y, t_buffer, rows, tcols, s_a, s_x, s_t);
+    stride_lhs_apply_qt(
+        l_yt, tri, x, t_buffer, s_buffer, rows, cols, tcols, s_a, s_x, s_t,
+    );
+}
+
 pub fn stride_solve(
     l_yt: &[f32],
     tri: &[f32],
@@ -484,7 +507,7 @@ pub fn stride_solve(
 pub fn kernel_forward_solve(
     l_yt: &[f32],
     x: &mut [f32],
-    y: &mut [f32],
+    y: &[f32],
     h: &mut [f32],
     rows: usize,
     tcols: usize,
@@ -494,19 +517,16 @@ pub fn kernel_forward_solve(
 ) {
     debug_assert!(h.len() >= tcols * SIMD_WIDTH);
     debug_assert!(x.len() >= rows * s_x);
-    for j in 0..tcols {
-        // l00 * x_0j = y_0i
-        x[j] = y[j] / l_yt[0];
-    }
-    let mut offset = s_a;
-    let mut xoffset = s_x;
-    let mut yoffset = s_y;
+    let mut offset = 0;
+    let mut xoffset = 0;
+    let mut yoffset = 0;
     let blocks = rows >> 3;
     
     for b in 0..blocks {
         let i = b << 3;
         let m = SIMD_WIDTH.min(rows - i);
         h.fill(0f32);
+        println!("offset {offset:?}");
         stride_kernel(
             &l_yt[offset..],
             x,
@@ -519,83 +539,31 @@ pub fn kernel_forward_solve(
             s_y
 
         );
+        // println!("h {h:?}");
+        let mut roffset = 0;
+        let original = xoffset;
+
         for r in 0..m { 
-            let w_i = &mut h[r * s_x..];
-            let mut koffset = s_x;
-            // for k in block..i {
+            let mut koffset = original;
+            let w_i = &mut h[roffset..roffset + s_x];
             for k in 0..=r {
-                let scalar = l_yt[offset + k];
+                let scalar = l_yt[offset + i + k];
                 for j in 0..tcols {
                     w_i[j] += scalar * x[koffset + j];
                 }
-                koffset += tcols;
+                koffset += s_x;
             }
-            let inv_scalar = 1f32 / l_yt[offset + i];
+            // let inv_scalar = 1f32 / l_yt[offset + r];
+            let inv_scalar = 1f32 / l_yt[offset + i + r];
             for j in 0..tcols {
                 // dot + lii * x_i = y_i
                 x[xoffset + j] = inv_scalar * (y[yoffset + j] - w_i[j]);
             }
+            println!("w_i: {}, {w_i:?}", r);
             offset += s_a;
-            xoffset += s_x;
             yoffset += s_y;
+            xoffset += s_x;
+            roffset += s_x;
         }
     }
 }
-// pub fn kernel_forward_solve(
-//     l_yt: &[f32],
-//     x: &mut [f32],
-//     y: &mut [f32],
-//     h: &mut [f32],
-//     rows: usize,
-//     tcols: usize,
-//     s_a: usize,
-//     s_x: usize,
-//     s_y: usize,
-// ) {
-//     debug_assert!(h.len() >= tcols * SIMD_WIDTH);
-//     debug_assert!(x.len() >= rows * s_x);
-//     for j in 0..tcols {
-//         // l00 * x_0j = y_0i
-//         x[j] = y[j] / l_yt[0];
-//     }
-//     let mut offset = s_a;
-//     let mut xoffset = s_x;
-//     let mut yoffset = s_y;
-//     for i in 1..rows {
-//         let idx = i % 8;
-//         let block = (i / 8) * 8;
-//         if i & 7 == 0 {
-//             // every 8 rows simd and process a chunk
-//             h.fill(0f32);
-//             stride_kernel(
-//                 l_yt,
-//                 x,
-//                 h, 
-//                 SIMD_WIDTH,
-//                 i,
-//                 tcols,
-//                 s_a,
-//                 s_x,
-//                 s_y
-
-//             );
-//         }
-//         let w_i = &mut h[idx * s_x..idx * s_x + s_x];
-//         let mut koffset = s_x;
-//         for k in block..i {
-//             let scalar = l_yt[offset + k];
-//             for j in block..tcols {
-//                 w_i[j] += scalar * x[koffset + j];
-//             }
-//             koffset += tcols;
-//         }
-//         let inv_scalar = 1f32 / l_yt[offset + i];
-//         for j in 0..tcols {
-//             // dot + lii * x_i = y_i
-//             x[xoffset + j] = inv_scalar * (y[yoffset + j] - w_i[j]);
-//         }
-//         offset += s_a;
-//         xoffset += s_x;
-//         yoffset += s_y;
-//     }
-// }
