@@ -13,10 +13,10 @@
 //     /// Validates that L * Q * X matches A * X for random inputs.
 //     fn check_lq_reconstruction(rows: usize, cols: usize, acols: usize) -> bool {
 //         debug_assert!(cols >= rows);
-        
+
 //         let mut l_yt = generate_random_vector(rows * cols);
 //         let original_data = l_yt.clone();
-        
+
 //         let mut tri = create_identity_vector(rows, rows);
 //         let mut w = vec![0f32; cols];
 
@@ -25,7 +25,7 @@
 
 //         // 2. Generate random test matrix X (cols x acols)
 //         let x_argument = generate_random_vector(cols * acols);
-        
+
 //         let mut t_buffer = vec![0f32; cols * acols];
 //         let mut s_buffer = vec![0f32; cols * acols];
 

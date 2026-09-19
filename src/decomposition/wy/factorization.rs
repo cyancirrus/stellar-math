@@ -21,7 +21,7 @@
 // - **Factorization form:** `A = LQ`, where `Q` is expressed implicitly via
 //   the compact WY representation: `A = L * (I - Y T Y')`.
 //
-use crate::algebra::bmethods::interface::{ stride_kernel, stride_tut_kernel, };
+use crate::algebra::bmethods::interface::{stride_kernel, stride_tut_kernel};
 use crate::decomposition::wy::primitives::params;
 /// triangle iteration
 ///

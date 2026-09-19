@@ -9,7 +9,7 @@ use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::decomposition::wy::apply::{lhs_apply_l, lhs_apply_q, lhs_apply_qt};
-use stellar::decomposition::wy::interface::{wy_decomposition, easy_solve};
+use stellar::decomposition::wy::interface::{easy_solve, wy_decomposition};
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 

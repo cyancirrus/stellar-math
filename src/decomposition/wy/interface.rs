@@ -21,10 +21,10 @@
 // - **Factorization form:** `A = LQ`, where `Q` is expressed implicitly via
 //   the compact WY representation: `A = L * (I - Y T Y')`.
 //
-use crate::decomposition::wy::solve::kernel_forward_solve;
+use crate::decomposition::wy::apply::stride_lhs_apply_qt;
 use crate::decomposition::wy::factorization::kernel_wy_decomposition;
 use crate::decomposition::wy::solve::forward_solve;
-use crate::decomposition::wy::apply::stride_lhs_apply_qt;
+use crate::decomposition::wy::solve::kernel_forward_solve;
 
 pub fn wy_decomposition(
     l_yt: &mut [f32],
@@ -35,9 +35,8 @@ pub fn wy_decomposition(
     stride: usize,
 ) {
     // could look at my linear form and block only if hits threshold
-   kernel_wy_decomposition( l_yt, t, w, rows, cols, stride);
+    kernel_wy_decomposition(l_yt, t, w, rows, cols, stride);
 }
-
 
 pub fn easy_solve(
     l_yt: &[f32],
