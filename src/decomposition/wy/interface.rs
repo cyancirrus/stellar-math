@@ -23,8 +23,8 @@
 //
 use crate::decomposition::wy::apply::stride_lhs_apply_qt;
 use crate::decomposition::wy::factorization::kernel_wy_decomposition;
-use crate::decomposition::wy::solve::forward_solve;
-use crate::decomposition::wy::solve::kernel_forward_solve;
+use crate::decomposition::wy::solve::forward_substitution;
+use crate::decomposition::wy::solve::kernel_forward_substitution;
 
 pub fn wy_decomposition(
     l_yt: &mut [f32],
@@ -49,14 +49,14 @@ pub fn easy_solve(
     cols: usize,
     tcols: usize,
 ) {
-    fast_solve(
+    kernel_solve(
         l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
     );
     // stride_solve(
     //     l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
     // );
 }
-pub fn fast_solve(
+pub fn kernel_solve(
     l_yt: &[f32],
     tri: &[f32],
     x: &mut [f32],
@@ -70,7 +70,7 @@ pub fn fast_solve(
     s_x: usize,
     s_t: usize,
 ) {
-    kernel_forward_solve(l_yt, x, y, t_buffer, rows, tcols, s_a, s_x, s_t);
+    kernel_forward_substitution(l_yt, x, y, t_buffer, rows, tcols, s_a, s_x, s_t);
     stride_lhs_apply_qt(
         l_yt, tri, x, t_buffer, s_buffer, rows, cols, tcols, s_a, s_x, s_t,
     );
@@ -90,7 +90,7 @@ pub fn stride_solve(
     s_x: usize,
     s_t: usize,
 ) {
-    forward_solve(l_yt, x, y, t_buffer, rows, tcols, s_a, s_x, s_t);
+    forward_substitution(l_yt, x, y, t_buffer, rows, tcols, s_a, s_x, s_t);
     stride_lhs_apply_qt(
         l_yt, tri, x, t_buffer, s_buffer, rows, cols, tcols, s_a, s_x, s_t,
     );

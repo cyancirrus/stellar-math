@@ -1,7 +1,7 @@
 use crate::algebra::bmethods::interface::stride_kernel;
 use crate::arch::SIMD_WIDTH;
 
-/// Solves Ax = y;
+/// Solves Lw = y;
 ///  * l_yt : [l\y'] <- compressed mem storage form of WY(LQ)
 ///  * x    : the x in Ax=y for which we are solving can be a matrixvec
 ///  * y    : the y in Ax=y for which we are solving can be a matrixvec
@@ -11,7 +11,7 @@ use crate::arch::SIMD_WIDTH;
 ///  * s_a  : stride of the storage of l_yt ie A
 ///  * s_x  : stride of the storage of x
 ///  * s_y  : stride of the storage of y
-pub fn forward_solve(
+pub fn forward_substitution(
     l_yt: &[f32],
     x: &mut [f32],
     y: &[f32],
@@ -53,7 +53,7 @@ pub fn forward_solve(
         yoffset += s_y;
     }
 }
-/// Solves Ax = y;
+/// Solves Lw = y;
 ///  * l_yt : [l\y'] <- compressed mem storage form of WY(LQ)
 ///  * x    : the x in Ax=y for which we are solving can be a matrixvec
 ///  * y    : the y in Ax=y for which we are solving can be a matrixvec
@@ -64,7 +64,7 @@ pub fn forward_solve(
 ///  * s_a  : stride of the storage of l_yt ie A
 ///  * s_x  : stride of the storage of x
 ///  * s_y  : stride of the storage of y
-pub fn kernel_forward_solve(
+pub fn kernel_forward_substitution(
     l_yt: &[f32],
     x: &mut [f32],
     y: &[f32],
