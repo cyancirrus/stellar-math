@@ -8,7 +8,8 @@ use stellar::algebra::bmethods::interface::{tensor_kernel, tensor_tlt_kernel, te
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
 use stellar::decomposition::lq::AutumnDecomp;
-use stellar::decomposition::wy::{lhs_apply_l, lhs_apply_q, lhs_apply_qt, solve, wy_decomposition};
+use stellar::decomposition::wy::apply::{lhs_apply_l, lhs_apply_q, lhs_apply_qt};
+use stellar::decomposition::wy::interface::{wy_decomposition, easy_solve};
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
 
@@ -31,7 +32,7 @@ fn test_solves() {
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
     println!("hello");
-    solve(
+    easy_solve(
         &l_yt,
         &tri,
         &mut x_argument,
@@ -456,15 +457,20 @@ pub fn benchmark_wy() {
     );
 }
 fn main() {
-    // test_solves();
-    // println!("-----------------------------");
-    // println!("-----------------------------");
-    // println!("-----------------------------");
-    // println!("-----------------------------");
-    // println!("-----------------------------");
+    test_solves();
+    println!("-----------------------------");
+    println!("-----------------------------");
+    println!("-----------------------------");
+    println!("-----------------------------");
+    println!("-----------------------------");
     // benchmark_wy();
-    // test_left_apply_qt();
+    test_left_apply_qt();
     // // test_left_apply_q();
+    println!("-----------------------------");
+    println!("-----------------------------");
+    println!("-----------------------------");
+    println!("-----------------------------");
+    println!("-----------------------------");
     test_reconstruct();
     // validate_upper_upper_fma();
     // validate_transpose_upper_upper_fma();
