@@ -34,7 +34,7 @@ pub fn wy_decomposition(
     cols: usize,
     stride: usize,
 ) {
-    // could look at my linear form and block only if hits threshold
+    // could look at my linear form and block only if hits size threshold for kernel
     kernel_wy_decomposition(l_yt, t, w, rows, cols, stride);
 }
 
@@ -49,12 +49,15 @@ pub fn easy_solve(
     cols: usize,
     tcols: usize,
 ) {
-    kernel_solve(
-        l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
-    );
-    // stride_solve(
-    //     l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
-    // );
+    // if rows >> 3 == 0 && cols >> 3 == 0 && tcols >> 3 == 0 {
+    //     stride_solve(
+    //         l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
+    //     );
+    // } else {
+        kernel_solve(
+            l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
+        );
+    // }
 }
 pub fn kernel_solve(
     l_yt: &[f32],
