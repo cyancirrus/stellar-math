@@ -1,32 +1,23 @@
-// ============================================================================
-// LQ Block Decomposition — Compact WY Representation
-// ============================================================================
-
-// **`LqBlockDecomp`** — 0-alloc, in-place LQ factorization via blocked
-// Householder reflections (compact WY form).
-//
-// - **Mutation contract:** Takes in a basis and mutates the original matrix
-//   in place. On return, the lower-triangular part of the matrix holds `L`.
-//
-// - **Naming convention:**
-//   - `Lower` ~ `L`
-//   - `Householder` ~ `Y'`
-//   - `Triangular` ~ `T`
-//
-// - **Storage layout:**
-//   - `h`: packed storage `~ [ L \ Y' ]` — `L` and the Householder vectors
-//     `Y'` share the same buffer, split across the diagonal.
-//   - `t`: `T`, the block triangular factor for the compact WY update.
-//
-// - **Factorization form:** `A = LQ`, where `Q` is expressed implicitly via
-//   the compact WY representation: `A = L * (I - Y T Y')`.
-
-use crate::algebra::bmethods::interface::{
-    stride_lt_kernel, stride_tlt_kernel, stride_tut_kernel, stride_ut_kernel,
-};
+use crate::algebra::bmethods::interface::{ stride_lt_kernel, stride_tlt_kernel, stride_tut_kernel, stride_ut_kernel};
 use crate::decomposition::wy::primitives::import_slice;
+// applies Lx;
+#[inline(always)]
+pub fn lhs_apply_l(
+    l_yt: &[f32],
+    q_argument: &[f32],
+    t_buffer: &mut [f32],
+    rows: usize,
+    cols: usize,
+    acols: usize,
+) {
+    debug_assert!(t_buffer.len() >= rows * acols);
+    stride_lt_kernel(
+        l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, cols, acols, acols,
+    );
+}
 /// the compact WY representation: `A = (I - Y T Y')X`.
 #[rustfmt::skip]
+#[inline(always)]
 pub fn lhs_apply_q(
     l_yt: &[f32],
     tri: &[f32],
@@ -43,8 +34,9 @@ pub fn lhs_apply_q(
     stride_lhs_apply_q( l_yt, tri, x_argument, t_buffer, s_buffer, rows, cols, acols, cols, acols, acols);
 }
 /// the compact WY representation: `A = (I - Y T' Y')X`.
-/// applies (I - YTY[thin]')x;
+/// applies (I - YT'Y[thin]')x;
 #[rustfmt::skip]
+#[inline(always)]
 pub fn lhs_apply_qt(
     l_yt: &[f32],
     tri: &[f32],
@@ -60,21 +52,7 @@ pub fn lhs_apply_qt(
     debug_assert!(cols >= rows);
     stride_lhs_apply_qt(l_yt, tri, x_argument, t_buffer, s_buffer, rows, cols, acols, cols, acols, acols);
 }
-/// the compact WY representation: `A = (I - Y T Y')X`.
-/// applies (I - Y[thin]TY')x;
-pub fn lhs_apply_l(
-    l_yt: &[f32],
-    q_argument: &[f32],
-    t_buffer: &mut [f32],
-    rows: usize,
-    cols: usize,
-    acols: usize,
-) {
-    debug_assert!(t_buffer.len() >= rows * acols);
-    stride_lt_kernel(
-        l_yt, q_argument, t_buffer, 1, 0, rows, cols, acols, cols, acols, acols,
-    );
-}
+// applies Lx;
 pub fn stride_lhs_apply_l(
     l_yt: &[f32],
     q_argument: &[f32],
@@ -92,6 +70,7 @@ pub fn stride_lhs_apply_l(
     );
 }
 /// the compact WY representation: `A = (I - Y T Y')X`.
+/// applies (I - Y[thin]TY')x;
 #[rustfmt::skip]
 pub fn stride_lhs_apply_q(
     l_yt: &[f32],
@@ -166,6 +145,8 @@ pub fn stride_lhs_apply_q(
         s_t,
     );
 }
+/// the compact WY representation: `A = (I - Y T 'Y')X`.
+/// applies (I - YT'Y[thin]')x;
 #[rustfmt::skip]
 pub fn stride_lhs_apply_qt(
     l_yt: &[f32],

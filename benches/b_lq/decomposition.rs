@@ -1,11 +1,12 @@
 use crate::sharedvars::LQ_SIZES;
-use criterion::{BenchmarkId, Criterion, black_box};
+use std::hint::black_box;
+// use criterion::{BenchmarkId, Criterion, black_box};
+use criterion::{BenchmarkId, Criterion};
 use faer::dyn_stack::{MemBuffer, MemStack};
 use faer::linalg::qr::no_pivoting::{factor, solve};
 use faer::{Conj, Mat, Par};
-use stellar::decomposition::wy::{
-    lhs_apply_q, lhs_apply_qt, solve as autumn_solve, wy_decomposition,
-};
+use stellar::decomposition::wy::interface::{wy_decomposition, easy_solve as autumn_solve};
+use stellar::decomposition::wy::apply::{lhs_apply_q, lhs_apply_qt};
 use stellar::random::generation::{generate_random_matrix, generate_random_vector};
 
 /// Compares decomposition cost: Autumn's WY vs faer's QR.
