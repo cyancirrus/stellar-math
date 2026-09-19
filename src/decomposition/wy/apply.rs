@@ -1,4 +1,6 @@
-use crate::algebra::bmethods::interface::{ stride_lt_kernel, stride_tlt_kernel, stride_tut_kernel, stride_ut_kernel};
+use crate::algebra::bmethods::interface::{
+    stride_lt_kernel, stride_tlt_kernel, stride_tut_kernel, stride_ut_kernel,
+};
 use crate::decomposition::wy::primitives::import_slice;
 // applies Lx;
 #[inline(always)]
@@ -16,7 +18,6 @@ pub fn lhs_apply_l(
     );
 }
 /// the compact WY representation: `A = (I - Y T Y')X`.
-#[rustfmt::skip]
 #[inline(always)]
 pub fn lhs_apply_q(
     l_yt: &[f32],
@@ -31,11 +32,12 @@ pub fn lhs_apply_q(
     debug_assert!(t_buffer.len() >= rows * acols);
     debug_assert!(s_buffer.len() >= rows * acols);
     debug_assert!(cols >= rows);
-    stride_lhs_apply_q( l_yt, tri, x_argument, t_buffer, s_buffer, rows, cols, acols, cols, acols, acols);
+    stride_lhs_apply_q(
+        l_yt, tri, x_argument, t_buffer, s_buffer, rows, cols, acols, cols, acols, acols,
+    );
 }
 /// the compact WY representation: `A = (I - Y T' Y')X`.
 /// applies (I - YT'Y[thin]')x;
-#[rustfmt::skip]
 #[inline(always)]
 pub fn lhs_apply_qt(
     l_yt: &[f32],
@@ -50,7 +52,9 @@ pub fn lhs_apply_qt(
     debug_assert!(t_buffer.len() >= rows * acols);
     debug_assert!(s_buffer.len() >= rows * acols);
     debug_assert!(cols >= rows);
-    stride_lhs_apply_qt(l_yt, tri, x_argument, t_buffer, s_buffer, rows, cols, acols, cols, acols, acols);
+    stride_lhs_apply_qt(
+        l_yt, tri, x_argument, t_buffer, s_buffer, rows, cols, acols, cols, acols, acols,
+    );
 }
 // applies Lx;
 pub fn stride_lhs_apply_l(
@@ -198,6 +202,7 @@ pub fn stride_lhs_apply_qt(
     );
     let mut toffset = 0;
     let mut xoffset = 0;
+    // this might be able to be optimized if i have an fma that can scale the add
     for _ in 0..rows {
         for k in 0..acols {
             let v = -s_buffer[toffset + k];

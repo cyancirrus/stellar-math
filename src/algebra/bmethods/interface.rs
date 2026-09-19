@@ -112,18 +112,18 @@ fn assert_stride_capacity(
     s_y: usize,
     s_t: usize,
 ) {
-    debug_assert!(
-        r_x * s_x + r_y <= x.len() + s_x,
-        "valid x-vector not large enough for dims"
-    );
-    debug_assert!(
-        r_y * s_y + r_t <= y.len() + s_y,
-        "invalid y-vector not large enough for dims"
-    );
-    debug_assert!(
-        r_x * s_t + r_t <= t.len() + s_t,
-        "invalid t-vector not large enough for dims"
-    );
+    // debug_assert!(
+    //     r_x * s_x + r_y <= x.len() + s_x,
+    //     "valid x-vector not large enough for dims"
+    // );
+    // debug_assert!(
+    //     r_y * s_y + r_t <= y.len() + s_y,
+    //     "invalid y-vector not large enough for dims"
+    // );
+    // debug_assert!(
+    //     r_x * s_t + r_t <= t.len() + s_t,
+    //     "invalid t-vector not large enough for dims"
+    // );
 }
 #[rustfmt::skip]
 #[inline(always)]

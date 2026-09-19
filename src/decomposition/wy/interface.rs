@@ -55,9 +55,9 @@ pub fn easy_solve(
     //         l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
     //     );
     // } else {
-        kernel_solve(
-            l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
-        );
+    kernel_solve(
+        l_yt, tri, x, y, t_buffer, s_buffer, rows, cols, tcols, cols, tcols, tcols,
+    );
     // }
 }
 #[inline(always)]

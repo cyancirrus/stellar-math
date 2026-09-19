@@ -7,17 +7,19 @@ use stellar::algebra::bmethods::contractions::{
 use stellar::algebra::bmethods::interface::{tensor_kernel, tensor_tlt_kernel, tensor_tut_kernel};
 use stellar::algebra::ndmethods::create_identity_matrix;
 use stellar::algebra::ndmethods::{create_identity_vector, matrix_mult};
+use stellar::arch::SIMD_WIDTH;
 use stellar::decomposition::lq::AutumnDecomp;
 use stellar::decomposition::wy::apply::{lhs_apply_l, lhs_apply_q, lhs_apply_qt};
 use stellar::decomposition::wy::interface::{easy_solve, wy_decomposition};
 use stellar::random::generation::generate_random_vector;
 use stellar::structure::ndarray::NdArray;
-
 fn test_solves() {
     // let (rows, cols, tcols) = (2, 4, 8);
     // let (rows, cols, tcols) = (4, 8, 12);
     // let (rows, cols, tcols) = (4, 4, 8);
-    let (rows, cols, tcols) = (14, 24, 24);
+    // let (rows, cols, tcols) = (14, 24, 24);
+    // let (rows, cols, tcols) = (4, 4, 4);
+    let (rows, cols, tcols) = (6, 6, 6);
     // let (rows, cols, tcols) = (64, 64, 64);
     debug_assert!(cols >= rows);
     let mut l_yt = generate_random_vector(rows * cols);
@@ -27,11 +29,12 @@ fn test_solves() {
     let mut w = vec![0f32; cols << 3];
     let mut x_argument = vec![0f32; cols * tcols];
     let y_argument = generate_random_vector(rows * tcols);
-    let mut t_buffer = vec![0f32; rows * tcols];
-    let mut s_buffer = vec![0f32; cols * tcols];
+    // let mut t_buffer = vec![0f32; rows * tcols];
+    // let mut s_buffer = vec![0f32; cols * tcols];
+    let mut t_buffer = vec![0f32; (cols * tcols).max(tcols * SIMD_WIDTH)];
+    let mut s_buffer = vec![0f32; (cols * tcols).max(tcols * SIMD_WIDTH)];
 
     wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, cols);
-    println!("hello");
     easy_solve(
         &l_yt,
         &tri,
@@ -49,7 +52,7 @@ fn test_solves() {
     };
     let x_inferred = NdArray {
         dims: vec![cols, tcols],
-        data: s_buffer,
+        data: s_buffer[..cols * tcols].to_vec(),
     };
     println!("x_inferred {x_inferred:?}");
     let original_mat = NdArray {
