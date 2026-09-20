@@ -102,15 +102,15 @@ fn assert_stride_bounds(b_x: usize, b_y: usize, b_t: usize, s_x: usize, s_y: usi
 }
 #[inline(always)]
 fn assert_stride_capacity(
-    x: &[f32],
-    y: &[f32],
-    t: &[f32],
-    r_x: usize,
-    r_y: usize,
-    r_t: usize,
-    s_x: usize,
-    s_y: usize,
-    s_t: usize,
+    _x: &[f32],
+    _y: &[f32],
+    _t: &[f32],
+    _r_x: usize,
+    _r_y: usize,
+    _r_t: usize,
+    _s_x: usize,
+    _s_y: usize,
+    _s_t: usize,
 ) {
     // debug_assert!(
     //     r_x * s_x + r_y <= x.len() + s_x,
