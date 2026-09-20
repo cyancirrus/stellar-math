@@ -1,3 +1,4 @@
+#![allow(clippy::missing_safety_doc)]
 pub mod alligned;
 pub mod constants;
 pub mod interface;

@@ -71,6 +71,7 @@ fn triangle_iteration(
     // -tau * X; // currently don't have scalar capabilities in kernel
     let (t_upper, t_target) = t.split_at_mut(koffset);
     for l in 0..k {
+        // h[offset + k] is the implicit diagonal of 1
         w[l] = -tau * h[hoffset + k] - tau * w[l];
         hoffset += h_dim;
     }
