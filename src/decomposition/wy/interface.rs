@@ -39,7 +39,7 @@ pub fn wy_decomposition(
     kernel_wy_decomposition(l_yt, t, w, rows, cols, stride);
 }
 #[inline(always)]
-pub fn easy_solve(
+pub fn dense_solve(
     l_yt: &[f32],
     tri: &[f32],
     x: &mut [f32],

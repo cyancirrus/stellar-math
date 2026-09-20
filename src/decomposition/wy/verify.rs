@@ -4,12 +4,12 @@ mod test_wy_reconstructions {
     use crate::algebra::ndmethods::matrix_mult;
     use crate::arch::SIMD_WIDTH;
     use crate::decomposition::wy::apply::{lhs_apply_l, lhs_apply_q, lhs_apply_qt};
-    use crate::decomposition::wy::interface::{easy_solve, wy_decomposition};
+    use crate::decomposition::wy::interface::{dense_solve, wy_decomposition};
     use crate::equality::approximate::approx_vector_eq;
     use crate::random::generation::generate_random_vector;
     use crate::structure::ndarray::NdArray;
 
-    /// A x ~= y, where x is the solution produced by easy_solve.
+    /// A x ~= y, where x is the solution produced by dense_solve.
     fn check_wy_solve(rows: usize, cols: usize, tcols: usize) -> bool {
         debug_assert!(cols >= rows);
         let stride = cols;
@@ -31,7 +31,7 @@ mod test_wy_reconstructions {
         let mut s_buffer = vec![0f32; (cols * tcols).max(tcols * SIMD_WIDTH)];
 
         wy_decomposition(&mut l_yt, &mut tri, &mut w, rows, cols, stride);
-        easy_solve(
+        dense_solve(
             &l_yt,
             &tri,
             &mut x_argument,

@@ -6,7 +6,7 @@ use faer::dyn_stack::{MemBuffer, MemStack};
 use faer::linalg::qr::no_pivoting::{factor, solve};
 use faer::{Conj, Mat, Par};
 use stellar::decomposition::wy::apply::{lhs_apply_q, lhs_apply_qt};
-use stellar::decomposition::wy::interface::{easy_solve as autumn_solve, wy_decomposition};
+use stellar::decomposition::wy::interface::{dense_solve as autumn_solve, wy_decomposition};
 use stellar::random::generation::{generate_random_matrix, generate_random_vector};
 
 /// Compares decomposition cost: Autumn's WY vs faer's QR.
